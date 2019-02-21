@@ -1,0 +1,3 @@
+[submodule "submodules/pydsdl"]
+	path = submodules/pydsdl
+	url = git@github.com:UAVCAN/pydsdl.git

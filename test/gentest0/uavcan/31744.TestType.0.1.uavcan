@@ -1,0 +1,8 @@
+#
+# Simple test message that fits in a single CAN 2.0 frame.
+#
+
+truncated uint56 data
+
+@assert _offset_ % 8 == {0}
+@assert _offset_.max == 56

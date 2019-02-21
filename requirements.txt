@@ -1,0 +1,10 @@
+#
+# Python requirements to be pulled from pypi as part
+# of build (See CMakeLists.txt).
+#
+pytest ~= 3.3
+pytest-cov ~= 2.6
+mypy >= 0.641
+jinja2 >= 2.10
+pyyaml >= 3.13
+coveralls >= 1.6
