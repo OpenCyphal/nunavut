@@ -1,0 +1,28 @@
+[
+  {
+    "type": "namespace",
+    "name": "{{ T.full_namespace }}",
+    "contents":
+    [
+      {
+        "name": "{{ T.short_name }}",
+        "type": "{{ T | typename }}",
+        "source" : "{{ T.source_file_path }}",
+        "fixed_port_id": {{ T.fixed_port_id }},
+        "deprecated": {{ T.deprecated | js.to_true_or_false }},
+        "version": 
+        {
+          "major" : {{ T.version.major }},
+          "minor" : {{ T.version.minor }}
+        },
+        "fields" :
+        [
+{%- for field in T.attributes %}
+          {%* include field.data_type | pydsdl_type_to_template %}
+{%- if not loop.last %},{% endif %}
+{%- endfor %}
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,11 @@
+{% extends "!footer.html" %}
+{% block extrafooter %}
+    <div style="float:right; padding: 10pt">
+        <a href="http://uavcan.org"><img src="{{pathto('_static/' + favicon, 1)}}" class="logo" alt="UAVCAN" /></a>
+    </div>
+    <div style="margin-top: 2pt">
+        <li><a href="http://uavcan.org">UAVCAN Website</a> &raquo;</li>
+        <li><a href="https://forum.uavcan.org">UAVCAN Forum</a> &raquo;</li>
+    </div>
+    {{ super() }}
+{% endblock %}

@@ -9,6 +9,10 @@ build/
 __pycache__
 *.pyc
 .mypy*
+.pytest_cache
+pydsdlgen_out
+*.egg-info
+*.patch
 
 # Eclipse
 .metadata

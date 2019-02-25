@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+#
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# This software is distributed under the terms of the MIT License.
+#
+"""
+    Command-line script for using pydsdlgen and jinja to generate code
+    from dsdl definitions.
+"""
+
+import argparse
+import logging
+import os
+import sys
+
+from pathlib import Path
+
+
+def _run(args: argparse.Namespace, extra_includes: str) -> int:
+    '''
+        Post command-line setup and parsing logic to execute pydsdlgen
+        library routines based on input.
+    '''
+    #
+    # pydsdlgen : load module
+    #
+    from pydsdlgen import parse_all, generate_target_paths
+    from pydsdlgen.jinja import Generator
+
+    #
+    # pydsdlgen : parse
+    #
+    parser_result = parse_all(args.root_namespaces, extra_includes)
+    target_map = generate_target_paths(
+        parser_result, args.outdir, args.output_extension)
+
+    #
+    # pydsdlgen : generate
+    #
+
+    if args.list_outputs:
+        for output_path in target_map.values():
+            sys.stdout.write(str(output_path))
+            sys.stdout.write(';')
+        return 0
+
+    generator = Generator(args.outdir, target_map, args.templates)
+
+    if args.list_inputs:
+        for input_path in generator.get_templates():
+            sys.stdout.write(str(input_path.resolve()))
+            sys.stdout.write(';')
+        for output_type in target_map.keys():
+            sys.stdout.write(str(output_type.source_file_path))
+            sys.stdout.write(';')
+        return 0
+
+    if not args.list_outputs and not args.list_inputs:
+        return generator.generate_all(args.dry_run)
+    else:
+        return 0
+
+
+def _make_parser() -> argparse.ArgumentParser:
+    """
+        Defines the command-line interface. Provided as a separate factory method to
+        support sphinx-argparse documentation.
+    """
+
+    epilog = '''**Example Usage**::
+
+    # This would include j2 templates for a folder named 'c_jinja'
+    # and generate .h files into a directory named 'include' using
+    # dsdl root namespaces found under a folder named 'dsdl'.
+
+    dsdlgenj --outdir include --templates c_jinja -e .h dsdl
+
+----
+'''
+
+    parser = argparse.ArgumentParser(
+        description='Generate code from UAVCAN DSDL using pydsdl and jinja2',
+        epilog=epilog,
+        formatter_class=argparse.RawTextHelpFormatter)
+
+    parser.add_argument('root_namespaces', nargs='+',
+                        help='source directories with DSDL definitions')
+
+    parser.add_argument('--verbose', '-v', action='count',
+                        help='verbosity level (-v, -vv)')
+
+    parser.add_argument(
+        '--outdir', '-O', default='pydsdlgen_out', help='output directory')
+
+    parser.add_argument('--templates',
+                        required='--list-outputs' not in sys.argv,
+                        help="A path to a directory containing templates to use when generating code.")
+
+    parser.add_argument('--incdir', '-I', default=[], action='append',
+                        help='''Nested type namespaces, one path per argument.
+Can be also specified through the environment variable
+UAVCAN_DSDL_INCLUDE_PATH, where the path entries are
+separated by colons ":"'''
+                        )
+
+    def extension_type(raw_arg: str) -> str:
+        if len(raw_arg) > 0 and not raw_arg.startswith('.'):
+            return '.' + raw_arg
+        else:
+            return raw_arg
+
+    parser.add_argument('--output-extension', '-e', default='', type=extension_type,
+                        help='The extension to use for generated files.')
+
+    parser.add_argument('--dry-run', '-d', action="store_true",
+                        help="If True then no files will be generated.")
+
+    parser.add_argument('--list-outputs', action="store_true",
+                        help='''Emit a semicolon-separated list of files.
+(implies --dry-run)
+Emits files that would be generated if invoked without --dry-run.
+This command is useful for integrating with CMake and other build
+systems that need a list of targets to determine if a rebuild is
+necessary.'''
+                        )
+
+    parser.add_argument('--list-inputs', action="store_true",
+                        help='''Emit a semicolon-separated list of files.
+(implies --dry-run)
+A list of files that are resolved given input arguments like templates.
+This command is useful for integrating with CMake and other build systems
+that need a list of inputs to determine if a rebuild is necessary.'''
+                        )
+
+    return parser
+
+
+def main() -> int:
+    """
+        Main entry point for this program.
+    """
+
+    #
+    # Parse the command-line arguments.
+    #
+    args = _make_parser().parse_args()
+
+    #
+    # Setup Python logging.
+    #
+    fmt = '%(message)s'
+    level = {0: logging.WARNING, 1: logging.INFO,
+             2: logging.DEBUG}.get(args.verbose or 0, logging.DEBUG)
+    logging.basicConfig(stream=sys.stderr, level=level, format=fmt)
+
+    logging.info('Running %s using sys.prefix: %s',
+                 Path(__file__).name, sys.prefix)
+
+    #
+    # Parse UAVCAN_DSDL_INCLUDE_PATH
+    #
+    extra_includes = args.incdir
+
+    try:
+        extra_includes_from_env = os.environ['UAVCAN_DSDL_INCLUDE_PATH'].split(':')
+
+        if len(extra_includes_from_env) > 0:
+            logging.info('Additional include directories from UAVCAN_DSDL_INCLUDE_PATH: %s',
+                         str(extra_includes_from_env))
+            extra_includes += extra_includes_from_env
+    except KeyError:
+        pass
+
+    return _run(args, extra_includes)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,20 @@
+{% extends "c_header.j2" %}
+{% block object %}
+
+typedef struct {{ T.full_name | replace('.', '_') }}Type {
+{% for attribute in T.attributes %}
+  // {{ attribute }}
+{% endfor %}
+{% for field in T.fields %}
+  // {{ field }}
+{% endfor %}
+} {{ T.full_name | replace('.', '_') }};
+
+{% endblock %}
+  {#--------------------------------------------------------------------------+
+  | REQUIRED - This section contains all template inputs that are required
+  | for a valid C++ type to be generated. Assertion failures within this
+  | section should cause template expansion to fail and prevent invalid 
+  | source from being generated.
+  +--------------------------------------------------------------------------#}
+{% assert T.full_name %}

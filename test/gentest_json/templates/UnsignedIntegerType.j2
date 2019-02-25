@@ -1,0 +1,6 @@
+{ 
+  "name": "{{ field.name }}",
+  "type" : "uint{{ field.data_type.bit_length }}",
+  "bit_length" : {{ field.data_type.bit_length }},
+  "cast_mode" : "{{ field.data_type.cast_mode.name }}"
+}

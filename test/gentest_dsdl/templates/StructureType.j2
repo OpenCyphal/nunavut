@@ -1,0 +1,21 @@
+{% extends "c_header.j2" %}
+{% block object %}
+
+typedef struct {{ T.full_name | replace('.', '_') }}Type {
+{%- for field in T.attributes %}
+{%- if field is constant %}
+  const {{ field.data_type | c.type_from_primitive(use_standard_types=True) }} {{ field.name }} = {{ field.initialization_expression }};
+{%- elif field.data_type is primative %}
+  {{ field.data_type | c.type_from_primitive }} {{ field.name }};
+{% endif -%}
+{% endfor %}
+} {{ T.full_name | replace('.', '_') }};
+
+{% endblock %}
+  {#--------------------------------------------------------------------------+
+  | REQUIRED - This section contains all template inputs that are required
+  | for a valid C++ type to be generated. Assertion failures within this
+  | section should cause template expansion to fail and prevent invalid 
+  | source from being generated.
+  +--------------------------------------------------------------------------#}
+{% assert T.full_name %}

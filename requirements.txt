@@ -1,10 +1,39 @@
 #
-# Python requirements to be pulled from pypi as part
-# of build (See CMakeLists.txt).
+# Python requirements to be pulled from pypi as part of build
+# (See CMakeLists.txt).
 #
+
+# +---------------------------------------------------------------------------+
+# | RUNTIME DEPENDENCIES
+# +---------------------------------------------------------------------------+
+pydsdl == 0.3.1
+
+# +---------------------------------------------------------------------------+
+# | DEVELOPER DEPENDENCIES
+# +---------------------------------------------------------------------------+
+autopep8
+flake8
+mypy
+
+# +---------------------------------------------------------------------------+
+# | OPTIONAL DEPENDENCIES
+# +---------------------------------------------------------------------------+
+# if present the yamlfy filter will work in jinja templates.
+pyyaml >= 3.13
+
+# Useful for vscode development
+rope
+
+# +---------------------------------------------------------------------------+
+# | TEST AND BUILD DEPENDENCIES
+# +---------------------------------------------------------------------------+
 pytest ~= 3.3
 pytest-cov ~= 2.6
-mypy >= 0.641
-jinja2 >= 2.10
-pyyaml >= 3.13
+
+# +---------------------------------------------------------------------------+
+# | DOCUMENTATION, REPORTING, AND PUBLISHING DEPENDENCIES
+# +---------------------------------------------------------------------------+
+sphinx >= 1.8.5
+sphinx-argparse
+sphinx_rtd_theme
 coveralls >= 1.6
