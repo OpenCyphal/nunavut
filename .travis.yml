@@ -5,7 +5,10 @@ services:
 
 before_install:
 - git submodule update --init --recursive
-- docker pull docker pull uavcan/toxic:py35-py38
+- docker pull uavcan/toxic:py35-py38
+
+install:
+- "echo $TRAVIS_BUILD_DIR"
 
 script:
-- docker run --rm -v $TRAVIS_BUILD_DIR:/pydsdlgen uavcan/toxic:py35-py38 /bin/sh -c tox
+- "docker run --rm -v $TRAVIS_BUILD_DIR:/pydsdlgen uavcan/toxic:py35-py38 /bin/sh -c tox"

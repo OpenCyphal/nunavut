@@ -32,8 +32,8 @@ def get_supported_languages() -> Iterable[str]:
 def add_language_support(language_name: str, environment: Environment) -> None:
     """
     Inspects a given language support module and adds all functions
-    found whose name starts with "filter\_" to the provided environment
-    as "[language_name].[function name minus 'filter\_']".
+    found whose name starts with "filter\\_" to the provided environment
+    as "[language_name].[function name minus 'filter\\_']".
 
     For example, if a language module foo.py has a filter function
     "filter_bar" and this method is called with a prefix of "foo"
