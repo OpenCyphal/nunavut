@@ -248,15 +248,9 @@ if(SPHINX_FOUND)
     # HTML output directory
     set(SPHINX_HTML_DIR "${SPHINX_OUTDIR}/html")
 
-    configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/conf.py"
-        "${BINARY_BUILD_DIR}/conf.py"
-        @ONLY)
-
     add_custom_target(docgen ALL
         ${SPHINX_EXECUTABLE}
-            -q -b html
-            -c "${BINARY_BUILD_DIR}"
+            -b html
             -d "${SPHINX_CACHE_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/src"
             "${SPHINX_HTML_DIR}"

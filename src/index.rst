@@ -7,7 +7,7 @@ dsdlgenj
    :hidden:
 
    pydsdlgen/lib
-   docs/appendix
+   appendix
 
 
 *************************************

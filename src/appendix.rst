@@ -2,6 +2,6 @@
 Licenses and Readmes
 =====================
 
-.. include:: ../../README.rst
+.. include:: ../README.rst
 
-.. include:: ../../LICENSE.rst
+.. include:: ../LICENSE.rst

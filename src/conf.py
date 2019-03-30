@@ -46,7 +46,7 @@ extensions = [
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['@SPHINX_RESOURCES_DIR@/templates']
+templates_path = ['docs/templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -101,7 +101,7 @@ html_context = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['@SPHINX_RESOURCES_DIR@']
+html_static_path = ['docs']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -113,9 +113,9 @@ html_static_path = ['@SPHINX_RESOURCES_DIR@']
 #
 # html_sidebars = {}
 
-html_logo = '@SPHINX_RESOURCES_DIR@/images/pydsdlgen_logo.svg'
+html_logo = 'docs/images/pydsdlgen_logo.svg'
 
-html_favicon = '@SPHINX_RESOURCES_DIR@/images/uavcan_logo_icon.svg'
+html_favicon = 'docs/images/uavcan_logo_icon.svg'
 
 html_css_files = ['css/custom.css']
 
