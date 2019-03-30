@@ -133,7 +133,7 @@ class GitAction(metaclass=ABCMeta):
 
     @classmethod
     def write_subtree_commits(cls, commit_file: Path, subtree_commits: Dict) -> None:
-        with open(commit_file, "w") as commit_fp:
+        with open(str(commit_file), "w") as commit_fp:
             json.dump(subtree_commits, commit_fp,
                       indent=4, separators=(',', ': '))
 

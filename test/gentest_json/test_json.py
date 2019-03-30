@@ -19,7 +19,7 @@ def gen_paths():
 
 
 def test_TestType_0_1(gen_paths) -> None:
-    """ Generates a JSON blob and then reads it back in. 
+    """ Generates a JSON blob and then reads it back in.
 
     This test uses an extremely simple DSDL type to generate JSON then
     reads this JSON back in and parses it using Python's built-in parser.
@@ -35,7 +35,7 @@ def test_TestType_0_1(gen_paths) -> None:
 
     assert (outfile is not None)
 
-    with open(outfile, 'r') as json_file:
+    with open(str(outfile), 'r') as json_file:
         json_blob = json.load(json_file)
 
     assert json_blob is not None

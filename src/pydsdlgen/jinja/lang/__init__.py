@@ -41,7 +41,7 @@ def add_language_support(language_name: str, environment: Environment) -> None:
     it.
 
     :param str language_name: The language to add support for.
-    :param Environment environment: The jinja2 environment to inject 
+    :param Environment environment: The jinja2 environment to inject
         language support into.
 
     :raises KeyError: If language_name is not a supported language.

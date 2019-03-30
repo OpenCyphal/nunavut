@@ -1,3 +1,0 @@
-[run]
-    data_file=@PYCOVERAGE_DATA_FILE@
-    branch=True

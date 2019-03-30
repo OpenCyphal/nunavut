@@ -52,7 +52,7 @@ class JinjaAssert(Extension):
         """
 
         # This will be the macro name "assert"
-        token: nodes.Token = next(parser.stream)
+        token = next(parser.stream)
 
         # now we parse a single expression that must evalute to True
         args = [parser.parse_expression(),
@@ -101,7 +101,7 @@ class Generator(AbstractGenerator):
         try:
             from yaml import dump
             return str(dump(value))
-        except ModuleNotFoundError:
+        except ImportError:
             return "(pyyaml not installed)"
 
     @staticmethod
@@ -144,7 +144,7 @@ class Generator(AbstractGenerator):
             raise ValueError(
                 "Templates directory {} did not exist?".format(templates_dir))
 
-        self._templates_dir: Path = Path(templates_dir)
+        self._templates_dir = Path(templates_dir)
 
         logger.info("Loading templates from {}".format(templates_dir))
 
@@ -186,9 +186,9 @@ class Generator(AbstractGenerator):
     def _generate_type(self, input_type: CompoundType, output_path: Path, is_dryrun: bool) -> None:
         template_name = self._jinja2_filter_pydsdl_type_to_template(input_type)
         self._env.globals["now_utc"] = datetime.utcnow()
-        template: Template = self._env.get_template(template_name)
-        result: str = template.render(T=input_type)
+        template = self._env.get_template(template_name)
+        result = template.render(T=input_type)
         if not is_dryrun:
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(output_path, "w") as output_file:
+            with open(str(output_path), "w") as output_file:
                 output_file.write(result)

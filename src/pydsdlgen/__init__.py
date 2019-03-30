@@ -42,7 +42,7 @@ def _build_paths(paths: Iterable[str], resolve_paths: bool, required: bool) -> L
     :raises FileNotFoundError: If required is True and a path to a non-existent resource
                                is found.
     """
-    result: List[str] = []
+    result = []
     for path_string in paths:
         path = Path(path_string)
         if resolve_paths:
@@ -73,7 +73,7 @@ def parse_all(root_namespaces: Iterable[str], extra_includes: Iterable[str]) -> 
 
     extra_include_paths = _build_paths(extra_includes, True, False)
 
-    types: List[CompoundType] = list()
+    types = list()
 
     for root_namespace_path in root_namespace_paths:
         types += parse_namespace(root_namespace_path, extra_include_paths)
@@ -108,7 +108,7 @@ def generate_target_paths(types: List[CompoundType],
 
     type_to_output_map = dict()
 
-    for type in types:
+    for dsdl_type in types:
         '''
         For each type we form a path with the output_dir as the base; the intermediate
         folders named for the type's namespaces; and a file name that includes the type's
@@ -116,13 +116,13 @@ def generate_target_paths(types: List[CompoundType],
         Python's pathlib adapts the provided folder and file names to the platform
         this script is running on.
         '''
-        namespace_components = type.full_namespace.split('.')
+        namespace_components = dsdl_type.full_namespace.split('.')
         filestem = "{}_{}_{}".format(
-            type.short_name, type.version.major, type.version.minor)
+            dsdl_type.short_name, dsdl_type.version.major, dsdl_type.version.minor)
         output_path = Path(
             base_path / PurePath(*namespace_components) / PurePath(filestem).with_suffix(extension))
         if resolve_paths:
             output_path = output_path.resolve()
-        type_to_output_map[type] = output_path
+        type_to_output_map[dsdl_type] = output_path
 
     return type_to_output_map

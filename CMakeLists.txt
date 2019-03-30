@@ -17,7 +17,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 #
 # Update and make sure our submodule dependencies are updated.
 #
-find_package(Submodules REQUIRED)
+find_package(Submodules QUIET)
 
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/test/gentest_dsdl/dsdl/README.md")
 	message(FATAL_ERROR "The dsdl submodule was not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
@@ -190,13 +190,7 @@ endfunction(make_gentest)
 #
 # Test : All Python Unit Tests
 #
-set(PYTEST_COV_CONFIG ${CMAKE_BINARY_DIR}/coveragerc)
-set(PYCOVERAGE_DATA_FILE ${CMAKE_BINARY_DIR}/.coverage)
 
-configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/test/coveragerc"
-        "${PYTEST_COV_CONFIG}"
-        @ONLY)
 
 #
 # Define a phony target that will run all testgen_[generation test name] targets. Dependencies
@@ -219,7 +213,7 @@ make_gentest(json .json)
 #
 add_test(NAME test_pydsdlgen
     COMMAND ${PYTEST} --cov=pydsdlgen
-                      --cov-config ${PYTEST_COV_CONFIG}
+                      --cov-config=${CMAKE_CURRENT_SOURCE_DIR}/tox.ini
                       --cov-append
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test)
 

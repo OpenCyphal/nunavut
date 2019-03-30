@@ -13,6 +13,9 @@ __pycache__
 pydsdlgen_out
 *.egg-info
 *.patch
+.tox
+.coverage
+.venv
 
 # Eclipse
 .metadata

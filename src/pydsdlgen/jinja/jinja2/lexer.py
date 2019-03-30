@@ -48,8 +48,8 @@ else:
     # remove the pattern from memory after building the regex
     import sys
     del sys.modules['pydsdlgen.jinja.jinja2._identifier']
-    import pydsdlgen.jinja.jinja2 as jinja2
-    del jinja2._identifier
+    from pydsdlgen.jinja import jinja2 as jinja2_i
+    del jinja2_i._identifier
     del _identifier
 
 float_re = re.compile(r'(?<!\.)\d+\.\d+')
