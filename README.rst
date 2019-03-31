@@ -4,7 +4,7 @@ README
 
 Generate Code from DSDL using pydsdl and jinja2
 
-|badge_forum|_ |badge_docs|_ |badge_codacy|_
+|badge_forum|_ |badge_docs|_ |badge_analysis|_ |badge_build|_
 
 - `UAVCAN website`_
 - `UAVCAN forum`_
@@ -13,10 +13,31 @@ Generate Code from DSDL using pydsdl and jinja2
 
 **This is a pre-release repository. Things will change and break until we declare a v1 and push to pypi.**
 
+************************************************
+Building The Docs
+************************************************
+
+We rely on `read the docs`_ to build our documentation from github but you can build a local copy using
+a virtual environment::
+
+    cd path/to/pydsdlgen
+    virtualenv -p python3 .venv
+    . .venv/bin/activate
+    pip install -r requirements.txt
+    cd src
+    sphinx-build -b html . out
+
+
+You can preview them by either opening out/index.html or starting a webserver::
+
+    python -m http.server --directory out
+
 ----
 
 .. _`UAVCAN website`: http://uavcan.org
 .. _`UAVCAN forum`: https://forum.uavcan.org
+
+.. _`read the docs`: https://readthedocs.org/
 
 .. |badge_forum| image:: https://img.shields.io/discourse/https/forum.uavcan.org/users.svg
     :alt: UAVCAN forum
@@ -26,6 +47,10 @@ Generate Code from DSDL using pydsdl and jinja2
     :alt: Documentation Status
 .. _badge_docs: https://pydsdlgen.readthedocs.io/en/latest/?badge=latest
 
-.. |badge_codacy| image:: https://api.codacy.com/project/badge/Grade/858eba5d6b734c5ca679ee7a2dc5e83a
+.. |badge_analysis| image:: https://api.codacy.com/project/badge/Grade/858eba5d6b734c5ca679ee7a2dc5e83a
     :alt: Codacy reports
-.. _badge_codacy: https://www.codacy.com/app/UAVCAN/pydsdlgen
+.. _badge_analysis: https://www.codacy.com/app/UAVCAN/pydsdlgen
+
+.. |badge_build| image:: https://travis-ci.org/UAVCAN/pydsdlgen.svg?branch=master
+    :alt: Build status
+.. _badge_build: https://travis-ci.org/UAVCAN/pydsdlgen
