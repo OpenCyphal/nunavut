@@ -7,7 +7,6 @@ before_install:
 - sudo apt-get install -y tree
 - git submodule update --init --recursive
 - docker pull uavcan/toxic:py35-py38
-- pip install codacy-coverage
 
 install:
 - "echo $TRAVIS_BUILD_DIR"
@@ -17,4 +16,3 @@ script:
 
 after_success:
 - tree
-- python-codacy-coverage -r test/coverage.xml
