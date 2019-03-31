@@ -17,6 +17,7 @@ pydsdlgen_out
 .coverage
 .venv
 coverage.xml
+.out
 
 # Eclipse
 .metadata

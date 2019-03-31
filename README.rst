@@ -25,12 +25,12 @@ a virtual environment::
     . .venv/bin/activate
     pip install -r requirements.txt
     cd src
-    sphinx-build -b html . out
+    sphinx-build -b html . .out
 
 
 You can preview them by either opening out/index.html or starting a webserver::
 
-    python -m http.server --directory out
+    python -m http.server --directory .out
 
 ----
 
@@ -47,9 +47,9 @@ You can preview them by either opening out/index.html or starting a webserver::
     :alt: Documentation Status
 .. _badge_docs: https://pydsdlgen.readthedocs.io/en/latest/?badge=latest
 
-.. |badge_analysis| image:: https://api.codacy.com/project/badge/Grade/858eba5d6b734c5ca679ee7a2dc5e83a
+.. |badge_analysis| image:: https://api.codacy.com/project/badge/Grade/a1243d78c7754d10bb24481c4341d99e
     :alt: Codacy reports
-.. _badge_analysis: https://www.codacy.com/app/UAVCAN/pydsdlgen
+.. _badge_analysis: https://www.codacy.com/app/thirtytwobits/pydsdlgen?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=UAVCAN/pydsdlgen&amp;utm_campaign=Badge_Grade
 
 .. |badge_build| image:: https://travis-ci.org/UAVCAN/pydsdlgen.svg?branch=master
     :alt: Build status
