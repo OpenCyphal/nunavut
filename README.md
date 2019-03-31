@@ -17,9 +17,9 @@ toxic           latest         d7ab132649d6
 ```
 ```
 # We use the range of python environments supported as the version tag.
-docker tag d7ab132649d6 uavcan/toxic/py35-py38
+docker tag d7ab132649d6 uavcan/toxic:py35-py38
 docker login --username=yourhubusername
-docker push toxic/py35-py38
+docker push uavcan/toxic:py35-py38
 ```
 
 ## Use locally
@@ -50,7 +50,7 @@ docker run --rm -it -v /path/to/pydsdlgen:/pydsdlgen uavcan/toxic:py35-py38
 
 ## Travis CI
 
-This is untested but something like this in your .travis.yml should work:
+You can use this in your .travis.yml like this:
 
 ```
 language: python
@@ -63,5 +63,6 @@ before_install:
 - docker pull uavcan/toxic:py35-py38
 
 script:
-- docker run --rm -v $TRAVIS_BUILD_DIR:/pydsdlgen uavcan/toxic:py35-py38 /bin/sh -c "tox"
+- docker run --rm -v $TRAVIS_BUILD_DIR:/pydsdlgen uavcan/toxic:py35-py38 /bin/sh -c tox
+
 ```
