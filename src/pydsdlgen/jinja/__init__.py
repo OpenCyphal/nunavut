@@ -13,7 +13,7 @@ from pathlib import Path, PurePath
 from typing import Dict, List, Any, Callable
 from typing import Generator as GeneratorType
 
-from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader, Template,
+from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader,
                                     TemplateAssertionError, nodes)
 
 from pydsdlgen.jinja.jinja2.ext import Extension

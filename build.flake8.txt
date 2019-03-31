@@ -1,0 +1,605 @@
+src/dsdlgenj:98:101: E501 line too long (103 > 100 characters)
+                        help="A path to a directory containing templates to use when generating code.")
+                                                                                                    ^
+1     E501 line too long (103 > 100 characters)
+0.113      seconds elapsed
+91         total logical lines processed
+805        logical lines processed per second
+179        total physical lines processed
+1583       physical lines processed per second
+781        total tokens processed
+6910       tokens processed per second
+1          total files processed
+8          files processed per second
+src/dsdlgenj:98:101: E501 line too long (103 > 100 characters)
+                        help="A path to a directory containing templates to use when generating code.")
+                                                                                                    ^
+1     E501 line too long (103 > 100 characters)
+0.113      seconds elapsed
+91         total logical lines processed
+807        logical lines processed per second
+179        total physical lines processed
+1587       physical lines processed per second
+781        total tokens processed
+6927       tokens processed per second
+1          total files processed
+8          files processed per second
+0.116      seconds elapsed
+91         total logical lines processed
+784        logical lines processed per second
+179        total physical lines processed
+1543       physical lines processed per second
+781        total tokens processed
+6735       tokens processed per second
+1          total files processed
+8          files processed per second
+0.11       seconds elapsed
+91         total logical lines processed
+827        logical lines processed per second
+179        total physical lines processed
+1628       physical lines processed per second
+781        total tokens processed
+7104       tokens processed per second
+1          total files processed
+9          files processed per second
+0.116      seconds elapsed
+91         total logical lines processed
+781        logical lines processed per second
+179        total physical lines processed
+1537       physical lines processed per second
+781        total tokens processed
+6710       tokens processed per second
+1          total files processed
+8          files processed per second
+src/pydsdlgen/__init__.py:76:19: E261 at least two spaces before inline comment
+    types = list() # type: ignore
+                  ^
+src/pydsdlgen/jinja/__init__.py:16:1: F401 'pydsdlgen.jinja.jinja2.Template' imported but unused
+from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader, Template,
+^
+src/pydsdlgen/jinja/markupsafe/_compat.py:25:17: F821 undefined name 'unicode'
+    text_type = unicode
+                ^
+src/pydsdlgen/jinja/markupsafe/_compat.py:26:26: F821 undefined name 'unicode'
+    string_types = (str, unicode)
+                         ^
+src/pydsdlgen/jinja/markupsafe/_compat.py:28:23: F821 undefined name 'long'
+    int_types = (int, long)
+                      ^
+src/pydsdlgen/jinja/markupsafe/_compat.py:33:5: F401 'collections.Mapping' imported but unused
+    from collections import Mapping
+    ^
+src/pydsdlgen/jinja/jinja2/asyncsupport.py:24:5: E301 expected 1 blank line, found 0
+    async def collect():
+    ^
+src/pydsdlgen/jinja/jinja2/asyncsupport.py:51:5: E306 expected 1 blank line before a nested definition, found 0
+    def generate(self, *args, **kwargs):
+    ^
+src/pydsdlgen/jinja/jinja2/compiler.py:12:1: F401 'copy.deepcopy' imported but unused
+from copy import deepcopy
+^
+src/pydsdlgen/jinja/jinja2/compiler.py:409:5: C901 'CodeGenerator.signature' is too complex (16)
+    def signature(self, node, frame, extra_kwargs=None):
+    ^
+src/pydsdlgen/jinja/jinja2/compiler.py:505:5: C901 'CodeGenerator.macro_body' is too complex (13)
+    def macro_body(self, node, frame):
+    ^
+src/pydsdlgen/jinja/jinja2/compiler.py:540:39: E713 test for membership should be 'not in'
+        if 'kwargs' in undeclared and not 'kwargs' in skip_special_params:
+                                      ^
+src/pydsdlgen/jinja/jinja2/compiler.py:543:40: E713 test for membership should be 'not in'
+        if 'varargs' in undeclared and not 'varargs' in skip_special_params:
+                                       ^
+src/pydsdlgen/jinja/jinja2/compiler.py:695:5: C901 'CodeGenerator.visit_Template' is too complex (15)
+    def visit_Template(self, node, frame=None):
+    ^
+src/pydsdlgen/jinja/jinja2/compiler.py:890:5: C901 'CodeGenerator.visit_Include' is too complex (12)
+    def visit_Include(self, node, frame):
+    ^
+src/pydsdlgen/jinja/jinja2/compiler.py:965:5: C901 'CodeGenerator.visit_FromImport' is too complex (11)
+    def visit_FromImport(self, node, frame):
+    ^
+src/pydsdlgen/jinja/jinja2/compiler.py:1024:5: C901 'CodeGenerator.visit_For' is too complex (23)
+    def visit_For(self, node, frame):
+    ^
+src/pydsdlgen/jinja/jinja2/compiler.py:1033:25: E127 continuation line over-indented for visual indent
+                        find_undeclared(node.iter_child_nodes(
+                        ^
+src/pydsdlgen/jinja/jinja2/compiler.py:1181:13: F841 local variable 'ref' is assigned to but never used
+            ref = frame.symbols.ref(node.name)
+            ^
+src/pydsdlgen/jinja/jinja2/compiler.py:1221:5: C901 'CodeGenerator.visit_Output' is too complex (38)
+    def visit_Output(self, node, frame):
+    ^
+src/pydsdlgen/jinja/jinja2/compiler.py:1234:17: E731 do not assign a lambda expression, use a def
+                finalize = lambda x: text_type(
+                ^
+src/pydsdlgen/jinja/jinja2/compiler.py:1237:17: E731 do not assign a lambda expression, use a def
+                finalize = lambda x: text_type(self.environment.finalize(x))
+                ^
+src/pydsdlgen/jinja/jinja2/compiler.py:1352:32: E128 continuation line under-indented for visual indent
+                               'evalcontextfunction', False):
+                               ^
+src/pydsdlgen/jinja/jinja2/compiler.py:1355:32: E128 continuation line under-indented for visual indent
+                               'environmentfunction', False):
+                               ^
+src/pydsdlgen/jinja/jinja2/compiler.py:1410:76: E502 the backslash is redundant between brackets
+            if not (load is not None and load[0] == VAR_LOAD_PARAMETER and \
+                                                                           ^
+src/pydsdlgen/jinja/jinja2/compiler.py:1619:24: E128 continuation line under-indented for visual indent
+                       'no else section was defined.' % self.position(node)))
+                       ^
+src/pydsdlgen/jinja/jinja2/loaders.py:195:63: E211 whitespace before '['
+                    template = os.path.join(dirpath, filename) \
+                                                              ^
+src/pydsdlgen/jinja/jinja2/loaders.py:241:13: E306 expected 1 blank line before a nested definition, found 0
+            def uptodate():
+            ^
+src/pydsdlgen/jinja/jinja2/loaders.py:258:9: E306 expected 1 blank line before a nested definition, found 0
+        def _walk(path):
+        ^
+src/pydsdlgen/jinja/jinja2/loaders.py:449:13: E128 continuation line under-indented for visual indent
+            lambda x: sys.modules.pop(package_name, None))
+            ^
+src/pydsdlgen/jinja/jinja2/runtime.py:37:1: E731 do not assign a lambda expression, use a def
+identity = lambda x: x
+^
+src/pydsdlgen/jinja/jinja2/runtime.py:119:14: E127 continuation line over-indented for visual indent
+             resolve_or_missing is default_resolve_or_missing:
+             ^
+src/pydsdlgen/jinja/jinja2/runtime.py:234:5: C901 'Context.call' is too complex (11)
+    @internalcode
+    ^
+src/pydsdlgen/jinja/jinja2/runtime.py:280:9: E731 do not assign a lambda expression, use a def
+        proxy = lambda self: getattr(self.get_all(), meth)()
+        ^
+src/pydsdlgen/jinja/jinja2/runtime.py:496:5: C901 'Macro.__call__' is too complex (14)
+    @internalcode
+    ^
+src/pydsdlgen/jinja/jinja2/runtime.py:672:1: C901 'make_logging_undefined' is too complex (16)
+def make_logging_undefined(logger=None, base=None):
+^
+src/pydsdlgen/jinja/jinja2/parser.py:232:13: F841 local variable 'lineno' is assigned to but never used
+            lineno = self.stream.current.lineno
+            ^
+src/pydsdlgen/jinja/jinja2/parser.py:252:45: E127 continuation line over-indented for visual indent
+                                            drop_needle=True)
+                                            ^
+src/pydsdlgen/jinja/jinja2/parser.py:304:5: C901 'Parser.parse_from' is too complex (11)
+    def parse_from(self):
+    ^
+src/pydsdlgen/jinja/jinja2/parser.py:612:13: E731 do not assign a lambda expression, use a def
+            parse = lambda: self.parse_expression(with_condexpr=False)
+            ^
+src/pydsdlgen/jinja/jinja2/parser.py:853:5: C901 'Parser.subparse' is too complex (16)
+    def subparse(self, end_tokens=None):
+    ^
+src/pydsdlgen/jinja/jinja2/sandbox.py:51:1: E402 module level import not at top of file
+import warnings
+^
+src/pydsdlgen/jinja/jinja2/sandbox.py:57:1: E402 module level import not at top of file
+from collections import deque
+^
+src/pydsdlgen/jinja/jinja2/sandbox.py:169:1: C901 'is_internal_attribute' is too complex (14)
+def is_internal_attribute(obj, attr):
+^
+src/pydsdlgen/jinja/jinja2/sandbox.py:315:5: E303 too many blank lines (2)
+    def __init__(self, *args, **kwargs):
+    ^
+src/pydsdlgen/jinja/jinja2/sandbox.py:399:13: E122 continuation line missing indentation or outdented
+            attribute,
+            ^
+src/pydsdlgen/jinja/jinja2/sandbox.py:400:13: E122 continuation line missing indentation or outdented
+            obj.__class__.__name__
+            ^
+src/pydsdlgen/jinja/jinja2/sandbox.py:401:9: E122 continuation line missing indentation or outdented
+        ), name=attribute, obj=obj, exc=SecurityError)
+        ^
+src/pydsdlgen/jinja/jinja2/sandbox.py:463:1: E302 expected 2 blank lines, found 1
+class SandboxedFormatter(SandboxedFormatterMixin, Formatter):
+^
+src/pydsdlgen/jinja/jinja2/sandbox.py:469:1: E302 expected 2 blank lines, found 1
+class SandboxedEscapeFormatter(SandboxedFormatterMixin, EscapeFormatter):
+^
+src/pydsdlgen/jinja/jinja2/utils.py:203:5: E731 do not assign a lambda expression, use a def
+    trim_url = lambda x, limit=trim_url_limit: limit is not None \
+    ^
+src/pydsdlgen/jinja/jinja2/utils.py:204:26: E127 continuation line over-indented for visual indent
+                         and (x[:limit] + (len(x) >=limit and '...'
+                         ^
+src/pydsdlgen/jinja/jinja2/utils.py:204:53: E225 missing whitespace around operator
+                         and (x[:limit] + (len(x) >=limit and '...'
+                                                    ^
+src/pydsdlgen/jinja/jinja2/utils.py:205:26: E128 continuation line under-indented for visual indent
+                         or '')) or x
+                         ^
+src/pydsdlgen/jinja/jinja2/utils.py:223:17: E125 continuation line with same indent as next logical line
+                )):
+                ^
+src/pydsdlgen/jinja/jinja2/utils.py:225:21: E128 continuation line under-indented for visual indent
+                    rel_attr, target_attr, trim_url(middle))
+                    ^
+src/pydsdlgen/jinja/jinja2/utils.py:229:21: E128 continuation line under-indented for visual indent
+                    rel_attr, target_attr, trim_url(middle))
+                    ^
+src/pydsdlgen/jinja/jinja2/utils.py:231:16: E713 test for membership should be 'not in'
+               not ':' in middle and _simple_email_re.match(middle):
+               ^
+src/pydsdlgen/jinja/jinja2/utils.py:238:1: C901 'generate_lorem_ipsum' is too complex (11)
+def generate_lorem_ipsum(n=5, html=True, min=20, max=100):
+^
+src/pydsdlgen/jinja/jinja2/utils.py:528:5: E306 expected 1 blank line before a nested definition, found 0
+    def autoescape(template_name):
+    ^
+src/pydsdlgen/jinja/jinja2/utils.py:642:1: E402 module level import not at top of file
+from pydsdlgen.jinja.markupsafe import Markup, escape, soft_unicode
+^
+src/pydsdlgen/jinja/jinja2/utils.py:642:1: F401 'pydsdlgen.jinja.markupsafe.soft_unicode' imported but unused
+from pydsdlgen.jinja.markupsafe import Markup, escape, soft_unicode
+^
+src/pydsdlgen/jinja/jinja2/debug.py:70:5: E306 expected 1 blank line before a nested definition, found 0
+    def operation_handler(operation, *args, **kwargs):
+    ^
+src/pydsdlgen/jinja/jinja2/debug.py:165:5: F841 local variable 'initial_tb' is assigned to but never used
+    initial_tb = tb
+    ^
+src/pydsdlgen/jinja/jinja2/debug.py:284:5: F841 local variable 'e' is assigned to but never used
+    except Exception as e:
+    ^
+src/pydsdlgen/jinja/jinja2/debug.py:290:5: E722 do not use bare 'except'
+    except:
+    ^
+src/pydsdlgen/jinja/jinja2/debug.py:370:5: E722 do not use bare 'except'
+    except:
+    ^
+src/pydsdlgen/jinja/jinja2/lexer.py:422:9: E731 do not assign a lambda expression, use a def
+        c = lambda x: re.compile(x, re.M | re.S)
+        ^
+src/pydsdlgen/jinja/jinja2/lexer.py:497:91: E231 missing whitespace after ','
+                        r'(?P<%s_begin>\s*%s\-|[ \t]*%s\*|%s)' % (n, r, r, prefix_re.get(n,r))
+                                                                                          ^
+src/pydsdlgen/jinja/jinja2/lexer.py:559:5: C901 'Lexer.wrap' is too complex (16)
+    def wrap(self, stream, name=None, filename=None):
+    ^
+src/pydsdlgen/jinja/jinja2/lexer.py:600:5: C901 'Lexer.tokeniter' is too complex (31)
+    def tokeniter(self, source, name, filename=None, state=None):
+    ^
+src/pydsdlgen/jinja/jinja2/environment.py:338:13: F401 'pydsdlgen.jinja.jinja2.asyncsupport' imported but unused
+            import pydsdlgen.jinja.jinja2.asyncsupport  # runs patch_all() once
+            ^
+src/pydsdlgen/jinja/jinja2/environment.py:640:5: C901 'Environment.compile_templates' is too complex (16)
+    def compile_templates(self, target, extensions=None, filter_func=None,
+    ^
+src/pydsdlgen/jinja/jinja2/environment.py:668:13: E731 do not assign a lambda expression, use a def
+            log_function = lambda x: None
+            ^
+src/pydsdlgen/jinja/jinja2/environment.py:756:13: E731 do not assign a lambda expression, use a def
+            filter_func = lambda x: '.' in x and \
+            ^
+src/pydsdlgen/jinja/jinja2/_identifier.py:2:161: E501 line too long (642 > 160 characters)
+pattern = '·̀-ͯ·҃-֑҇-ׇֽֿׁׂׅׄؐ-ًؚ-ٰٟۖ-ۜ۟-۪ۤۧۨ-ܑۭܰ-݊ަ-ް߫-߳ࠖ-࠙ࠛ-ࠣࠥ-ࠧࠩ-࡙࠭-࡛ࣔ-ࣣ࣡-ःऺ-़ा-ॏ॑-ॗॢॣঁ-ঃ়া-ৄেৈো-্ৗৢৣਁ-ਃ਼ਾ-ੂੇੈੋ-੍ੑੰੱੵઁ-ઃ઼ા-ૅે-ૉો-્ૢૣଁ-ଃ଼ା-ୄେୈୋ-୍ୖୗୢୣஂா-ூெ-ைொ-்ௗఀ-ఃా-ౄె-ైొ-్ౕౖౢౣಁ-ಃ಼ಾ-ೄೆ-ೈೊ-್ೕೖೢೣഁ-ഃാ-ൄെ-ൈൊ-്ൗൢൣංඃ්ා-ුූෘ-ෟෲෳัิ-ฺ็-๎ັິ-ູົຼ່-ໍ༹༘༙༵༷༾༿ཱ-྄྆྇ྍ-ྗྙ-ྼ࿆ါ-ှၖ-ၙၞ-ၠၢ-ၤၧ-ၭၱ-ၴႂ-ႍႏႚ-ႝ፝-፟ᜒ-᜔ᜲ-᜴ᝒᝓᝲᝳ឴-៓៝᠋-᠍ᢅᢆᢩᤠ-ᤫᤰ-᤻ᨗ-ᨛᩕ-ᩞ᩠-᩿᩼᪰-᪽ᬀ-ᬄ᬴-᭄᭫-᭳ᮀ-ᮂᮡ-ᮭ᯦-᯳ᰤ-᰷᳐-᳔᳒-᳨᳭ᳲ-᳴᳸᳹᷀-᷵᷻-᷿‿⁀⁔⃐-⃥⃜⃡-⃰℘℮⳯-⵿⳱ⷠ-〪ⷿ-゙゚〯꙯ꙴ-꙽ꚞꚟ꛰꛱ꠂ꠆ꠋꠣ-ꠧꢀꢁꢴ-ꣅ꣠-꣱ꤦ-꤭ꥇ-꥓ꦀ-ꦃ꦳-꧀ꧥꨩ-ꨶꩃꩌꩍꩻ-ꩽꪰꪲ-ꪴꪷꪸꪾ꪿꫁ꫫ-ꫯꫵ꫶ꯣ-ꯪ꯬꯭ﬞ︀-️︠-︯︳︴﹍-﹏＿𐇽𐋠𐍶-𐍺𐨁-𐨃𐨅𐨆𐨌-𐨏𐨸-𐨿𐨺𐫦𐫥𑀀-𑀂𑀸-𑁆𑁿-𑂂𑂰-𑂺𑄀-𑄂𑄧-𑅳𑄴𑆀-𑆂𑆳-𑇊𑇀-𑇌𑈬-𑈷𑈾𑋟-𑋪𑌀-𑌃𑌼𑌾-𑍄𑍇𑍈𑍋-𑍍𑍗𑍢𑍣𑍦-𑍬𑍰-𑍴𑐵-𑑆𑒰-𑓃𑖯-𑖵𑖸-𑗀𑗜𑗝𑘰-𑙀𑚫-𑚷𑜝-𑜫𑰯-𑰶𑰸-𑰿𑲒-𑲧𑲩-𑲶𖫰-𖫴𖬰-𖬶𖽑-𖽾𖾏-𖾒𛲝𛲞𝅥-𝅩𝅭-𝅲𝅻-𝆂𝆅-𝆋𝆪-𝆭𝉂-𝉄𝨀-𝨶𝨻-𝩬𝩵𝪄𝪛-𝪟𝪡-𝪯𞀀-𞀆𞀈-𞀘𞀛-𞀡𞀣𞀤𞀦-𞣐𞀪-𞣖𞥄-𞥊󠄀-󠇯'
+                                                                                                                                                                ^
+src/pydsdlgen/jinja/jinja2/optimizer.py:46:5: E122 continuation line missing indentation or outdented
+    visit_Pow = visit_Mod = visit_And = visit_Or = visit_Pos = visit_Neg = \
+    ^
+src/pydsdlgen/jinja/jinja2/optimizer.py:47:5: E122 continuation line missing indentation or outdented
+    visit_Not = visit_Compare = visit_Getitem = visit_Getattr = visit_Call = \
+    ^
+src/pydsdlgen/jinja/jinja2/optimizer.py:48:5: E122 continuation line missing indentation or outdented
+    visit_Filter = visit_Test = visit_CondExpr = fold
+    ^
+src/pydsdlgen/jinja/jinja2/exceptions.py:17:5: C901 'If 17' is too complex (12)
+    if PY2:
+    ^
+src/pydsdlgen/jinja/jinja2/defaults.py:31:1: E402 module level import not at top of file
+from pydsdlgen.jinja.jinja2.filters import FILTERS as DEFAULT_FILTERS
+^
+src/pydsdlgen/jinja/jinja2/defaults.py:31:1: F401 'pydsdlgen.jinja.jinja2.filters.FILTERS as DEFAULT_FILTERS' imported but unused
+from pydsdlgen.jinja.jinja2.filters import FILTERS as DEFAULT_FILTERS
+^
+src/pydsdlgen/jinja/jinja2/defaults.py:32:1: E402 module level import not at top of file
+from pydsdlgen.jinja.jinja2.tests import TESTS as DEFAULT_TESTS
+^
+src/pydsdlgen/jinja/jinja2/defaults.py:32:1: F401 'pydsdlgen.jinja.jinja2.tests.TESTS as DEFAULT_TESTS' imported but unused
+from pydsdlgen.jinja.jinja2.tests import TESTS as DEFAULT_TESTS
+^
+src/pydsdlgen/jinja/jinja2/nativetypes.py:42:5: C901 'NativeCodeGenerator.visit_Output' is too complex (38)
+    def visit_Output(self, node, frame):
+    ^
+src/pydsdlgen/jinja/jinja2/_compat.py:17:1: E731 do not assign a lambda expression, use a def
+_identity = lambda x: x
+^
+src/pydsdlgen/jinja/jinja2/_compat.py:27:5: E731 do not assign a lambda expression, use a def
+    iterkeys = lambda d: iter(d.keys())
+    ^
+src/pydsdlgen/jinja/jinja2/_compat.py:28:5: E731 do not assign a lambda expression, use a def
+    itervalues = lambda d: iter(d.values())
+    ^
+src/pydsdlgen/jinja/jinja2/_compat.py:29:5: E731 do not assign a lambda expression, use a def
+    iteritems = lambda d: iter(d.items())
+    ^
+src/pydsdlgen/jinja/jinja2/_compat.py:51:17: F821 undefined name 'unicode'
+    text_type = unicode
+                ^
+src/pydsdlgen/jinja/jinja2/_compat.py:52:18: F821 undefined name 'xrange'
+    range_type = xrange
+                 ^
+src/pydsdlgen/jinja/jinja2/_compat.py:53:26: F821 undefined name 'unicode'
+    string_types = (str, unicode)
+                         ^
+src/pydsdlgen/jinja/jinja2/_compat.py:54:27: F821 undefined name 'long'
+    integer_types = (int, long)
+                          ^
+src/pydsdlgen/jinja/jinja2/_compat.py:56:5: E731 do not assign a lambda expression, use a def
+    iterkeys = lambda d: d.iterkeys()
+    ^
+src/pydsdlgen/jinja/jinja2/_compat.py:57:5: E731 do not assign a lambda expression, use a def
+    itervalues = lambda d: d.itervalues()
+    ^
+src/pydsdlgen/jinja/jinja2/_compat.py:58:5: E731 do not assign a lambda expression, use a def
+    iteritems = lambda d: d.iteritems()
+    ^
+src/pydsdlgen/jinja/jinja2/_compat.py:60:5: F401 'cPickle as pickle' imported but unused
+    import cPickle as pickle
+    ^
+src/pydsdlgen/jinja/jinja2/_compat.py:66:5: F401 'itertools.ifilter' imported but unused
+    from itertools import imap, izip, ifilter
+    ^
+src/pydsdlgen/jinja/jinja2/_compat.py:66:5: F401 'itertools.imap' imported but unused
+    from itertools import imap, izip, ifilter
+    ^
+src/pydsdlgen/jinja/jinja2/_compat.py:66:5: F401 'itertools.izip' imported but unused
+    from itertools import imap, izip, ifilter
+    ^
+src/pydsdlgen/jinja/jinja2/_compat.py:80:33: F821 undefined name 'unicode'
+        if isinstance(filename, unicode):
+                                ^
+src/pydsdlgen/jinja/jinja2/_compat.py:99:5: F401 'urllib.quote as url_quote' imported but unused
+    from urllib import quote as url_quote
+    ^
+src/pydsdlgen/jinja/jinja2/_compat.py:105:5: F401 'collections as abc' imported but unused
+    import collections as abc
+    ^
+src/pydsdlgen/jinja/jinja2/nodes.py:50:10: E272 multiple spaces before keyword
+    'in':       lambda a, b: a in b,
+         ^
+src/pydsdlgen/jinja/jinja2/nodes.py:51:13: E272 multiple spaces before keyword
+    'notin':    lambda a, b: a not in b
+            ^
+src/pydsdlgen/jinja/jinja2/nodes.py:275:1: E303 too many blank lines (3)
+class Stmt(Node):
+^
+src/pydsdlgen/jinja/jinja2/nodes.py:748:9: E306 expected 1 blank line before a nested definition, found 0
+        def const(obj):
+        ^
+src/pydsdlgen/jinja/jinja2/nodes.py:789:1: E305 expected 2 blank lines after class or function definition, found 1
+if __debug__:
+^
+src/pydsdlgen/jinja/jinja2/nodes.py:999:1: E305 expected 2 blank lines after class or function definition, found 0
+NodeType.__new__ = staticmethod(_failing_new); del _failing_new
+^
+src/pydsdlgen/jinja/jinja2/nodes.py:999:46: E702 multiple statements on one line (semicolon)
+NodeType.__new__ = staticmethod(_failing_new); del _failing_new
+                                             ^
+src/pydsdlgen/jinja/jinja2/tests.py:101:5: E722 do not use bare 'except'
+    except:
+    ^
+src/pydsdlgen/jinja/jinja2/bccache.py:37:26: F821 undefined name 'file'
+        if isinstance(f, file):
+                         ^
+src/pydsdlgen/jinja/jinja2/bccache.py:43:26: F821 undefined name 'file'
+        if isinstance(f, file):
+                         ^
+src/pydsdlgen/jinja/jinja2/bccache.py:219:5: C901 'FileSystemBytecodeCache._get_default_cache_dir' is too complex (12)
+    def _get_default_cache_dir(self):
+    ^
+src/pydsdlgen/jinja/jinja2/filters.py:22:1: F401 'pydsdlgen.jinja.jinja2._compat.PY2' imported but unused
+from pydsdlgen.jinja.jinja2._compat import imap, string_types, text_type, iteritems, PY2
+^
+src/pydsdlgen/jinja/jinja2/filters.py:590:1: E302 expected 2 blank lines, found 1
+def do_lineprefix(s, prefix):
+^
+src/pydsdlgen/jinja/jinja2/filters.py:607:1: E302 expected 2 blank lines, found 1
+@environmentfilter
+^
+src/pydsdlgen/jinja/jinja2/filters.py:662:36: E128 continuation line under-indented for visual indent
+                                   replace_whitespace=False,
+                                   ^
+src/pydsdlgen/jinja/jinja2/filters.py:663:36: E128 continuation line under-indented for visual indent
+                                   break_long_words=break_long_words))
+                                   ^
+src/pydsdlgen/jinja/jinja2/filters.py:824:8: E713 test for membership should be 'not in'
+    if not method in ('common', 'ceil', 'floor'):
+       ^
+src/pydsdlgen/jinja/jinja2/filters.py:841:1: E302 expected 2 blank lines, found 1
+@environmentfilter
+^
+src/pydsdlgen/jinja/jinja2/filters.py:1119:17: E128 continuation line under-indented for visual indent
+                next(iter(kwargs)))
+                ^
+src/pydsdlgen/jinja/jinja2/filters.py:1127:9: E731 do not assign a lambda expression, use a def
+        func = lambda item: context.environment.call_filter(
+        ^
+src/pydsdlgen/jinja/jinja2/filters.py:1145:9: E731 do not assign a lambda expression, use a def
+        transfunc = lambda x: x
+        ^
+src/pydsdlgen/jinja/jinja2/filters.py:1150:9: E731 do not assign a lambda expression, use a def
+        func = lambda item: context.environment.call_test(
+        ^
+src/pydsdlgen/jinja/jinja2/ext.py:217:5: C901 'InternationalizationExtension.parse' is too complex (22)
+    def parse(self, parser):
+    ^
+src/pydsdlgen/jinja/jinja2/ext.py:437:1: C901 'extract_from_ast' is too complex (11)
+def extract_from_ast(node, gettext_functions=GETTEXT_FUNCTIONS,
+^
+src/pydsdlgen/jinja/jinja2/ext.py:542:1: C901 'babel_extract' is too complex (11)
+def babel_extract(fileobj, keywords, comment_tags, options):
+^
+src/pydsdlgen/jinja/jinja2/ext.py:611:5: F841 local variable 'e' is assigned to but never used
+    except TemplateSyntaxError as e:
+    ^
+src/pydsdlgen/jinja/jinja2/meta.py:60:1: C901 'find_referenced_templates' is too complex (11)
+def find_referenced_templates(ast):
+^
+src/pydsdlgen/jinja/jinja2/meta.py:100:14: E127 continuation line over-indented for visual indent
+             isinstance(node.template.value, (tuple, list)):
+             ^
+src/pydsdlgen/jinja/jinja2/asyncfilters.py:30:9: E731 do not assign a lambda expression, use a def
+        is_async = lambda args: args[0].is_async
+        ^
+src/pydsdlgen/jinja/jinja2/asyncfilters.py:36:9: E731 do not assign a lambda expression, use a def
+        is_async = lambda args: args[0].environment.is_async
+        ^
+src/pydsdlgen/jinja/jinja2/asyncfilters.py:121:9: E731 do not assign a lambda expression, use a def
+        func = lambda x: x
+        ^
+24    C901 'FileSystemBytecodeCache._get_default_cache_dir' is too complex (12)
+6     E122 continuation line missing indentation or outdented
+1     E125 continuation line with same indent as next logical line
+5     E127 continuation line over-indented for visual indent
+10    E128 continuation line under-indented for visual indent
+1     E211 whitespace before '['
+1     E225 missing whitespace around operator
+1     E231 missing whitespace after ','
+1     E261 at least two spaces before inline comment
+2     E272 multiple spaces before keyword
+1     E301 expected 1 blank line, found 0
+5     E302 expected 2 blank lines, found 1
+2     E303 too many blank lines (3)
+2     E305 expected 2 blank lines after class or function definition, found 1
+6     E306 expected 1 blank line before a nested definition, found 0
+5     E402 module level import not at top of file
+1     E501 line too long (642 > 160 characters)
+1     E502 the backslash is redundant between brackets
+1     E702 multiple statements on one line (semicolon)
+4     E713 test for membership should be 'not in'
+3     E722 do not use bare 'except'
+22    E731 do not assign a lambda expression, use a def
+14    F401 'pydsdlgen.jinja.jinja2.Template' imported but unused
+10    F821 undefined name 'unicode'
+5     F841 local variable 'ref' is assigned to but never used
+0.781      seconds elapsed
+8161       total logical lines processed
+10449      logical lines processed per second
+13892      total physical lines processed
+17787      physical lines processed per second
+73253      total tokens processed
+93793      tokens processed per second
+40         total files processed
+51         files processed per second
+src/pydsdlgen/__init__.py:76:19: E261 at least two spaces before inline comment
+    types = list() # type: ignore
+                  ^
+src/pydsdlgen/jinja/__init__.py:16:1: F401 'pydsdlgen.jinja.jinja2.Template' imported but unused
+from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader, Template,
+^
+src/pydsdlgen/jinja/markupsafe/_compat.py:25:17: F821 undefined name 'unicode'
+    text_type = unicode
+                ^
+src/pydsdlgen/jinja/markupsafe/_compat.py:26:26: F821 undefined name 'unicode'
+    string_types = (str, unicode)
+                         ^
+src/pydsdlgen/jinja/markupsafe/_compat.py:28:23: F821 undefined name 'long'
+    int_types = (int, long)
+                      ^
+src/pydsdlgen/jinja/markupsafe/_compat.py:33:5: F401 'collections.Mapping' imported but unused
+    from collections import Mapping
+    ^
+1     E261 at least two spaces before inline comment
+2     F401 'pydsdlgen.jinja.jinja2.Template' imported but unused
+3     F821 undefined name 'unicode'
+0.234      seconds elapsed
+638        total logical lines processed
+2731       logical lines processed per second
+1503       total physical lines processed
+6434       physical lines processed per second
+6469       total tokens processed
+27695      tokens processed per second
+13         total files processed
+55         files processed per second
+src/pydsdlgen/__init__.py:76:19: E261 at least two spaces before inline comment
+    types = list() # type: ignore
+                  ^
+src/pydsdlgen/jinja/__init__.py:16:1: F401 'pydsdlgen.jinja.jinja2.Template' imported but unused
+from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader, Template,
+^
+1     E261 at least two spaces before inline comment
+1     F401 'pydsdlgen.jinja.jinja2.Template' imported but unused
+0.227      seconds elapsed
+413        total logical lines processed
+1817       logical lines processed per second
+810        total physical lines processed
+3563       physical lines processed per second
+3084       total tokens processed
+13569      tokens processed per second
+9          total files processed
+39         files processed per second
+src/pydsdlgen/__init__.py:76:19: E261 at least two spaces before inline comment
+    types = list() # type: ignore
+                  ^
+src/pydsdlgen/jinja/__init__.py:16:1: F401 'pydsdlgen.jinja.jinja2.Template' imported but unused
+from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader, Template,
+^
+1     E261 at least two spaces before inline comment
+1     F401 'pydsdlgen.jinja.jinja2.Template' imported but unused
+0.87       seconds elapsed
+413        total logical lines processed
+474        logical lines processed per second
+810        total physical lines processed
+930        physical lines processed per second
+3084       total tokens processed
+3544       tokens processed per second
+9          total files processed
+10         files processed per second
+src/pydsdlgen/__init__.py:76:19: E261 at least two spaces before inline comment
+    types = list() #  type: ignore
+                  ^
+src/pydsdlgen/__init__.py:76:20: E262 inline comment should start with '# '
+    types = list() #  type: ignore
+                   ^
+src/pydsdlgen/jinja/__init__.py:16:1: F401 'pydsdlgen.jinja.jinja2.Template' imported but unused
+from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader, Template,
+^
+1     E261 at least two spaces before inline comment
+1     E262 inline comment should start with '# '
+1     F401 'pydsdlgen.jinja.jinja2.Template' imported but unused
+0.334      seconds elapsed
+413        total logical lines processed
+1236       logical lines processed per second
+810        total physical lines processed
+2425       physical lines processed per second
+3084       total tokens processed
+9236       tokens processed per second
+9          total files processed
+26         files processed per second
+src/pydsdlgen/jinja/__init__.py:16:1: F401 'pydsdlgen.jinja.jinja2.Template' imported but unused
+from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader, Template,
+^
+1     F401 'pydsdlgen.jinja.jinja2.Template' imported but unused
+0.304      seconds elapsed
+413        total logical lines processed
+1356       logical lines processed per second
+810        total physical lines processed
+2660       physical lines processed per second
+3084       total tokens processed
+10129      tokens processed per second
+9          total files processed
+29         files processed per second
+0.295      seconds elapsed
+413        total logical lines processed
+1401       logical lines processed per second
+810        total physical lines processed
+2748       physical lines processed per second
+3082       total tokens processed
+10458      tokens processed per second
+9          total files processed
+30         files processed per second
+0.284      seconds elapsed
+413        total logical lines processed
+1456       logical lines processed per second
+810        total physical lines processed
+2856       physical lines processed per second
+3082       total tokens processed
+10869      tokens processed per second
+9          total files processed
+31         files processed per second

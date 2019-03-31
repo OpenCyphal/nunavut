@@ -73,7 +73,7 @@ def parse_all(root_namespaces: Iterable[str], extra_includes: Iterable[str]) -> 
 
     extra_include_paths = _build_paths(extra_includes, True, False)
 
-    types = list()
+    types = list()  # type: ignore
 
     for root_namespace_path in root_namespace_paths:
         types += parse_namespace(root_namespace_path, extra_include_paths)

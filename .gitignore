@@ -16,6 +16,7 @@ pydsdlgen_out
 .tox
 .coverage
 .venv
+coverage.xml
 
 # Eclipse
 .metadata
