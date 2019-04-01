@@ -8,6 +8,7 @@ dsdlgenj
 
    pydsdlgen/lib
    appendix
+   dev
 
 
 *************************************
