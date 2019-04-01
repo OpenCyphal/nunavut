@@ -19,6 +19,7 @@ Running The Tests
 ************************************************
 To run the full suite of tests locally you'll need docker::
 
+    git submodule update --init --recursive
     docker pull uavcan/toxic:py35-py38
     docker run --rm -it -v /path/to/pydsdlgen:/pydsdlgen uavcan/toxic:py35-py38
     tox
