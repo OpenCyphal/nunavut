@@ -14,6 +14,16 @@ Generate Code from DSDL using pydsdl and jinja2
 **This is a pre-release repository. Things will change and break until we declare a v1 and push to pypi.**
 
 ************************************************
+Running The Tests
+************************************************
+To run the full suite of tests locally you'll need docker::
+
+    docker pull uavcan/toxic:py35-py38
+    docker run --rm -it -v /path/to/pydsdlgen:/pydsdlgen uavcan/toxic:py35-py38
+    tox
+
+
+************************************************
 Building The Docs
 ************************************************
 

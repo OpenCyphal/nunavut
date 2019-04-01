@@ -14,7 +14,7 @@ pydsdlgen_out
 *.egg-info
 *.patch
 .tox
-.coverage
+.coverage*
 .venv
 coverage.xml
 .out*

@@ -24,7 +24,6 @@ rope
 # | TEST AND BUILD DEPENDENCIES
 # +---------------------------------------------------------------------------+
 pytest ~= 3.3
-pytest-cov ~= 2.6
 flake8
 coverage
 mypy
@@ -37,3 +36,5 @@ sphinx >= 1.8.5
 sphinx-argparse
 sphinx_rtd_theme
 coveralls
+codacy-coverage
+lxml
