@@ -16,6 +16,12 @@ pydsdlgen_out
 .tox
 .coverage
 .venv
+.dockerup
+.out*
+.pyenv/
+src/
+test/
+_build
 
 # Eclipse
 .metadata

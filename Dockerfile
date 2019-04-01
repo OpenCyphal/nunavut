@@ -3,10 +3,11 @@
 #
 FROM ubuntu:18.04
 
-VOLUME /pydsdlgen
+VOLUME /repo
 
-WORKDIR /pydsdlgen
+WORKDIR /repo
 
 COPY provision.sh /
 
 RUN /provision.sh
+

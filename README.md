@@ -25,19 +25,17 @@ docker push uavcan/toxic:py35-py38
 ## Use locally
 
 ```
-cd /path/to/pydsdlgen
-
-submodule update --init --recursive
+cd /path/to/mymodule
 
 docker pull uavcan/toxic:py35-py38
 
-docker run --rm -t -v /path/to/pydsdlgen:/pydsdlgen uavcan/toxic:py35-py38 /bin/sh -c tox
+docker run --rm -t -v /path/to/myrepo:/repo uavcan/toxic:py35-py38 /bin/sh -c tox
 ```
 
 On macintosh you'll probably want to optimize osxfs with something like cached or delegated:
 
 ```
-docker run --rm -t -v /path/to/pydsdlgen:/pydsdlgen:delegated uavcan/toxic:py35-py38 /bin/sh -c tox
+docker run --rm -t -v /path/to/myrepo:/repo:delegated uavcan/toxic:py35-py38 /bin/sh -c tox
 ```
 
 See ["Performance tuning for volume mounts"](https://docs.docker.com/docker-for-mac/osxfs-caching/) for details.
@@ -45,7 +43,7 @@ See ["Performance tuning for volume mounts"](https://docs.docker.com/docker-for-
 Finally, to enter an interactive shell in this container something like this should work:
 
 ```
-docker run --rm -it -v /path/to/pydsdlgen:/pydsdlgen uavcan/toxic:py35-py38
+docker run --rm -it -v /path/to/myrepo:/repo uavcan/toxic:py35-py38
 ```
 
 ## Travis CI
@@ -63,6 +61,6 @@ before_install:
 - docker pull uavcan/toxic:py35-py38
 
 script:
-- docker run --rm -v $TRAVIS_BUILD_DIR:/pydsdlgen uavcan/toxic:py35-py38 /bin/sh -c tox
+- docker run --rm -v $TRAVIS_BUILD_DIR:/repo uavcan/toxic:py35-py38 /bin/sh -c tox
 
 ```
