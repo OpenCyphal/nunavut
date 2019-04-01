@@ -36,4 +36,4 @@ tox
 sphinx >= 1.8.5
 sphinx-argparse
 sphinx_rtd_theme
-codacy-coverage
+coveralls

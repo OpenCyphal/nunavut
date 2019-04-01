@@ -17,7 +17,7 @@ pydsdlgen_out
 .coverage
 .venv
 coverage.xml
-.out
+.out*
 .docker*
 
 # Eclipse

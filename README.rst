@@ -4,7 +4,7 @@ README
 
 Generate Code from DSDL using pydsdl and jinja2
 
-|badge_forum|_ |badge_docs|_ |badge_analysis|_ |badge_build|_
+|badge_forum|_ |badge_docs|_ |badge_analysis|_ |badge_build|_ |badge_coverage|_
 
 - `UAVCAN website`_
 - `UAVCAN forum`_
@@ -54,3 +54,7 @@ You can preview them by either opening out/index.html or starting a webserver::
 .. |badge_build| image:: https://travis-ci.org/UAVCAN/pydsdlgen.svg?branch=master
     :alt: Build status
 .. _badge_build: https://travis-ci.org/UAVCAN/pydsdlgen
+
+.. |badge_coverage| image:: https://coveralls.io/repos/github/UAVCAN/pydsdlgen/badge.svg
+    :alt: Coverage report
+.. _badge_coverage: https://coveralls.io/github/UAVCAN/pydsdlgen
