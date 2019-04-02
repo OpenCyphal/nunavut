@@ -7,6 +7,7 @@ dsdlgenj
    :hidden:
 
    pydsdlgen/lib
+   templates
    appendix
    dev
 

@@ -11,7 +11,8 @@ Generate Code from DSDL using pydsdl and jinja2
 
 *dsdlgenj* – Script for generating code using Jinja2 templates.
 
-**This is a pre-release repository. Things will change and break until we declare a v1 and push to pypi.**
+**This is a pre-release repository. Things will change and break until we declare a v1 and push to
+pypi.**
 
 ----
 

@@ -31,7 +31,7 @@ mypy
 tox
 
 # +---------------------------------------------------------------------------+
-# | DOCUMENTATION, REPORTING, AND PUBLISHING DEPENDENCIES
+# | DOCUMENTATION AND REPORTING DEPENDENCIES
 # +---------------------------------------------------------------------------+
 sphinx >= 1.8.5
 sphinx-argparse
@@ -39,3 +39,9 @@ sphinx_rtd_theme
 coveralls
 codacy-coverage
 lxml
+
+# +---------------------------------------------------------------------------+
+# | PACKAGING AND DISTRIBUTION DEPENDENCIES
+# +---------------------------------------------------------------------------+
+twine
+wheel

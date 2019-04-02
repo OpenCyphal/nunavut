@@ -1,6 +1,6 @@
-=====================
+#####################
 Contributor Notes
-=====================
+#####################
 
 This is documentation for contributors developing pydsdlgen. If you are
 a user of this software you can ignore everything here.
@@ -71,19 +71,14 @@ To run the full suite of `tox`_ tests locally you'll need docker::
 Building The Docs
 ************************************************
 
-We rely on `read the docs`_ to build our documentation from github but you can build a local
-copy using a virtual environment::
+We rely on `read the docs`_ to build our documentation from github but we also verify this build
+as part of our tox build. This means you can view a local copy after completing a full, successful
+test run (See `Running The Tests`_) or do 
+:code:`docker run --rm -t -v /path/to/pydsdlgen:/repo uavcan/toxic:py35-py38 /bin/sh -c "tox -e docs"`
+to build just the docs target.
+You can open the index.html under src/.out-docs or run a local webserver::
 
-    cd path/to/pydsdlgen
-    virtualenv -p python3 .pyenv
-    . .pyenv/bin/activate
-    pip install -r requirements.txt
-    cd src
-    sphinx-build -b html . .out
-
-You can preview them by either opening out/index.html or starting a web-server::
-
-    python -m http.server --directory .out
+    python -m http.server --directory src/.out-docs
 
 Of course, you can just use `Visual Studio Code`_ to build and preview the docs using
 :code:`> reStructuredText: Open Preview`.
