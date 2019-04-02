@@ -19,6 +19,9 @@ pydsdlgen_out
 coverage.xml
 .out*
 .docker*
+.pyenv
+_build
+.env*
 
 # Eclipse
 .metadata

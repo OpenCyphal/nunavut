@@ -17,7 +17,7 @@ import sys
 
 from pathlib import Path, PurePath
 from pydsdl.data_type import CompoundType
-from pydsdl import parse_namespace
+from pydsdl.namespace import read_namespace
 
 if sys.version_info[:2] < (3, 5):   # pragma: no cover
     print('A newer version of Python is required', file=sys.stderr)
@@ -76,7 +76,7 @@ def parse_all(root_namespaces: Iterable[str], extra_includes: Iterable[str]) -> 
     types = list()  # type: ignore
 
     for root_namespace_path in root_namespace_paths:
-        types += parse_namespace(root_namespace_path, extra_include_paths)
+        types += read_namespace(root_namespace_path, extra_include_paths)
         if len(types) == 0:
             raise RuntimeError(
                 "Root namespace {} yielded no types.".format(root_namespace_path))
