@@ -15,6 +15,7 @@ import os
 import sys
 
 from pathlib import Path
+from typing import Any, Optional
 
 
 def _run(args: argparse.Namespace, extra_includes: str) -> int:
@@ -62,6 +63,25 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
         return 0
 
 
+class _LazyVersionAction(argparse._VersionAction):
+    '''
+    Changes argparse._VersionAction so we only load pydsdlgen.version
+    if the --version action is requested.
+    '''
+
+    def __call__(self,
+                 parser: argparse.ArgumentParser,
+                 namespace: argparse.Namespace,
+                 values: Any,
+                 option_string: Optional[str] = None) -> None:
+        from pydsdlgen.version import __version__
+        version_string = '.'.join(map(str, __version__))
+        formatter = parser._get_formatter()
+        formatter.add_text(version_string)
+        parser._print_message(formatter.format_help(), sys.stdout)
+        parser.exit()
+
+
 def _make_parser() -> argparse.ArgumentParser:
     """
         Defines the command-line interface. Provided as a separate factory method to
@@ -74,7 +94,7 @@ def _make_parser() -> argparse.ArgumentParser:
     # and generate .h files into a directory named 'include' using
     # dsdl root namespaces found under a folder named 'dsdl'.
 
-    dsdlgenj --outdir include --templates c_jinja -e .h dsdl
+    %(prog)s --outdir include --templates c_jinja -e .h dsdl
 
 ----
 '''
@@ -89,6 +109,8 @@ def _make_parser() -> argparse.ArgumentParser:
 
     parser.add_argument('--verbose', '-v', action='count',
                         help='verbosity level (-v, -vv)')
+
+    parser.add_argument('--version', action=_LazyVersionAction)
 
     parser.add_argument(
         '--outdir', '-O', default='pydsdlgen_out', help='output directory')

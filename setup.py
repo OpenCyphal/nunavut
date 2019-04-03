@@ -14,4 +14,8 @@ if int(setuptools.__version__.split('.')[0]) < 30:
           file=sys.stderr)
     sys.exit(1)
 
-setuptools.setup()
+version = {}
+with open('src/pydsdlgen/version.py') as fp:
+    exec(fp.read(), version)
+
+setuptools.setup(version='.'.join(map(str, version['__version__'])))

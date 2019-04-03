@@ -22,6 +22,7 @@ coverage.xml
 .pyenv
 _build
 .env*
+dist
 
 # Eclipse
 .metadata
