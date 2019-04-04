@@ -1,0 +1,19 @@
+
+lang_c = {
+    'namespace': '{{ T.full_namespace }}',
+    'namespace_macrofy': '{{ T.full_namespace | c.macrofy }}',
+{%- for field in T.attributes %}
+    'ctype_std {{ field.data_type }}': '{{ field.data_type | c.type_from_primitive }}',
+    'ctype {{ field.data_type }}': '{{ field.data_type | c.type_from_primitive(False) }}'
+{%- if not loop.last %},{% endif %}
+{%- endfor %}
+}
+
+lang_cpp = {
+    'namespace': '{{ T.full_namespace }}',
+    'namespace_open': r'''{{ T.full_namespace | cpp.open_namespace }}''',
+    'namespace_close': r'''{{ T.full_namespace | cpp.close_namespace(True) }}''',
+    'namespace_close_w_comments': r'''{{ T.full_namespace | cpp.close_namespace }}'''
+}
+
+tests = {'lang_c': lang_c, 'lang_cpp': lang_cpp}

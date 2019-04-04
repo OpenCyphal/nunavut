@@ -17,7 +17,6 @@ import sys
 
 from pathlib import Path, PurePath
 from pydsdl.data_type import CompoundType
-from pydsdl.namespace import read_namespace
 
 if sys.version_info[:2] < (3, 5):   # pragma: no cover
     print('A newer version of Python is required', file=sys.stderr)
@@ -56,37 +55,9 @@ def _build_paths(paths: Iterable[str], resolve_paths: bool, required: bool) -> L
     return result
 
 
-def parse_all(root_namespaces: Iterable[str], extra_includes: Iterable[str]) -> List[CompoundType]:
-    """Parses all root namespaces.
-
-    Locates the specified input files and collects all pydsdl parsed types into a single list.
-
-    :param iterable root_namespaces: A list of paths to root namespaces for dsdl to parse.
-    :param iterable extra_includes: Other dsdl namespaces that contain dependent types.
-
-    :returns: A list of pydsdl types.
-
-    :raises FileNotFoundError: If any of the root namespace folders were not found.
-    :raises RuntimeError: If parsing a given root namespace yielded no types.
-    """
-    root_namespace_paths = _build_paths(root_namespaces, True, True)
-
-    extra_include_paths = _build_paths(extra_includes, True, False)
-
-    types = list()  # type: ignore
-
-    for root_namespace_path in root_namespace_paths:
-        types += read_namespace(root_namespace_path, extra_include_paths)
-        if len(types) == 0:
-            raise RuntimeError(
-                "Root namespace {} yielded no types.".format(root_namespace_path))
-
-    return types
-
-
-def generate_target_paths(types: List[CompoundType],
-                          output_dir: str, extension:
-                          str, resolve_paths: bool = True) -> Dict[CompoundType, Path]:
+def create_type_map(types: List[CompoundType],
+                    output_dir: str, extension:
+                    str, resolve_paths: bool = True) -> Dict[CompoundType, Path]:
     """Generates a map of types to generated files.
 
     Given a list of pydsdl types, this method returns a map of type to the
@@ -101,7 +72,7 @@ def generate_target_paths(types: List[CompoundType],
             when forming paths, filenames, and extensions.
     :param bool resolve_path: If true then all paths will be resolved using pathlib.
 
-    :returns: A map of pydsdl type to the path the type will be generated at.
+    :returns: A map of pydsdl types to the path the type will be generated at.
 
     """
     base_path = PurePath(output_dir)

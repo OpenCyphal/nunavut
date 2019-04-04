@@ -26,15 +26,16 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
     #
     # pydsdlgen : load module
     #
-    from pydsdlgen import parse_all, generate_target_paths
+    from pydsdl import read_namespace
+    from pydsdlgen import create_type_map
     from pydsdlgen.jinja import Generator
 
     #
     # pydsdlgen : parse
     #
-    parser_result = parse_all(args.root_namespaces, extra_includes)
-    target_map = generate_target_paths(
-        parser_result, args.outdir, args.output_extension)
+    type_map = read_namespace(args.root_namespace, extra_includes)
+    target_map = create_type_map(
+        type_map, args.outdir, args.output_extension)
 
     #
     # pydsdlgen : generate
@@ -46,7 +47,7 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
             sys.stdout.write(';')
         return 0
 
-    generator = Generator(args.outdir, target_map, args.templates)
+    generator = Generator(target_map, args.templates)
 
     if args.list_inputs:
         for input_path in generator.get_templates():
@@ -104,8 +105,15 @@ def _make_parser() -> argparse.ArgumentParser:
         epilog=epilog,
         formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('root_namespaces', nargs='+',
-                        help='source directories with DSDL definitions')
+    parser.add_argument('root_namespace',
+                        help='A source directory with DSDL definitions.')
+
+    parser.add_argument('--incdir', '-I', default=[], action='append',
+                        help='''Nested type namespaces, one path per argument.
+Can be also specified through the environment variable
+UAVCAN_DSDL_INCLUDE_PATH, where the path entries are
+separated by colons ":"'''
+                        )
 
     parser.add_argument('--verbose', '-v', action='count',
                         help='verbosity level (-v, -vv)')
@@ -118,13 +126,6 @@ def _make_parser() -> argparse.ArgumentParser:
     parser.add_argument('--templates',
                         required='--list-outputs' not in sys.argv,
                         help="A path to a directory containing templates to use when generating code.")
-
-    parser.add_argument('--incdir', '-I', default=[], action='append',
-                        help='''Nested type namespaces, one path per argument.
-Can be also specified through the environment variable
-UAVCAN_DSDL_INCLUDE_PATH, where the path entries are
-separated by colons ":"'''
-                        )
 
     def extension_type(raw_arg: str) -> str:
         if len(raw_arg) > 0 and not raw_arg.startswith('.'):

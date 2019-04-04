@@ -8,7 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from pydsdlgen import generate_target_paths, parse_all
+from pydsdl import read_namespace
+from pydsdlgen import create_type_map
 from pydsdlgen.jinja import Generator
 
 
@@ -25,13 +26,13 @@ def test_TestType_0_1(gen_paths) -> None:
     reads this JSON back in and parses it using Python's built-in parser.
     """
 
-    root_namespaces = [gen_paths.dsdl_dir / Path("uavcan")]
-    target_map = generate_target_paths(parse_all(root_namespaces, ''), gen_paths.out_dir, '.json')
-    generator = Generator(gen_paths.out_dir, target_map, gen_paths.templates_dir)
+    root_namespace = gen_paths.dsdl_dir / Path("uavcan")
+    target_map = create_type_map(read_namespace(root_namespace, ''), gen_paths.out_dir, '.json')
+    generator = Generator(target_map, gen_paths.templates_dir)
     generator.generate_all(False)
 
     # Now read back in and verify
-    outfile = gen_paths.find_outfile_in_target_paths("uavcan.test.TestType", target_map)
+    outfile = gen_paths.find_outfile_in_type_map("uavcan.test.TestType", target_map)
 
     assert (outfile is not None)
 
