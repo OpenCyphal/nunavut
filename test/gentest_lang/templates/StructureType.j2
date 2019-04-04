@@ -12,6 +12,7 @@ lang_c = {
 lang_cpp = {
     'namespace': '{{ T.full_namespace }}',
     'namespace_open': r'''{{ T.full_namespace | cpp.open_namespace }}''',
+    'namespace_open_wo_nl': r'''{{ T.full_namespace | cpp.open_namespace(False) }}''',
     'namespace_close': r'''{{ T.full_namespace | cpp.close_namespace(True) }}''',
     'namespace_close_w_comments': r'''{{ T.full_namespace | cpp.close_namespace }}'''
 }

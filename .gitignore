@@ -23,6 +23,7 @@ coverage.xml
 _build
 .env*
 dist
+.clear_pytest_cache
 
 # Eclipse
 .metadata

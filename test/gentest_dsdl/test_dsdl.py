@@ -23,7 +23,7 @@ def test_realgen(gen_paths) -> None:
     Sanity test that runs through the entire public, regulated set of
     UAVCAN types and generates some basic C code.
     """
-    type_map = read_namespace(gen_paths.dsdl_dir / Path("uavcan"), '')
+    type_map = read_namespace(str(gen_paths.dsdl_dir / Path("uavcan")), '')
     target_map = create_type_map(type_map, gen_paths.out_dir, '.h')
     generator = Generator(target_map, gen_paths.templates_dir)
     generator.generate_all(False)

@@ -15,7 +15,7 @@ from typing import Generator as GeneratorType
 
 from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader,
                                     TemplateAssertionError, nodes,
-                                    select_autoescape, DebugUndefined)
+                                    select_autoescape, StrictUndefined)
 
 from pydsdlgen.jinja.jinja2.ext import Extension
 from pydsdlgen.jinja.jinja2.parser import Parser
@@ -37,8 +37,7 @@ logger = logging.getLogger(__name__)
 class JinjaAssert(Extension):
     """
     Jinja2 extension that allows ``{% assert T.field %}`` statements. Templates should
-    uses these statements where missing or False values would result in malformed
-    source code.
+    uses these statements where False values would result in malformed source code.
     """
 
     tags = set(['assert'])
@@ -242,7 +241,7 @@ class Generator(AbstractGenerator):
         self._env = Environment(loader=fsloader,
                                 extensions=[JinjaAssert],
                                 autoescape=autoesc,
-                                undefined=DebugUndefined,
+                                undefined=StrictUndefined,
                                 keep_trailing_newline=True,
                                 auto_reload=False)
 
