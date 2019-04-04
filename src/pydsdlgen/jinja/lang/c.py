@@ -61,7 +61,7 @@ class _CFit(Enum):
             intname = 'long long'
 
         if not is_signed:
-            intname = 'unsigned' + intname
+            intname = 'unsigned ' + intname
 
         return intname
 

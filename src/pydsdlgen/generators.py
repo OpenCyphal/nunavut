@@ -12,7 +12,7 @@ pydsdl AST into source code.
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import Dict
-from typing import ItemsView, KeysView
+from typing import KeysView
 
 from pydsdl.data_type import CompoundType
 
@@ -22,21 +22,19 @@ class AbstractGenerator(metaclass=ABCMeta):
         Abstract base class for classes that generate source file output
         from a given pydsdl parser result.
 
-        :param Path output_basedir: The directory under which all output will be placed.
-        :param dict parser_result: The output from pydsdl's parser.
+        :param dict type_map:   A map of pydsdl types to the path the type will be generated at.
     """
 
-    def __init__(self, output_basedir: Path, parser_result: Dict[CompoundType, Path]):
-        self._output_basedir = output_basedir
-        self._parser_result = parser_result
+    def __init__(self, type_map: Dict[CompoundType, Path]):
+        self._type_map = type_map
 
     @property
     def input_types(self) -> KeysView[CompoundType]:
-        return self._parser_result.keys()
+        return self._type_map.keys()
 
     @property
-    def parser_results(self) -> ItemsView[CompoundType, Path]:
-        return self._parser_result.items()
+    def type_map(self) -> Dict[CompoundType, Path]:
+        return self._type_map
 
     @abstractmethod
     def generate_all(self, is_dryrun: bool = False) -> int:

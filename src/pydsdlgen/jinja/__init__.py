@@ -14,7 +14,8 @@ from typing import Dict, Any, Callable
 from typing import Generator as GeneratorType
 
 from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader,
-                                    TemplateAssertionError, nodes)
+                                    TemplateAssertionError, nodes,
+                                    select_autoescape, DebugUndefined)
 
 from pydsdlgen.jinja.jinja2.ext import Extension
 from pydsdlgen.jinja.jinja2.parser import Parser
@@ -84,8 +85,8 @@ class Generator(AbstractGenerator):
     """ :class:`~pydsdlgen.generators.AbstractGenerator` implementation that uses
     Jinja2 templates to generate source code.
 
-    :param Path output_basedir: The directory under which all output will be placed.
-    :param dict parser_result: The output from the pydsdl parser.
+    :param dict type_map:       A map of pydsdl types to the path the output file for
+                                this type will be generated at.
     :param Path templates_dir: The directory containing the jinja templates.
 
     """
@@ -217,11 +218,10 @@ class Generator(AbstractGenerator):
     # +-----------------------------------------------------------------------+
 
     def __init__(self,
-                 output_basedir: Path,
-                 parser_result: Dict[CompoundType, Path],
+                 type_map: Dict[CompoundType, Path],
                  templates_dir: Path):
 
-        super(Generator, self).__init__(output_basedir, parser_result)
+        super(Generator, self).__init__(type_map)
 
         if templates_dir is None:
             raise ValueError("Templates directory argument was None")
@@ -233,9 +233,18 @@ class Generator(AbstractGenerator):
 
         logger.info("Loading templates from {}".format(templates_dir))
 
-        self._env = Environment(loader=FileSystemLoader(
-            [str(templates_dir)], followlinks=True),
-            extensions=[JinjaAssert])
+        fsloader = FileSystemLoader([str(templates_dir)], followlinks=True)
+
+        autoesc = select_autoescape(enabled_extensions=('htm', 'html', 'xml', 'json'),
+                                    default_for_string=False,
+                                    default=False)
+
+        self._env = Environment(loader=fsloader,
+                                extensions=[JinjaAssert],
+                                autoescape=autoesc,
+                                undefined=DebugUndefined,
+                                keep_trailing_newline=True,
+                                auto_reload=False)
 
         # Automatically find the locally defined filters and
         # tests and add them to the jinja environment.
@@ -264,7 +273,7 @@ class Generator(AbstractGenerator):
         return self._templates_dir.glob("**/*{}".format(self.TEMPLATE_SUFFIX))
 
     def generate_all(self, is_dryrun: bool = False) -> int:
-        for (parsed_type, output_path) in self.parser_results:
+        for (parsed_type, output_path) in self.type_map.items():
             self._generate_type(parsed_type, output_path, is_dryrun)
         return 0
 

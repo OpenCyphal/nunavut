@@ -55,8 +55,8 @@ class GenTestPaths:
         return self._dsdl_dir
 
     @staticmethod
-    def find_outfile_in_target_paths(typename: str, target_paths: Dict[CompoundType, str]) -> str:
-        for dsdl_type, outfile in target_paths.items():
+    def find_outfile_in_type_map(typename: str, type_map: Dict[CompoundType, str]) -> str:
+        for dsdl_type, outfile in type_map.items():
             if dsdl_type.full_name == typename:
                 return outfile
         return None
