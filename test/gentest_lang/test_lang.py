@@ -23,7 +23,7 @@ def test_lang_c(gen_paths) -> None:
     """ Generates and verifies JSON with values filtered using the c language support module.
     """
 
-    root_namespace = gen_paths.dsdl_dir / Path("langtest")
+    root_namespace = str(gen_paths.dsdl_dir / Path("langtest"))
     compound_types = read_namespace(root_namespace, '', allow_unregulated_fixed_port_id=True)
     target_map = create_type_map(compound_types, gen_paths.out_dir, '.py')
     generator = Generator(target_map, gen_paths.templates_dir)
@@ -72,7 +72,7 @@ def test_lang_cpp(gen_paths) -> None:
     """Generates and verifies JSON with values filtered using the cpp language module.
     """
 
-    root_namespace = gen_paths.dsdl_dir / Path("langtest")
+    root_namespace = str(gen_paths.dsdl_dir / Path("langtest"))
     compound_types = read_namespace(root_namespace, '', allow_unregulated_fixed_port_id=True)
     target_map = create_type_map(compound_types, gen_paths.out_dir, '.py')
     generator = Generator(target_map, gen_paths.templates_dir)
@@ -91,7 +91,14 @@ def test_lang_cpp(gen_paths) -> None:
 
     lang_cpp_output = generated_values["tests"]["lang_cpp"]
     assert lang_cpp_output["namespace"] == "langtest.cpp.ns"
-    assert lang_cpp_output["namespace_open"] == r'''namespace langtest {
+    assert lang_cpp_output["namespace_open"] == r'''namespace langtest
+{
+namespace cpp
+{
+namespace ns
+{
+'''
+    assert lang_cpp_output["namespace_open_wo_nl"] == r'''namespace langtest {
 namespace cpp {
 namespace ns {
 '''

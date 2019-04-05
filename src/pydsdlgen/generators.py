@@ -11,8 +11,7 @@ pydsdl AST into source code.
 
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
-from typing import Dict
-from typing import KeysView
+from typing import Dict, KeysView
 
 from pydsdl.data_type import CompoundType
 
@@ -25,7 +24,8 @@ class AbstractGenerator(metaclass=ABCMeta):
         :param dict type_map:   A map of pydsdl types to the path the type will be generated at.
     """
 
-    def __init__(self, type_map: Dict[CompoundType, Path]):
+    def __init__(self,
+                 type_map: Dict[CompoundType, Path]):
         self._type_map = type_map
 
     @property

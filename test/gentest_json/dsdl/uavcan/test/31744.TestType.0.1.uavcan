@@ -2,6 +2,8 @@
 # Simple test message that fits in a single CAN 2.0 frame.
 #
 
+bool const_bool_example = false
+
 truncated uint56 data
 
 @assert _offset_ % 8 == {0}

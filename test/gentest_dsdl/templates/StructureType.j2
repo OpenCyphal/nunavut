@@ -4,7 +4,7 @@
 typedef struct {{ T.full_name | replace('.', '_') }}Type {
 {%- for field in T.attributes %}
 {%- if field is constant %}
-  const {{ field.data_type | c.type_from_primitive(use_standard_types=True) }} {{ field.name }} = {{ field.initialization_expression }};
+  const {{ field.data_type | c.type_from_primitive(use_standard_types=True) }} {{ field.name }} = {{ field.value }};
 {%- elif field.data_type is primitive %}
   {{ field.data_type | c.type_from_primitive }} {{ field.name }};
 {% endif -%}

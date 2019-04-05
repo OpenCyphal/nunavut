@@ -12,7 +12,7 @@ from io import StringIO
 import os
 
 
-def filter_open_namespace(full_namespace: str) -> str:
+def filter_open_namespace(full_namespace: str, bracket_on_next_line: bool = True) -> str:
     """
         Emits c++ opening namspace syntax parsed from a pydsdl "full_namespace",
         dot-seperated  value.
@@ -25,10 +25,14 @@ def filter_open_namespace(full_namespace: str) -> str:
 
         Result Example::
 
-            namespace uavcan {
-            namespace foo {
+            namespace uavcan
+            {
+            namespace foo
+            {
 
         :param str full_namespace: A dot-seperated namespace string.
+        :param bool bracket_on_next_line: If True (the default) then the opening
+            brackets are placed on a newline after the namespace keyword.
 
         :returns: C++ namespace declarations with opening brackets.
     """
@@ -37,7 +41,11 @@ def filter_open_namespace(full_namespace: str) -> str:
         for name in full_namespace.split('.'):
             content.write('namespace ')
             content.write(name)
-            content.write(' {')
+            if bracket_on_next_line:
+                content.write(os.linesep)
+            else:
+                content.write(' ')
+            content.write('{')
             content.write(os.linesep)
         return content.getvalue()
 

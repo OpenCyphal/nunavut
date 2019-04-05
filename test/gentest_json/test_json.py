@@ -26,7 +26,7 @@ def test_TestType_0_1(gen_paths) -> None:
     reads this JSON back in and parses it using Python's built-in parser.
     """
 
-    root_namespace = gen_paths.dsdl_dir / Path("uavcan")
+    root_namespace = str(gen_paths.dsdl_dir / Path("uavcan"))
     target_map = create_type_map(read_namespace(root_namespace, ''), gen_paths.out_dir, '.json')
     generator = Generator(target_map, gen_paths.templates_dir)
     generator.generate_all(False)
@@ -51,10 +51,16 @@ def test_TestType_0_1(gen_paths) -> None:
     assert test_type["name"] == "TestType"
     assert test_type["version"]["major"] == 0
     assert test_type["version"]["minor"] == 1
-    assert len(test_type["fields"]) == 1
+    assert len(test_type["fields"]) == 2
 
-    test_field = test_type["fields"][0]
-    assert test_field["name"] == "data"
-    assert test_field["type"] == "uint56"
-    assert test_field["bit_length"] == 56
-    assert test_field["cast_mode"] == "TRUNCATED"
+    test_field_0 = test_type["fields"][0]
+    assert test_field_0["name"] == "data"
+    assert test_field_0["type"] == "uint56"
+    assert test_field_0["bit_length"] == 56
+    assert test_field_0["cast_mode"] == "TRUNCATED"
+
+    test_field_1 = test_type["fields"][1]
+    assert test_field_1["name"] == "const_bool_example"
+    assert test_field_1["type"] == "uint1"
+    assert test_field_1["bit_length"] == 1
+    assert test_field_1["cast_mode"] == "SATURATED"

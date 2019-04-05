@@ -66,6 +66,31 @@ To run the full suite of `tox`_ tests locally you'll need docker::
     docker run --rm -it -v /path/to/pydsdlgen:/repo uavcan/toxic:py35-py38
     tox
 
+import file mismatch
+================================================
+
+If you get an error like the following::
+
+    ___________________________________________ ERROR collecting test/gentest_dsdl/test_dsdl.py ___________________________________________
+    import file mismatch:
+    imported module 'test_dsdl' has this __file__ attribute:
+    /my/workspace/pydsdlgen/test/gentest_dsdl/test_dsdl.py
+    which is not the same as the test file we want to collect:
+    /repo/test/gentest_dsdl/test_dsdl.py
+    HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+
+
+Then you are probably a wonderful developer that is running the unit-tests locally. Pytest's cache
+is interfering with your docker test run. To work around this simply delete the pycache files. For example
+(writing a bash script ``.clear_pytest_cache``)::
+
+    #! /usr/bin/env bash
+    cleandirs="src test"
+
+    for cleandir in $cleandirs
+    do
+        find $cleandir -name __pycache__ | xargs rm -rf
+    done
 
 ************************************************
 Building The Docs
