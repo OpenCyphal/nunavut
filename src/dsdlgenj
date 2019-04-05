@@ -108,9 +108,15 @@ def _make_parser() -> argparse.ArgumentParser:
     parser.add_argument('root_namespace',
                         help='A source directory with DSDL definitions.')
 
-    parser.add_argument('--incdir', '-I', default=[], action='append',
-                        help='''Nested type namespaces, one path per argument.
-Can be also specified through the environment variable
+    parser.add_argument('--lookup-dir', '-I', default=[], action='append',
+                        help='''List of other namespace directories containing data type definitions that are
+referred to from the target root namespace. For example, if you are reading a
+vendor-specific namespace, the list of lookup directories should always include
+a path to the standard root namespace "uavcan", otherwise the types defined in
+the vendor-specific namespace won't be able to use data types from the standard
+namespace.
+
+Additional directories can also be specified through the environment variable
 UAVCAN_DSDL_INCLUDE_PATH, where the path entries are
 separated by colons ":"'''
                         )
@@ -183,7 +189,7 @@ def main() -> int:
     #
     # Parse UAVCAN_DSDL_INCLUDE_PATH
     #
-    extra_includes = args.incdir
+    extra_includes = args.lookup_dir
 
     try:
         extra_includes_from_env = os.environ['UAVCAN_DSDL_INCLUDE_PATH'].split(':')
