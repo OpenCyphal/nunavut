@@ -47,7 +47,7 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
             sys.stdout.write(';')
         return 0
 
-    generator = Generator(target_map, args.templates)
+    generator = Generator(target_map, Path(args.templates))
 
     if args.list_inputs:
         for input_path in generator.get_templates():

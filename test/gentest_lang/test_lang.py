@@ -45,24 +45,24 @@ def test_lang_c(gen_paths) -> None:
     assert lang_c_output["namespace_macrofy"] == "LANGTEST_C"
 
     assert lang_c_output["ctype_std truncated uint8"] == "uint8_t"
-    assert lang_c_output["ctype_std truncated int8"] == "int8_t"
+    assert lang_c_output["ctype_std saturated int8"] == "int8_t"
     assert lang_c_output["ctype_std truncated uint9"] == "uint16_t"
-    assert lang_c_output["ctype_std truncated int9"] == "int16_t"
+    assert lang_c_output["ctype_std saturated int9"] == "int16_t"
 
     assert lang_c_output["ctype truncated uint8"] == "unsigned char"
-    assert lang_c_output["ctype truncated int8"] == "char"
+    assert lang_c_output["ctype saturated int8"] == "char"
     assert lang_c_output["ctype truncated uint9"] == "unsigned int"
-    assert lang_c_output["ctype truncated int9"] == "int"
+    assert lang_c_output["ctype saturated int9"] == "int"
 
     assert lang_c_output["ctype_std truncated uint32"] == "uint32_t"
-    assert lang_c_output["ctype_std truncated int32"] == "int32_t"
+    assert lang_c_output["ctype_std saturated int32"] == "int32_t"
     assert lang_c_output["ctype_std truncated uint64"] == "uint64_t"
-    assert lang_c_output["ctype_std truncated int64"] == "int64_t"
+    assert lang_c_output["ctype_std saturated int64"] == "int64_t"
 
     assert lang_c_output["ctype truncated uint32"] == "unsigned long"
-    assert lang_c_output["ctype truncated int32"] == "long"
+    assert lang_c_output["ctype saturated int32"] == "long"
     assert lang_c_output["ctype truncated uint64"] == "unsigned long long"
-    assert lang_c_output["ctype truncated int64"] == "long long"
+    assert lang_c_output["ctype saturated int64"] == "long long"
 
     assert lang_c_output["ctype saturated bool"] == "BOOL"
     assert lang_c_output["ctype_std saturated bool"] == "bool"

@@ -3,15 +3,15 @@
 #
 
 truncated uint8 data0
-truncated int8 data1
+saturated int8 data1
 
 truncated uint9 data2
-truncated int9 data3
+saturated int9 data3
 
 truncated uint32 data4
-truncated int32 data5
+saturated int32 data5
 
 truncated uint64 data6
-truncated int64 data7
+saturated int64 data7
 
 bool data8

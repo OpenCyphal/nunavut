@@ -5,7 +5,7 @@
 #
 from pathlib import Path
 from typing import Dict
-from pydsdl.data_type import CompoundType
+from pydsdl.serializable import CompositeType
 
 
 class GenTestPaths:
@@ -55,7 +55,7 @@ class GenTestPaths:
         return self._dsdl_dir
 
     @staticmethod
-    def find_outfile_in_type_map(typename: str, type_map: Dict[CompoundType, str]) -> str:
+    def find_outfile_in_type_map(typename: str, type_map: Dict[CompositeType, str]) -> str:
         for dsdl_type, outfile in type_map.items():
             if dsdl_type.full_name == typename:
                 return outfile

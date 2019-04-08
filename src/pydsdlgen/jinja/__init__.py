@@ -9,9 +9,10 @@
 
 import logging
 from datetime import datetime
-from pathlib import Path, PurePath
-from typing import Dict, Any, Callable
-from typing import Generator as GeneratorType
+from pathlib import Path
+from collections import deque
+
+from typing import Dict, Any, Callable, Optional, List, Iterable
 
 from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader,
                                     TemplateAssertionError, nodes,
@@ -20,7 +21,9 @@ from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader,
 from pydsdlgen.jinja.jinja2.ext import Extension
 from pydsdlgen.jinja.jinja2.parser import Parser
 
-from pydsdl.data_type import CompoundType, DataType, PrimitiveType, Constant
+from pydsdl.expression import Any as DsdlAny
+from pydsdl.serializable import (CompositeType, PrimitiveType,
+                                 Constant, SerializableType)
 
 from ..generators import AbstractGenerator
 
@@ -86,8 +89,10 @@ class Generator(AbstractGenerator):
 
     :param dict type_map:       A map of pydsdl types to the path the output file for
                                 this type will be generated at.
-    :param Path templates_dir: The directory containing the jinja templates.
+    :param Path templates_dir:  The directory containing the jinja templates.
 
+    :param bool followlinks:    If True then symbolic links will be followed when
+                                searching for templates.
     """
 
     TEMPLATE_SUFFIX = ".j2"  #: The suffix expected for Jinja templates.
@@ -111,12 +116,12 @@ class Generator(AbstractGenerator):
         Result Example (truncated for brevity)::
 
             /*
-            !!python/object:pydsdl.data_type.StructureType
+            !!python/object:pydsdl.serializable.StructureType
             _attributes:
-            - !!python/object:pydsdl.data_type.Field
-            _data_type: !!python/object:pydsdl.data_type.UnsignedIntegerType
+            - !!python/object:pydsdl.serializable.Field
+            _serializable: !!python/object:pydsdl.serializable.UnsignedIntegerType
                 _bit_length: 16
-                _cast_mode: &id001 !!python/object/apply:pydsdl.data_type.CastMode
+                _cast_mode: &id001 !!python/object/apply:pydsdl.serializable.CastMode
                 - 0
             _name: value
             */
@@ -132,8 +137,7 @@ class Generator(AbstractGenerator):
         except ImportError:
             return ""
 
-    @classmethod
-    def filter_pydsdl_type_to_template(cls, value: Any) -> str:
+    def filter_pydsdl_type_to_template(self, value: Any) -> str:
         """
         Template for type resolution as a filter. Available as ``pydsdl_type_to_template``
         in all template environments.
@@ -149,8 +153,38 @@ class Generator(AbstractGenerator):
 
         :returns: A path to a template named for the type with :any:`Generator.TEMPLATE_SUFFIX`
         """
-        return str(
-            PurePath(type(value).__name__).with_suffix(cls.TEMPLATE_SUFFIX))
+        search_queue = deque()  # type: ignore
+        discovered = set()  # type: ignore
+        search_queue.appendleft(type(value))
+        template_path = Path(type(value).__name__).with_suffix(self.TEMPLATE_SUFFIX)
+
+        def _find_template_by_name(name: str, templates: Iterable[Path]) -> Optional[Path]:
+            for template_path in templates:
+                if template_path.stem == name:
+                    return template_path
+            return None
+
+        while len(search_queue) > 0:
+            data_type = search_queue.pop()
+            try:
+                template_path = self._type_to_template_lookup_cache[data_type]
+                break
+            except KeyError:
+                pass
+
+            optional_template_path = _find_template_by_name(data_type.__name__, self.get_templates())
+
+            if optional_template_path is not None:
+                template_path = optional_template_path
+                self._type_to_template_lookup_cache[data_type] = template_path
+                break
+            else:
+                for base_type in data_type.__bases__:
+                    if base_type != object and base_type not in discovered:
+                        search_queue.appendleft(base_type)
+                        discovered.add(data_type)
+
+        return template_path.name
 
     @staticmethod
     def filter_typename(value: Any) -> str:
@@ -179,9 +213,9 @@ class Generator(AbstractGenerator):
     # +-----------------------------------------------------------------------+
 
     @staticmethod
-    def is_primitive(value: DataType) -> bool:
+    def is_primitive(value: DsdlAny) -> bool:
         """
-        Tests if a given ``DataType`` instance is a ``PrimitiveType``.
+        Tests if a given dsdl instance is a ``PrimitiveType``.
         Available in all template environments as ``is primitive``.
 
         Example::
@@ -192,14 +226,14 @@ class Generator(AbstractGenerator):
 
         :param value: The instance to test.
 
-        :returns: True if value is an instance of ``pydsdl.data_type.PrimitiveType``.
+        :returns: True if value is an instance of ``pydsdl.serializable.PrimitiveType``.
         """
         return isinstance(value, PrimitiveType)
 
     @staticmethod
-    def is_constant(value: DataType) -> bool:
+    def is_constant(value: DsdlAny) -> bool:
         """
-        Tests if a given ``DataType`` instance is a ``Constant``.
+        Tests if a given dsdl instance is a ``Constant``.
         Available in all template environments as ``is constant``.
 
         Example::
@@ -210,15 +244,34 @@ class Generator(AbstractGenerator):
 
         :param value: The instance to test.
 
-        :returns: True if value is an instance of ``pydsdl.data_type.Constant``.
+        :returns: True if value is an instance of ``pydsdl.serializable.Constant``.
         """  # noqa: E501
         return isinstance(value, Constant)
+
+    @staticmethod
+    def is_serializable(value: DsdlAny) -> bool:
+        """
+        Tests if a given dsdl instance is a ``SerializableType``.
+        Available in all template environments as ``is serializable``.
+
+        Example::
+
+            {%- if field is serializable %}
+                // Yup, this is serializable
+            {% endif %}
+
+        :param value: The instance to test.
+
+        :returns: True if value is an instance of ``pydsdl.serializable.SerializableType``.
+        """  # noqa: E501
+        return isinstance(value, SerializableType)
 
     # +-----------------------------------------------------------------------+
 
     def __init__(self,
-                 type_map: Dict[CompoundType, Path],
-                 templates_dir: Path):
+                 type_map: Dict[CompositeType, Path],
+                 templates_dir: Path,
+                 followlinks: bool = False):
 
         super(Generator, self).__init__(type_map)
 
@@ -228,17 +281,21 @@ class Generator(AbstractGenerator):
             raise ValueError(
                 "Templates directory {} did not exist?".format(templates_dir))
 
-        self._templates_dir = Path(templates_dir)
+        self._templates_dir = templates_dir
+
+        self._type_to_template_lookup_cache = dict()  # type: Dict[DsdlAny, Path]
+
+        self._templates_list = None  # type: Optional[List[Path]]
 
         logger.info("Loading templates from {}".format(templates_dir))
 
-        fsloader = FileSystemLoader([str(templates_dir)], followlinks=True)
+        fs_loader = FileSystemLoader([str(templates_dir)], followlinks=followlinks)
 
         autoesc = select_autoescape(enabled_extensions=('htm', 'html', 'xml', 'json'),
                                     default_for_string=False,
                                     default=False)
 
-        self._env = Environment(loader=fsloader,
+        self._env = Environment(loader=fs_loader,
                                 extensions=[JinjaAssert],
                                 autoescape=autoesc,
                                 undefined=StrictUndefined,
@@ -261,9 +318,9 @@ class Generator(AbstractGenerator):
         add_language_support('cpp', self._env)
         add_language_support('js', self._env)
 
-    def get_templates(self) -> GeneratorType[Path, None, None]:
+    def get_templates(self) -> Iterable[Path]:
         """
-        Enumerate paths to all files within self._templates_dir with
+        Enumerate all templates found in the templates path.
         :data:`~TEMPLATE_SUFFIX` as the suffix for the filename.
 
         :returns: A Python generator that produces Path elements for all templates
@@ -276,7 +333,7 @@ class Generator(AbstractGenerator):
             self._generate_type(parsed_type, output_path, is_dryrun)
         return 0
 
-    def _generate_type(self, input_type: CompoundType, output_path: Path, is_dryrun: bool) -> None:
+    def _generate_type(self, input_type: CompositeType, output_path: Path, is_dryrun: bool) -> None:
         template_name = self.filter_pydsdl_type_to_template(input_type)
         self._env.globals["now_utc"] = datetime.utcnow()
         template = self._env.get_template(template_name)

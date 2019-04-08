@@ -13,7 +13,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import Dict, KeysView
 
-from pydsdl.data_type import CompoundType
+from pydsdl.serializable import CompositeType
 
 
 class AbstractGenerator(metaclass=ABCMeta):
@@ -25,15 +25,15 @@ class AbstractGenerator(metaclass=ABCMeta):
     """
 
     def __init__(self,
-                 type_map: Dict[CompoundType, Path]):
+                 type_map: Dict[CompositeType, Path]):
         self._type_map = type_map
 
     @property
-    def input_types(self) -> KeysView[CompoundType]:
+    def input_types(self) -> KeysView[CompositeType]:
         return self._type_map.keys()
 
     @property
-    def type_map(self) -> Dict[CompoundType, Path]:
+    def type_map(self) -> Dict[CompositeType, Path]:
         return self._type_map
 
     @abstractmethod

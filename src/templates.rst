@@ -63,6 +63,13 @@ given to the ``Generator`` instance ::
     StructureType.j2
     UnionType.j2
 
+.. note::
+
+    You can chose to use a single template ``Any.j2`` but this may lead to more complex
+    templates with many more control statements. By providing discreet templates named for top-level
+    data types and using jinja template inheritance and includes your templates will be smaller
+    and easier to maintain.
+
 To share common formatting for these templates use `Jinja template inheritance`_. For example,
 given a template ``common_header.j2``::
 
@@ -105,7 +112,6 @@ You can apply the same logic used by the top level generator to recursively incl
 by type if this seems useful for your project. Simply use the 
 :func:`pydsdlgen.jinja.Generator.filter_pydsdl_type_to_template` filter::
 
-    {%* include field.data_type | pydsdl_type_to_template %}
 
 
 .. _`Jinja templates documentation` : http://jinja.pocoo.org/docs/2.10/templates/

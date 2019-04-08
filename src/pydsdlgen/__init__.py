@@ -10,7 +10,7 @@ text files are often source code this module could also be used to generate
 documentation or data interchange formats like JSON or XML.
 
 The input to the pydsdlgen library is a list of templates and a list of
-``pydsdl.data_type.CompoundType`` objects. The latter is typically obtained
+``pydsdl.serializable.CompositeType`` objects. The latter is typically obtained
 by calling pydsdl::
 
     from pydsdl import read_namespace
@@ -50,7 +50,8 @@ from typing import List, Dict
 import sys
 
 from pathlib import Path, PurePath
-from pydsdl.data_type import CompoundType
+
+from pydsdl.serializable import CompositeType
 
 if sys.version_info[:2] < (3, 5):   # pragma: no cover
     print('A newer version of Python is required', file=sys.stderr)
@@ -59,8 +60,8 @@ if sys.version_info[:2] < (3, 5):   # pragma: no cover
 # +---------------------------------------------------------------------------+
 
 
-def create_type_map(types: List[CompoundType],
-                    output_dir: str, extension: str) -> Dict[CompoundType, Path]:
+def create_type_map(types: List[CompositeType],
+                    output_dir: str, extension: str) -> Dict[CompositeType, Path]:
     """Generates a map of types to generated files.
 
     Given a list of pydsdl types, this method returns a map of type to the
@@ -82,13 +83,12 @@ def create_type_map(types: List[CompoundType],
     type_to_output_map = dict()
 
     for dsdl_type in types:
-        '''
-        For each type we form a path with the output_dir as the base; the intermediate
-        folders named for the type's namespaces; and a file name that includes the type's
-        short name, major version, minor version, and the extension argument as a suffix.
-        Python's pathlib adapts the provided folder and file names to the platform
-        this script is running on.
-        '''
+        # For each type we form a path with the output_dir as the base; the intermediate
+        # folders named for the type's namespaces; and a file name that includes the type's
+        # short name, major version, minor version, and the extension argument as a suffix.
+        # Python's pathlib adapts the provided folder and file names to the platform
+        # this script is running on.
+
         namespace_components = dsdl_type.full_namespace.split('.')
         filestem = "{}_{}_{}".format(
             dsdl_type.short_name, dsdl_type.version.major, dsdl_type.version.minor)

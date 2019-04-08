@@ -12,8 +12,8 @@ from enum import Enum, unique
 from typing import TypeVar, Type
 
 from pydsdlgen.jinja.jinja2 import TemplateRuntimeError
-from pydsdl.data_type import (PrimitiveType, SignedIntegerType,
-                              UnsignedIntegerType, FloatType, BooleanType)
+from pydsdl.serializable import (PrimitiveType, SignedIntegerType,
+                                 UnsignedIntegerType, FloatType, BooleanType)
 
 
 def filter_macrofy(value: str) -> str:
@@ -104,10 +104,10 @@ class _CFit(Enum):
 
 def filter_type_from_primitive(value: PrimitiveType, use_standard_types: bool = True) -> str:
     """
-        Filter to transform a pydsdl :class:`~pydsdl.data_type.PrimitiveType` into
+        Filter to transform a pydsdl :class:`~pydsdl.serializable.PrimitiveType` into
         a valid C type.
 
-        The following example assumes that data_type is of :class:`~.pydsdl.data_type.UnsignedIntegerType`
+        The following example assumes that serializable is of :class:`~.pydsdl.serializable.UnsignedIntegerType`
         and has a 32 bit length.
 
         Example::
