@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from collections import deque
 
-from typing import Dict, Any, Callable, Optional, List, Iterable
+from typing import Dict, Any, Callable, Optional, List, Set, Deque
 
 from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader,
                                     TemplateAssertionError, nodes,
@@ -153,12 +153,12 @@ class Generator(AbstractGenerator):
 
         :returns: A path to a template named for the type with :any:`Generator.TEMPLATE_SUFFIX`
         """
-        search_queue = deque()  # type: ignore
-        discovered = set()  # type: ignore
+        search_queue = deque()  # type: Deque[Any]
+        discovered = set()  # type: Set[Any]
         search_queue.appendleft(type(value))
         template_path = Path(type(value).__name__).with_suffix(self.TEMPLATE_SUFFIX)
 
-        def _find_template_by_name(name: str, templates: Iterable[Path]) -> Optional[Path]:
+        def _find_template_by_name(name: str, templates: List[Path]) -> Optional[Path]:
             for template_path in templates:
                 if template_path.stem == name:
                     return template_path
@@ -318,15 +318,18 @@ class Generator(AbstractGenerator):
         add_language_support('cpp', self._env)
         add_language_support('js', self._env)
 
-    def get_templates(self) -> Iterable[Path]:
+    def get_templates(self) -> List[Path]:
         """
         Enumerate all templates found in the templates path.
         :data:`~TEMPLATE_SUFFIX` as the suffix for the filename.
 
-        :returns: A Python generator that produces Path elements for all templates
-                  found by this Generator object.
+        :returns: A list of paths to all templates found by this Generator object.
         """
-        return self._templates_dir.glob("**/*{}".format(self.TEMPLATE_SUFFIX))
+        if self._templates_list is None:
+            self._templates_list = []
+            for template in self._templates_dir.glob("**/*{}".format(self.TEMPLATE_SUFFIX)):
+                self._templates_list.append(template)
+        return self._templates_list
 
     def generate_all(self, is_dryrun: bool = False) -> int:
         for (parsed_type, output_path) in self.type_map.items():
