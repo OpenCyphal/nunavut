@@ -112,7 +112,10 @@ You can apply the same logic used by the top level generator to recursively incl
 by type if this seems useful for your project. Simply use the 
 :func:`pydsdlgen.jinja.Generator.filter_pydsdl_type_to_template` filter::
 
+    {%- for field in T.attributes %}
+        {%* include field.data_type | pydsdl_type_to_template %}
+    {%- endfor %}
 
 
-.. _`Jinja templates documentation` : http://jinja.pocoo.org/docs/2.10/templates/
-.. _`Jinja template inheritance` : http://jinja.pocoo.org/docs/2.10/templates/#template-inheritance
+.. _`Jinja templates documentation`: http://jinja.pocoo.org/docs/2.10/templates/
+.. _`Jinja template inheritance`: http://jinja.pocoo.org/docs/2.10/templates/#template-inheritance
