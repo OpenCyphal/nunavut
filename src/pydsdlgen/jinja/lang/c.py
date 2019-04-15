@@ -12,8 +12,8 @@ from enum import Enum, unique
 from typing import TypeVar, Type
 
 from pydsdlgen.jinja.jinja2 import TemplateRuntimeError
-from pydsdl.serializable import (PrimitiveType, SignedIntegerType,
-                                 UnsignedIntegerType, FloatType, BooleanType)
+from pydsdl import (PrimitiveType, SignedIntegerType,
+                    UnsignedIntegerType, FloatType, BooleanType)
 
 
 def filter_macrofy(value: str) -> str:

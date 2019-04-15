@@ -5,7 +5,7 @@
 #
 from pathlib import Path
 from typing import Dict
-from pydsdl.serializable import CompositeType
+from pydsdl import CompositeType
 
 
 class GenTestPaths:

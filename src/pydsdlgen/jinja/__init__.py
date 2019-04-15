@@ -21,9 +21,9 @@ from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader,
 from pydsdlgen.jinja.jinja2.ext import Extension
 from pydsdlgen.jinja.jinja2.parser import Parser
 
-from pydsdl.expression import Any as DsdlAny
-from pydsdl.serializable import (CompositeType, PrimitiveType,
-                                 Constant, SerializableType)
+from pydsdl import Any as DsdlAny
+from pydsdl import (CompositeType, PrimitiveType,
+                    Constant, SerializableType)
 
 from ..generators import AbstractGenerator
 

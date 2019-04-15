@@ -51,7 +51,7 @@ import sys
 
 from pathlib import Path, PurePath
 
-from pydsdl.serializable import CompositeType
+from pydsdl import CompositeType
 
 if sys.version_info[:2] < (3, 5):   # pragma: no cover
     print('A newer version of Python is required', file=sys.stderr)

@@ -13,7 +13,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import Dict, KeysView
 
-from pydsdl.serializable import CompositeType
+from pydsdl import CompositeType
 
 
 class AbstractGenerator(metaclass=ABCMeta):
