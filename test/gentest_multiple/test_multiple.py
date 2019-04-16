@@ -17,12 +17,12 @@ import subprocess
 
 
 @pytest.fixture
-def gen_paths():
+def gen_paths():  # type: ignore
     from fixtures import GenTestPaths
     return GenTestPaths(__file__)
 
 
-def test_two_root_error(gen_paths) -> None:
+def test_two_root_error(gen_paths):  # type: ignore
     """ Verifies that we are trying to use a type outside of the root.
     """
     root_namespace = str(gen_paths.dsdl_dir / Path("scotec"))
@@ -30,7 +30,7 @@ def test_two_root_error(gen_paths) -> None:
         read_namespace(root_namespace, [], allow_unregulated_fixed_port_id=True)
 
 
-def test_three_roots(gen_paths) -> None:
+def test_three_roots(gen_paths):  # type: ignore
     """ Generates a type that uses another type from a different root namespace.
     """
 
@@ -51,12 +51,12 @@ def test_three_roots(gen_paths) -> None:
         json_blob = json.load(json_file)
 
     assert len(json_blob) > 0
-    assert len(json_blob['scotec.FatherType']['fields']) == 2
-    assert json_blob['scotec.FatherType']['fields'][0]['type'] == 'huckco.SonType.0.1'
-    assert json_blob['scotec.FatherType']['fields'][1]['type'] == 'esmeinc.DaughterType.0.1'
+    assert len(json_blob['scotec.FatherType']['attributes']) == 2
+    assert json_blob['scotec.FatherType']['attributes'][0]['type'] == 'huckco.SonType.0.1'
+    assert json_blob['scotec.FatherType']['attributes'][1]['type'] == 'esmeinc.DaughterType.0.1'
 
 
-def test_three_roots_using_dsdlgenj(gen_paths) -> None:
+def test_three_roots_using_dsdlgenj(gen_paths):  # type: ignore
     dsdlgen_cmd = ['dsdlgenj',
                    '--templates', str(gen_paths.templates_dir),
                    '-I', str(gen_paths.dsdl_dir / Path("huckco")),

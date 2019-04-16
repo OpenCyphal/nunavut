@@ -9,6 +9,8 @@ from pathlib import Path
 import pytest
 import json
 
+from typing import Dict
+
 from pydsdl import read_namespace
 from pydsdlgen import create_type_map
 from pydsdlgen.jinja import Generator
@@ -31,16 +33,16 @@ class d(b, c):
 
 
 @pytest.fixture
-def gen_paths():
+def gen_paths():  # type: ignore
     from fixtures import GenTestPaths
     return GenTestPaths(__file__)
 
 
-def test_bfs_of_type_for_template(gen_paths) -> None:
+def test_bfs_of_type_for_template(gen_paths):  # type: ignore
     """ Verifies that our template to type lookup logic does a breadth-first search for a valid
     template when searching type names.
     """
-    target_map = dict()
+    target_map = dict()  # type: Dict
     generator = Generator(target_map, gen_paths.templates_dir)
     subject = d()
     template_file = generator.filter_pydsdl_type_to_template(subject)
@@ -48,7 +50,7 @@ def test_bfs_of_type_for_template(gen_paths) -> None:
     assert generator.filter_pydsdl_type_to_template(subject) == template_file
 
 
-def test_one_template(gen_paths) -> None:
+def test_one_template(gen_paths):  # type: ignore
     """ Verifies that we can use only a SeralizableType.j2 as the only template when
     no service types are present.
     """
@@ -68,7 +70,7 @@ def test_one_template(gen_paths) -> None:
     assert json_blob['uavcan.time.TimeSystem']['is_serializable']
 
 
-def test_get_templates(gen_paths) -> None:
+def test_get_templates(gen_paths):  # type: ignore
     """
     Verifies the pydsdlgen.jinja.Generator.get_templates() method.
     """

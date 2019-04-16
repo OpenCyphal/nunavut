@@ -13,12 +13,12 @@ from pydsdl import read_namespace
 
 
 @pytest.fixture
-def gen_paths():
+def gen_paths():  # type: ignore
     from fixtures import GenTestPaths
     return GenTestPaths(__file__)
 
 
-def test_realgen(gen_paths) -> None:
+def test_realgen(gen_paths):  # type: ignore
     """
     Sanity test that runs through the entire public, regulated set of
     UAVCAN types and generates some basic C code.

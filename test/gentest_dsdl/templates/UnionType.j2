@@ -2,8 +2,8 @@
 {% block object %}
 
 typedef union {{ T.full_name | replace('.', '_') }}Type {
-{% for field in T.attributes %}
-  // {{ field }}
+{% for attribute in T.attributes %}
+  // {{ attribute }}
 {% endfor %}
 } {{ T.full_name | replace('.', '_') }};
 

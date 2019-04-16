@@ -15,10 +15,10 @@
           "major" : {{ T.version.major }},
           "minor" : {{ T.version.minor }}
         },
-        "fields" :
+        "attributes" :
         [
-{%- for field in T.attributes %}
-          {%* include field.data_type | pydsdl_type_to_template %}
+{%- for attribute in T.attributes %}
+          {%* include attribute.data_type | pydsdl_type_to_template %}
 {%- if not loop.last %},{% endif %}
 {%- endfor %}
         ]

@@ -3,7 +3,7 @@ Template Language Guide
 ################################################
 
 For now we have only a jinja generator for code generation. As such this guide will
-only discuss using pydsdlgen with jinja templates. There are not immediate plans
+only discuss using pydsdlgen with jinja templates. There are no immediate plans
 to support any other template syntax.
 
 *************************************************
@@ -33,7 +33,8 @@ The T global contains the type for the given template. For example::
 Filters and Tests
 =================================================
 
-In addition to the built-in Jinja filters and tests (again, see the `Jinja templates documentation`_ for details)
+In addition to the built-in Jinja filters and tests (again, see the
+`Jinja templates documentation`_ for details)
 pydsdl adds several global tests and filters to the template environment.
 See :mod:`pydsdlgen.jinja` for full documentation on these. For example::
 
@@ -109,11 +110,11 @@ Resolving Types to Templates
 =================================================
 
 You can apply the same logic used by the top level generator to recursively include templates
-by type if this seems useful for your project. Simply use the 
+by type if this seems useful for your project. Simply use the
 :func:`pydsdlgen.jinja.Generator.filter_pydsdl_type_to_template` filter::
 
-    {%- for field in T.attributes %}
-        {%* include field.data_type | pydsdl_type_to_template %}
+    {%- for attribute in T.attributes %}
+        {%* include attribute.data_type | pydsdl_type_to_template %}
     {%- endfor %}
 
 

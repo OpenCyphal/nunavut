@@ -14,12 +14,12 @@ from pydsdlgen.jinja import Generator
 
 
 @pytest.fixture
-def gen_paths():
+def gen_paths():  # type: ignore
     from fixtures import GenTestPaths
     return GenTestPaths(__file__)
 
 
-def test_TestType_0_1(gen_paths) -> None:
+def test_TestType_0_1(gen_paths):  # type: ignore
     """ Generates a JSON blob and then reads it back in.
 
     This test uses an extremely simple DSDL type to generate JSON then
@@ -51,16 +51,16 @@ def test_TestType_0_1(gen_paths) -> None:
     assert test_type["name"] == "TestType"
     assert test_type["version"]["major"] == 0
     assert test_type["version"]["minor"] == 1
-    assert len(test_type["fields"]) == 2
+    assert len(test_type["attributes"]) == 2
 
-    test_field_0 = test_type["fields"][0]
-    assert test_field_0["name"] == "data"
-    assert test_field_0["type"] == "uint56"
-    assert test_field_0["bit_length"] == 56
-    assert test_field_0["cast_mode"] == "TRUNCATED"
+    test_attr_0 = test_type["attributes"][0]
+    assert test_attr_0["name"] == "data"
+    assert test_attr_0["type"] == "uint56"
+    assert test_attr_0["bit_length"] == 56
+    assert test_attr_0["cast_mode"] == "TRUNCATED"
 
-    test_field_1 = test_type["fields"][1]
-    assert test_field_1["name"] == "const_bool_example"
-    assert test_field_1["type"] == "uint1"
-    assert test_field_1["bit_length"] == 1
-    assert test_field_1["cast_mode"] == "SATURATED"
+    test_attr_1 = test_type["attributes"][1]
+    assert test_attr_1["name"] == "const_bool_example"
+    assert test_attr_1["type"] == "uint1"
+    assert test_attr_1["bit_length"] == 1
+    assert test_attr_1["cast_mode"] == "SATURATED"

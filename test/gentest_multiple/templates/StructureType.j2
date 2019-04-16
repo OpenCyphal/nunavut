@@ -2,9 +2,9 @@
 { 
     "{{T.full_name}}": {
         "namespace": "{{ T.full_namespace }}",
-        "fields": [
-{%- for field in T.attributes %}
-            { "type": "{{ field.data_type }}" }
+        "attributes": [
+{%- for attribute in T.attributes %}
+            { "type": "{{ attribute.data_type }}" }
 {%- if not loop.last %},{% endif %}
 {%- endfor %}
         ]

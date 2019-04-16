@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 class JinjaAssert(Extension):
     """
-    Jinja2 extension that allows ``{% assert T.field %}`` statements. Templates should
+    Jinja2 extension that allows ``{% assert T.attribute %}`` statements. Templates should
     uses these statements where False values would result in malformed source code.
     """
 
@@ -116,12 +116,12 @@ class Generator(AbstractGenerator):
         Result Example (truncated for brevity)::
 
             /*
-            !!python/object:pydsdl.serializable.StructureType
+            !!python/object:pydsdl.StructureType
             _attributes:
-            - !!python/object:pydsdl.serializable.Field
-            _serializable: !!python/object:pydsdl.serializable.UnsignedIntegerType
+            - !!python/object:pydsdl.Field
+            _serializable: !!python/object:pydsdl.UnsignedIntegerType
                 _bit_length: 16
-                _cast_mode: &id001 !!python/object/apply:pydsdl.serializable.CastMode
+                _cast_mode: &id001 !!python/object/apply:pydsdl.CastMode
                 - 0
             _name: value
             */
@@ -144,8 +144,8 @@ class Generator(AbstractGenerator):
 
         Example::
 
-            {%- for field in T.attributes %}
-                {%* include field.data_type | pydsdl_type_to_template %}
+            {%- for attribute in T.attributes %}
+                {%* include attribute.data_type | pydsdl_type_to_template %}
                 {%- if not loop.last %},{% endif %}
             {%- endfor %}
 
@@ -226,7 +226,7 @@ class Generator(AbstractGenerator):
 
         :param value: The instance to test.
 
-        :returns: True if value is an instance of ``pydsdl.serializable.PrimitiveType``.
+        :returns: True if value is an instance of ``pydsdl.PrimitiveType``.
         """
         return isinstance(value, PrimitiveType)
 
@@ -238,13 +238,13 @@ class Generator(AbstractGenerator):
 
         Example::
 
-            {%- if field is constant %}
-                const {{ field.data_type | c.type_from_primitive(use_standard_types=True) }} {{ field.name }} = {{ field.initialization_expression }};
+            {%- if attribute is constant %}
+                const {{ attribute.data_type | c.type_from_primitive(use_standard_types=True) }} {{ attribute.name }} = {{ attribute.initialization_expression }};
             {% endif %}
 
         :param value: The instance to test.
 
-        :returns: True if value is an instance of ``pydsdl.serializable.Constant``.
+        :returns: True if value is an instance of ``pydsdl.Constant``.
         """  # noqa: E501
         return isinstance(value, Constant)
 
@@ -256,13 +256,13 @@ class Generator(AbstractGenerator):
 
         Example::
 
-            {%- if field is serializable %}
+            {%- if attribute is serializable %}
                 // Yup, this is serializable
             {% endif %}
 
         :param value: The instance to test.
 
-        :returns: True if value is an instance of ``pydsdl.serializable.SerializableType``.
+        :returns: True if value is an instance of ``pydsdl.SerializableType``.
         """  # noqa: E501
         return isinstance(value, SerializableType)
 
