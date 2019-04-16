@@ -14,6 +14,7 @@ from collections import deque
 
 from typing import Dict, Any, Callable, Optional, List, Set, Deque
 
+from pydsdlgen import Namespace
 from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader,
                                     TemplateAssertionError, nodes,
                                     select_autoescape, StrictUndefined)
@@ -28,7 +29,7 @@ from pydsdl import (CompositeType, PrimitiveType,
 from ..generators import AbstractGenerator
 
 import inspect
-from .lang import add_language_support
+from .lang import add_language_support, get_supported_languages
 
 logger = logging.getLogger(__name__)
 
@@ -87,12 +88,14 @@ class Generator(AbstractGenerator):
     """ :class:`~pydsdlgen.generators.AbstractGenerator` implementation that uses
     Jinja2 templates to generate source code.
 
-    :param dict type_map:       A map of pydsdl types to the path the output file for
-                                this type will be generated at.
-    :param Path templates_dir:  The directory containing the jinja templates.
+    :param pydsdlgen.Namespace namespace:  The top-level namespace to generates types
+                                           at and from.
+    :param bool generate_namespace_types:  Set to true to emit files for namespaces.
+                                           False will only generate files for datatypes.
+    :param Path templates_dir:             The directory containing the jinja templates.
 
-    :param bool followlinks:    If True then symbolic links will be followed when
-                                searching for templates.
+    :param bool followlinks:               If True then symbolic links will be followed when
+                                           searching for templates.
     """
 
     TEMPLATE_SUFFIX = ".j2"  #: The suffix expected for Jinja templates.
@@ -137,15 +140,15 @@ class Generator(AbstractGenerator):
         except ImportError:
             return ""
 
-    def filter_pydsdl_type_to_template(self, value: Any) -> str:
+    def filter_type_to_template(self, value: Any) -> str:
         """
-        Template for type resolution as a filter. Available as ``pydsdl_type_to_template``
+        Template for type resolution as a filter. Available as ``type_to_template``
         in all template environments.
 
         Example::
 
             {%- for attribute in T.attributes %}
-                {%* include attribute.data_type | pydsdl_type_to_template %}
+                {%* include attribute.data_type | type_to_template %}
                 {%- if not loop.last %},{% endif %}
             {%- endfor %}
 
@@ -185,6 +188,30 @@ class Generator(AbstractGenerator):
                         discovered.add(data_type)
 
         return template_path.name
+
+    def filter_type_to_include_path(self, value: Any, resolve: bool = False) -> str:
+        """
+        Emits and include path to the output target for a given type.
+
+        Example::
+
+            #include "{{ T.my_type | type_to_include_path }}"
+
+        Result Example:
+
+            #include "foo/bar/my_type.h"
+
+        :param Any value: The type to emit an include for.
+        :param bool resolve: If True the path returned will be absolute else the path will
+                             be relative to the folder of the root namepace.
+        :returns: A string path to output file for the type.
+        """
+
+        include_path = self.namespace.find_output_path_for_type(value)
+        if resolve:
+            return str(include_path.resolve())
+        else:
+            return str(include_path.relative_to(self.namespace.output_folder.parent))
 
     @staticmethod
     def filter_typename(value: Any) -> str:
@@ -269,11 +296,12 @@ class Generator(AbstractGenerator):
     # +-----------------------------------------------------------------------+
 
     def __init__(self,
-                 type_map: Dict[CompositeType, Path],
+                 namespace: Namespace,
+                 generate_namespace_types: bool,
                  templates_dir: Path,
                  followlinks: bool = False):
 
-        super(Generator, self).__init__(type_map)
+        super(Generator, self).__init__(namespace, generate_namespace_types)
 
         if templates_dir is None:
             raise ValueError("Templates directory argument was None")
@@ -314,9 +342,8 @@ class Generator(AbstractGenerator):
 
         # Add in additional filters and tests for built-in languages this
         # module supports.
-        add_language_support('c', self._env)
-        add_language_support('cpp', self._env)
-        add_language_support('js', self._env)
+        for language_name in get_supported_languages():
+            add_language_support(language_name, self._env)
 
     def get_templates(self) -> List[Path]:
         """
@@ -332,12 +359,16 @@ class Generator(AbstractGenerator):
         return self._templates_list
 
     def generate_all(self, is_dryrun: bool = False) -> int:
-        for (parsed_type, output_path) in self.type_map.items():
-            self._generate_type(parsed_type, output_path, is_dryrun)
+        if self.generate_namespace_types:
+            for (parsed_type, output_path) in self.namespace.get_all_types():
+                self._generate_type(parsed_type, output_path, is_dryrun)
+        else:
+            for (parsed_type, output_path) in self.namespace.get_all_datatypes():
+                self._generate_type(parsed_type, output_path, is_dryrun)
         return 0
 
     def _generate_type(self, input_type: CompositeType, output_path: Path, is_dryrun: bool) -> None:
-        template_name = self.filter_pydsdl_type_to_template(input_type)
+        template_name = self.filter_type_to_template(input_type)
         self._env.globals["now_utc"] = datetime.utcnow()
         template = self._env.get_template(template_name)
         template_gen = template.generate(T=input_type)

@@ -30,6 +30,14 @@ The T global contains the type for the given template. For example::
         {{ attr.data_type }}
     {%- endfor %}
 
+now_utc
+=================================================
+
+The time UTC as a Python :code:`datetime.datetime` object. This is the system time right before
+the file generation step for the current template began. This will be the same time for included
+templates and parent templates.
+
+
 Filters and Tests
 =================================================
 
@@ -111,12 +119,33 @@ Resolving Types to Templates
 
 You can apply the same logic used by the top level generator to recursively include templates
 by type if this seems useful for your project. Simply use the
-:func:`pydsdlgen.jinja.Generator.filter_pydsdl_type_to_template` filter::
+:func:`pydsdlgen.jinja.Generator.filter_type_to_template` filter::
 
     {%- for attribute in T.attributes %}
-        {%* include attribute.data_type | pydsdl_type_to_template %}
+        {%* include attribute.data_type | type_to_template %}
     {%- endfor %}
 
+Namespace Templates
+=================================================
+
+By setting the :code:`generate_namespace_types` parameter of :class:`~pydsdlgen.jinja.Generator` to
+true the generator will invoke a template for the root namespace and all nested namespaces allowing
+for languages where namespaces are first class objects. For example::
+
+    root_namespace = build_namespace_tree(compound_types,
+                                          root_ns_folder,
+                                          out_dir,
+                                          '.py',
+                                          '__init__')
+
+    generator = Generator(root_namespace, True, templates_dir)
+
+This could be used to generate python :code:`__init__.py` files which would define each namespace
+as a python module.
+
+The :class:`~pydsdlgen.jinja.Generator` will use the same template name resolution logic as used
+for pydsdl data types. For namespaces this will resolve first to a template named
+:code:`Namespace.j2` and then, if not found, :code:`Any.j2`.
 
 .. _`Jinja templates documentation`: http://jinja.pocoo.org/docs/2.10/templates/
 .. _`Jinja template inheritance`: http://jinja.pocoo.org/docs/2.10/templates/#template-inheritance

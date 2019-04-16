@@ -11,7 +11,7 @@ import pytest
 from typing import Dict
 
 from pydsdl import read_namespace
-from pydsdlgen import create_type_map
+from pydsdlgen import build_namespace_tree
 from pydsdlgen.jinja import Generator
 
 
@@ -25,14 +25,19 @@ def test_lang_c(gen_paths):  # type: ignore
     """ Generates and verifies JSON with values filtered using the c language support module.
     """
 
-    root_namespace = str(gen_paths.dsdl_dir / Path("langtest"))
+    root_namespace_dir = gen_paths.dsdl_dir / Path("langtest")
+    root_namespace = str(root_namespace_dir)
     compound_types = read_namespace(root_namespace, '', allow_unregulated_fixed_port_id=True)
-    target_map = create_type_map(compound_types, gen_paths.out_dir, '.py')
-    generator = Generator(target_map, gen_paths.templates_dir)
+    namespace = build_namespace_tree(compound_types,
+                                     root_namespace_dir,
+                                     gen_paths.out_dir,
+                                     '.py',
+                                     '_')
+    generator = Generator(namespace, False, gen_paths.templates_dir)
     generator.generate_all(False)
 
     # Now read back in and verify
-    outfile = gen_paths.find_outfile_in_type_map("langtest.c.TestType", target_map)
+    outfile = gen_paths.find_outfile_in_namespace("langtest.c.TestType", namespace)
 
     assert (outfile is not None)
 
@@ -74,14 +79,19 @@ def test_lang_cpp(gen_paths):  # type: ignore
     """Generates and verifies JSON with values filtered using the cpp language module.
     """
 
-    root_namespace = str(gen_paths.dsdl_dir / Path("langtest"))
+    root_namespace_dir = gen_paths.dsdl_dir / Path("langtest")
+    root_namespace = str(root_namespace_dir)
     compound_types = read_namespace(root_namespace, '', allow_unregulated_fixed_port_id=True)
-    target_map = create_type_map(compound_types, gen_paths.out_dir, '.py')
-    generator = Generator(target_map, gen_paths.templates_dir)
+    namespace = build_namespace_tree(compound_types,
+                                     root_namespace_dir,
+                                     gen_paths.out_dir,
+                                     '.py',
+                                     '_')
+    generator = Generator(namespace, False, gen_paths.templates_dir)
     generator.generate_all(False)
 
     # Now read back in and verify
-    outfile = gen_paths.find_outfile_in_type_map("langtest.cpp.ns.TestType", target_map)
+    outfile = gen_paths.find_outfile_in_namespace("langtest.cpp.ns.TestType", namespace)
 
     assert (outfile is not None)
 

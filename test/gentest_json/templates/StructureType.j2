@@ -18,7 +18,7 @@
         "attributes" :
         [
 {%- for attribute in T.attributes %}
-          {%* include attribute.data_type | pydsdl_type_to_template %}
+          {%* include attribute.data_type | type_to_template %}
 {%- if not loop.last %},{% endif %}
 {%- endfor %}
         ]

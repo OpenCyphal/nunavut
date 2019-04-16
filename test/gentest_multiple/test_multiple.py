@@ -10,7 +10,7 @@ import pytest
 import json
 
 from pydsdl import read_namespace, FrontendError
-from pydsdlgen import create_type_map
+from pydsdlgen import build_namespace_tree
 from pydsdlgen.jinja import Generator
 
 import subprocess
@@ -38,12 +38,16 @@ def test_three_roots(gen_paths):  # type: ignore
     includes = [str(gen_paths.dsdl_dir / Path("huckco")),
                 str(gen_paths.dsdl_dir / Path("esmeinc"))]
     compound_types = read_namespace(root_namespace, includes, allow_unregulated_fixed_port_id=True)
-    target_map = create_type_map(compound_types, gen_paths.out_dir, '.json')
-    generator = Generator(target_map, gen_paths.templates_dir)
+    namespace = build_namespace_tree(compound_types,
+                                     root_namespace,
+                                     gen_paths.out_dir,
+                                     '.json',
+                                     '_')
+    generator = Generator(namespace, False, gen_paths.templates_dir)
     generator.generate_all(False)
 
     # Now read back in and verify
-    outfile = gen_paths.find_outfile_in_type_map("scotec.FatherType", target_map)
+    outfile = gen_paths.find_outfile_in_namespace("scotec.FatherType", namespace)
 
     assert (outfile is not None)
 

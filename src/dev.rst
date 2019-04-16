@@ -35,16 +35,62 @@ linters and previewers to work.
 First off, use a `virtualenv`_, installing the project's :code:`requirements.txt` and an editable
 version of the package itself.
 
-Next you'll need to create a local :code:`.env` file with the following contents::
-
-    PYTHONPATH=test
-
 This will enable running pytest from vscode. Now you can launch vscode for this repository::
 
     code .
 
-For the python interpreter select the local .venv and set flake8 to be your only linter. The rest of
-your python environment should now be functional.
+For the python interpreter select the local .venv and set flake8 and mypy as your linters (we don't
+use pylint for this project). The rest of your python environment should now be functional.
+
+
+debugging
+------------------------------------------------
+
+The Python plugin for vscode comes with a full-featured Python debugger. To setup a debug session
+for dsdlgenj open the launch.json for your workspace and add a configuration like the following
+to the configurations array::
+
+    {
+        "name": "Python: dsdlgenj",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/src/dsdlgenj",
+        "cwd": "${workspaceFolder}",
+        "console": "integratedTerminal",
+        "args": ["--templates", "test/gentest_dsdl/templates",
+                    "--output-extension", ".h",
+                    "-v",
+                    "test/gentest_dsdl/dsdl/uavcan"
+                ]
+    }
+
+.. note ::
+
+    Note that each argument part must be a separate entry in the args array. Using a single space
+    separated string does not work as you might expect since this results in a single string that
+    contains spaces being passed as an argument.
+
+The output for this example will appear under the default output directory for dsdlgenj
+:code:`${workspaceFolder}/pydsdlgen_out`
+
+You can setup a debug session for unit tests using a similar launch configuration that invokes the
+:code:`pytest` module. For example::
+
+    {
+        "name": "Python: pyunit",
+        "type": "python",
+        "request": "launch",
+        "module": "pytest",
+        "cwd": "${workspaceFolder}/test",
+        "console": "integratedTerminal",
+        "args": ["--basetemp=${workspaceFolder}/build",
+                 "-p", "no:cacheprovider",
+                 "-k", "gentest_any"]
+    }
+
+...where :code:`-k` is a pattern to filter for a specific test or set of tests (Omit all args to
+debug all tests). The :code:`--basetemp` and :code:`-p no:cacheprovider` arguments prevent local
+testing from conflicting with tox test runs.
 
 
 restructured text
@@ -52,8 +98,8 @@ restructured text
 
 You'll need to tweak two settings to get restructured text preview and linting to work::
 
-    "restructuredtext.sphinxBuildPath": "${workspaceFolder}/.pyenv/bin/sphinx-build",
-    "restructuredtext.confPath": "${workspaceFolder}/src/conf.py"
+    "restructuredtext.sphinxBuildPath": "sphinx-build",
+    "restructuredtext.confPath": "${workspaceFolder}/src"
 
 If you installed everything in :code:`requirements.txt` then the python extension for vscode
 will lint your .rst as you type and will support a fairly accurate reStructuredText preview.
@@ -107,7 +153,7 @@ test run (See `Running The Tests`_) or do
 "tox -e docs"` to build the docs target.
 You can open the index.html under .tox/docs/tmp/index.html or run a local webserver::
 
-    python -m http.server --directory .tox/docs/tmp
+    python -m http.server --directory .tox/docs/tmp &
     open http://localhost:8000/index.html
 
 Of course, you can just use `Visual Studio Code`_ to build and preview the docs using
@@ -126,7 +172,7 @@ Coverage
 We generate a local html coverage report. You can open the index.html under .tox/report/tmp
 or run a local webserver::
 
-    python -m http.server --directory .tox/report/tmp
+    python -m http.server --directory .tox/report/tmp &
     open http://localhost:8000/index.html
 
 Mypy

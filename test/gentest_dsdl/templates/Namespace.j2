@@ -1,0 +1,8 @@
+{% extends "c_header.j2" %}
+{% block object %}
+
+{% for datatype in T.data_types %}
+#include "{{ datatype | type_to_include_path }}"
+{% endfor %}
+
+{% endblock %}

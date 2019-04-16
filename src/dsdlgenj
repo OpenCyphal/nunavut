@@ -27,35 +27,47 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
     # pydsdlgen : load module
     #
     from pydsdl import read_namespace
-    from pydsdlgen import create_type_map
+    from pydsdlgen import build_namespace_tree
     from pydsdlgen.jinja import Generator
 
     #
     # pydsdlgen : parse
     #
     type_map = read_namespace(args.root_namespace, extra_includes)
-    target_map = create_type_map(
-        type_map, args.outdir, args.output_extension)
+
+    root_namespace = build_namespace_tree(
+        type_map,
+        args.root_namespace,
+        args.outdir,
+        args.output_extension,
+        args.namespace_output_stem)
 
     #
     # pydsdlgen : generate
     #
 
     if args.list_outputs:
-        for output_path in target_map.values():
+        for _, output_path in root_namespace.get_all_datatypes():
             sys.stdout.write(str(output_path))
             sys.stdout.write(';')
         return 0
 
-    generator = Generator(target_map, Path(args.templates))
+    generator = Generator(root_namespace,
+                          args.generate_namespace_types,
+                          Path(args.templates))
 
     if args.list_inputs:
         for input_path in generator.get_templates():
             sys.stdout.write(str(input_path.resolve()))
             sys.stdout.write(';')
-        for output_type in target_map.keys():
-            sys.stdout.write(str(output_type.source_file_path))
-            sys.stdout.write(';')
+        if args.generate_namespace_types:
+            for output_type, _ in root_namespace.get_all_types():
+                sys.stdout.write(str(output_type.source_file_path))
+                sys.stdout.write(';')
+        else:
+            for output_type, _ in root_namespace.get_all_datatypes():
+                sys.stdout.write(str(output_type.source_file_path))
+                sys.stdout.write(';')
         return 0
 
     if not args.list_outputs and not args.list_inputs:
@@ -131,7 +143,7 @@ separated by colons ":"'''
 
     parser.add_argument('--templates',
                         required='--list-outputs' not in sys.argv,
-                        help="A path to a directory containing templates to use when generating code.")
+                        help='A path to a directory containing templates to use when generating code.')
 
     def extension_type(raw_arg: str) -> str:
         if len(raw_arg) > 0 and not raw_arg.startswith('.'):
@@ -142,10 +154,10 @@ separated by colons ":"'''
     parser.add_argument('--output-extension', '-e', default='', type=extension_type,
                         help='The extension to use for generated files.')
 
-    parser.add_argument('--dry-run', '-d', action="store_true",
-                        help="If True then no files will be generated.")
+    parser.add_argument('--dry-run', '-d', action='store_true',
+                        help='If True then no files will be generated.')
 
-    parser.add_argument('--list-outputs', action="store_true",
+    parser.add_argument('--list-outputs', action='store_true',
                         help='''Emit a semicolon-separated list of files.
 (implies --dry-run)
 Emits files that would be generated if invoked without --dry-run.
@@ -154,13 +166,29 @@ systems that need a list of targets to determine if a rebuild is
 necessary.'''
                         )
 
-    parser.add_argument('--list-inputs', action="store_true",
+    parser.add_argument('--list-inputs', action='store_true',
                         help='''Emit a semicolon-separated list of files.
 (implies --dry-run)
 A list of files that are resolved given input arguments like templates.
 This command is useful for integrating with CMake and other build systems
 that need a list of inputs to determine if a rebuild is necessary.'''
                         )
+
+    parser.add_argument('--generate-namespace-types',
+                        action='store_true',
+                        help='''If enabled this script will generate source for namespaces.
+All namespaces including and under the root namespace will be treated as a
+pseudo-type and the appropriate template will be used. The generator will
+first look for a template with the stem "Namespace" and will then use the
+"Any" template if that is available. The name of the output file will be
+the default value for the --namespace-output-stem argument and can be
+changed using that argument.
+'''
+                        )
+
+    parser.add_argument('--namespace-output-stem',
+                        default='Namespace',
+                        help='The name of the file generated when --generate-namespace-types is provided.')
 
     return parser
 
