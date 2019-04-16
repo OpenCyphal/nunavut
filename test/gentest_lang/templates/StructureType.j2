@@ -2,9 +2,9 @@
 lang_c = {
     'namespace': '{{ T.full_namespace }}',
     'namespace_macrofy': '{{ T.full_namespace | c.macrofy }}',
-{%- for field in T.attributes %}
-    'ctype_std {{ field.data_type }}': '{{ field.data_type | c.type_from_primitive }}',
-    'ctype {{ field.data_type }}': '{{ field.data_type | c.type_from_primitive(False) }}'
+{%- for attribute in T.attributes %}
+    'ctype_std {{ attribute.data_type }}': '{{ attribute.data_type | c.type_from_primitive }}',
+    'ctype {{ attribute.data_type }}': '{{ attribute.data_type | c.type_from_primitive(False) }}'
 {%- if not loop.last %},{% endif %}
 {%- endfor %}
 }

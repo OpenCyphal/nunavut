@@ -10,7 +10,7 @@ text files are often source code this module could also be used to generate
 documentation or data interchange formats like JSON or XML.
 
 The input to the pydsdlgen library is a list of templates and a list of
-``pydsdl.serializable.CompositeType`` objects. The latter is typically obtained
+``pydsdl.CompositeType`` objects. The latter is typically obtained
 by calling pydsdl::
 
     from pydsdl import read_namespace

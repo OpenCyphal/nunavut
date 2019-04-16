@@ -8,18 +8,20 @@ from pathlib import Path
 
 import pytest
 
+from typing import Dict
+
 from pydsdl import read_namespace
 from pydsdlgen import create_type_map
 from pydsdlgen.jinja import Generator
 
 
 @pytest.fixture
-def gen_paths():
+def gen_paths():  # type: ignore
     from fixtures import GenTestPaths
     return GenTestPaths(__file__)
 
 
-def test_lang_c(gen_paths) -> None:
+def test_lang_c(gen_paths):  # type: ignore
     """ Generates and verifies JSON with values filtered using the c language support module.
     """
 
@@ -34,7 +36,7 @@ def test_lang_c(gen_paths) -> None:
 
     assert (outfile is not None)
 
-    generated_values = {}
+    generated_values = {}  # type: Dict
     with open(str(outfile), 'r') as python_file:
         exec(python_file.read(), generated_values)
 
@@ -68,7 +70,7 @@ def test_lang_c(gen_paths) -> None:
     assert lang_c_output["ctype_std saturated bool"] == "bool"
 
 
-def test_lang_cpp(gen_paths) -> None:
+def test_lang_cpp(gen_paths):  # type: ignore
     """Generates and verifies JSON with values filtered using the cpp language module.
     """
 
@@ -83,7 +85,7 @@ def test_lang_cpp(gen_paths) -> None:
 
     assert (outfile is not None)
 
-    generated_values = {}
+    generated_values = {}  # type: Dict
     with open(str(outfile), 'r') as python_file:
         exec(python_file.read(), generated_values)
 

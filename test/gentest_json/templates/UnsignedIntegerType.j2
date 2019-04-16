@@ -1,9 +1,9 @@
 { 
-    "name": "{{ field.name }}"
-  , "type" : "uint{{ field.data_type.bit_length }}"
-  , "bit_length" : {{ field.data_type.bit_length }}
-  , "cast_mode" : "{{ field.data_type.cast_mode.name }}"
-{%- if field is constant %}
-  , "const_value" : {{ field.value }}
+    "name": "{{ attribute.name }}"
+  , "type" : "uint{{ attribute.data_type.bit_length }}"
+  , "bit_length" : {{ attribute.data_type.bit_length }}
+  , "cast_mode" : "{{ attribute.data_type.cast_mode.name }}"
+{%- if attribute is constant %}
+  , "const_value" : {{ attribute.value }}
 {% endif -%}
 }

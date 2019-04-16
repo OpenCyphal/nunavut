@@ -104,10 +104,10 @@ class _CFit(Enum):
 
 def filter_type_from_primitive(value: PrimitiveType, use_standard_types: bool = True) -> str:
     """
-        Filter to transform a pydsdl :class:`~pydsdl.serializable.PrimitiveType` into
+        Filter to transform a pydsdl :class:`~pydsdl.PrimitiveType` into
         a valid C type.
 
-        The following example assumes that serializable is of :class:`~.pydsdl.serializable.UnsignedIntegerType`
+        The following example assumes that serializable is of :class:`~.pydsdl.UnsignedIntegerType`
         and has a 32 bit length.
 
         Example::

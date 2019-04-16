@@ -4,7 +4,7 @@
 # This software is distributed under the terms of the MIT License.
 #
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 from pydsdl import CompositeType
 
 
@@ -16,11 +16,11 @@ class GenTestPaths:
         self.test_name = test_file_path.parent.stem
         self.test_dir = test_file_path.parent
         self.root_dir = self.test_dir.resolve().parent.parent
-        self._build_dir = None
-        self._test_dir = None
-        self._out_dir = None
-        self._templates_dir = None
-        self._dsdl_dir = None
+        self._build_dir = None  # type: Optional[Path]
+        self._test_dir = None  # type: Optional[Path]
+        self._out_dir = None  # type: Optional[Path]
+        self._templates_dir = None  # type: Optional[Path]
+        self._dsdl_dir = None  # type: Optional[Path]
         print('Paths for test "{}" under dir {}'.format(self.test_name, self.test_dir))
         print('(root directory: {})'.format(self.root_dir))
 
@@ -55,7 +55,7 @@ class GenTestPaths:
         return self._dsdl_dir
 
     @staticmethod
-    def find_outfile_in_type_map(typename: str, type_map: Dict[CompositeType, str]) -> str:
+    def find_outfile_in_type_map(typename: str, type_map: Dict[CompositeType, str]) -> Optional[str]:
         for dsdl_type, outfile in type_map.items():
             if dsdl_type.full_name == typename:
                 return outfile

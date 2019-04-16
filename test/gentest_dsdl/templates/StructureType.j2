@@ -2,11 +2,11 @@
 {% block object %}
 
 typedef struct {{ T.full_name | replace('.', '_') }}Type {
-{%- for field in T.attributes %}
-{%- if field is constant %}
-  const {{ field.data_type | c.type_from_primitive(use_standard_types=True) }} {{ field.name }} = {{ field.value }};
-{%- elif field.data_type is primitive %}
-  {{ field.data_type | c.type_from_primitive }} {{ field.name }};
+{%- for attribute in T.attributes %}
+{%- if attribute is constant %}
+  const {{ attribute.data_type | c.type_from_primitive(use_standard_types=True) }} {{ attribute.name }} = {{ attribute.value }};
+{%- elif attribute.data_type is primitive %}
+  {{ attribute.data_type | c.type_from_primitive }} {{ attribute.name }};
 {% endif -%}
 {% endfor %}
 } {{ T.full_name | replace('.', '_') }};

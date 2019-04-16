@@ -2,8 +2,10 @@
 Contributor Notes
 #####################
 
-This is documentation for contributors developing pydsdlgen. If you are
-a user of this software you can ignore everything here.
+.. note::
+
+    This is documentation for contributors developing pydsdlgen. If you are
+    a user of this software you can ignore everything here.
 
 ************************************************
 Tools
@@ -59,7 +61,9 @@ will lint your .rst as you type and will support a fairly accurate reStructuredT
 ************************************************
 Running The Tests
 ************************************************
-To run the full suite of `tox`_ tests locally you'll need docker::
+
+To run the full suite of `tox`_ tests locally you'll need docker. Once you have docker installed
+and running do::
 
     git submodule update --init --recursive
     docker pull uavcan/toxic:py35-py38
@@ -71,7 +75,7 @@ import file mismatch
 
 If you get an error like the following::
 
-    ___________________________________________ ERROR collecting test/gentest_dsdl/test_dsdl.py ___________________________________________
+    _____ ERROR collecting test/gentest_dsdl/test_dsdl.py _______________________________________
     import file mismatch:
     imported module 'test_dsdl' has this __file__ attribute:
     /my/workspace/pydsdlgen/test/gentest_dsdl/test_dsdl.py
@@ -81,8 +85,8 @@ If you get an error like the following::
 
 
 Then you are probably a wonderful developer that is running the unit-tests locally. Pytest's cache
-is interfering with your docker test run. To work around this simply delete the pycache files. For example
-(writing a bash script ``.clear_pytest_cache``)::
+is interfering with your docker test run. To work around this simply delete the pycache files. For
+example::
 
     #! /usr/bin/env bash
     cleandirs="src test"
@@ -98,16 +102,42 @@ Building The Docs
 
 We rely on `read the docs`_ to build our documentation from github but we also verify this build
 as part of our tox build. This means you can view a local copy after completing a full, successful
-test run (See `Running The Tests`_) or do 
-:code:`docker run --rm -t -v /path/to/pydsdlgen:/repo uavcan/toxic:py35-py38 /bin/sh -c "tox -e docs"`
-to build just the docs target.
-You can open the index.html under src/.out-docs or run a local webserver::
+test run (See `Running The Tests`_) or do
+:code:`docker run --rm -t -v /path/to/pydsdlgen:/repo uavcan/toxic:py35-py38 /bin/sh -c
+"tox -e docs"` to build the docs target.
+You can open the index.html under .tox/docs/tmp/index.html or run a local webserver::
 
-    python -m http.server --directory src/.out-docs
+    python -m http.server --directory .tox/docs/tmp
+    open http://localhost:8000/index.html
 
 Of course, you can just use `Visual Studio Code`_ to build and preview the docs using
 :code:`> reStructuredText: Open Preview`.
 
+************************************************
+Coverage and Linting Reports
+************************************************
+
+We publish the results of our coverage data to `Codacy`_ and the tox build will fail for any mypy
+or flake8 errors but you can view additional reports locally under the :code:`.tox` dir.
+
+Coverage
+================================================
+
+We generate a local html coverage report. You can open the index.html under .tox/report/tmp
+or run a local webserver::
+
+    python -m http.server --directory .tox/report/tmp
+    open http://localhost:8000/index.html
+
+Mypy
+================================================
+
+At the end of the mypy run we generate the following summaries:
+
+- .tox/mypy/tmp/mypy-report-lib/index.txt
+- .tox/mypy/tmp/mypy-report-script/index.txt
+
 
 .. _`read the docs`: https://readthedocs.org/
 .. _`tox`: https://tox.readthedocs.io/en/latest/
+.. _`Codacy`: https://app.codacy.com/project/UAVCAN/pydsdlgen/dashboard

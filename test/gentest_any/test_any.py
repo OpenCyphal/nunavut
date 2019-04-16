@@ -14,12 +14,12 @@ from pydsdlgen.jinja import Generator
 
 
 @pytest.fixture
-def gen_paths():
+def gen_paths():  # type: ignore
     from fixtures import GenTestPaths
     return GenTestPaths(__file__)
 
 
-def test_anygen(gen_paths) -> None:
+def test_anygen(gen_paths):  # type: ignore
     """
     Verifies that any dsdl type will resolve to an ``Any`` template.
     """
