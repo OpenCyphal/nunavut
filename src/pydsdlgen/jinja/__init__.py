@@ -96,6 +96,14 @@ class Generator(AbstractGenerator):
 
     :param bool followlinks:               If True then symbolic links will be followed when
                                            searching for templates.
+    :param Dict[str, Callable] additional_filters: Optional jinja filters to add to the
+                                           global environment using the key as the filter name
+                                           and the callable as the filter.
+    :param Dict[str, Callable] additional_tests: Optional jinja tests to add to the
+                                           global environment using the key as the test name
+                                           and the callable as the test.
+    :raises RuntimeError: If any additional filter or test attempts to replace a built-in
+                          or otherwise already defined filter or test.
     """
 
     TEMPLATE_SUFFIX = ".j2"  #: The suffix expected for Jinja templates.
@@ -299,7 +307,10 @@ class Generator(AbstractGenerator):
                  namespace: Namespace,
                  generate_namespace_types: bool,
                  templates_dir: Path,
-                 followlinks: bool = False):
+                 followlinks: bool = False,
+                 additional_filters: Optional[Dict[str, Callable]] = None,
+                 additional_tests: Optional[Dict[str, Callable]] = None
+                 ):
 
         super(Generator, self).__init__(namespace, generate_namespace_types)
 
@@ -330,15 +341,7 @@ class Generator(AbstractGenerator):
                                 keep_trailing_newline=True,
                                 auto_reload=False)
 
-        # Automatically find the locally defined filters and
-        # tests and add them to the jinja environment.
-        member_functions = inspect.getmembers(self, inspect.isroutine)
-        for function_tuple in member_functions:
-            function_name = function_tuple[0]
-            if len(function_name) > 3 and function_name[0:3] == "is_":
-                self._env.tests[function_name[3:]] = function_tuple[1]
-            if len(function_name) > 7 and function_name[0:7] == "filter_":
-                self._env.filters[function_name[7:]] = function_tuple[1]
+        self._add_filters_and_tests(additional_filters, additional_tests)
 
         # Add in additional filters and tests for built-in languages this
         # module supports.
@@ -366,6 +369,35 @@ class Generator(AbstractGenerator):
             for (parsed_type, output_path) in self.namespace.get_all_datatypes():
                 self._generate_type(parsed_type, output_path, is_dryrun)
         return 0
+
+    # +-----------------------------------------------------------------------+
+    # | PRIVATE
+    # +-----------------------------------------------------------------------+
+
+    def _add_filters_and_tests(self,
+                               additional_filters: Optional[Dict[str, Callable]],
+                               additional_tests: Optional[Dict[str, Callable]]) -> None:
+        # Automatically find the locally defined filters and
+        # tests and add them to the jinja environment.
+        member_functions = inspect.getmembers(self, inspect.isroutine)
+        for function_tuple in member_functions:
+            function_name = function_tuple[0]
+            if len(function_name) > 3 and function_name[0:3] == "is_":
+                self._env.tests[function_name[3:]] = function_tuple[1]
+            if len(function_name) > 7 and function_name[0:7] == "filter_":
+                self._env.filters[function_name[7:]] = function_tuple[1]
+
+        if additional_filters is not None:
+            for name, additional_filter in additional_filters.items():
+                if name in self._env.filters:
+                    raise RuntimeError('filter {} was already defined.'.format(name))
+                self._env.filters[name] = additional_filter
+
+        if additional_tests is not None:
+            for name, additional_test in additional_tests.items():
+                if name in self._env.tests:
+                    raise RuntimeError('test {} was already defined.'.format(name))
+                self._env.tests[name] = additional_test
 
     def _generate_type(self, input_type: CompositeType, output_path: Path, is_dryrun: bool) -> None:
         template_name = self.filter_type_to_template(input_type)
