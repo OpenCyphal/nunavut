@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from pydsdlgen import create_type_map
+from pydsdlgen import build_namespace_tree
 from pydsdlgen.jinja import Generator
 from pydsdl import read_namespace
 
@@ -23,7 +23,12 @@ def test_realgen(gen_paths):  # type: ignore
     Sanity test that runs through the entire public, regulated set of
     UAVCAN types and generates some basic C code.
     """
-    type_map = read_namespace(str(gen_paths.dsdl_dir / Path("uavcan")), '')
-    target_map = create_type_map(type_map, gen_paths.out_dir, '.h')
-    generator = Generator(target_map, gen_paths.templates_dir)
+    root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
+    type_map = read_namespace(str(root_namespace_dir), '')
+    namespace = build_namespace_tree(type_map,
+                                     root_namespace_dir,
+                                     gen_paths.out_dir,
+                                     '.h',
+                                     '_')
+    generator = Generator(namespace, False, gen_paths.templates_dir)
     generator.generate_all(False)

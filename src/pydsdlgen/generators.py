@@ -10,10 +10,8 @@ pydsdl AST into source code.
 """
 
 from abc import ABCMeta, abstractmethod
-from pathlib import Path
-from typing import Dict, KeysView
 
-from pydsdl import CompositeType
+from pydsdlgen import Namespace
 
 
 class AbstractGenerator(metaclass=ABCMeta):
@@ -21,25 +19,38 @@ class AbstractGenerator(metaclass=ABCMeta):
         Abstract base class for classes that generate source file output
         from a given pydsdl parser result.
 
-        :param dict type_map:   A map of pydsdl types to the path the type will be generated at.
+        :param pydsdlgen.Namespace namespace:  The top-level namespace to
+            generates types at and from.
+        :param bool generate_namespace_types:  Set to true to emit files
+            for namespaces. False will only generate files for datatypes.
     """
 
     def __init__(self,
-                 type_map: Dict[CompositeType, Path]):
-        self._type_map = type_map
+                 namespace: Namespace,
+                 generate_namespace_types: bool):
+        self._namespace = namespace
+        self._generate_namespace_types = generate_namespace_types
 
     @property
-    def input_types(self) -> KeysView[CompositeType]:
-        return self._type_map.keys()
+    def namespace(self) -> Namespace:
+        """
+        The root :class:`pydsdlgen.Namespace` for this generator.
+        """
+        return self._namespace
 
     @property
-    def type_map(self) -> Dict[CompositeType, Path]:
-        return self._type_map
+    def generate_namespace_types(self) -> bool:
+        """
+        If true then the generator is set to emit files for :class:`pydsdlgen.Namespace`
+        in addition to the pydsdl datatypes. If false then only files for pydsdl datatypes
+        will be generated.
+        """
+        return self._generate_namespace_types
 
     @abstractmethod
     def generate_all(self, is_dryrun: bool = False) -> int:
         """
-        Generates all output for a given set of dsdl inputs and using
+        Generates all output for a given :class:`pydsdlgen.Namespace` and using
         the templates found by this object.
 
         :param bool is_dryrun: If True then no output files will actually be

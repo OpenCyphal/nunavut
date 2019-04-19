@@ -1,0 +1,7 @@
+
+{ 
+    "{{T.full_name}}": {
+        "namespace": "{{ T.full_namespace }}",
+        "is_serializable": {%- if T is serializable -%}true{%- else -%}false{%- endif -%}
+    }
+}

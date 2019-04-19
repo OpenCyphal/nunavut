@@ -4,8 +4,9 @@
 # This software is distributed under the terms of the MIT License.
 #
 from pathlib import Path
-from typing import Dict, Optional
-from pydsdl import CompositeType
+from typing import Optional
+from pydsdl import Any
+from pydsdlgen import Namespace
 
 
 class GenTestPaths:
@@ -55,10 +56,10 @@ class GenTestPaths:
         return self._dsdl_dir
 
     @staticmethod
-    def find_outfile_in_type_map(typename: str, type_map: Dict[CompositeType, str]) -> Optional[str]:
-        for dsdl_type, outfile in type_map.items():
+    def find_outfile_in_namespace(typename: str, namespace: Namespace) -> Optional[str]:
+        for dsdl_type, outfile in namespace.get_all_types():
             if dsdl_type.full_name == typename:
-                return outfile
+                return str(outfile)
         return None
 
     @staticmethod
@@ -70,3 +71,33 @@ class GenTestPaths:
         if not path_dir.exists() or not path_dir.is_dir():
             raise RuntimeWarning('Test directory "{}" was not setup properly. Tests may fail.'.format(path_dir))
         return path_dir
+
+
+class DummyType(Any):
+    """Fake dsdl 'any' type for testing."""
+
+    def __init__(self, namespace: str = 'uavcan', name: str = 'Dummy'):
+        self._full_name = '{}.{}'.format(namespace, name)
+
+    # +-----------------------------------------------------------------------+
+    # | DUCK TYPEING: CompositeType
+    # +-----------------------------------------------------------------------+
+    @property
+    def full_name(self) -> str:
+        return self._full_name
+
+    # +-----------------------------------------------------------------------+
+    # | PYTHON DATA MODEL
+    # +-----------------------------------------------------------------------+
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, DummyType):
+            return self._full_name == other._full_name
+        else:
+            return False
+
+    def __str__(self) -> str:
+        return self.full_name
+
+    def __hash__(self) -> int:
+        return hash(self._full_name)
