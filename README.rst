@@ -2,6 +2,13 @@
 PyDSDLgen
 ################################################
 
+.. note ::
+
+    PyDSDLgen is in version 1 since its basic architecture is fairly simple and unlikely to
+    change much in the near term, however, PyDSDLgen cannot be more mature than PyDSDL.
+    As such this package should be considered an Alpha release until it also relies on
+    a PyDSDL version 1.
+
 |badge_forum|_ |badge_docs|_ |badge_analysis|_ |badge_coverage|_ |badge_build|_ |badge_pypi|_
 
 PyDSDLgen is a `UAVCAN`_ DSDL code generator that automates exposing a `pydsdl`_ abstract
