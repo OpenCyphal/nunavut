@@ -1,7 +1,7 @@
 {% extends "c_header.j2" %}
 {% block object %}
 
-typedef struct {{ T.full_name | replace('.', '_') }}Type {
+typedef struct {{ T.full_name | c.to_snake_case }}Type {
 {%- for attribute in T.attributes %}
 {%- if attribute is constant %}
   const {{ attribute.data_type | c.type_from_primitive(use_standard_types=True) }} {{ attribute.name }} = {{ attribute.value }};
@@ -9,6 +9,6 @@ typedef struct {{ T.full_name | replace('.', '_') }}Type {
   {{ attribute.data_type | c.type_from_primitive }} {{ attribute.name }};
 {% endif -%}
 {% endfor %}
-} {{ T.full_name | replace('.', '_') }};
+} {{ T.full_name | c.to_snake_case }};
 
 {% endblock %}

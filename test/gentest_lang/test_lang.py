@@ -13,6 +13,7 @@ from typing import Dict
 from pydsdl import read_namespace
 from pydsdlgen import build_namespace_tree
 from pydsdlgen.jinja import Generator
+from pydsdlgen.jinja.lang import c
 
 
 @pytest.fixture
@@ -122,3 +123,9 @@ namespace ns {
 } // cpp
 } // langtest
 '''
+
+
+def test_c_to_snake_case():  # type: ignore
+    assert "scotec_mcu_timer" == c.filter_to_snake_case("scotec.mcu.Timer")
+    assert "scotec_mcu_timer_helper" == c.filter_to_snake_case("scotec.mcu.TimerHelper")
+    assert "aa_bb_c_cc_aaa_a_aa_aaa_aa_aaa_a_a" == c.filter_to_snake_case(" aa bb. cCcAAa_aAa_AAaAa_AAaA_a ")
