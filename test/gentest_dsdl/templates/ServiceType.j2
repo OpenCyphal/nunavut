@@ -1,13 +1,13 @@
 {% extends "c_header.j2" %}
 {% block object %}
 
-typedef struct {{ T.full_name | replace('.', '_') }}Type {
+typedef struct {{ T.full_name | c.to_snake_case }}Type {
 {% for attribute in T.attributes %}
   // {{ attribute }}
 {% endfor %}
 {% for field in T.fields %}
   // {{ field }}
 {% endfor %}
-} {{ T.full_name | replace('.', '_') }};
+} {{ T.full_name | c.to_snake_case }};
 
 {% endblock %}

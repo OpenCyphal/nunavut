@@ -12,7 +12,7 @@ install:
 - "echo $TRAVIS_BUILD_DIR"
 
 script:
-- "docker run --rm -e TRAVIS_BUILD_NUMBER=$TRAVIS_BUILD_NUMBER -e CODACY_PROJECT_TOKEN=$CODACY_PROJECT_TOKEN -v $TRAVIS_BUILD_DIR:/repo uavcan/toxic:py35-py38 /bin/sh -c tox"
+- "docker run --rm -e TRAVIS_BUILD_NUMBER=$TRAVIS_BUILD_NUMBER -e CODACY_PROJECT_TOKEN=$CODACY_PROJECT_TOKEN -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $TRAVIS_BUILD_DIR:/repo uavcan/toxic:py35-py38 /bin/sh -c tox"
 
 after_success:
 - tree

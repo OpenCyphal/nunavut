@@ -8,6 +8,8 @@
     module will be available in the template's global namespace as ``c``.
 """
 
+import re
+
 from enum import Enum, unique
 from typing import TypeVar, Type
 
@@ -127,3 +129,31 @@ def filter_type_from_primitive(value: PrimitiveType, use_standard_types: bool = 
         :raises TemplateRuntimeError: If the primitive cannot be represented as a standard C type.
     """
     return _CFit.get_best_fit(value.bit_length).to_c_type(value, use_standard_types)
+
+
+_snake_case_pattern_0 = re.compile(r'[\W]+')
+_snake_case_pattern_1 = re.compile(r'(?<=_)([A-Z])+')
+_snake_case_pattern_2 = re.compile(r'(?<!_)([A-Z])+')
+
+
+def filter_to_snake_case(value: str) -> str:
+    """
+        Filter to transform a string into a snake-case token.
+
+        Example::
+
+            {{ "scotec.mcu.Timer" | c.to_snake_case }} a();
+            {{ "scotec.mcu.TimerHelper" | c.to_snake_case }} b();
+
+        Result Example::
+
+            scotec_mcu_timer a();
+            scotec_mcu_timer_helper b();
+
+        :param str value: The string to transform into C snake-case.
+
+        :returns: A valid C99 token using the snake-case convention.
+    """
+    pass0 = _snake_case_pattern_0.sub('_', str.strip(value))
+    pass1 = _snake_case_pattern_1.sub(lambda x: x.group(0).lower(), pass0)
+    return _snake_case_pattern_2.sub(lambda x: '_' + x.group(0).lower(), pass1)
