@@ -1,3 +1,0 @@
-[submodule "test/gentest_dsdl/dsdl"]
-	path = test/gentest_dsdl/dsdl
-	url = https://github.com/UAVCAN/dsdl.git
