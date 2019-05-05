@@ -66,6 +66,7 @@ def test_three_roots_using_dsdlgenj(gen_paths):  # type: ignore
                    '-I', str(gen_paths.dsdl_dir / Path("huckco")),
                    '-I', str(gen_paths.dsdl_dir / Path("esmeinc")),
                    '-O', str(gen_paths.out_dir),
+                   '-e', str('.json'),
                    str(gen_paths.dsdl_dir / Path("scotec"))]
 
     subprocess.run(dsdlgen_cmd, check=True)

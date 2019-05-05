@@ -152,6 +152,7 @@ separated by colons ":"'''
             return raw_arg
 
     parser.add_argument('--output-extension', '-e', default='', type=extension_type,
+                        required='--list-inputs' not in sys.argv,
                         help='The extension to use for generated files.')
 
     parser.add_argument('--dry-run', '-d', action='store_true',
