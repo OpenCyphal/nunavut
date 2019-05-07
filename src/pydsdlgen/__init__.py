@@ -10,7 +10,7 @@ text files are often source code this module could also be used to generate
 documentation or data interchange formats like JSON or XML.
 
 The input to the pydsdlgen library is a list of templates and a list of
-``pydsdl.CompositeType`` objects. The latter is typically obtained
+``pydsdl.pydsdl.CompositeType`` objects. The latter is typically obtained
 by calling pydsdl::
 
     from pydsdl import read_namespace
@@ -53,16 +53,12 @@ Putting this all together, the typical use of this library looks something like 
 
 """
 
-from typing import (List, Dict, Iterator, Optional, Set,
-                    KeysView, Generator, Tuple, ItemsView,
-                    Deque)
-
+import collections
+import pathlib
 import sys
-from collections import deque
+import typing
 
-from pathlib import Path, PurePath
-
-from pydsdl import CompositeType, Any
+import pydsdl
 
 if sys.version_info[:2] < (3, 5):   # pragma: no cover
     print('A newer version of Python is required', file=sys.stderr)
@@ -71,18 +67,18 @@ if sys.version_info[:2] < (3, 5):   # pragma: no cover
 # +---------------------------------------------------------------------------+
 
 
-class Namespace(Any):
+class Namespace(pydsdl.Any):
     """
     K-ary tree (where K is the largest set of data types in a single dsdl namespace) where
     the nodes represent dsdl namespaces and the children are the datatypes and other nested
     namespaces (with datatypes always being leaf nodes). This structure extends :code:`pydsdl.Any`
-    and is a :code:`pydsdl.CompositeType` via duck typing.
+    and is a :code:`pydsdl.pydsdl.CompositeType` via duck typing.
 
     :param str full_namespace:  The full, dot-separated name of the namepace. This is expected to be
                                 a unique identifier.
-    :param Path root_namespace_dir: The directory representing the dsdl namespace and containing the
+    :param pathlib.Path root_namespace_dir: The directory representing the dsdl namespace and containing the
                                 namespaces's datatypes and nested namespaces.
-    :param PurePath base_output_path: The base path under which all namespaces and datatypes should
+    :param pathlib.PurePath base_output_path: The base path under which all namespaces and datatypes should
                                 be generated.
     :param str extension:       The file suffix to give to generated files.
     :param str namespace_file_stem: The file stem (name) to give to files generated for namespaces.
@@ -90,22 +86,22 @@ class Namespace(Any):
 
     def __init__(self,
                  full_namespace: str,
-                 root_namespace_dir: Path,
-                 base_output_path: PurePath,
+                 root_namespace_dir: pathlib.Path,
+                 base_output_path: pathlib.PurePath,
                  extension: str,
                  namespace_file_stem: str):
-        self._parent = None  # type: Optional[Namespace]
+        self._parent = None  # type: typing.Optional[Namespace]
         self._full_namespace = full_namespace
         self._namespace_components = full_namespace.split('.')
-        self._output_folder = Path(base_output_path / PurePath(*self._namespace_components))
-        self._output_path = Path(self._output_folder / PurePath(namespace_file_stem).with_suffix(extension))
-        self._source_folder = Path(root_namespace_dir / PurePath(*self._namespace_components[1:])).resolve()
+        self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components))
+        self._output_path = pathlib.Path(self._output_folder / pathlib.PurePath(namespace_file_stem).with_suffix(extension))
+        self._source_folder = pathlib.Path(root_namespace_dir / pathlib.PurePath(*self._namespace_components[1:])).resolve()
         self._short_name = self._namespace_components[-1]
-        self._data_type_to_outputs = dict()  # type: Dict[CompositeType, Path]
-        self._nested_namespaces = set()  # type: Set[Namespace]
+        self._data_type_to_outputs = dict()  # type: typing.Dict[pydsdl.CompositeType, pathlib.Path]
+        self._nested_namespaces = set()  # type: typing.Set[Namespace]
 
     @property
-    def output_folder(self) -> Path:
+    def output_folder(self) -> pathlib.Path:
         """
         The folder where this namespace's output file and datatypes are generated.
         """
@@ -122,14 +118,14 @@ class Namespace(Any):
             namespace = namespace._parent
         return namespace
 
-    def get_nested_namespaces(self) -> Iterator['Namespace']:
+    def get_nested_namespaces(self) -> typing.Iterator['Namespace']:
         """
         Get an iterator over all the nested namespaces within this namespace.
         This is a shallow iterator that only provides directly nested namespaces.
         """
         return iter(self._nested_namespaces)
 
-    def get_nested_types(self) -> ItemsView[CompositeType, Path]:
+    def get_nested_types(self) -> typing.ItemsView[pydsdl.CompositeType, pathlib.Path]:
         """
         Get a view of a tuple relating datatypes in this namepace to the path for the
         type's generated output. This is a shallow view including only the types
@@ -137,33 +133,33 @@ class Namespace(Any):
         """
         return self._data_type_to_outputs.items()
 
-    def get_all_datatypes(self) -> Generator[Tuple[CompositeType, Path], None, None]:
+    def get_all_datatypes(self) -> typing.Generator[typing.Tuple[pydsdl.CompositeType, pathlib.Path], None, None]:
         """
         Generates tuples relating datatypes at and below this namepace to the path
         for each type's generated output.
         """
         yield from self._recursive_data_type_generator(self)
 
-    def get_all_namespaces(self) -> Generator[Tuple['Namespace', Path], None, None]:
+    def get_all_namespaces(self) -> typing.Generator[typing.Tuple['Namespace', pathlib.Path], None, None]:
         """
         Generates tuples relating nested namespaces at and below this namepace to the path
         for each namespace's generated output.
         """
         yield from self._recursive_namespace_generator(self)
 
-    def get_all_types(self) -> Generator[Tuple[Any, Path], None, None]:
+    def get_all_types(self) -> typing.Generator[typing.Tuple[pydsdl.Any, pathlib.Path], None, None]:
         """
         Generates tuples relating datatypes and nested namespaces at and below this
         namepace to the path for each type's generated output.
         """
         yield from self._recursive_data_type_and_namespace_generator(self)
 
-    def find_output_path_for_type(self, any_type: Any) -> Path:
+    def find_output_path_for_type(self, any_type: pydsdl.Any) -> pathlib.Path:
         """
         Searches the entire namespace tree to find a mapping of the type to an
         output file path.
 
-        :param Any any_type: Either a Namespace or CompositeType to find the
+        :param Any any_type: Either a Namespace or pydsdl.CompositeType to find the
                              output path for.
         :returns: The path where a file will be generated for a given type.
         :raises KeyError: If the type was not found in this namespace tree.
@@ -180,7 +176,7 @@ class Namespace(Any):
             return self.get_root_namespace()._bfs_search_for_output_path(any_type, set([self]))
 
     # +-----------------------------------------------------------------------+
-    # | DUCK TYPEING: CompositeType
+    # | DUCK TYPEING: pydsdl.CompositeType
     # +-----------------------------------------------------------------------+
     @property
     def full_name(self) -> str:
@@ -195,11 +191,11 @@ class Namespace(Any):
         return str(self._source_folder)
 
     @property
-    def data_types(self) -> KeysView[CompositeType]:
+    def data_types(self) -> typing.KeysView[pydsdl.CompositeType]:
         return self._data_type_to_outputs.keys()
 
     @property
-    def attributes(self) -> List[CompositeType]:
+    def attributes(self) -> typing.List[pydsdl.CompositeType]:
         return []
 
     # +-----------------------------------------------------------------------+
@@ -221,18 +217,18 @@ class Namespace(Any):
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
-    def _add_data_type(self, dsdl_type: CompositeType, extension: str) -> None:
+    def _add_data_type(self, dsdl_type: pydsdl.CompositeType, extension: str) -> None:
         filestem = "{}_{}_{}".format(
             dsdl_type.short_name, dsdl_type.version.major, dsdl_type.version.minor)
-        output_path = Path(self._output_folder / PurePath(filestem).with_suffix(extension))
+        output_path = pathlib.Path(self._output_folder / pathlib.PurePath(filestem).with_suffix(extension))
         self._data_type_to_outputs[dsdl_type] = output_path
 
     def _add_nested_namespace(self, nested: 'Namespace') -> None:
         self._nested_namespaces.add(nested)
         nested._parent = self
 
-    def _bfs_search_for_output_path(self, data_type: CompositeType, skip_namespace: Set['Namespace']) -> Path:
-        search_queue = deque()  # type: Deque[Namespace]
+    def _bfs_search_for_output_path(self, data_type: pydsdl.CompositeType, skip_namespace: typing.Set['Namespace']) -> pathlib.Path:
+        search_queue = collections.deque()  # type: typing.Deque[Namespace]
         search_queue.appendleft(self)
         while len(search_queue) > 0:
             namespace = search_queue.pop()
@@ -248,7 +244,7 @@ class Namespace(Any):
 
     @classmethod
     def _recursive_data_type_generator(cls, namespace: 'Namespace') -> \
-            Generator[Tuple[CompositeType, Path], None, None]:
+            typing.Generator[typing.Tuple[pydsdl.CompositeType, pathlib.Path], None, None]:
         for data_type, output_path in namespace.get_nested_types():
             yield (data_type, output_path)
 
@@ -257,7 +253,7 @@ class Namespace(Any):
 
     @classmethod
     def _recursive_namespace_generator(cls, namespace: 'Namespace') -> \
-            Generator[Tuple['Namespace', Path], None, None]:
+            typing.Generator[typing.Tuple['Namespace', pathlib.Path], None, None]:
         yield (namespace, namespace._output_path)
 
         for nested_namespace in namespace.get_nested_namespaces():
@@ -265,7 +261,7 @@ class Namespace(Any):
 
     @classmethod
     def _recursive_data_type_and_namespace_generator(cls,  namespace: 'Namespace') -> \
-            Generator[Tuple[Any, Path], None, None]:
+            typing.Generator[typing.Tuple[pydsdl.Any, pathlib.Path], None, None]:
         yield (namespace, namespace._output_path)
 
         for data_type, output_path in namespace.get_nested_types():
@@ -277,7 +273,7 @@ class Namespace(Any):
 # +---------------------------------------------------------------------------+
 
 
-def build_namespace_tree(types: List[CompositeType],  # noqa: C901
+def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
                          root_namespace_dir: str,
                          output_dir: str,
                          extension: str,
@@ -286,7 +282,7 @@ def build_namespace_tree(types: List[CompositeType],  # noqa: C901
 
     Given a list of pydsdl types, this method returns a root :class:`pydsdlgen.Namespace`.
     The root :class:`pydsdlgen.Namespace` is the top of a tree where each node contains
-    references to nested :class:`pydsdlgen.Namespace` and to any :code:`CompositeType`
+    references to nested :class:`pydsdlgen.Namespace` and to any :code:`pydsdl.CompositeType`
     instances contained within the namespace.
 
     :param list types: A list of pydsdl types.
@@ -301,12 +297,12 @@ def build_namespace_tree(types: List[CompositeType],  # noqa: C901
     :returns: The root :class:`pydsdlgen.Namespace`.
 
     """
-    base_path = PurePath(output_dir)
+    base_path = pathlib.PurePath(output_dir)
 
-    namespace_index = set()  # type: Set[str]
-    namespaces = dict()  # type: Dict[str, Namespace]
+    namespace_index = set()  # type: typing.Set[str]
+    namespaces = dict()  # type: typing.Dict[str, Namespace]
 
-    def get_or_make_namespace(full_namespace: str) -> Tuple[Namespace, bool]:
+    def get_or_make_namespace(full_namespace: str) -> typing.Tuple[Namespace, bool]:
         # Local Namespace read through cache and factory.
         try:
             namespace = namespaces[str(full_namespace)]
@@ -315,7 +311,7 @@ def build_namespace_tree(types: List[CompositeType],  # noqa: C901
             pass
 
         namespace = Namespace(full_namespace,
-                              Path(root_namespace_dir),
+                              pathlib.Path(root_namespace_dir),
                               base_path,
                               extension,
                               namespace_output_stem)

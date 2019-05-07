@@ -8,14 +8,13 @@
     module will be available in the template's global namespace as ``c``.
 """
 
+import enum
 import re
+import typing
 
-from enum import Enum, unique
-from typing import TypeVar, Type
+import pydsdl
 
 from pydsdlgen.jinja.jinja2 import TemplateRuntimeError
-from pydsdl import (PrimitiveType, SignedIntegerType,
-                    UnsignedIntegerType, FloatType, BooleanType)
 
 
 def filter_macrofy(value: str) -> str:
@@ -39,11 +38,11 @@ def filter_macrofy(value: str) -> str:
     return value.replace(' ', '_').replace('.', '_').upper()
 
 
-_CFit_T = TypeVar('_CFit_T', bound='_CFit')
+_CFit_T = typing.TypeVar('_CFit_T', bound='_CFit')
 
 
-@unique
-class _CFit(Enum):
+@enum.unique
+class _CFit(enum.Enum):
     IN_8 = 8
     IN_16 = 16
     IN_32 = 32
@@ -73,20 +72,20 @@ class _CFit(Enum):
         else:
             return 'double'
 
-    def to_c_type(self, value: PrimitiveType, use_standard_types: bool = True) -> str:
-        if isinstance(value, UnsignedIntegerType):
+    def to_c_type(self, value: pydsdl.PrimitiveType, use_standard_types: bool = True) -> str:
+        if isinstance(value, pydsdl.UnsignedIntegerType):
             return (self.to_c_int(False) if not use_standard_types else self.to_std_int(False))
-        elif isinstance(value, SignedIntegerType):
+        elif isinstance(value, pydsdl.SignedIntegerType):
             return (self.to_c_int(True) if not use_standard_types else self.to_std_int(True))
-        elif isinstance(value, FloatType):
+        elif isinstance(value, pydsdl.FloatType):
             return self.to_c_float()
-        elif isinstance(value, BooleanType):
+        elif isinstance(value, pydsdl.BooleanType):
             return ('BOOL' if not use_standard_types else 'bool')
         else:
             raise TemplateRuntimeError("{} is not a known PrimitiveType".format(type(value).__name__))
 
     @classmethod
-    def get_best_fit(cls: Type[_CFit_T], bit_length: int) -> _CFit_T:
+    def get_best_fit(cls: typing.Type[_CFit_T], bit_length: int) -> _CFit_T:
         if bit_length <= 8:
             bestfit = _CFit.IN_8
         elif bit_length <= 16:
@@ -104,7 +103,7 @@ class _CFit(Enum):
         return cls(bestfit)
 
 
-def filter_type_from_primitive(value: PrimitiveType, use_standard_types: bool = True) -> str:
+def filter_type_from_primitive(value: pydsdl.PrimitiveType, use_standard_types: bool = True) -> str:
     """
         Filter to transform a pydsdl :class:`~pydsdl.PrimitiveType` into
         a valid C type.

@@ -12,10 +12,9 @@
 import argparse
 import logging
 import os
+import pathlib
 import sys
-
-from pathlib import Path
-from typing import Any, Optional
+import typing
 
 
 def _run(args: argparse.Namespace, extra_includes: str) -> int:
@@ -54,7 +53,7 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
 
     generator = Generator(root_namespace,
                           args.generate_namespace_types,
-                          Path(args.templates))
+                          pathlib.Path(args.templates))
 
     if args.list_inputs:
         for input_path in generator.get_templates():
@@ -85,8 +84,8 @@ class _LazyVersionAction(argparse._VersionAction):
     def __call__(self,
                  parser: argparse.ArgumentParser,
                  namespace: argparse.Namespace,
-                 values: Any,
-                 option_string: Optional[str] = None) -> None:
+                 values: typing.Any,
+                 option_string: typing.Optional[str] = None) -> None:
         from pydsdlgen.version import __version__
         version_string = '.'.join(map(str, __version__))
         formatter = parser._get_formatter()
@@ -213,7 +212,7 @@ def main() -> int:
     logging.basicConfig(stream=sys.stderr, level=level, format=fmt)
 
     logging.info('Running %s using sys.prefix: %s',
-                 Path(__file__).name, sys.prefix)
+                 pathlib.Path(__file__).name, sys.prefix)
 
     #
     # Parse UAVCAN_DSDL_INCLUDE_PATH

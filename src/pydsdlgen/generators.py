@@ -9,12 +9,12 @@ Generators abstract the code generation technology used to transform
 pydsdl AST into source code.
 """
 
-from abc import ABCMeta, abstractmethod
+import abc
 
-from pydsdlgen import Namespace
+import pydsdlgen
 
 
-class AbstractGenerator(metaclass=ABCMeta):
+class AbstractGenerator(metaclass=abc.ABCMeta):
     """
         Abstract base class for classes that generate source file output
         from a given pydsdl parser result.
@@ -26,13 +26,13 @@ class AbstractGenerator(metaclass=ABCMeta):
     """
 
     def __init__(self,
-                 namespace: Namespace,
+                 namespace: pydsdlgen.Namespace,
                  generate_namespace_types: bool):
         self._namespace = namespace
         self._generate_namespace_types = generate_namespace_types
 
     @property
-    def namespace(self) -> Namespace:
+    def namespace(self) -> pydsdlgen.Namespace:
         """
         The root :class:`pydsdlgen.Namespace` for this generator.
         """
@@ -47,7 +47,7 @@ class AbstractGenerator(metaclass=ABCMeta):
         """
         return self._generate_namespace_types
 
-    @abstractmethod
+    @abc.abstractmethod
     def generate_all(self, is_dryrun: bool = False) -> int:
         """
         Generates all output for a given :class:`pydsdlgen.Namespace` and using
