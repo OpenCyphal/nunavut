@@ -25,16 +25,16 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
     #
     # pydsdlgen : load module
     #
-    from pydsdl import read_namespace
-    from pydsdlgen import build_namespace_tree
-    from pydsdlgen.jinja import Generator
+    import pydsdl
+    import pydsdlgen
+    import pydsdlgen.jinja
 
     #
     # pydsdlgen : parse
     #
-    type_map = read_namespace(args.root_namespace, extra_includes)
+    type_map = pydsdl.read_namespace(args.root_namespace, extra_includes)
 
-    root_namespace = build_namespace_tree(
+    root_namespace = pydsdlgen.build_namespace_tree(
         type_map,
         args.root_namespace,
         args.outdir,
@@ -51,9 +51,9 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
             sys.stdout.write(';')
         return 0
 
-    generator = Generator(root_namespace,
-                          args.generate_namespace_types,
-                          pathlib.Path(args.templates))
+    generator = pydsdlgen.jinja.Generator(root_namespace,
+                                          args.generate_namespace_types,
+                                          pathlib.Path(args.templates))
 
     if args.list_inputs:
         for input_path in generator.get_templates():
@@ -70,7 +70,12 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
         return 0
 
     if not args.list_outputs and not args.list_inputs:
-        return generator.generate_all(args.dry_run)
+        post_processors = [
+            pydsdlgen.postprocessors.SetFileMode(args.file_mode)
+        ]  # type: typing.Optional[typing.List[pydsdlgen.postprocessors.PostProcessor]]
+        return generator.generate_all(is_dryrun=args.dry_run,
+                                      allow_overwrite=not args.no_overwrite,
+                                      post_processors=post_processors)
     else:
         return 0
 
@@ -189,6 +194,22 @@ changed using that argument.
     parser.add_argument('--namespace-output-stem',
                         default='Namespace',
                         help='The name of the file generated when --generate-namespace-types is provided.')
+
+    parser.add_argument('--no-overwrite',
+                        action='store_true',
+                        help='''By default, generated files will be silently overwritten by
+subsequent invocations of the generator. If this argument is specified an
+error will be raised instead preventing overwrites.
+''')
+
+    parser.add_argument('--file-mode',
+                        default=0o444,
+                        type=lambda value: int(value, 0),
+                        help='''The filemode each generated file is set to after it is created.
+Note that this value is interpreted using python auto base detection.
+Because of this, to provide an octal value, you'll need to prefix your
+literal with '0o' (e.g. --file-mode 0o664).
+''')
 
     return parser
 

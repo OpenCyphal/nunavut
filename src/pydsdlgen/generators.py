@@ -10,8 +10,10 @@ pydsdl AST into source code.
 """
 
 import abc
+import typing
 
 import pydsdlgen
+import pydsdlgen.postprocessors
 
 
 class AbstractGenerator(metaclass=abc.ABCMeta):
@@ -48,12 +50,19 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
         return self._generate_namespace_types
 
     @abc.abstractmethod
-    def generate_all(self, is_dryrun: bool = False) -> int:
+    def generate_all(self,
+                     is_dryrun: bool = False,
+                     allow_overwrite: bool = True,
+                     post_processors: typing.Optional[typing.List['pydsdlgen.postprocessors.PostProcessor']] = None) -> int:
         """
         Generates all output for a given :class:`pydsdlgen.Namespace` and using
         the templates found by this object.
 
         :param bool is_dryrun: If True then no output files will actually be
                                written but all other operations will be performed.
+        :param bool allow_overwrite: If True then the generator will attempt to overwrite any existing files
+                                it encounters. If False then the generator will raise an error if the
+                                output file exists and the generation is not a dry-run.
+        :param post_processors: A list of :class:`pydsdlgen.postprocessors.PostProcessor`
         """
         raise NotImplementedError()

@@ -13,6 +13,8 @@ import inspect
 import logging
 import pathlib
 import typing
+import io
+import re
 
 import pydsdl
 
@@ -21,7 +23,7 @@ from pydsdlgen.jinja.lang import (get_supported_languages, add_language_support)
 
 from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader,
                                     StrictUndefined, TemplateAssertionError,
-                                    nodes, select_autoescape)
+                                    nodes, select_autoescape, Template)
 from pydsdlgen.jinja.jinja2.ext import Extension
 from pydsdlgen.jinja.jinja2.parser import Parser
 
@@ -355,13 +357,16 @@ class Generator(pydsdlgen.generators.AbstractGenerator):
                 self._templates_list.append(template)
         return self._templates_list
 
-    def generate_all(self, is_dryrun: bool = False) -> int:
+    def generate_all(self,
+                     is_dryrun: bool = False,
+                     allow_overwrite: bool = True,
+                     post_processors: typing.Optional[typing.List['pydsdlgen.postprocessors.PostProcessor']] = None) -> int:
         if self.generate_namespace_types:
             for (parsed_type, output_path) in self.namespace.get_all_types():
-                self._generate_type(parsed_type, output_path, is_dryrun)
+                self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, post_processors)
         else:
             for (parsed_type, output_path) in self.namespace.get_all_datatypes():
-                self._generate_type(parsed_type, output_path, is_dryrun)
+                self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, post_processors)
         return 0
 
     # +-----------------------------------------------------------------------+
@@ -393,13 +398,100 @@ class Generator(pydsdlgen.generators.AbstractGenerator):
                     raise RuntimeError('test {} was already defined.'.format(name))
                 self._env.tests[name] = additional_test
 
-    def _generate_type(self, input_type: pydsdl.CompositeType, output_path: pathlib.Path, is_dryrun: bool) -> None:
+    def _generate_type(self,
+                       input_type: pydsdl.CompositeType,
+                       output_path: pathlib.Path,
+                       is_dryrun: bool,
+                       allow_overwrite: bool,
+                       post_processors: typing.Optional[typing.List['pydsdlgen.postprocessors.PostProcessor']]) -> None:
         template_name = self.filter_type_to_template(input_type)
         self._env.globals["now_utc"] = datetime.datetime.utcnow()
         template = self._env.get_template(template_name)
         template_gen = template.generate(T=input_type)
         if not is_dryrun:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(str(output_path), "w") as output_file:
+            self._generate_type_real(output_path,
+                                     template,
+                                     template_gen,
+                                     allow_overwrite,
+                                     post_processors
+                                     )
+
+    @staticmethod
+    def _filter_and_write_line(line_and_lineend: typing.Tuple[str, str],
+                               output_file: typing.TextIO,
+                               line_pps: typing.List['pydsdlgen.postprocessors.LinePostProcessor']) -> None:
+        for line_pp in line_pps:
+            line_and_lineend = line_pp(line_and_lineend)
+            if line_and_lineend is None:
+                raise ValueError('line post processor must return a 2-tuple. To elide a line return a tuple of empty strings.'
+                                 'None is not a valid value.')
+
+        output_file.write(line_and_lineend[0])
+        output_file.write(line_and_lineend[1])
+
+    @classmethod
+    def _generate_with_line_buffer(cls,
+                                   output_file: typing.TextIO,
+                                   template_gen: typing.Generator[str, None, None],
+                                   line_pps: typing.List['pydsdlgen.postprocessors.LinePostProcessor']) -> None:
+        newline_pattern = re.compile(r'\n|\r\n', flags=re.RegexFlag.MULTILINE)
+        line_buffer = io.StringIO()
+        for part in template_gen:
+            search_pos = 0  # type: int
+            match_obj = newline_pattern.search(part, search_pos)
+            while True:
+                if search_pos < 0 or search_pos >= len(part):
+                    break
+                if match_obj is None:
+                    line_buffer.write(part[search_pos:])
+                    break
+
+                # We have a newline
+                line_buffer.write(part[search_pos:match_obj.span()[0]])
+                newline_chars = part[match_obj.span()[0]:match_obj.span()[1]]
+                line = line_buffer.getvalue()  # type: str
+                line_buffer = io.StringIO()
+                cls._filter_and_write_line((line, newline_chars), output_file, line_pps)
+                search_pos = match_obj.span()[1]
+                match_obj = newline_pattern.search(part, search_pos)
+        remainder = line_buffer.getvalue()
+        if len(remainder) > 0:
+            cls._filter_and_write_line((remainder, ""), output_file, line_pps)
+
+    def _generate_type_real(self,
+                            output_path: pathlib.Path,
+                            template: Template,
+                            template_gen: typing.Generator[str, None, None],
+                            allow_overwrite: bool,
+                            post_processors: typing.Optional[typing.List['pydsdlgen.postprocessors.PostProcessor']]) -> None:
+        """
+        Logic that should run from _generate_type iff is_dryrun is False.
+        """
+
+        # Predetermine the post processor types.
+        line_pps = []  # type: typing.List['pydsdlgen.postprocessors.LinePostProcessor']
+        file_pps = []  # type: typing.List['pydsdlgen.postprocessors.FilePostProcessor']
+        if post_processors is not None:
+            for pp in post_processors:
+                if isinstance(pp, pydsdlgen.postprocessors.LinePostProcessor):
+                    line_pps.append(pp)
+                elif isinstance(pp, pydsdlgen.postprocessors.FilePostProcessor):
+                    file_pps.append(pp)
+                else:
+                    raise ValueError('PostProcessor type {} is unknown.'.format(type(pp)))
+
+        if output_path.exists():
+            if allow_overwrite:
+                output_path.chmod(output_path.stat().st_mode | 0o220)
+            else:
+                raise PermissionError('{} exists and allow_overwrite is False.'.format(output_path))
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(str(output_path), "w") as output_file:
+            if len(line_pps) > 0:
+                # The logic gets much more complex when doing line post-processing.
+                self._generate_with_line_buffer(output_file, template_gen, line_pps)
+            else:
                 for part in template_gen:
                     output_file.write(part)
+        for file_pp in file_pps:
+            output_path = file_pp(output_path)
