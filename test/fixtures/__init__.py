@@ -6,7 +6,7 @@
 from pathlib import Path
 from typing import Optional
 from pydsdl import Any
-from pydsdlgen import Namespace
+from nunavut import Namespace
 
 
 class GenTestPaths:

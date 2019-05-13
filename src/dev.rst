@@ -4,7 +4,7 @@ Contributor Notes
 
 .. note::
 
-    This is documentation for contributors developing pydsdlgen. If you are
+    This is documentation for contributors developing nunavut. If you are
     a user of this software you can ignore everything here.
 
 ************************************************
@@ -47,14 +47,14 @@ debugging
 ------------------------------------------------
 
 The Python plugin for vscode comes with a full-featured Python debugger. To setup a debug session
-for dsdlgenj open the launch.json for your workspace and add a configuration like the following
+for nnvg open the launch.json for your workspace and add a configuration like the following
 to the configurations array::
 
     {
-        "name": "Python: dsdlgenj",
+        "name": "Python: nnvg",
         "type": "python",
         "request": "launch",
-        "program": "${workspaceFolder}/src/dsdlgenj",
+        "program": "${workspaceFolder}/src/nnvg",
         "cwd": "${workspaceFolder}",
         "console": "integratedTerminal",
         "args": ["--templates", "test/gentest_dsdl/templates",
@@ -70,8 +70,8 @@ to the configurations array::
     separated string does not work as you might expect since this results in a single string that
     contains spaces being passed as an argument.
 
-The output for this example will appear under the default output directory for dsdlgenj
-:code:`${workspaceFolder}/pydsdlgen_out`
+The output for this example will appear under the default output directory for nnvg
+:code:`${workspaceFolder}/nunavut_out`
 
 You can setup a debug session for unit tests using a similar launch configuration that invokes the
 :code:`pytest` module. For example::
@@ -113,7 +113,7 @@ and running do::
 
     git submodule update --init --recursive
     docker pull uavcan/toxic:py35-py38
-    docker run --rm -it -v /path/to/pydsdlgen:/repo uavcan/toxic:py35-py38
+    docker run --rm -it -v /path/to/nunavut:/repo uavcan/toxic:py35-py38
     tox
 
 import file mismatch
@@ -124,7 +124,7 @@ If you get an error like the following::
     _____ ERROR collecting test/gentest_dsdl/test_dsdl.py _______________________________________
     import file mismatch:
     imported module 'test_dsdl' has this __file__ attribute:
-    /my/workspace/pydsdlgen/test/gentest_dsdl/test_dsdl.py
+    /my/workspace/nunavut/test/gentest_dsdl/test_dsdl.py
     which is not the same as the test file we want to collect:
     /repo/test/gentest_dsdl/test_dsdl.py
     HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
@@ -149,7 +149,7 @@ Building The Docs
 We rely on `read the docs`_ to build our documentation from github but we also verify this build
 as part of our tox build. This means you can view a local copy after completing a full, successful
 test run (See `Running The Tests`_) or do
-:code:`docker run --rm -t -v /path/to/pydsdlgen:/repo uavcan/toxic:py35-py38 /bin/sh -c
+:code:`docker run --rm -t -v /path/to/nunavut:/repo uavcan/toxic:py35-py38 /bin/sh -c
 "tox -e docs"` to build the docs target.
 You can open the index.html under .tox/docs/tmp/index.html or run a local webserver::
 
@@ -186,4 +186,4 @@ At the end of the mypy run we generate the following summaries:
 
 .. _`read the docs`: https://readthedocs.org/
 .. _`tox`: https://tox.readthedocs.io/en/latest/
-.. _`Codacy`: https://app.codacy.com/project/UAVCAN/pydsdlgen/dashboard
+.. _`Codacy`: https://app.codacy.com/project/UAVCAN/nunavut/dashboard

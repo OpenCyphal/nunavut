@@ -10,8 +10,8 @@ import pytest
 import json
 
 from pydsdl import read_namespace, FrontendError
-from pydsdlgen import build_namespace_tree
-from pydsdlgen.jinja import Generator
+from nunavut import build_namespace_tree
+from nunavut.jinja import Generator
 
 import subprocess
 
@@ -60,8 +60,8 @@ def test_three_roots(gen_paths):  # type: ignore
     assert json_blob['scotec.FatherType']['attributes'][1]['type'] == 'esmeinc.DaughterType.0.1'
 
 
-def test_three_roots_using_dsdlgenj(gen_paths):  # type: ignore
-    dsdlgenj_cmd = ['dsdlgenj',
+def test_three_roots_using_nnvgj(gen_paths):  # type: ignore
+    nnvgj_cmd = ['nnvg',
                     '--templates', str(gen_paths.templates_dir),
                     '-I', str(gen_paths.dsdl_dir / Path("huckco")),
                     '-I', str(gen_paths.dsdl_dir / Path("esmeinc")),
@@ -69,4 +69,4 @@ def test_three_roots_using_dsdlgenj(gen_paths):  # type: ignore
                     '-e', str('.json'),
                     str(gen_paths.dsdl_dir / Path("scotec"))]
 
-    subprocess.run(dsdlgenj_cmd, check=True)
+    subprocess.run(nnvgj_cmd, check=True)

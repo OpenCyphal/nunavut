@@ -39,7 +39,7 @@ dist
 .vagrant
 
 # libuavcan DSDL compiler default output directory
-pydsdlgen_out
+nunavut_out
 
 # Log files
 *.log

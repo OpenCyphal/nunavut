@@ -10,8 +10,8 @@ import pytest
 import json
 
 from pydsdl import read_namespace
-from pydsdlgen import build_namespace_tree, Namespace
-from pydsdlgen.jinja import Generator
+from nunavut import build_namespace_tree, Namespace
+from nunavut.jinja import Generator
 
 
 class a:
@@ -79,7 +79,7 @@ def test_one_template(gen_paths):  # type: ignore
 
 def test_get_templates(gen_paths):  # type: ignore
     """
-    Verifies the pydsdlgen.jinja.Generator.get_templates() method.
+    Verifies the nunavut.jinja.Generator.get_templates() method.
     """
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     root_namespace = str(root_namespace_dir)

@@ -12,11 +12,11 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-from pydsdlgen.version import __version__  # noqa: E402
+from nunavut.version import __version__  # noqa: E402
 
 # -- Project information -----------------------------------------------------
 
-project = 'pydsdlgen'
+project = 'nunavut'
 copyright = '2019 Amazon.com, Inc. or its affiliates. All Rights Reserved. 2019, UAVCAN Development Team'
 author = 'UAVCAN Development Team'
 
@@ -97,7 +97,7 @@ html_theme_options = {
 html_context = {
     "display_github": True,
     "github_user": "UAVCAN",
-    "github_repo": "pydsdlgen",
+    "github_repo": "nunavut",
     "github_version": "master",
     "conf_py_path": "/src/",
 }
@@ -117,7 +117,7 @@ html_static_path = ['docs']
 #
 # html_sidebars = {}
 
-html_logo = 'docs/images/pydsdlgen_logo.svg'
+html_logo = 'docs/images/nunavut_logo.svg'
 
 html_favicon = 'docs/images/uavcan_logo_icon.svg'
 
@@ -126,7 +126,7 @@ html_css_files = ['css/custom.css']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'pydsdlgendoc'
+htmlhelp_basename = 'nunavutdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -153,7 +153,7 @@ latex_elements = {  # type: ignore
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'pydsdlgen.tex', 'pydsdlgen Documentation',
+    (master_doc, 'nunavut.tex', 'nunavut Documentation',
      'UAVCAN Development Team', 'manual'),
 ]
 
@@ -163,7 +163,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'pydsdlgen', 'pydsdlgen Documentation',
+    (master_doc, 'nunavut', 'nunavut Documentation',
      [author], 1)
 ]
 
@@ -174,8 +174,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'pydsdlgen', 'pydsdlgen Documentation',
-     author, 'pydsdlgen', 'One line description of project.',
+    (master_doc, 'nunavut', 'nunavut Documentation',
+     author, 'nunavut', 'One line description of project.',
      'Miscellaneous'),
 ]
 

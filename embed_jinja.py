@@ -26,7 +26,7 @@ if sys.version_info[:2] < (3, 5):   # pragma: no cover
 """
 Script to help maintain the embedded version of jinja2. in this repo.
 
-This script is only for pydsdlgen maintainers. Users shouldn't need it for anything. Note that this
+This script is only for nunavut maintainers. Users shouldn't need it for anything. Note that this
 technique was adapted from https://stackoverflow.com/questions/23937436/add-subdirectory-of-remote-repo-with-git-subtree.
 """
 
@@ -312,7 +312,7 @@ def main() -> int:
         We use this script to maintain our embedded fork for jinja2. We maintain
         our own patches and provided helpers to pull in upstream patches. This is
         painful for you, the maintainer, because it makes it easier for the users
-        of pydsdlgen since it reduces the number of python dependencies to just
+        of nunavut since it reduces the number of python dependencies to just
         pydsdl.
 
         ''',
@@ -371,7 +371,7 @@ def main() -> int:
     parser.add_argument('--j2upstream-prefix', default="jinja2",
                         help='Subtree path in the jinja upstream repository. default = %(default)s')
 
-    parser.add_argument('--j2local-prefix', default="src/pydsdlgen/jinja/jinja2",
+    parser.add_argument('--j2local-prefix', default="src/nunavut/jinja/jinja2",
                         help='Local subtree we merge jinja into. default = %(default)s')
 
     parser.add_argument('--msrepo', default="https://github.com/pallets/markupsafe.git",
@@ -386,7 +386,7 @@ def main() -> int:
     parser.add_argument('--msupstream-prefix', default="src/markupsafe",
                         help='Subtree path in the markupsafe upstream repository. default = %(default)s')
 
-    parser.add_argument('--mslocal-prefix', default="src/pydsdlgen/jinja/markupsafe",
+    parser.add_argument('--mslocal-prefix', default="src/nunavut/jinja/markupsafe",
                         help='Local subtree we merge markupsafe into. default = %(default)s')
 
     subparsers = parser.add_subparsers(help='sub-command help')

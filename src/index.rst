@@ -1,14 +1,14 @@
-.. _dsdlgenj:
+.. _nnvgj:
 
 ################################################
-dsdlgenj
+nnvg
 ################################################
 
 .. toctree::
    :maxdepth: 2
    :hidden:
 
-   pydsdlgen/lib
+   nunavut/lib
    templates
    appendix
    dev
@@ -19,9 +19,9 @@ Usage
 *************************************
 
 .. argparse::
-   :filename: dsdlgenj
+   :filename: nnvg
    :func: _make_parser
-   :prog: dsdlgenj
+   :prog: nnvg
 
 CMake Integration
 ======================================
@@ -32,7 +32,7 @@ The following cmake function demonstrates how to integrate pydsdelgen with a cma
     # :function: create_dsdl_target
     # Creates a target that will generate source code from dsdl definitions.
     #
-    # The source is generated to files with ${DSDLGENJ_EXTENSION} as the extension.
+    # The source is generated to files with ${NNVGJ_EXTENSION} as the extension.
     #
     # :param str ARG_TARGET_NAME:               The name to give the target.
     # :param Path ARG_OUTPUT_FOLDER:            The directory to generate all source under.
@@ -53,9 +53,9 @@ The following cmake function demonstrates how to integrate pydsdelgen with a cma
             endforeach(ARG_N)
         endif()
 
-        execute_process(COMMAND ${PYTHON} ${DSDLGENJ}
+        execute_process(COMMAND ${PYTHON} ${NNVGJ}
                                             --list-outputs
-                                            --output-extension ${DSDLGENJ_EXTENSION}
+                                            --output-extension ${NNVGJ_EXTENSION}
                                             -O ${ARG_OUTPUT_FOLDER}
                                             ${LOOKUP_DIR_CMD_ARGS}
                                             ${ARG_DSDL_ROOT_DIR}
@@ -63,12 +63,12 @@ The following cmake function demonstrates how to integrate pydsdelgen with a cma
                         RESULT_VARIABLE LIST_OUTPUTS_RESULT)
 
         if(NOT LIST_OUTPUTS_RESULT EQUAL 0)
-            message(FATAL_ERROR "Failed to retrieve a list of headers dsdlgenj would "
+            message(FATAL_ERROR "Failed to retrieve a list of headers nnvg would "
                                 "generate for the ${ARG_TARGET_NAME} target (${LIST_OUTPUTS_RESULT})"
-                                " (${PYTHON} ${DSDLGENJ})")
+                                " (${PYTHON} ${NNVGJ})")
         endif()
 
-        execute_process(COMMAND ${PYTHON} ${DSDLGENJ}
+        execute_process(COMMAND ${PYTHON} ${NNVGJ}
                                             --list-inputs
                                             -O ${ARG_OUTPUT_FOLDER}
                                             --templates ${ARG_TEMPLATES_DIR}
@@ -78,21 +78,21 @@ The following cmake function demonstrates how to integrate pydsdelgen with a cma
                         RESULT_VARIABLE LIST_INPUTS_RESULT)
 
         if(NOT LIST_INPUTS_RESULT EQUAL 0)
-            message(FATAL_ERROR "Failed to resolve inputs using dsdlgenj for the ${ARG_TARGET_NAME} "
+            message(FATAL_ERROR "Failed to resolve inputs using nnvg for the ${ARG_TARGET_NAME} "
                                 "target (${LIST_INPUTS_RESULT})"
-                                " (${PYTHON} ${DSDLGENJ})")
+                                " (${PYTHON} ${NNVGJ})")
         endif()
 
         add_custom_command(OUTPUT ${OUTPUT_FILES}
-                        COMMAND ${PYTHON} ${DSDLGENJ}
+                        COMMAND ${PYTHON} ${NNVGJ}
                                             --templates ${ARG_TEMPLATES_DIR}
-                                            --output-extension ${DSDLGENJ_EXTENSION}
+                                            --output-extension ${NNVGJ_EXTENSION}
                                             -O ${ARG_OUTPUT_FOLDER}
                                             ${LOOKUP_DIR_CMD_ARGS}
                                             ${ARG_DSDL_ROOT_DIR}
                         DEPENDS ${INPUT_FILES}
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                        COMMENT "Running dsdlgenj")
+                        COMMENT "Running nnvg")
 
         add_custom_target(${ARG_TARGET_NAME} ALL DEPENDS ${OUTPUT_FILES})
 

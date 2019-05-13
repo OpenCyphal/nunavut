@@ -3,7 +3,7 @@ Template Language Guide
 ################################################
 
 For now we have only a jinja generator for code generation. As such this guide will
-only discuss using pydsdlgen with jinja templates. There are no immediate plans
+only discuss using nunavut with jinja templates. There are no immediate plans
 to support any other template syntax.
 
 *************************************************
@@ -12,10 +12,10 @@ Environment
 
 .. note::
 
-    See :mod:`pydsdlgen.jinja` and the language support modules within this one for detailed
-    documentation on available filters and tests provided by pydsdlgen.
+    See :mod:`nunavut.jinja` and the language support modules within this one for detailed
+    documentation on available filters and tests provided by nunavut.
 
-    The `Jinja templates documentation`_ is indispensible as pydsdlgen embeds a full-featured
+    The `Jinja templates documentation`_ is indispensible as nunavut embeds a full-featured
     version of jinja 2.
 
 Each template has in its global environment the following:
@@ -44,7 +44,7 @@ Filters and Tests
 In addition to the built-in Jinja filters and tests (again, see the
 `Jinja templates documentation`_ for details)
 pydsdl adds several global tests and filters to the template environment.
-See :mod:`pydsdlgen.jinja` for full documentation on these. For example::
+See :mod:`nunavut.jinja` for full documentation on these. For example::
 
     # typename filter returns the name of the value's type.
     {{ field | typename }}
@@ -52,8 +52,8 @@ See :mod:`pydsdlgen.jinja` for full documentation on these. For example::
 Language Support Filters
 -------------------------------------------------
 
-Pydsdlgen also adds some language specific filters and tests. These are documented in
-the :mod:`pydsdlgen.jinja.lang` module and are available in the global environment
+Nunavut also adds some language specific filters and tests. These are documented in
+the :mod:`nunavut.jinja.lang` module and are available in the global environment
 namespaced by language. For example::
 
     {{T.full_name | c.macrofy}}
@@ -119,7 +119,7 @@ Resolving Types to Templates
 
 You can apply the same logic used by the top level generator to recursively include templates
 by type if this seems useful for your project. Simply use the
-:func:`pydsdlgen.jinja.Generator.filter_type_to_template` filter::
+:func:`nunavut.jinja.Generator.filter_type_to_template` filter::
 
     {%- for attribute in T.attributes %}
         {%* include attribute.data_type | type_to_template %}
@@ -128,7 +128,7 @@ by type if this seems useful for your project. Simply use the
 Namespace Templates
 =================================================
 
-By setting the :code:`generate_namespace_types` parameter of :class:`~pydsdlgen.jinja.Generator` to
+By setting the :code:`generate_namespace_types` parameter of :class:`~nunavut.jinja.Generator` to
 true the generator will invoke a template for the root namespace and all nested namespaces allowing
 for languages where namespaces are first class objects. For example::
 
@@ -143,7 +143,7 @@ for languages where namespaces are first class objects. For example::
 This could be used to generate python :code:`__init__.py` files which would define each namespace
 as a python module.
 
-The :class:`~pydsdlgen.jinja.Generator` will use the same template name resolution logic as used
+The :class:`~nunavut.jinja.Generator` will use the same template name resolution logic as used
 for pydsdl data types. For namespaces this will resolve first to a template named
 :code:`Namespace.j2` and then, if not found, :code:`Any.j2`.
 

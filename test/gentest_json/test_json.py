@@ -9,8 +9,8 @@ from pathlib import Path
 import pytest
 
 from pydsdl import read_namespace
-from pydsdlgen import build_namespace_tree
-from pydsdlgen.jinja import Generator
+from nunavut import build_namespace_tree
+from nunavut.jinja import Generator
 
 
 @pytest.fixture

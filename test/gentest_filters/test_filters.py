@@ -8,9 +8,9 @@ import pytest
 import json
 
 from pydsdl import read_namespace
-from pydsdlgen import build_namespace_tree, Namespace
-from pydsdlgen.jinja import Generator
-from pydsdlgen.jinja.jinja2.exceptions import TemplateAssertionError
+from nunavut import build_namespace_tree, Namespace
+from nunavut.jinja import Generator
+from nunavut.jinja.jinja2.exceptions import TemplateAssertionError
 
 from pathlib import Path, PurePath
 
