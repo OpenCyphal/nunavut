@@ -331,7 +331,9 @@ class Generator(pydsdlgen.generators.AbstractGenerator):
                                     default=False)
 
         self._env = Environment(loader=fs_loader,
-                                extensions=[JinjaAssert],
+                                extensions=[pydsdlgen.jinja.jinja2.ext.do,
+                                            pydsdlgen.jinja.jinja2.ext.loopcontrols,
+                                            JinjaAssert],
                                 autoescape=autoesc,
                                 undefined=StrictUndefined,
                                 keep_trailing_newline=True,
