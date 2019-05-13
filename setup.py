@@ -15,7 +15,7 @@ if int(setuptools.__version__.split('.')[0]) < 30:
     sys.exit(1)
 
 version = {}  # type: Dict
-with open('src/pydsdlgen/version.py') as fp:
+with open('src/nunavut/version.py') as fp:
     exec(fp.read(), version)
 
 setuptools.setup(version='.'.join(map(str, version['__version__'])))

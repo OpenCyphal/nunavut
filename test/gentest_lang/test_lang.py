@@ -11,9 +11,9 @@ import pytest
 from typing import Dict
 
 from pydsdl import read_namespace
-from pydsdlgen import build_namespace_tree
-from pydsdlgen.jinja import Generator
-from pydsdlgen.jinja.lang import c
+from nunavut import build_namespace_tree
+from nunavut.jinja import Generator
+from nunavut.jinja.lang import c
 
 
 @pytest.fixture

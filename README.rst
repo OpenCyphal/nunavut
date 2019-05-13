@@ -1,23 +1,16 @@
 ################################################
-PyDSDLgen
+Nunavut
 ################################################
-
-.. note ::
-
-    PyDSDLgen is in version 1 since its basic architecture is fairly simple and unlikely to
-    change much in the near term, however, PyDSDLgen cannot be more mature than PyDSDL.
-    As such this package should be considered an Alpha release until it also relies on
-    a PyDSDL version 1.
 
 |badge_forum|_ |badge_docs|_ |badge_analysis|_ |badge_coverage|_ |badge_build|_ |badge_pypi|_
 
-PyDSDLgen is a `UAVCAN`_ DSDL code generator that automates exposing a `pydsdl`_ abstract
+Nunavut is a `UAVCAN`_ DSDL code generator that automates exposing a `pydsdl`_ abstract
 syntax tree to `Jinja2`_ templates allowing authors to generate code, schemas, metadata,
 documentation, etc.
 
 Partial example: generating a C struct
 
-.. code-block:: javascript+jinja
+.. code-block::
 
        /*
         * UAVCAN data structure definition
@@ -45,21 +38,25 @@ Partial example: generating a C struct
         #endif // {{T.full_name | c.macrofy}}
 
 
+Nunavut is named after the `Canadian territory`_. We chose the name because it
+is a beautiful word to say and read. Also, the name fits with a theme of "places
+in Canada" started with the `Yukon`_ project.
+
 ************************************************
 Installation
 ************************************************
 
-PyDSDLgen requires Python 3.5 or newer and depends on `pydsdl`_.
+Nunavut requires Python 3.5 or newer and depends on `pydsdl`_.
 
 Install from PIP::
 
-    pip install pydsdlgen
+    pip install nunavut
 
 ************************************************
 Bundled third-party software
 ************************************************
 
-PyDSDLgen embeds the following third-party software libraries into its source
+Nunavut embeds the following third-party software libraries into its source
 (i.e. these are not dependencies and do not need to be installed):
 
 - `Jinja2`_ by Armin Ronacher and contributors, BSD 3-clause license.
@@ -69,15 +66,15 @@ PyDSDLgen embeds the following third-party software libraries into its source
 Documentation
 ************************************************
 
-The documentation for PyDSDLgen is hosted on readthedocs.io:
+The documentation for Nunavut is hosted on readthedocs.io:
 
-- `pydsdlgen`_ - The python library provided by this project.
-- `dsdlgenj`_ – Command-line script for using `pydsdlgen`_ directly or as part of a build system.
-- `pydsdlgen template guide`_ – Documentation for authors of pydsdlgen templates.
-- `pydsdlgen contributors guide`_ – Documentation for contributors to the PyDSDLgen project.
-- `pysdsdlgen licenses`_ – Licenses and copyrights
+- `nunavut`_ - The python library provided by this project.
+- `nnvg`_ – Command-line script for using `nunavut`_ directly or as part of a build system.
+- `nunavut template guide`_ – Documentation for authors of nunavut templates.
+- `nunavut contributors guide`_ – Documentation for contributors to the Nunavut project.
+- `nunavut licenses`_ – Licenses and copyrights
 
-PyDSDLgen is part of the UAVCAN project:
+Nunavut is part of the UAVCAN project:
 
 - `UAVCAN website`_
 - `UAVCAN forum`_
@@ -86,37 +83,38 @@ PyDSDLgen is part of the UAVCAN project:
 .. _`UAVCAN`: http://uavcan.org
 .. _`UAVCAN website`: http://uavcan.org
 .. _`UAVCAN forum`: https://forum.uavcan.org
-.. _`pydsdlgen`: https://pydsdlgen.readthedocs.io/en/latest/pydsdlgen/lib.html
-.. _`dsdlgenj`: https://pydsdlgen.readthedocs.io/en/latest/index.html
+.. _`nunavut`: https://nunavut.readthedocs.io/en/latest/nunavut/lib.html
+.. _`nnvg`: https://nunavut.readthedocs.io/en/latest/index.html
 .. _`pydsdl`: https://pypi.org/project/pydsdl
-.. _`pydsdlgen template guide`: https://pydsdlgen.readthedocs.io/en/latest/templates.html
-.. _`pydsdlgen contributors guide`: https://pydsdlgen.readthedocs.io/en/latest/dev.html
-.. _`pydsdlgen contributors guide`: https://pydsdlgen.readthedocs.io/en/latest/dev.html
-.. _`pysdsdlgen licenses`: https://pydsdlgen.readthedocs.io/en/latest/appendix.html#licence
+.. _`nunavut template guide`: https://nunavut.readthedocs.io/en/latest/templates.html
+.. _`nunavut contributors guide`: https://nunavut.readthedocs.io/en/latest/dev.html
+.. _`nunavut contributors guide`: https://nunavut.readthedocs.io/en/latest/dev.html
+.. _`nunavut licenses`: https://nunavut.readthedocs.io/en/latest/appendix.html#licence
 .. _`Jinja2`: https://palletsprojects.com/p/jinja
 .. _`markupsafe`: https://palletsprojects.com/p/markupsafe
-
+.. _`Canadian territory`: https://en.wikipedia.org/wiki/Nunavut
+.. _`Yukon`: https://github.com/UAVCAN/Yukon
 
 .. |badge_forum| image:: https://img.shields.io/discourse/https/forum.uavcan.org/users.svg
     :alt: UAVCAN forum
 .. _badge_forum: https://forum.uavcan.org
 
-.. |badge_docs| image:: https://readthedocs.org/projects/pydsdlgen/badge/?version=latest
+.. |badge_docs| image:: https://readthedocs.org/projects/nunavut/badge/?version=latest
     :alt: Documentation Status
-.. _badge_docs: https://pydsdlgen.readthedocs.io/en/latest/?badge=latest
+.. _badge_docs: https://nunavut.readthedocs.io/en/latest/?badge=latest
 
 .. |badge_analysis| image:: https://api.codacy.com/project/badge/Grade/a1243d78c7754d10bb24481c4341d99e
     :alt: Codacy reports
-.. _badge_analysis: https://www.codacy.com/app/thirtytwobits/pydsdlgen?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=UAVCAN/pydsdlgen&amp;utm_campaign=Badge_Grade
+.. _badge_analysis: https://www.codacy.com/app/thirtytwobits/nunavut?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=UAVCAN/nunavut&amp;utm_campaign=Badge_Grade
 
 .. |badge_coverage| image:: https://api.codacy.com/project/badge/Coverage/a1243d78c7754d10bb24481c4341d99e
     :alt: Codacy coverage
-.. _badge_coverage: https://www.codacy.com/app/UAVCAN/pydsdlgen?utm_source=github.com&utm_medium=referral&utm_content=UAVCAN/pydsdlgen&utm_campaign=Badge_Coverage
+.. _badge_coverage: https://www.codacy.com/app/UAVCAN/nunavut?utm_source=github.com&utm_medium=referral&utm_content=UAVCAN/nunavut&utm_campaign=Badge_Coverage
 
-.. |badge_build| image:: https://travis-ci.org/UAVCAN/pydsdlgen.svg?branch=master
+.. |badge_build| image:: https://travis-ci.org/UAVCAN/nunavut.svg?branch=master
     :alt: Build status
-.. _badge_build: https://travis-ci.org/UAVCAN/pydsdlgen
+.. _badge_build: https://travis-ci.org/UAVCAN/nunavut
 
-.. |badge_pypi| image:: https://img.shields.io/pypi/pyversions/pydsdlgen.svg
+.. |badge_pypi| image:: https://img.shields.io/pypi/pyversions/nunavut.svg
     :alt: Pypi release
-.. _badge_pypi: https://pypi.org/project/pydsdlgen/
+.. _badge_pypi: https://pypi.org/project/nunavut/

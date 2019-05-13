@@ -11,9 +11,9 @@ import pytest
 import re
 
 import pydsdl
-import pydsdlgen
-import pydsdlgen.jinja
-import pydsdlgen.postprocessors
+import nunavut
+import nunavut.jinja
+import nunavut.postprocessors
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ def gen_paths():  # type: ignore
 def _test_common_namespace(gen_paths):  # type: ignore
     root_namespace_dir = gen_paths.dsdl_dir / pathlib.Path("uavcan")
     root_namespace = str(root_namespace_dir)
-    return pydsdlgen.build_namespace_tree(pydsdl.read_namespace(root_namespace, ''),
+    return nunavut.build_namespace_tree(pydsdl.read_namespace(root_namespace, ''),
                                           root_namespace_dir,
                                           gen_paths.out_dir,
                                           '.json',
@@ -50,11 +50,11 @@ def test_abs():  # type: ignore
     """ Require that PostProcessor and intermediate types are abstract.
     """
     with pytest.raises(TypeError):
-        pydsdlgen.postprocessors.PostProcessor()  # type: ignore
+        nunavut.postprocessors.PostProcessor()  # type: ignore
     with pytest.raises(TypeError):
-        pydsdlgen.postprocessors.FilePostProcessor()  # type: ignore
+        nunavut.postprocessors.FilePostProcessor()  # type: ignore
     with pytest.raises(TypeError):
-        pydsdlgen.postprocessors.LinePostProcessor()  # type: ignore
+        nunavut.postprocessors.LinePostProcessor()  # type: ignore
 
 
 def test_unknown_intermediate(gen_paths):  # type: ignore
@@ -62,7 +62,7 @@ def test_unknown_intermediate(gen_paths):  # type: ignore
     LinePostProcessor or FilePostProcessor is provided to the jinja2 generator.
     """
 
-    class InvalidType(pydsdlgen.postprocessors.PostProcessor):
+    class InvalidType(nunavut.postprocessors.PostProcessor):
         def __init__(self):  # type: ignore
             pass
 
@@ -70,7 +70,7 @@ def test_unknown_intermediate(gen_paths):  # type: ignore
             return generated
 
     namespace = _test_common_namespace(gen_paths)
-    generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, gen_paths.templates_dir)
     with pytest.raises(ValueError):
         generator.generate_all(False, True, [InvalidType()])
 
@@ -79,7 +79,7 @@ def test_empty_pp_array(gen_paths):  # type: ignore
     """ Verifies the behavior of a zero length post_processors argument.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, gen_paths.templates_dir)
     generator.generate_all(False, True, [])
 
     _test_common_post_condition(gen_paths, namespace)
@@ -89,8 +89,8 @@ def test_chmod(gen_paths):  # type: ignore
     """ Generates a file using a SetFileMode post-processor.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
-    generator.generate_all(False, True, [pydsdlgen.postprocessors.SetFileMode(0o444)])
+    generator = nunavut.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    generator.generate_all(False, True, [nunavut.postprocessors.SetFileMode(0o444)])
 
     outfile = _test_common_post_condition(gen_paths, namespace)
 
@@ -101,8 +101,8 @@ def test_overwrite(gen_paths):  # type: ignore
     """ Verifies the allow_overwrite flag contracts.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
-    generator.generate_all(False, True, [pydsdlgen.postprocessors.SetFileMode(0o444)])
+    generator = nunavut.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    generator.generate_all(False, True, [nunavut.postprocessors.SetFileMode(0o444)])
 
     with pytest.raises(PermissionError):
         generator.generate_all(False, False)
@@ -116,8 +116,8 @@ def test_overwrite_dryrun(gen_paths):  # type: ignore
     """ Verifies the allow_overwrite flag contracts.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
-    generator.generate_all(False, True, [pydsdlgen.postprocessors.SetFileMode(0o444)])
+    generator = nunavut.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    generator.generate_all(False, True, [nunavut.postprocessors.SetFileMode(0o444)])
 
     with pytest.raises(PermissionError):
         generator.generate_all(False, False)
@@ -126,35 +126,35 @@ def test_overwrite_dryrun(gen_paths):  # type: ignore
 
 
 def test_no_overwrite_arg(gen_paths):  # type: ignore
-    """ Verifies the --no-overwrite argument of dsdlgenj.
+    """ Verifies the --no-overwrite argument of nnvg.
     """
-    dsdlgenj_cmd = ['dsdlgenj',
+    nnvgj_cmd = ['nnvg',
                     '--templates', str(gen_paths.templates_dir),
                     '-O', str(gen_paths.out_dir),
                     '-e', str('.json'),
                     str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(dsdlgenj_cmd, check=True)
+    subprocess.run(nnvgj_cmd, check=True)
 
-    dsdlgenj_cmd.append('--no-overwrite')
+    nnvgj_cmd.append('--no-overwrite')
 
     with pytest.raises(subprocess.CalledProcessError):
-        subprocess.run(dsdlgenj_cmd, check=True)
+        subprocess.run(nnvgj_cmd, check=True)
 
 
 def test_file_mode(gen_paths):  # type: ignore
-    """ Verify the --file-mode argument of dsdlgenj.
+    """ Verify the --file-mode argument of nnvg.
     """
 
     file_mode = 0o774
-    dsdlgenj_cmd = ['dsdlgenj',
+    nnvgj_cmd = ['nnvg',
                     '--templates', str(gen_paths.templates_dir),
                     '-O', str(gen_paths.out_dir),
                     '-e', str('.json'),
                     '--file-mode', oct(file_mode),
                     str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(dsdlgenj_cmd, check=True)
+    subprocess.run(nnvgj_cmd, check=True)
 
     outfile = gen_paths.out_dir /\
         pathlib.Path('uavcan') /\
@@ -170,7 +170,7 @@ def test_move_file(gen_paths):  # type: ignore
     next will find the new path.
     """
 
-    class Mover(pydsdlgen.postprocessors.FilePostProcessor):
+    class Mover(nunavut.postprocessors.FilePostProcessor):
         def __init__(self, move_to: pathlib.Path):
             self.target_path = move_to
             self.generated_path = pathlib.Path()
@@ -181,7 +181,7 @@ def test_move_file(gen_paths):  # type: ignore
             self.generated_path = generated
             return self.target_path
 
-    class Verifier(pydsdlgen.postprocessors.FilePostProcessor):
+    class Verifier(nunavut.postprocessors.FilePostProcessor):
         def __init__(self):  # type: ignore
             self.generated_path = pathlib.Path()
 
@@ -193,7 +193,7 @@ def test_move_file(gen_paths):  # type: ignore
     verifier = Verifier()
 
     namespace = _test_common_namespace(gen_paths)
-    generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, gen_paths.templates_dir)
     generator.generate_all(False, True, [mover, verifier])
 
     assert mover.called
@@ -206,7 +206,7 @@ def test_line_pp(gen_paths):  # type: ignore
     Exercises the LinePostProcessor type.
     """
 
-    class TestLinePostProcessor0(pydsdlgen.postprocessors.LinePostProcessor):
+    class TestLinePostProcessor0(nunavut.postprocessors.LinePostProcessor):
 
         def __call__(self, line_and_lineend: typing.Tuple[str, str]) -> typing.Tuple[str, str]:
             if len(line_and_lineend[0]) == 0:
@@ -214,7 +214,7 @@ def test_line_pp(gen_paths):  # type: ignore
             else:
                 return line_and_lineend
 
-    class TestLinePostProcessor1(pydsdlgen.postprocessors.LinePostProcessor):
+    class TestLinePostProcessor1(nunavut.postprocessors.LinePostProcessor):
         def __init__(self):  # type: ignore
             self._lines = []  # type: typing.List[str]
 
@@ -225,28 +225,28 @@ def test_line_pp(gen_paths):  # type: ignore
     line_pp0 = TestLinePostProcessor0()
     line_pp1 = TestLinePostProcessor1()
     namespace = _test_common_namespace(gen_paths)
-    generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, gen_paths.templates_dir)
     generator.generate_all(False, True, [line_pp0, line_pp1])
     assert len(line_pp1._lines) > 0
     _test_common_post_condition(gen_paths, namespace)
 
 
 def test_line_pp_returns_none(gen_paths):  # type: ignore
-    class TestBadLinePostProcessor(pydsdlgen.postprocessors.LinePostProcessor):
+    class TestBadLinePostProcessor(nunavut.postprocessors.LinePostProcessor):
 
         def __call__(self, line_and_lineend: typing.Tuple[str, str]) -> typing.Tuple[str, str]:
             return None  # type: ignore
 
     namespace = _test_common_namespace(gen_paths)
-    generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, gen_paths.templates_dir)
     with pytest.raises(ValueError):
         generator.generate_all(False, True, [TestBadLinePostProcessor()])
 
 
 def test_trim_trailing_ws(gen_paths):  # type: ignore
     namespace = _test_common_namespace(gen_paths)
-    generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
-    generator.generate_all(False, True, [pydsdlgen.postprocessors.TrimTrailingWhitespace()])
+    generator = nunavut.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    generator.generate_all(False, True, [nunavut.postprocessors.TrimTrailingWhitespace()])
     outfile = _test_common_post_condition(gen_paths, namespace)
 
     with open(str(outfile), 'r') as json_file:
@@ -256,8 +256,8 @@ def test_trim_trailing_ws(gen_paths):  # type: ignore
 
 def test_limit_empty_lines(gen_paths):  # type: ignore
     namespace = _test_common_namespace(gen_paths)
-    generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
-    generator.generate_all(False, True, [pydsdlgen.postprocessors.LimitEmptyLines(0)])
+    generator = nunavut.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    generator.generate_all(False, True, [nunavut.postprocessors.LimitEmptyLines(0)])
     outfile = _test_common_post_condition(gen_paths, namespace)
 
     with open(str(outfile), 'r') as json_file:
@@ -270,20 +270,20 @@ def test_limit_empty_lines(gen_paths):  # type: ignore
 
 
 def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
-    """ Verify the --pp-trim-trailing-whitespace argument of dsdlgenj.
+    """ Verify the --pp-trim-trailing-whitespace argument of nnvg.
     """
     outfile = gen_paths.out_dir /\
         pathlib.Path('uavcan') /\
         pathlib.Path('test') /\
         pathlib.Path('TestType_0_2').with_suffix('.json')
 
-    dsdlgenj_cmd_0 = ['dsdlgenj',
+    nnvgj_cmd_0 = ['nnvg',
                       '--templates', str(gen_paths.templates_dir),
                       '-O', str(gen_paths.out_dir),
                       '-e', str('.json'),
                       str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(dsdlgenj_cmd_0, check=True)
+    subprocess.run(nnvgj_cmd_0, check=True)
 
     lines_w_trailing = 0
     with open(str(outfile), 'r') as json_file:
@@ -293,14 +293,14 @@ def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
 
     assert lines_w_trailing > 0
 
-    dsdlgenj_cmd_1 = ['dsdlgenj',
+    nnvgj_cmd_1 = ['nnvg',
                       '--templates', str(gen_paths.templates_dir),
                       '-O', str(gen_paths.out_dir),
                       '-e', str('.json'),
                       '--pp-trim-trailing-whitespace',
                       str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(dsdlgenj_cmd_1, check=True)
+    subprocess.run(nnvgj_cmd_1, check=True)
 
     with open(str(outfile), 'r') as json_file:
         for line in json_file:
@@ -308,20 +308,20 @@ def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
 
 
 def test_pp_max_emptylines(gen_paths):  # type: ignore
-    """ Verify the --pp-max-emptylines argument of dsdlgenj.
+    """ Verify the --pp-max-emptylines argument of nnvg.
     """
     outfile = gen_paths.out_dir /\
         pathlib.Path('uavcan') /\
         pathlib.Path('test') /\
         pathlib.Path('TestType_0_2').with_suffix('.json')
 
-    dsdlgenj_cmd_0 = ['dsdlgenj',
+    nnvgj_cmd_0 = ['nnvg',
                       '--templates', str(gen_paths.templates_dir),
                       '-O', str(gen_paths.out_dir),
                       '-e', str('.json'),
                       str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(dsdlgenj_cmd_0, check=True)
+    subprocess.run(nnvgj_cmd_0, check=True)
 
     found_empty_line = False
     with open(str(outfile), 'r') as json_file:
@@ -336,14 +336,14 @@ def test_pp_max_emptylines(gen_paths):  # type: ignore
 
     assert found_empty_line
 
-    dsdlgenj_cmd_1 = ['dsdlgenj',
+    nnvgj_cmd_1 = ['nnvg',
                       '--templates', str(gen_paths.templates_dir),
                       '-O', str(gen_paths.out_dir),
                       '-e', str('.json'),
                       '--pp-max-emptylines', '0',
                       str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(dsdlgenj_cmd_1, check=True)
+    subprocess.run(nnvgj_cmd_1, check=True)
 
     with open(str(outfile), 'r') as json_file:
         for line in json_file:

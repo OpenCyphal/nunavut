@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from pydsdlgen import build_namespace_tree
-from pydsdlgen.jinja import Generator
+from nunavut import build_namespace_tree
+from nunavut.jinja import Generator
 from pydsdl import read_namespace
 
 

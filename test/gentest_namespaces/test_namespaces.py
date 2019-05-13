@@ -8,8 +8,8 @@ import pytest
 import json
 
 from pydsdl import read_namespace
-from pydsdlgen import Namespace, build_namespace_tree
-from pydsdlgen.jinja import Generator
+from nunavut import Namespace, build_namespace_tree
+from nunavut.jinja import Generator
 
 from pathlib import Path
 
