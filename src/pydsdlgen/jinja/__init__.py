@@ -434,7 +434,7 @@ class Generator(pydsdlgen.generators.AbstractGenerator):
                                    output_file: typing.TextIO,
                                    template_gen: typing.Generator[str, None, None],
                                    line_pps: typing.List['pydsdlgen.postprocessors.LinePostProcessor']) -> None:
-        newline_pattern = re.compile(r'\n|\r\n', flags=re.RegexFlag.MULTILINE)
+        newline_pattern = re.compile(r'\n|\r\n', flags=re.MULTILINE)
         line_buffer = io.StringIO()
         for part in template_gen:
             search_pos = 0  # type: int
@@ -447,12 +447,12 @@ class Generator(pydsdlgen.generators.AbstractGenerator):
                     break
 
                 # We have a newline
-                line_buffer.write(part[search_pos:match_obj.span()[0]])
-                newline_chars = part[match_obj.span()[0]:match_obj.span()[1]]
+                line_buffer.write(part[search_pos:match_obj.start()])
+                newline_chars = part[match_obj.start():match_obj.end()]
                 line = line_buffer.getvalue()  # type: str
                 line_buffer = io.StringIO()
                 cls._filter_and_write_line((line, newline_chars), output_file, line_pps)
-                search_pos = match_obj.span()[1]
+                search_pos = match_obj.end()
                 match_obj = newline_pattern.search(part, search_pos)
         remainder = line_buffer.getvalue()
         if len(remainder) > 0:

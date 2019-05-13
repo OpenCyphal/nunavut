@@ -9,6 +9,7 @@ Module containing post processing logic to run on generated files.
 import abc
 import pathlib
 import typing
+import re
 
 # +---------------------------------------------------------------------------+
 # | POST PROCESSOR TYPES
@@ -142,3 +143,49 @@ class SetFileMode(FilePostProcessor):
     def __call__(self, generated: pathlib.Path) -> pathlib.Path:
         generated.chmod(self._file_mode)
         return generated
+
+
+class TrimTrailingWhitespace(LinePostProcessor):
+    """
+    Remove all trailing whitespace from each line.
+
+    .. IMPORTANT::
+        See performance note in :class:`.LinePostProcessor` documentation. Consider
+        invoking a code formatter from a :class:`FilePostProcessor` instead.
+
+    """
+
+    def __init__(self):  # type: ignore
+        self._trailing_ws_pattern = re.compile(r'\s+$')
+
+    def __call__(self, line_and_lineend: typing.Tuple[str, str]) -> typing.Tuple[str, str]:
+        match_obj = self._trailing_ws_pattern.search(line_and_lineend[0])
+        if match_obj is not None:
+            return (line_and_lineend[0][:match_obj.start()], line_and_lineend[1])
+        else:
+            return line_and_lineend
+
+
+class LimitEmptyLines(LinePostProcessor):
+    """
+    Set a limit to the number of consecutive empty lines to allow.
+
+    .. IMPORTANT::
+        See performance note in :class:`.LinePostProcessor` documentation. Consider
+        invoking a code formatter from a :class:`FilePostProcessor` instead.
+
+    """
+    def __init__(self, max_empty_lines: int):
+        self._max_empty_lines = max_empty_lines
+        self._empty_line_count = 0
+
+    def __call__(self, line_and_lineend: typing.Tuple[str, str]) -> typing.Tuple[str, str]:
+        if len(line_and_lineend[0]) == 0:
+            self._empty_line_count += 1
+        else:
+            self._empty_line_count = 0
+
+        if self._empty_line_count > self._max_empty_lines:
+            return ('', '')
+        else:
+            return line_and_lineend

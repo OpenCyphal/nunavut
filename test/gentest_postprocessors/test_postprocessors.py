@@ -8,6 +8,7 @@ import pathlib
 import subprocess
 import typing
 import pytest
+import re
 
 import pydsdl
 import pydsdlgen
@@ -240,3 +241,115 @@ def test_line_pp_returns_none(gen_paths):  # type: ignore
     generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
     with pytest.raises(ValueError):
         generator.generate_all(False, True, [TestBadLinePostProcessor()])
+
+
+def test_trim_trailing_ws(gen_paths):  # type: ignore
+    namespace = _test_common_namespace(gen_paths)
+    generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    generator.generate_all(False, True, [pydsdlgen.postprocessors.TrimTrailingWhitespace()])
+    outfile = _test_common_post_condition(gen_paths, namespace)
+
+    with open(str(outfile), 'r') as json_file:
+        for line in json_file:
+            assert re.search(r' +$', line) is None
+
+
+def test_limit_empty_lines(gen_paths):  # type: ignore
+    namespace = _test_common_namespace(gen_paths)
+    generator = pydsdlgen.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    generator.generate_all(False, True, [pydsdlgen.postprocessors.LimitEmptyLines(0)])
+    outfile = _test_common_post_condition(gen_paths, namespace)
+
+    with open(str(outfile), 'r') as json_file:
+        for line in json_file:
+            line_end_match = re.search(r'\n|\r\n', line)
+            if line_end_match is not None:
+                assert len(line) > line_end_match.end() - line_end_match.start()
+            else:
+                assert len(line) > 0
+
+
+def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
+    """ Verify the --pp-trim-trailing-whitespace argument of dsdlgenj.
+    """
+    outfile = gen_paths.out_dir /\
+        pathlib.Path('uavcan') /\
+        pathlib.Path('test') /\
+        pathlib.Path('TestType_0_2').with_suffix('.json')
+
+    dsdlgenj_cmd_0 = ['dsdlgenj',
+                      '--templates', str(gen_paths.templates_dir),
+                      '-O', str(gen_paths.out_dir),
+                      '-e', str('.json'),
+                      str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    subprocess.run(dsdlgenj_cmd_0, check=True)
+
+    lines_w_trailing = 0
+    with open(str(outfile), 'r') as json_file:
+        for line in json_file:
+            if re.search(r' +$', line) is not None:
+                lines_w_trailing += 1
+
+    assert lines_w_trailing > 0
+
+    dsdlgenj_cmd_1 = ['dsdlgenj',
+                      '--templates', str(gen_paths.templates_dir),
+                      '-O', str(gen_paths.out_dir),
+                      '-e', str('.json'),
+                      '--pp-trim-trailing-whitespace',
+                      str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    subprocess.run(dsdlgenj_cmd_1, check=True)
+
+    with open(str(outfile), 'r') as json_file:
+        for line in json_file:
+            assert re.search(r' +$', line) is None
+
+
+def test_pp_max_emptylines(gen_paths):  # type: ignore
+    """ Verify the --pp-max-emptylines argument of dsdlgenj.
+    """
+    outfile = gen_paths.out_dir /\
+        pathlib.Path('uavcan') /\
+        pathlib.Path('test') /\
+        pathlib.Path('TestType_0_2').with_suffix('.json')
+
+    dsdlgenj_cmd_0 = ['dsdlgenj',
+                      '--templates', str(gen_paths.templates_dir),
+                      '-O', str(gen_paths.out_dir),
+                      '-e', str('.json'),
+                      str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    subprocess.run(dsdlgenj_cmd_0, check=True)
+
+    found_empty_line = False
+    with open(str(outfile), 'r') as json_file:
+        for line in json_file:
+            line_end_match = re.search(r'\n|\r\n', line)
+            if line_end_match is not None and len(line) == line_end_match.end() - line_end_match.start():
+                found_empty_line = True
+                break
+            elif len(line) == 0:
+                found_empty_line = True
+                break
+
+    assert found_empty_line
+
+    dsdlgenj_cmd_1 = ['dsdlgenj',
+                      '--templates', str(gen_paths.templates_dir),
+                      '-O', str(gen_paths.out_dir),
+                      '-e', str('.json'),
+                      '--pp-max-emptylines', '0',
+                      str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    subprocess.run(dsdlgenj_cmd_1, check=True)
+
+    with open(str(outfile), 'r') as json_file:
+        for line in json_file:
+            for line in json_file:
+                line_end_match = re.search(r'\n|\r\n', line)
+                if line_end_match is not None:
+                    assert len(line) > line_end_match.end() - line_end_match.start()
+                else:
+                    assert len(line) > 0

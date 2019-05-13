@@ -17,7 +17,7 @@ import sys
 import typing
 
 
-def _run(args: argparse.Namespace, extra_includes: str) -> int:
+def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
     '''
         Post command-line setup and parsing logic to execute pydsdlgen
         library routines based on input.
@@ -28,6 +28,21 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
     import pydsdl
     import pydsdlgen
     import pydsdlgen.jinja
+
+    def _build_post_processor_list_from_args(args: argparse.Namespace) -> typing.List[pydsdlgen.postprocessors.PostProcessor]:
+        '''
+        Return a list of post processors setup based on the provided commandline arguments. This
+        list may be empty but the function will not return None.
+        '''
+        post_processors = [
+            pydsdlgen.postprocessors.SetFileMode(args.file_mode)
+        ]  # type: typing.List[pydsdlgen.postprocessors.PostProcessor]
+        if args.pp_trim_trailing_whitespace:
+            post_processors.append(pydsdlgen.postprocessors.TrimTrailingWhitespace())
+        if hasattr(args, 'pp_max_emptylines') and args.pp_max_emptylines is not None:
+            post_processors.append(pydsdlgen.postprocessors.LimitEmptyLines(args.pp_max_emptylines))
+
+        return post_processors
 
     #
     # pydsdlgen : parse
@@ -70,12 +85,9 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
         return 0
 
     if not args.list_outputs and not args.list_inputs:
-        post_processors = [
-            pydsdlgen.postprocessors.SetFileMode(args.file_mode)
-        ]  # type: typing.Optional[typing.List[pydsdlgen.postprocessors.PostProcessor]]
         return generator.generate_all(is_dryrun=args.dry_run,
                                       allow_overwrite=not args.no_overwrite,
-                                      post_processors=post_processors)
+                                      post_processors=_build_post_processor_list_from_args(args))
     else:
         return 0
 
@@ -211,6 +223,25 @@ Because of this, to provide an octal value, you'll need to prefix your
 literal with '0o' (e.g. --file-mode 0o664).
 ''')
 
+    parser.add_argument('--pp-max-emptylines',
+                        type=int,
+                        help='''If provided this will suppress generation of additional consecutive
+empty lines beyond the limit set by this argument.
+
+Note that this will insert a line post-processor which may reduce
+performance. Consider using a code formatter on the generated output
+to enforce whitespace rules instead.
+''')
+
+    parser.add_argument('--pp-trim-trailing-whitespace',
+                        action='store_true',
+                        help='''Enables a line post-processor that will elide all whitespace at the
+end of each line.
+
+Note that this will insert a line post-processor which may reduce
+performance. Consider using a code formatter on the generated output
+to enforce whitespace rules instead.
+''')
     return parser
 
 
