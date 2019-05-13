@@ -8,7 +8,7 @@
     module will be available in the template's global namespace as ``cpp``.
 """
 
-from io import StringIO
+import io
 import os
 
 
@@ -37,7 +37,7 @@ def filter_open_namespace(full_namespace: str, bracket_on_next_line: bool = True
         :returns: C++ namespace declarations with opening brackets.
     """
 
-    with StringIO() as content:
+    with io.StringIO() as content:
         for name in full_namespace.split('.'):
             content.write('namespace ')
             content.write(name)
@@ -72,7 +72,7 @@ def filter_close_namespace(full_namespace: str, omit_comments: bool = False) -> 
 
         :returns: C++ namespace declarations with opening brackets.
     """
-    with StringIO() as content:
+    with io.StringIO() as content:
         for name in reversed(full_namespace.split('.')):
             content.write('}')
             if not omit_comments:

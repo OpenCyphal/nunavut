@@ -12,13 +12,12 @@
 import argparse
 import logging
 import os
+import pathlib
 import sys
-
-from pathlib import Path
-from typing import Any, Optional
+import typing
 
 
-def _run(args: argparse.Namespace, extra_includes: str) -> int:
+def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
     '''
         Post command-line setup and parsing logic to execute pydsdlgen
         library routines based on input.
@@ -26,16 +25,31 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
     #
     # pydsdlgen : load module
     #
-    from pydsdl import read_namespace
-    from pydsdlgen import build_namespace_tree
-    from pydsdlgen.jinja import Generator
+    import pydsdl
+    import pydsdlgen
+    import pydsdlgen.jinja
+
+    def _build_post_processor_list_from_args(args: argparse.Namespace) -> typing.List[pydsdlgen.postprocessors.PostProcessor]:
+        '''
+        Return a list of post processors setup based on the provided commandline arguments. This
+        list may be empty but the function will not return None.
+        '''
+        post_processors = [
+            pydsdlgen.postprocessors.SetFileMode(args.file_mode)
+        ]  # type: typing.List[pydsdlgen.postprocessors.PostProcessor]
+        if args.pp_trim_trailing_whitespace:
+            post_processors.append(pydsdlgen.postprocessors.TrimTrailingWhitespace())
+        if hasattr(args, 'pp_max_emptylines') and args.pp_max_emptylines is not None:
+            post_processors.append(pydsdlgen.postprocessors.LimitEmptyLines(args.pp_max_emptylines))
+
+        return post_processors
 
     #
     # pydsdlgen : parse
     #
-    type_map = read_namespace(args.root_namespace, extra_includes)
+    type_map = pydsdl.read_namespace(args.root_namespace, extra_includes)
 
-    root_namespace = build_namespace_tree(
+    root_namespace = pydsdlgen.build_namespace_tree(
         type_map,
         args.root_namespace,
         args.outdir,
@@ -52,9 +66,9 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
             sys.stdout.write(';')
         return 0
 
-    generator = Generator(root_namespace,
-                          args.generate_namespace_types,
-                          Path(args.templates))
+    generator = pydsdlgen.jinja.Generator(root_namespace,
+                                          args.generate_namespace_types,
+                                          pathlib.Path(args.templates))
 
     if args.list_inputs:
         for input_path in generator.get_templates():
@@ -71,7 +85,9 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:
         return 0
 
     if not args.list_outputs and not args.list_inputs:
-        return generator.generate_all(args.dry_run)
+        return generator.generate_all(is_dryrun=args.dry_run,
+                                      allow_overwrite=not args.no_overwrite,
+                                      post_processors=_build_post_processor_list_from_args(args))
     else:
         return 0
 
@@ -85,8 +101,8 @@ class _LazyVersionAction(argparse._VersionAction):
     def __call__(self,
                  parser: argparse.ArgumentParser,
                  namespace: argparse.Namespace,
-                 values: Any,
-                 option_string: Optional[str] = None) -> None:
+                 values: typing.Any,
+                 option_string: typing.Optional[str] = None) -> None:
         from pydsdlgen.version import __version__
         version_string = '.'.join(map(str, __version__))
         formatter = parser._get_formatter()
@@ -152,6 +168,7 @@ separated by colons ":"'''
             return raw_arg
 
     parser.add_argument('--output-extension', '-e', default='', type=extension_type,
+                        required='--list-inputs' not in sys.argv,
                         help='The extension to use for generated files.')
 
     parser.add_argument('--dry-run', '-d', action='store_true',
@@ -190,6 +207,41 @@ changed using that argument.
                         default='Namespace',
                         help='The name of the file generated when --generate-namespace-types is provided.')
 
+    parser.add_argument('--no-overwrite',
+                        action='store_true',
+                        help='''By default, generated files will be silently overwritten by
+subsequent invocations of the generator. If this argument is specified an
+error will be raised instead preventing overwrites.
+''')
+
+    parser.add_argument('--file-mode',
+                        default=0o444,
+                        type=lambda value: int(value, 0),
+                        help='''The filemode each generated file is set to after it is created.
+Note that this value is interpreted using python auto base detection.
+Because of this, to provide an octal value, you'll need to prefix your
+literal with '0o' (e.g. --file-mode 0o664).
+''')
+
+    parser.add_argument('--pp-max-emptylines',
+                        type=int,
+                        help='''If provided this will suppress generation of additional consecutive
+empty lines beyond the limit set by this argument.
+
+Note that this will insert a line post-processor which may reduce
+performance. Consider using a code formatter on the generated output
+to enforce whitespace rules instead.
+''')
+
+    parser.add_argument('--pp-trim-trailing-whitespace',
+                        action='store_true',
+                        help='''Enables a line post-processor that will elide all whitespace at the
+end of each line.
+
+Note that this will insert a line post-processor which may reduce
+performance. Consider using a code formatter on the generated output
+to enforce whitespace rules instead.
+''')
     return parser
 
 
@@ -212,7 +264,7 @@ def main() -> int:
     logging.basicConfig(stream=sys.stderr, level=level, format=fmt)
 
     logging.info('Running %s using sys.prefix: %s',
-                 Path(__file__).name, sys.prefix)
+                 pathlib.Path(__file__).name, sys.prefix)
 
     #
     # Parse UAVCAN_DSDL_INCLUDE_PATH

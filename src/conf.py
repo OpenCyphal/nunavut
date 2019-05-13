@@ -75,6 +75,10 @@ pygments_style = None
 # Classes should inherit documentation from ancestors.
 autodoc_inherit_docstrings = True
 
+# Use the order members of classes and modules appear in source for
+# the documentation (as opposed to alphabetical).
+autodoc_member_order = 'bysource'
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for

@@ -61,11 +61,12 @@ def test_three_roots(gen_paths):  # type: ignore
 
 
 def test_three_roots_using_dsdlgenj(gen_paths):  # type: ignore
-    dsdlgen_cmd = ['dsdlgenj',
-                   '--templates', str(gen_paths.templates_dir),
-                   '-I', str(gen_paths.dsdl_dir / Path("huckco")),
-                   '-I', str(gen_paths.dsdl_dir / Path("esmeinc")),
-                   '-O', str(gen_paths.out_dir),
-                   str(gen_paths.dsdl_dir / Path("scotec"))]
+    dsdlgenj_cmd = ['dsdlgenj',
+                    '--templates', str(gen_paths.templates_dir),
+                    '-I', str(gen_paths.dsdl_dir / Path("huckco")),
+                    '-I', str(gen_paths.dsdl_dir / Path("esmeinc")),
+                    '-O', str(gen_paths.out_dir),
+                    '-e', str('.json'),
+                    str(gen_paths.dsdl_dir / Path("scotec"))]
 
-    subprocess.run(dsdlgen_cmd, check=True)
+    subprocess.run(dsdlgenj_cmd, check=True)

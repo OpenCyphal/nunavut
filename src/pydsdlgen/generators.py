@@ -9,12 +9,14 @@ Generators abstract the code generation technology used to transform
 pydsdl AST into source code.
 """
 
-from abc import ABCMeta, abstractmethod
+import abc
+import typing
 
-from pydsdlgen import Namespace
+import pydsdlgen
+import pydsdlgen.postprocessors
 
 
-class AbstractGenerator(metaclass=ABCMeta):
+class AbstractGenerator(metaclass=abc.ABCMeta):
     """
         Abstract base class for classes that generate source file output
         from a given pydsdl parser result.
@@ -26,13 +28,13 @@ class AbstractGenerator(metaclass=ABCMeta):
     """
 
     def __init__(self,
-                 namespace: Namespace,
+                 namespace: pydsdlgen.Namespace,
                  generate_namespace_types: bool):
         self._namespace = namespace
         self._generate_namespace_types = generate_namespace_types
 
     @property
-    def namespace(self) -> Namespace:
+    def namespace(self) -> pydsdlgen.Namespace:
         """
         The root :class:`pydsdlgen.Namespace` for this generator.
         """
@@ -47,13 +49,20 @@ class AbstractGenerator(metaclass=ABCMeta):
         """
         return self._generate_namespace_types
 
-    @abstractmethod
-    def generate_all(self, is_dryrun: bool = False) -> int:
+    @abc.abstractmethod
+    def generate_all(self,
+                     is_dryrun: bool = False,
+                     allow_overwrite: bool = True,
+                     post_processors: typing.Optional[typing.List['pydsdlgen.postprocessors.PostProcessor']] = None) -> int:
         """
         Generates all output for a given :class:`pydsdlgen.Namespace` and using
         the templates found by this object.
 
         :param bool is_dryrun: If True then no output files will actually be
                                written but all other operations will be performed.
+        :param bool allow_overwrite: If True then the generator will attempt to overwrite any existing files
+                                it encounters. If False then the generator will raise an error if the
+                                output file exists and the generation is not a dry-run.
+        :param post_processors: A list of :class:`pydsdlgen.postprocessors.PostProcessor`
         """
         raise NotImplementedError()

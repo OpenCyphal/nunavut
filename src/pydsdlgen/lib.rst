@@ -19,6 +19,14 @@ pydsdlgen (library)
    :members:
 
 *************************************
+:mod:`pydsdlgen.postprocessors`
+*************************************
+
+.. automodule:: pydsdlgen.postprocessors
+   :members:
+   :special-members: __call__
+
+*************************************
 :mod:`pydsdlgen.jinja`
 *************************************
 

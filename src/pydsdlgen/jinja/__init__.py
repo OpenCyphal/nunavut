@@ -7,29 +7,25 @@
     jinja-based :class:`~pydsdlgen.generators.AbstractGenerator` implementation.
 """
 
+import collections
+import datetime
+import inspect
 import logging
-from datetime import datetime
-from pathlib import Path
-from collections import deque
+import pathlib
+import typing
+import io
+import re
 
-from typing import Dict, Any, Callable, Optional, List, Set, Deque
+import pydsdl
 
-from pydsdlgen import Namespace
+import pydsdlgen.generators
+from pydsdlgen.jinja.lang import (get_supported_languages, add_language_support)
+
 from pydsdlgen.jinja.jinja2 import (Environment, FileSystemLoader,
-                                    TemplateAssertionError, nodes,
-                                    select_autoescape, StrictUndefined)
-
+                                    StrictUndefined, TemplateAssertionError,
+                                    nodes, select_autoescape, Template)
 from pydsdlgen.jinja.jinja2.ext import Extension
 from pydsdlgen.jinja.jinja2.parser import Parser
-
-from pydsdl import Any as DsdlAny
-from pydsdl import (CompositeType, PrimitiveType,
-                    Constant, SerializableType)
-
-from ..generators import AbstractGenerator
-
-import inspect
-from .lang import add_language_support, get_supported_languages
 
 logger = logging.getLogger(__name__)
 
@@ -78,28 +74,28 @@ class JinjaAssert(Extension):
                    name: str,
                    filename: str,
                    message: str,
-                   caller: Callable) -> Any:
+                   caller: typing.Callable) -> typing.Any:
         if not expression:
             raise TemplateAssertionError(message, lineno, name, filename)
         return caller()
 
 
-class Generator(AbstractGenerator):
+class Generator(pydsdlgen.generators.AbstractGenerator):
     """ :class:`~pydsdlgen.generators.AbstractGenerator` implementation that uses
     Jinja2 templates to generate source code.
 
     :param pydsdlgen.Namespace namespace:  The top-level namespace to generates types
                                            at and from.
-    :param bool generate_namespace_types:  Set to true to emit files for namespaces.
+    :param bool generate_namespace_types:  typing.Set to true to emit files for namespaces.
                                            False will only generate files for datatypes.
-    :param Path templates_dir:             The directory containing the jinja templates.
+    :param pathlib.Path templates_dir:     The directory containing the jinja templates.
 
     :param bool followlinks:               If True then symbolic links will be followed when
                                            searching for templates.
-    :param Dict[str, Callable] additional_filters: Optional jinja filters to add to the
+    :param typing.Dict[str, typing.Callable] additional_filters: typing.Optional jinja filters to add to the
                                            global environment using the key as the filter name
                                            and the callable as the filter.
-    :param Dict[str, Callable] additional_tests: Optional jinja tests to add to the
+    :param typing.Dict[str, typing.Callable] additional_tests: typing.Optional jinja tests to add to the
                                            global environment using the key as the test name
                                            and the callable as the test.
     :raises RuntimeError: If any additional filter or test attempts to replace a built-in
@@ -113,7 +109,7 @@ class Generator(AbstractGenerator):
     # +-----------------------------------------------------------------------+
 
     @staticmethod
-    def filter_yamlfy(value: Any) -> str:
+    def filter_yamlfy(value: typing.Any) -> str:
         """
         Filter to, optionally, emit a dump of the dsdl input as a yaml document.
         Available as ``yamlfy`` in all template environments.
@@ -148,7 +144,7 @@ class Generator(AbstractGenerator):
         except ImportError:
             return ""
 
-    def filter_type_to_template(self, value: Any) -> str:
+    def filter_type_to_template(self, value: typing.Any) -> str:
         """
         Template for type resolution as a filter. Available as ``type_to_template``
         in all template environments.
@@ -164,12 +160,12 @@ class Generator(AbstractGenerator):
 
         :returns: A path to a template named for the type with :any:`Generator.TEMPLATE_SUFFIX`
         """
-        search_queue = deque()  # type: Deque[Any]
-        discovered = set()  # type: Set[Any]
+        search_queue = collections.deque()  # type: typing.Deque[typing.Any]
+        discovered = set()  # type: typing.Set[typing.Any]
         search_queue.appendleft(type(value))
-        template_path = Path(type(value).__name__).with_suffix(self.TEMPLATE_SUFFIX)
+        template_path = pathlib.Path(type(value).__name__).with_suffix(self.TEMPLATE_SUFFIX)
 
-        def _find_template_by_name(name: str, templates: List[Path]) -> Optional[Path]:
+        def _find_template_by_name(name: str, templates: typing.List[pathlib.Path]) -> typing.Optional[pathlib.Path]:
             for template_path in templates:
                 if template_path.stem == name:
                     return template_path
@@ -197,7 +193,7 @@ class Generator(AbstractGenerator):
 
         return template_path.name
 
-    def filter_type_to_include_path(self, value: Any, resolve: bool = False) -> str:
+    def filter_type_to_include_path(self, value: typing.Any, resolve: bool = False) -> str:
         """
         Emits and include path to the output target for a given type.
 
@@ -209,7 +205,7 @@ class Generator(AbstractGenerator):
 
             #include "foo/bar/my_type.h"
 
-        :param Any value: The type to emit an include for.
+        :param typing.Any value: The type to emit an include for.
         :param bool resolve: If True the path returned will be absolute else the path will
                              be relative to the folder of the root namepace.
         :returns: A string path to output file for the type.
@@ -222,7 +218,7 @@ class Generator(AbstractGenerator):
             return str(include_path.relative_to(self.namespace.output_folder.parent))
 
     @staticmethod
-    def filter_typename(value: Any) -> str:
+    def filter_typename(value: typing.Any) -> str:
         """
         Filters a given token as its type name. Available as ``typename``
         in all template environments.
@@ -248,9 +244,9 @@ class Generator(AbstractGenerator):
     # +-----------------------------------------------------------------------+
 
     @staticmethod
-    def is_primitive(value: DsdlAny) -> bool:
+    def is_primitive(value: pydsdl.Any) -> bool:
         """
-        Tests if a given dsdl instance is a ``PrimitiveType``.
+        Tests if a given dsdl instance is a ``pydsdl.PrimitiveType``.
         Available in all template environments as ``is primitive``.
 
         Example::
@@ -263,12 +259,12 @@ class Generator(AbstractGenerator):
 
         :returns: True if value is an instance of ``pydsdl.PrimitiveType``.
         """
-        return isinstance(value, PrimitiveType)
+        return isinstance(value, pydsdl.PrimitiveType)
 
     @staticmethod
-    def is_constant(value: DsdlAny) -> bool:
+    def is_constant(value: pydsdl.Any) -> bool:
         """
-        Tests if a given dsdl instance is a ``Constant``.
+        Tests if a given dsdl instance is a ``pydsdl.Constant``.
         Available in all template environments as ``is constant``.
 
         Example::
@@ -281,12 +277,12 @@ class Generator(AbstractGenerator):
 
         :returns: True if value is an instance of ``pydsdl.Constant``.
         """  # noqa: E501
-        return isinstance(value, Constant)
+        return isinstance(value, pydsdl.Constant)
 
     @staticmethod
-    def is_serializable(value: DsdlAny) -> bool:
+    def is_serializable(value: pydsdl.Any) -> bool:
         """
-        Tests if a given dsdl instance is a ``SerializableType``.
+        Tests if a given dsdl instance is a ``pydsdl.SerializableType``.
         Available in all template environments as ``is serializable``.
 
         Example::
@@ -299,32 +295,32 @@ class Generator(AbstractGenerator):
 
         :returns: True if value is an instance of ``pydsdl.SerializableType``.
         """  # noqa: E501
-        return isinstance(value, SerializableType)
+        return isinstance(value, pydsdl.SerializableType)
 
     # +-----------------------------------------------------------------------+
 
     def __init__(self,
-                 namespace: Namespace,
+                 namespace: pydsdlgen.Namespace,
                  generate_namespace_types: bool,
-                 templates_dir: Path,
+                 templates_dir: pathlib.Path,
                  followlinks: bool = False,
-                 additional_filters: Optional[Dict[str, Callable]] = None,
-                 additional_tests: Optional[Dict[str, Callable]] = None
+                 additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
+                 additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None
                  ):
 
         super(Generator, self).__init__(namespace, generate_namespace_types)
 
         if templates_dir is None:
             raise ValueError("Templates directory argument was None")
-        if not Path(templates_dir).exists:
+        if not pathlib.Path(templates_dir).exists:
             raise ValueError(
                 "Templates directory {} did not exist?".format(templates_dir))
 
         self._templates_dir = templates_dir
 
-        self._type_to_template_lookup_cache = dict()  # type: Dict[DsdlAny, Path]
+        self._type_to_template_lookup_cache = dict()  # type: typing.Dict[pydsdl.Any, pathlib.Path]
 
-        self._templates_list = None  # type: Optional[List[Path]]
+        self._templates_list = None  # type: typing.Optional[typing.List[pathlib.Path]]
 
         logger.info("Loading templates from {}".format(templates_dir))
 
@@ -335,7 +331,9 @@ class Generator(AbstractGenerator):
                                     default=False)
 
         self._env = Environment(loader=fs_loader,
-                                extensions=[JinjaAssert],
+                                extensions=[pydsdlgen.jinja.jinja2.ext.do,
+                                            pydsdlgen.jinja.jinja2.ext.loopcontrols,
+                                            JinjaAssert],
                                 autoescape=autoesc,
                                 undefined=StrictUndefined,
                                 keep_trailing_newline=True,
@@ -348,7 +346,7 @@ class Generator(AbstractGenerator):
         for language_name in get_supported_languages():
             add_language_support(language_name, self._env)
 
-    def get_templates(self) -> List[Path]:
+    def get_templates(self) -> typing.List[pathlib.Path]:
         """
         Enumerate all templates found in the templates path.
         :data:`~TEMPLATE_SUFFIX` as the suffix for the filename.
@@ -361,13 +359,16 @@ class Generator(AbstractGenerator):
                 self._templates_list.append(template)
         return self._templates_list
 
-    def generate_all(self, is_dryrun: bool = False) -> int:
+    def generate_all(self,
+                     is_dryrun: bool = False,
+                     allow_overwrite: bool = True,
+                     post_processors: typing.Optional[typing.List['pydsdlgen.postprocessors.PostProcessor']] = None) -> int:
         if self.generate_namespace_types:
             for (parsed_type, output_path) in self.namespace.get_all_types():
-                self._generate_type(parsed_type, output_path, is_dryrun)
+                self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, post_processors)
         else:
             for (parsed_type, output_path) in self.namespace.get_all_datatypes():
-                self._generate_type(parsed_type, output_path, is_dryrun)
+                self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, post_processors)
         return 0
 
     # +-----------------------------------------------------------------------+
@@ -375,8 +376,8 @@ class Generator(AbstractGenerator):
     # +-----------------------------------------------------------------------+
 
     def _add_filters_and_tests(self,
-                               additional_filters: Optional[Dict[str, Callable]],
-                               additional_tests: Optional[Dict[str, Callable]]) -> None:
+                               additional_filters: typing.Optional[typing.Dict[str, typing.Callable]],
+                               additional_tests: typing.Optional[typing.Dict[str, typing.Callable]]) -> None:
         # Automatically find the locally defined filters and
         # tests and add them to the jinja environment.
         member_functions = inspect.getmembers(self, inspect.isroutine)
@@ -399,13 +400,100 @@ class Generator(AbstractGenerator):
                     raise RuntimeError('test {} was already defined.'.format(name))
                 self._env.tests[name] = additional_test
 
-    def _generate_type(self, input_type: CompositeType, output_path: Path, is_dryrun: bool) -> None:
+    def _generate_type(self,
+                       input_type: pydsdl.CompositeType,
+                       output_path: pathlib.Path,
+                       is_dryrun: bool,
+                       allow_overwrite: bool,
+                       post_processors: typing.Optional[typing.List['pydsdlgen.postprocessors.PostProcessor']]) -> None:
         template_name = self.filter_type_to_template(input_type)
-        self._env.globals["now_utc"] = datetime.utcnow()
+        self._env.globals["now_utc"] = datetime.datetime.utcnow()
         template = self._env.get_template(template_name)
         template_gen = template.generate(T=input_type)
         if not is_dryrun:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(str(output_path), "w") as output_file:
+            self._generate_type_real(output_path,
+                                     template,
+                                     template_gen,
+                                     allow_overwrite,
+                                     post_processors
+                                     )
+
+    @staticmethod
+    def _filter_and_write_line(line_and_lineend: typing.Tuple[str, str],
+                               output_file: typing.TextIO,
+                               line_pps: typing.List['pydsdlgen.postprocessors.LinePostProcessor']) -> None:
+        for line_pp in line_pps:
+            line_and_lineend = line_pp(line_and_lineend)
+            if line_and_lineend is None:
+                raise ValueError('line post processor must return a 2-tuple. To elide a line return a tuple of empty strings.'
+                                 'None is not a valid value.')
+
+        output_file.write(line_and_lineend[0])
+        output_file.write(line_and_lineend[1])
+
+    @classmethod
+    def _generate_with_line_buffer(cls,
+                                   output_file: typing.TextIO,
+                                   template_gen: typing.Generator[str, None, None],
+                                   line_pps: typing.List['pydsdlgen.postprocessors.LinePostProcessor']) -> None:
+        newline_pattern = re.compile(r'\n|\r\n', flags=re.MULTILINE)
+        line_buffer = io.StringIO()
+        for part in template_gen:
+            search_pos = 0  # type: int
+            match_obj = newline_pattern.search(part, search_pos)
+            while True:
+                if search_pos < 0 or search_pos >= len(part):
+                    break
+                if match_obj is None:
+                    line_buffer.write(part[search_pos:])
+                    break
+
+                # We have a newline
+                line_buffer.write(part[search_pos:match_obj.start()])
+                newline_chars = part[match_obj.start():match_obj.end()]
+                line = line_buffer.getvalue()  # type: str
+                line_buffer = io.StringIO()
+                cls._filter_and_write_line((line, newline_chars), output_file, line_pps)
+                search_pos = match_obj.end()
+                match_obj = newline_pattern.search(part, search_pos)
+        remainder = line_buffer.getvalue()
+        if len(remainder) > 0:
+            cls._filter_and_write_line((remainder, ""), output_file, line_pps)
+
+    def _generate_type_real(self,
+                            output_path: pathlib.Path,
+                            template: Template,
+                            template_gen: typing.Generator[str, None, None],
+                            allow_overwrite: bool,
+                            post_processors: typing.Optional[typing.List['pydsdlgen.postprocessors.PostProcessor']]) -> None:
+        """
+        Logic that should run from _generate_type iff is_dryrun is False.
+        """
+
+        # Predetermine the post processor types.
+        line_pps = []  # type: typing.List['pydsdlgen.postprocessors.LinePostProcessor']
+        file_pps = []  # type: typing.List['pydsdlgen.postprocessors.FilePostProcessor']
+        if post_processors is not None:
+            for pp in post_processors:
+                if isinstance(pp, pydsdlgen.postprocessors.LinePostProcessor):
+                    line_pps.append(pp)
+                elif isinstance(pp, pydsdlgen.postprocessors.FilePostProcessor):
+                    file_pps.append(pp)
+                else:
+                    raise ValueError('PostProcessor type {} is unknown.'.format(type(pp)))
+
+        if output_path.exists():
+            if allow_overwrite:
+                output_path.chmod(output_path.stat().st_mode | 0o220)
+            else:
+                raise PermissionError('{} exists and allow_overwrite is False.'.format(output_path))
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(str(output_path), "w") as output_file:
+            if len(line_pps) > 0:
+                # The logic gets much more complex when doing line post-processing.
+                self._generate_with_line_buffer(output_file, template_gen, line_pps)
+            else:
                 for part in template_gen:
                     output_file.write(part)
+        for file_pp in file_pps:
+            output_path = file_pp(output_path)

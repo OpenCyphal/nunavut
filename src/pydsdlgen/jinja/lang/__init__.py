@@ -9,8 +9,10 @@ This package contains modules that provide specific support for generating
 source for various languages using jinja templates.
 """
 import inspect
+import typing
+
 from pydsdlgen.jinja.jinja2 import Environment
-from typing import Iterable
+
 from . import c, cpp, js
 
 __language_modules__ = {
@@ -20,7 +22,7 @@ __language_modules__ = {
 }
 
 
-def get_supported_languages() -> Iterable[str]:
+def get_supported_languages() -> typing.Iterable[str]:
     """Get a list of languages this module supports.
 
     :returns: An iterable of strings which are language names accepted by the
