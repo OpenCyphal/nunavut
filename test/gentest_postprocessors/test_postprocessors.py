@@ -128,18 +128,18 @@ def test_overwrite_dryrun(gen_paths):  # type: ignore
 def test_no_overwrite_arg(gen_paths):  # type: ignore
     """ Verifies the --no-overwrite argument of nnvg.
     """
-    nnvgj_cmd = ['nnvg',
+    nnvg_cmd = ['nnvg',
                     '--templates', str(gen_paths.templates_dir),
                     '-O', str(gen_paths.out_dir),
                     '-e', str('.json'),
                     str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(nnvgj_cmd, check=True)
+    subprocess.run(nnvg_cmd, check=True)
 
-    nnvgj_cmd.append('--no-overwrite')
+    nnvg_cmd.append('--no-overwrite')
 
     with pytest.raises(subprocess.CalledProcessError):
-        subprocess.run(nnvgj_cmd, check=True)
+        subprocess.run(nnvg_cmd, check=True)
 
 
 def test_file_mode(gen_paths):  # type: ignore
@@ -147,14 +147,14 @@ def test_file_mode(gen_paths):  # type: ignore
     """
 
     file_mode = 0o774
-    nnvgj_cmd = ['nnvg',
+    nnvg_cmd = ['nnvg',
                     '--templates', str(gen_paths.templates_dir),
                     '-O', str(gen_paths.out_dir),
                     '-e', str('.json'),
                     '--file-mode', oct(file_mode),
                     str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(nnvgj_cmd, check=True)
+    subprocess.run(nnvg_cmd, check=True)
 
     outfile = gen_paths.out_dir /\
         pathlib.Path('uavcan') /\
@@ -277,13 +277,13 @@ def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
         pathlib.Path('test') /\
         pathlib.Path('TestType_0_2').with_suffix('.json')
 
-    nnvgj_cmd_0 = ['nnvg',
+    nnvg_cmd_0 = ['nnvg',
                       '--templates', str(gen_paths.templates_dir),
                       '-O', str(gen_paths.out_dir),
                       '-e', str('.json'),
                       str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(nnvgj_cmd_0, check=True)
+    subprocess.run(nnvg_cmd_0, check=True)
 
     lines_w_trailing = 0
     with open(str(outfile), 'r') as json_file:
@@ -293,14 +293,14 @@ def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
 
     assert lines_w_trailing > 0
 
-    nnvgj_cmd_1 = ['nnvg',
+    nnvg_cmd_1 = ['nnvg',
                       '--templates', str(gen_paths.templates_dir),
                       '-O', str(gen_paths.out_dir),
                       '-e', str('.json'),
                       '--pp-trim-trailing-whitespace',
                       str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(nnvgj_cmd_1, check=True)
+    subprocess.run(nnvg_cmd_1, check=True)
 
     with open(str(outfile), 'r') as json_file:
         for line in json_file:
@@ -315,13 +315,13 @@ def test_pp_max_emptylines(gen_paths):  # type: ignore
         pathlib.Path('test') /\
         pathlib.Path('TestType_0_2').with_suffix('.json')
 
-    nnvgj_cmd_0 = ['nnvg',
+    nnvg_cmd_0 = ['nnvg',
                       '--templates', str(gen_paths.templates_dir),
                       '-O', str(gen_paths.out_dir),
                       '-e', str('.json'),
                       str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(nnvgj_cmd_0, check=True)
+    subprocess.run(nnvg_cmd_0, check=True)
 
     found_empty_line = False
     with open(str(outfile), 'r') as json_file:
@@ -336,14 +336,14 @@ def test_pp_max_emptylines(gen_paths):  # type: ignore
 
     assert found_empty_line
 
-    nnvgj_cmd_1 = ['nnvg',
+    nnvg_cmd_1 = ['nnvg',
                       '--templates', str(gen_paths.templates_dir),
                       '-O', str(gen_paths.out_dir),
                       '-e', str('.json'),
                       '--pp-max-emptylines', '0',
                       str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(nnvgj_cmd_1, check=True)
+    subprocess.run(nnvg_cmd_1, check=True)
 
     with open(str(outfile), 'r') as json_file:
         for line in json_file:

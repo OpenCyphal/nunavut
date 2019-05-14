@@ -1,4 +1,4 @@
-.. _nnvgj:
+.. _nnvg:
 
 ################################################
 nnvg
@@ -32,7 +32,7 @@ The following cmake function demonstrates how to integrate pydsdelgen with a cma
     # :function: create_dsdl_target
     # Creates a target that will generate source code from dsdl definitions.
     #
-    # The source is generated to files with ${NNVGJ_EXTENSION} as the extension.
+    # The source is generated to files with ${NNVG_EXTENSION} as the extension.
     #
     # :param str ARG_TARGET_NAME:               The name to give the target.
     # :param Path ARG_OUTPUT_FOLDER:            The directory to generate all source under.
@@ -53,9 +53,9 @@ The following cmake function demonstrates how to integrate pydsdelgen with a cma
             endforeach(ARG_N)
         endif()
 
-        execute_process(COMMAND ${PYTHON} ${NNVGJ}
+        execute_process(COMMAND ${PYTHON} ${NNVG}
                                             --list-outputs
-                                            --output-extension ${NNVGJ_EXTENSION}
+                                            --output-extension ${NNVG_EXTENSION}
                                             -O ${ARG_OUTPUT_FOLDER}
                                             ${LOOKUP_DIR_CMD_ARGS}
                                             ${ARG_DSDL_ROOT_DIR}
@@ -65,10 +65,10 @@ The following cmake function demonstrates how to integrate pydsdelgen with a cma
         if(NOT LIST_OUTPUTS_RESULT EQUAL 0)
             message(FATAL_ERROR "Failed to retrieve a list of headers nnvg would "
                                 "generate for the ${ARG_TARGET_NAME} target (${LIST_OUTPUTS_RESULT})"
-                                " (${PYTHON} ${NNVGJ})")
+                                " (${PYTHON} ${NNVG})")
         endif()
 
-        execute_process(COMMAND ${PYTHON} ${NNVGJ}
+        execute_process(COMMAND ${PYTHON} ${NNVG}
                                             --list-inputs
                                             -O ${ARG_OUTPUT_FOLDER}
                                             --templates ${ARG_TEMPLATES_DIR}
@@ -80,13 +80,13 @@ The following cmake function demonstrates how to integrate pydsdelgen with a cma
         if(NOT LIST_INPUTS_RESULT EQUAL 0)
             message(FATAL_ERROR "Failed to resolve inputs using nnvg for the ${ARG_TARGET_NAME} "
                                 "target (${LIST_INPUTS_RESULT})"
-                                " (${PYTHON} ${NNVGJ})")
+                                " (${PYTHON} ${NNVG})")
         endif()
 
         add_custom_command(OUTPUT ${OUTPUT_FILES}
-                        COMMAND ${PYTHON} ${NNVGJ}
+                        COMMAND ${PYTHON} ${NNVG}
                                             --templates ${ARG_TEMPLATES_DIR}
-                                            --output-extension ${NNVGJ_EXTENSION}
+                                            --output-extension ${NNVG_EXTENSION}
                                             -O ${ARG_OUTPUT_FOLDER}
                                             ${LOOKUP_DIR_CMD_ARGS}
                                             ${ARG_DSDL_ROOT_DIR}
