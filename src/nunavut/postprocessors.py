@@ -10,6 +10,7 @@ import abc
 import pathlib
 import typing
 import re
+from subprocess import run as subprocess_run  # nosec
 
 # +---------------------------------------------------------------------------+
 # | POST PROCESSOR TYPES
@@ -125,7 +126,7 @@ class LinePostProcessor(PostProcessor):
 
 
 # +---------------------------------------------------------------------------+
-# | BUILT-IN POST PROCESSORS
+# | BUILT-IN POST PROCESSORS :: FilePostProcessor
 # +---------------------------------------------------------------------------+
 
 
@@ -143,6 +144,36 @@ class SetFileMode(FilePostProcessor):
     def __call__(self, generated: pathlib.Path) -> pathlib.Path:
         generated.chmod(self._file_mode)
         return generated
+
+
+class ExternalProgramEditInPlace(FilePostProcessor):
+    """
+    Run an external program after generating a file.
+    This version expects the program to either not modify the file or to modify it
+    in-place (e.g. the functor always returns the same path it was provided).
+
+    :param typing.List[str] command_line: The command and arguments to pass to the
+        external program using :code:`subprocess.run`. The file to be processed
+        will be appended as the last positional argument in the command before
+        it is invoked.
+
+    :param bool check: By default, if the external program returns a non-zero
+        exit status a :code:`subprocess.CalledProcessError` is raised. Set
+        this argument to :code:`False` to ignore external program errors.
+    """
+
+    def __init__(self, command_line: typing.List[str], check: bool = True):
+        self._command_line = command_line
+        self._check = check
+
+    def __call__(self, generated: pathlib.Path) -> pathlib.Path:
+        run_args = self._command_line + [str(generated)]
+        subprocess_run(run_args, check=self._check)
+        return generated
+
+# +---------------------------------------------------------------------------+
+# | BUILT-IN POST PROCESSORS :: LinePostProcessor
+# +---------------------------------------------------------------------------+
 
 
 class TrimTrailingWhitespace(LinePostProcessor):

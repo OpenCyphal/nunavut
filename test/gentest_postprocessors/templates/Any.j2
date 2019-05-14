@@ -1,8 +1,8 @@
 {   
 
-
-     "name": "{{ T }}"
-
+{% for i in range(0, 45) %}
+     "name{{ i }}": "{{ T }}"{% if not loop.last %},{% endif %}
+{% endfor %}
 
 
 

@@ -14,6 +14,7 @@ import pydsdl
 import nunavut
 import nunavut.jinja
 import nunavut.postprocessors
+import fixtures
 
 
 @pytest.fixture
@@ -26,10 +27,10 @@ def _test_common_namespace(gen_paths):  # type: ignore
     root_namespace_dir = gen_paths.dsdl_dir / pathlib.Path("uavcan")
     root_namespace = str(root_namespace_dir)
     return nunavut.build_namespace_tree(pydsdl.read_namespace(root_namespace, ''),
-                                          root_namespace_dir,
-                                          gen_paths.out_dir,
-                                          '.json',
-                                          '_')
+                                        root_namespace_dir,
+                                        gen_paths.out_dir,
+                                        '.json',
+                                        '_')
 
 
 def _test_common_post_condition(gen_paths, namespace):  # type: ignore
@@ -41,7 +42,7 @@ def _test_common_post_condition(gen_paths, namespace):  # type: ignore
         json_blob = json.load(json_file)
 
     assert json_blob is not None
-    assert json_blob['name'] == 'uavcan.test.TestType.0.2'
+    assert json_blob['name0'] == 'uavcan.test.TestType.0.2'
 
     return outfile
 
@@ -128,18 +129,17 @@ def test_overwrite_dryrun(gen_paths):  # type: ignore
 def test_no_overwrite_arg(gen_paths):  # type: ignore
     """ Verifies the --no-overwrite argument of nnvg.
     """
-    nnvg_cmd = ['nnvg',
-                    '--templates', str(gen_paths.templates_dir),
-                    '-O', str(gen_paths.out_dir),
-                    '-e', str('.json'),
-                    str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+    nnvg_cmd = ['--templates', str(gen_paths.templates_dir),
+                '-O', str(gen_paths.out_dir),
+                '-e', '.json',
+                str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(nnvg_cmd, check=True)
+    fixtures.run_nnvg(gen_paths, nnvg_cmd)
 
     nnvg_cmd.append('--no-overwrite')
 
     with pytest.raises(subprocess.CalledProcessError):
-        subprocess.run(nnvg_cmd, check=True)
+        fixtures.run_nnvg(gen_paths, nnvg_cmd)
 
 
 def test_file_mode(gen_paths):  # type: ignore
@@ -147,14 +147,13 @@ def test_file_mode(gen_paths):  # type: ignore
     """
 
     file_mode = 0o774
-    nnvg_cmd = ['nnvg',
-                    '--templates', str(gen_paths.templates_dir),
-                    '-O', str(gen_paths.out_dir),
-                    '-e', str('.json'),
-                    '--file-mode', oct(file_mode),
-                    str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+    nnvg_cmd = ['--templates', str(gen_paths.templates_dir),
+                '-O', str(gen_paths.out_dir),
+                '-e', '.json',
+                '--file-mode', oct(file_mode),
+                str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(nnvg_cmd, check=True)
+    fixtures.run_nnvg(gen_paths, nnvg_cmd)
 
     outfile = gen_paths.out_dir /\
         pathlib.Path('uavcan') /\
@@ -277,13 +276,12 @@ def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
         pathlib.Path('test') /\
         pathlib.Path('TestType_0_2').with_suffix('.json')
 
-    nnvg_cmd_0 = ['nnvg',
-                      '--templates', str(gen_paths.templates_dir),
-                      '-O', str(gen_paths.out_dir),
-                      '-e', str('.json'),
-                      str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+    nnvg_cmd_0 = ['--templates', str(gen_paths.templates_dir),
+                  '-O', str(gen_paths.out_dir),
+                  '-e', '.json',
+                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(nnvg_cmd_0, check=True)
+    fixtures.run_nnvg(gen_paths, nnvg_cmd_0)
 
     lines_w_trailing = 0
     with open(str(outfile), 'r') as json_file:
@@ -293,14 +291,13 @@ def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
 
     assert lines_w_trailing > 0
 
-    nnvg_cmd_1 = ['nnvg',
-                      '--templates', str(gen_paths.templates_dir),
-                      '-O', str(gen_paths.out_dir),
-                      '-e', str('.json'),
-                      '--pp-trim-trailing-whitespace',
-                      str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+    nnvg_cmd_1 = ['--templates', str(gen_paths.templates_dir),
+                  '-O', str(gen_paths.out_dir),
+                  '-e', '.json',
+                  '--pp-trim-trailing-whitespace',
+                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(nnvg_cmd_1, check=True)
+    fixtures.run_nnvg(gen_paths, nnvg_cmd_1)
 
     with open(str(outfile), 'r') as json_file:
         for line in json_file:
@@ -315,13 +312,12 @@ def test_pp_max_emptylines(gen_paths):  # type: ignore
         pathlib.Path('test') /\
         pathlib.Path('TestType_0_2').with_suffix('.json')
 
-    nnvg_cmd_0 = ['nnvg',
-                      '--templates', str(gen_paths.templates_dir),
-                      '-O', str(gen_paths.out_dir),
-                      '-e', str('.json'),
-                      str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+    nnvg_cmd_0 = ['--templates', str(gen_paths.templates_dir),
+                  '-O', str(gen_paths.out_dir),
+                  '-e', '.json',
+                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(nnvg_cmd_0, check=True)
+    fixtures.run_nnvg(gen_paths, nnvg_cmd_0)
 
     found_empty_line = False
     with open(str(outfile), 'r') as json_file:
@@ -336,14 +332,13 @@ def test_pp_max_emptylines(gen_paths):  # type: ignore
 
     assert found_empty_line
 
-    nnvg_cmd_1 = ['nnvg',
-                      '--templates', str(gen_paths.templates_dir),
-                      '-O', str(gen_paths.out_dir),
-                      '-e', str('.json'),
-                      '--pp-max-emptylines', '0',
-                      str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+    nnvg_cmd_1 = ['--templates', str(gen_paths.templates_dir),
+                  '-O', str(gen_paths.out_dir),
+                  '-e', '.json',
+                  '--pp-max-emptylines', '0',
+                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    subprocess.run(nnvg_cmd_1, check=True)
+    fixtures.run_nnvg(gen_paths, nnvg_cmd_1)
 
     with open(str(outfile), 'r') as json_file:
         for line in json_file:
@@ -353,3 +348,77 @@ def test_pp_max_emptylines(gen_paths):  # type: ignore
                     assert len(line) > line_end_match.end() - line_end_match.start()
                 else:
                     assert len(line) > 0
+
+
+def test_external_edit_in_place(gen_paths):  # type: ignore
+    """
+    Test that ExternalProgramEditInPlace is invoked as expected
+    """
+    namespace = _test_common_namespace(gen_paths)
+    generator = nunavut.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    ext_program = gen_paths.test_dir / pathlib.Path('ext_program.py')
+    edit_in_place = nunavut.postprocessors.ExternalProgramEditInPlace([str(ext_program)])
+    generator.generate_all(False, True, [edit_in_place])
+
+    outfile = gen_paths.find_outfile_in_namespace("uavcan.test.TestType", namespace)
+    assert outfile is not None
+
+    with open(str(outfile), 'r') as json_file:
+        json_blob = json.load(json_file)
+
+    assert json_blob is not None
+    assert json_blob['ext'] == 'changed'
+
+
+def test_external_edit_in_place_fail(gen_paths):  # type: ignore
+    """
+    Test that ExternalProgramEditInPlace handles error as expected.
+    """
+    namespace = _test_common_namespace(gen_paths)
+    generator = nunavut.jinja.Generator(namespace, False, gen_paths.templates_dir)
+    ext_program = gen_paths.test_dir / pathlib.Path('ext_program.py')
+    simulated_error_args = [str(ext_program), '--simulate-error']
+    edit_in_place_checking = nunavut.postprocessors.ExternalProgramEditInPlace(simulated_error_args)
+    with pytest.raises(subprocess.CalledProcessError):
+        generator.generate_all(False, True, [edit_in_place_checking])
+    edit_in_place_not_checking = nunavut.postprocessors.ExternalProgramEditInPlace(simulated_error_args, check=False)
+    generator.generate_all(False, True, [edit_in_place_not_checking])
+
+
+def test_pp_run_program(gen_paths):  # type: ignore
+    outfile = gen_paths.out_dir /\
+        pathlib.Path('uavcan') /\
+        pathlib.Path('test') /\
+        pathlib.Path('TestType_0_2').with_suffix('.json')
+
+    ext_program = gen_paths.test_dir / pathlib.Path('ext_program.py')
+
+    nnvg_args0 = ['--templates', str(gen_paths.templates_dir),
+                  '-O', str(gen_paths.out_dir),
+                  '-e', '.json',
+                  '--pp-run-program', str(ext_program),
+                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    fixtures.run_nnvg(gen_paths, nnvg_args0)
+
+    with open(str(outfile), 'r') as json_file:
+        json_blob = json.load(json_file)
+
+    assert json_blob is not None
+    assert json_blob['ext'] == 'changed'
+
+    assert pathlib.Path(outfile).stat().st_mode & 0o777 == 0o444
+
+
+def test_pp_run_program_w_arg(gen_paths):  # type: ignore
+    ext_program = gen_paths.test_dir / pathlib.Path('ext_program.py')
+
+    nnvg_args0 = ['--templates', str(gen_paths.templates_dir),
+                  '-O', str(gen_paths.out_dir),
+                  '-e', '.json',
+                  '--pp-run-program', str(ext_program),
+                  '--pp-run-program-arg=--simulate-error',
+                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    with pytest.raises(subprocess.CalledProcessError):
+        fixtures.run_nnvg(gen_paths, nnvg_args0)
