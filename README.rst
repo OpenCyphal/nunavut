@@ -2,7 +2,7 @@
 Nunavut
 ################################################
 
-|badge_forum|_ |badge_docs|_ |badge_analysis|_ |badge_coverage|_ |badge_build|_ |badge_pypi|_
+|badge_forum|_ |badge_docs|_ |badge_analysis|_ |badge_coverage|_ |badge_build|_ |badge_pypi_support|_ |badge_pypi_version|_ |badge_github_license|_
 
 Nunavut is a `UAVCAN`_ DSDL code generator that automates exposing a `pydsdl`_ abstract
 syntax tree to `Jinja2`_ templates allowing authors to generate code, schemas, metadata,
@@ -114,6 +114,14 @@ Nunavut is part of the UAVCAN project:
     :alt: Build status
 .. _badge_build: https://travis-ci.org/UAVCAN/nunavut
 
-.. |badge_pypi| image:: https://img.shields.io/pypi/pyversions/nunavut.svg
-    :alt: Pypi release
-.. _badge_pypi: https://pypi.org/project/nunavut/
+.. |badge_pypi_support| image:: https://img.shields.io/pypi/pyversions/nunavut.svg
+    :alt: Supported Python Versions
+.. _badge_pypi_support: https://pypi.org/project/nunavut/
+
+.. |badge_pypi_version| image:: https://img.shields.io/pypi/v/nunavut.svg
+    :alt: Pypi Release Version
+.. _badge_pypi_version: https://pypi.org/project/nunavut/
+
+.. |badge_github_license| image:: https://img.shields.io/badge/license-MIT-blue.svg
+    :alt: MIT license
+.. _badge_github_license: https://github.com/UAVCAN/nunavut/blob/master/LICENSE.rst
