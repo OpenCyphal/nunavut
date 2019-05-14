@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.1" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="533 928 56 76" width="56" height="76">
-  <defs/>
+<svg version="1.1" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="533 928 143 76" width="143" height="76">
+  <defs>
+    <font-face font-family="Helvetica" font-size="24" units-per-em="1000" underline-position="-75.68359" underline-thickness="49.316406" slope="0" x-height="522.9492" cap-height="717.28516" ascent="770.0195" descent="-229.98047" font-weight="400">
+      <font-face-src>
+        <font-face-name name="Helvetica"/>
+      </font-face-src>
+    </font-face>
+  </defs>
   <metadata> Produced by OmniGraffle 7.10.2 
-    <dc:date>2019-05-13 23:33:16 +0000</dc:date>
+    <dc:date>2019-05-14 04:41:28 +0000</dc:date>
   </metadata>
   <g id="Canvas_1" stroke-dasharray="none" stroke="none" stroke-opacity="1" fill="none" fill-opacity="1">
     <title>Canvas 1</title>
@@ -23,6 +29,11 @@
       </g>
       <g id="Line_26">
         <path d="M 548.1077 988.2658 C 547.7058 989.8065 546.78186 996.7705 546.8647 998.4296 C 546.8885 1000.111 548.5058 1001.469 551.2208 1001.8343 C 553.93577 1002.1995 566.6653 1001.8524 568.35336 1001.8169 C 569.4906 1001.3193 572.6712 998.6185 573.09766 996.6816 C 573.5241 994.7448 571.2071 989.0477 568.9019 988.3888 C 566.5967 987.7299 563.889 988.8386 560.9021 988.4003 C 557.91525 987.9621 555.32267 987.2454 551.9821 986.5879 C 548.64154 985.9305 548.0907 988.276 548.0907 988.276" stroke="#ebebeb" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+      </g>
+      <g id="Graphic_29">
+        <text transform="translate(585.5 967.1862)" fill="#ebebeb">
+          <tspan font-family="Helvetica" font-size="24" font-weight="400" fill="#ebebeb" x="0" y="23">nunavut</tspan>
+        </text>
       </g>
     </g>
   </g>
