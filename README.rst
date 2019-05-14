@@ -103,13 +103,13 @@ Nunavut is part of the UAVCAN project:
     :alt: Documentation Status
 .. _badge_docs: https://nunavut.readthedocs.io/en/latest/?badge=latest
 
-.. |badge_analysis| image:: https://api.codacy.com/project/badge/Grade/a1243d78c7754d10bb24481c4341d99e
+.. |badge_analysis| image:: https://api.codacy.com/project/badge/Grade/a0fe88873942440485438d728d308545
     :alt: Codacy reports
-.. _badge_analysis: https://www.codacy.com/app/thirtytwobits/nunavut?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=UAVCAN/nunavut&amp;utm_campaign=Badge_Grade
+.. _badge_analysis: https://www.codacy.com/app/UAVCAN/nunavut?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=UAVCAN/nunavut&amp;utm_campaign=Badge_Grade
 
-.. |badge_coverage| image:: https://api.codacy.com/project/badge/Coverage/a1243d78c7754d10bb24481c4341d99e
-    :alt: Codacy coverage
-.. _badge_coverage: https://www.codacy.com/app/UAVCAN/nunavut?utm_source=github.com&utm_medium=referral&utm_content=UAVCAN/nunavut&utm_campaign=Badge_Coverage
+.. |badge_coverage| image:: https://api.codacy.com/project/badge/Coverage/a0fe88873942440485438d728d308545
+    :alt: Codacy coverage reports
+.. _badge_coverage: https://www.codacy.com/app/UAVCAN/nunavut?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=UAVCAN/nunavut&amp;utm_campaign=Badge_Coverage
 
 .. |badge_build| image:: https://travis-ci.org/UAVCAN/nunavut.svg?branch=master
     :alt: Build status
