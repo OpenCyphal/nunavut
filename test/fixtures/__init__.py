@@ -3,9 +3,10 @@
 # Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
 # This software is distributed under the terms of the MIT License.
 #
-from pathlib import Path
-from typing import Optional
-from pydsdl import Any
+import pathlib
+import subprocess
+import typing
+import pydsdl
 from nunavut import Namespace
 
 
@@ -13,57 +14,55 @@ class GenTestPaths:
     """Helper to generate common paths used in our unit tests."""
 
     def __init__(self, test_file: str):
-        test_file_path = Path(test_file)
+        test_file_path = pathlib.Path(test_file)
         self.test_name = test_file_path.parent.stem
         self.test_dir = test_file_path.parent
         self.root_dir = self.test_dir.resolve().parent.parent
-        self._build_dir = None  # type: Optional[Path]
-        self._test_dir = None  # type: Optional[Path]
-        self._out_dir = None  # type: Optional[Path]
-        self._templates_dir = None  # type: Optional[Path]
-        self._dsdl_dir = None  # type: Optional[Path]
+
+        self._build_dir = None  # type: typing.Optional[pathlib.Path]
+        self._out_dir = None  # type: typing.Optional[pathlib.Path]
+        self._templates_dir = None  # type: typing.Optional[pathlib.Path]
+        self._dsdl_dir = None  # type: typing.Optional[pathlib.Path]
         print('Paths for test "{}" under dir {}'.format(self.test_name, self.test_dir))
         print('(root directory: {})'.format(self.root_dir))
 
     @property
-    def build_dir(self) -> Path:
+    def build_dir(self) -> pathlib.Path:
         if self._build_dir is None:
-            self._build_dir = self._ensure_dir(self.root_dir / Path('build'))
+            self._build_dir = self._ensure_dir(self.root_dir / pathlib.Path('build'))
         return self._build_dir
 
     @property
-    def test_output(self) -> Path:
-        if self._test_dir is None:
-            self._test_dir = self._ensure_dir(self.build_dir / Path('test_output'))
-        return self._test_dir
-
-    @property
-    def out_dir(self) -> Path:
+    def out_dir(self) -> pathlib.Path:
+        """
+        The directory to place test output under for this test case.
+        """
         if self._out_dir is None:
-            self._out_dir = self._ensure_dir(self.build_dir / self.test_output / Path(self.test_name))
+            test_output_base = self._ensure_dir(self.build_dir / pathlib.Path('test_output'))
+            self._out_dir = self._ensure_dir(self.build_dir / test_output_base / pathlib.Path(self.test_name))
         return self._out_dir
 
     @property
-    def templates_dir(self) -> Path:
+    def templates_dir(self) -> pathlib.Path:
         if self._templates_dir is None:
-            self._templates_dir = self._ensure_dir(self.test_dir / Path('templates'))
+            self._templates_dir = self._ensure_dir(self.test_dir / pathlib.Path('templates'))
         return self._templates_dir
 
     @property
-    def dsdl_dir(self) -> Path:
+    def dsdl_dir(self) -> pathlib.Path:
         if self._dsdl_dir is None:
-            self._dsdl_dir = self._ensure_dir(self.test_dir / Path('dsdl'))
+            self._dsdl_dir = self._ensure_dir(self.test_dir / pathlib.Path('dsdl'))
         return self._dsdl_dir
 
     @staticmethod
-    def find_outfile_in_namespace(typename: str, namespace: Namespace) -> Optional[str]:
+    def find_outfile_in_namespace(typename: str, namespace: Namespace) -> typing.Optional[str]:
         for dsdl_type, outfile in namespace.get_all_types():
             if dsdl_type.full_name == typename:
                 return str(outfile)
         return None
 
     @staticmethod
-    def _ensure_dir(path_dir: Path) -> Path:
+    def _ensure_dir(path_dir: pathlib.Path) -> pathlib.Path:
         try:
             path_dir.mkdir()
         except FileExistsError:
@@ -73,7 +72,7 @@ class GenTestPaths:
         return path_dir
 
 
-class DummyType(Any):
+class DummyType(pydsdl.Any):
     """Fake dsdl 'any' type for testing."""
 
     def __init__(self, namespace: str = 'uavcan', name: str = 'Dummy'):
@@ -101,3 +100,13 @@ class DummyType(Any):
 
     def __hash__(self) -> int:
         return hash(self._full_name)
+
+
+def run_nnvg(gen_paths: GenTestPaths, args: typing.List[str], check_result: bool = True) -> None:
+    """
+    Helper to invoke nnvg for unit testing within the proper python coverage wrapper.
+    """
+    setup = gen_paths.root_dir / pathlib.Path('setup').with_suffix('.cfg')
+    coverage_args = ['coverage', 'run', '--parallel-mode', '--rcfile={}'.format(str(setup))]
+    nnvg_script = gen_paths.root_dir / pathlib.Path('src') / pathlib.Path('nnvg')
+    subprocess.run(coverage_args + [str(nnvg_script)] + args, check=check_result)

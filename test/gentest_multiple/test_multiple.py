@@ -13,7 +13,7 @@ from pydsdl import read_namespace, FrontendError
 from nunavut import build_namespace_tree
 from nunavut.jinja import Generator
 
-import subprocess
+import fixtures
 
 
 @pytest.fixture
@@ -61,12 +61,11 @@ def test_three_roots(gen_paths):  # type: ignore
 
 
 def test_three_roots_using_nnvg(gen_paths):  # type: ignore
-    nnvg_cmd = ['nnvg',
-                    '--templates', str(gen_paths.templates_dir),
-                    '-I', str(gen_paths.dsdl_dir / Path("huckco")),
-                    '-I', str(gen_paths.dsdl_dir / Path("esmeinc")),
-                    '-O', str(gen_paths.out_dir),
-                    '-e', str('.json'),
-                    str(gen_paths.dsdl_dir / Path("scotec"))]
+    nnvg_cmd = ['--templates', str(gen_paths.templates_dir),
+                '-I', str(gen_paths.dsdl_dir / Path("huckco")),
+                '-I', str(gen_paths.dsdl_dir / Path("esmeinc")),
+                '-O', str(gen_paths.out_dir),
+                '-e', str('.json'),
+                str(gen_paths.dsdl_dir / Path("scotec"))]
 
-    subprocess.run(nnvg_cmd, check=True)
+    fixtures.run_nnvg(gen_paths, nnvg_cmd)

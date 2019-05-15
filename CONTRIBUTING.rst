@@ -100,16 +100,46 @@ debug all tests). The :code:`--basetemp` and :code:`-p no:cacheprovider` argumen
 testing from conflicting with tox test runs.
 
 
-restructured text
+.vscode/settings.json
 ------------------------------------------------
 
-You'll need to tweak two settings to get restructured text preview and linting to work::
+Here are some excerpts from my :code:`.vscode/settings.json` to help you get your linting,
+unit-tests, and documentation previews all up and running.
+
+I always work in a virtual environment. This selects the python version from that environment. ::
+
+    "python.pythonPath": ".pyenv/bin/python3.7",
+
+We use flake8 and mypy as part of the build. Enabling them in your IDE will give you real-time
+feedback which makes your tox builds less interesting. ::
+
+    "python.linting.pylintEnabled": false,
+    "python.linting.mypyEnabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true,
+
+I've found the auto-discovery and pytest integration in vscode is very finicky. First, make sure
+you've done a :code:`pip install -e .` for this repo (as described in the virtualenv section above).
+After that be sure you use these exact settings and it should work ::
+
+    "python.testing.cwd": "${workspaceFolder}",
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pyTestEnabled": true,
+    "python.testing.pyTestArgs": ["--rootdir=${workspaceFolder}",
+                                  "${workspaceFolder}/test"],
+
+
+You'll need to tweak two settings to get restructured text preview to work. ::
 
     "restructuredtext.sphinxBuildPath": "sphinx-build",
     "restructuredtext.confPath": "${workspaceFolder}/src"
 
 If you installed everything in :code:`requirements.txt` then the python extension for vscode
 will lint your .rst as you type and will support a fairly accurate reStructuredText preview.
+
+Hopefully that helps. Let us know if these settings stop working.
+
 
 ************************************************
 Running The Tests
@@ -147,7 +177,11 @@ example::
     for cleandir in $cleandirs
     do
         find $cleandir -name __pycache__ | xargs rm -rf
+        find $cleandir -name \.coverage\* | xargs rm -f
     done
+
+Note that we also delete the .coverage intermediates since they may contain different paths between
+the container and the host build.
 
 ************************************************
 Building The Docs

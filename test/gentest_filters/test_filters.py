@@ -78,7 +78,7 @@ def test_custom_filter_and_test(gen_paths):  # type: ignore
                                      '.json',
                                      '_')
     template_path = gen_paths.templates_dir / Path('custom_filter_and_test')
-    generator = Generator(namespace, 
+    generator = Generator(namespace,
                           False,
                           template_path,
                           additional_filters={'custom_filter': lambda T: 'hi mum'},
