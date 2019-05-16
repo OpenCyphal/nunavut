@@ -46,3 +46,4 @@ nunavut (library)
    jinja/lang/js
    jinja/lang/c
    jinja/lang/cpp
+   jinja/lang/py

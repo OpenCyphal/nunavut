@@ -4,9 +4,11 @@ lang_c = {
     'namespace_macrofy': '{{ T.full_namespace | c.macrofy }}',
 {%- for attribute in T.attributes %}
     'ctype_std {{ attribute.data_type }}': '{{ attribute.data_type | c.type_from_primitive }}',
-    'ctype {{ attribute.data_type }}': '{{ attribute.data_type | c.type_from_primitive(False) }}'
-{%- if not loop.last %},{% endif %}
+    'ctype {{ attribute.data_type }}': '{{ attribute.data_type | c.type_from_primitive(False) }}',
 {%- endfor %}
+    'unique_name_0': '{{ "nAME" | c.to_template_unique_name }}',
+    'unique_name_1': '{{ "NAME" | c.to_template_unique_name }}',
+    'unique_name_2': '{{ "naME" | c.to_template_unique_name }}'
 }
 
 lang_cpp = {
@@ -17,4 +19,10 @@ lang_cpp = {
     'namespace_close_w_comments': r'''{{ T.full_namespace | cpp.close_namespace }}'''
 }
 
-tests = {'lang_c': lang_c, 'lang_cpp': lang_cpp}
+lang_py = {
+    'unique_name_0': '{{ "NAME" | py.to_template_unique_name }}',
+    'unique_name_1': '{{ "NAME" | py.to_template_unique_name }}',
+    'unique_name_2': '{{ "name" | py.to_template_unique_name }}'
+}
+
+tests = {'lang_c': lang_c, 'lang_cpp': lang_cpp, 'lang_py': lang_py}
