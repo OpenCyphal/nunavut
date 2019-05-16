@@ -80,6 +80,46 @@ class JinjaAssert(Extension):
         return caller()
 
 
+class _UniqueNameGenerator:
+    """
+    Functor used by template filters to obtain a unique name within a given template.
+    This should be made available as a private global "_unique_name_generator" within
+    each template and should be reset after completing generation of a type.
+    """
+    def __init__(self) -> None:
+        self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, typing.Dict[str, int]]]
+
+    def __call__(self, key: str, template_name: str, base_token: str, prefix: str, suffix: str) -> str:
+        """
+        Uses a lazy internal index to generate a number unique to a given base_token within a template
+        for a given domain (key).
+        """
+        try:
+            keymap = self._index_map[key]
+        except KeyError:
+            keymap = {}
+            self._index_map[key] = keymap
+
+        try:
+            template_map = keymap[template_name]
+        except KeyError:
+            template_map = {}
+            keymap[template_name] = template_map
+
+        try:
+            next_index = template_map[base_token]
+            template_map[base_token] = next_index + 1
+        except KeyError:
+            next_index = 0
+            template_map[base_token] = 1
+
+        return "{prefix}{base_token}{index}{suffix}".format(
+            prefix=prefix,
+            base_token=base_token,
+            index=next_index,
+            suffix=suffix)
+
+
 class Generator(nunavut.generators.AbstractGenerator):
     """ :class:`~nunavut.generators.AbstractGenerator` implementation that uses
     Jinja2 templates to generate source code.
@@ -330,7 +370,7 @@ class Generator(nunavut.generators.AbstractGenerator):
                                     default_for_string=False,
                                     default=False)
 
-        self._env = Environment(loader=fs_loader,
+        self._env = Environment(loader=fs_loader,  # nosec
                                 extensions=[nunavut.jinja.jinja2.ext.do,
                                             nunavut.jinja.jinja2.ext.loopcontrols,
                                             JinjaAssert],
@@ -469,6 +509,9 @@ class Generator(nunavut.generators.AbstractGenerator):
         """
         Logic that should run from _generate_type iff is_dryrun is False.
         """
+
+        # reset the name generator state for this type
+        self._env.globals["_unique_name_generator"] = _UniqueNameGenerator()
 
         # Predetermine the post processor types.
         line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']

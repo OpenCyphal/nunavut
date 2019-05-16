@@ -13,12 +13,13 @@ import typing
 
 from nunavut.jinja.jinja2 import Environment
 
-from . import c, cpp, js
+from . import c, cpp, js, py
 
 __language_modules__ = {
     'c': c,
     'cpp': cpp,
-    'js': js
+    'js': js,
+    'py': py
 }
 
 

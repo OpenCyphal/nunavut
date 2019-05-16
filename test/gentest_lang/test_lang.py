@@ -75,6 +75,10 @@ def test_lang_c(gen_paths):  # type: ignore
     assert lang_c_output["ctype saturated bool"] == "BOOL"
     assert lang_c_output["ctype_std saturated bool"] == "bool"
 
+    assert "_nAME0_" == lang_c_output["unique_name_0"]
+    assert "_nAME1_" == lang_c_output["unique_name_1"]
+    assert "_naME0_" == lang_c_output["unique_name_2"]
+
 
 def test_lang_cpp(gen_paths):  # type: ignore
     """Generates and verifies JSON with values filtered using the cpp language module.
@@ -129,3 +133,35 @@ def test_c_to_snake_case():  # type: ignore
     assert "scotec_mcu_timer" == c.filter_to_snake_case("scotec.mcu.Timer")
     assert "scotec_mcu_timer_helper" == c.filter_to_snake_case("scotec.mcu.TimerHelper")
     assert "aa_bb_c_cc_aaa_a_aa_aaa_aa_aaa_a_a" == c.filter_to_snake_case(" aa bb. cCcAAa_aAa_AAaAa_AAaA_a ")
+
+
+def test_lang_py(gen_paths):  # type: ignore
+    """ Generates and verifies JSON with values filtered using the python language support module.
+    """
+
+    root_namespace_dir = gen_paths.dsdl_dir / Path("langtest")
+    root_namespace = str(root_namespace_dir)
+    compound_types = read_namespace(root_namespace, '', allow_unregulated_fixed_port_id=True)
+    namespace = build_namespace_tree(compound_types,
+                                     root_namespace_dir,
+                                     gen_paths.out_dir,
+                                     '.py',
+                                     '_')
+    generator = Generator(namespace, False, gen_paths.templates_dir)
+    generator.generate_all(False)
+
+    # Now read back in and verify
+    outfile = gen_paths.find_outfile_in_namespace("langtest.py.TestType", namespace)
+
+    assert (outfile is not None)
+
+    generated_values = {}  # type: Dict
+    with open(str(outfile), 'r') as python_file:
+        exec(python_file.read(), generated_values)
+
+    assert len(generated_values) > 0
+
+    lang_py_output = generated_values["tests"]["lang_py"]
+    assert "_NAME0_" == lang_py_output["unique_name_0"]
+    assert "_NAME1_" == lang_py_output["unique_name_1"]
+    assert "_name0_" == lang_py_output["unique_name_2"]
