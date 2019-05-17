@@ -117,7 +117,6 @@ def run_nnvg(gen_paths: GenTestPaths,
     if env is not None:
         this_env.update(env)
     return subprocess.run(coverage_args + [str(nnvg_script)] + args,
-                          capture_output=True,
                           check=check_result,
-                          text=True,
+                          stdout=subprocess.PIPE,
                           env=this_env)

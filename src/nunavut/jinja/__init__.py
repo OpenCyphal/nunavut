@@ -87,9 +87,9 @@ class _UniqueNameGenerator:
     each template and should be reset after completing generation of a type.
     """
     def __init__(self) -> None:
-        self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, typing.Dict[str, int]]]
+        self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, int]]
 
-    def __call__(self, key: str, template_name: str, base_token: str, prefix: str, suffix: str) -> str:
+    def __call__(self, key: str, base_token: str, prefix: str, suffix: str) -> str:
         """
         Uses a lazy internal index to generate a number unique to a given base_token within a template
         for a given domain (key).
@@ -101,17 +101,11 @@ class _UniqueNameGenerator:
             self._index_map[key] = keymap
 
         try:
-            template_map = keymap[template_name]
-        except KeyError:
-            template_map = {}
-            keymap[template_name] = template_map
-
-        try:
-            next_index = template_map[base_token]
-            template_map[base_token] = next_index + 1
+            next_index = keymap[base_token]
+            keymap[base_token] = next_index + 1
         except KeyError:
             next_index = 0
-            template_map[base_token] = 1
+            keymap[base_token] = 1
 
         return "{prefix}{base_token}{index}{suffix}".format(
             prefix=prefix,

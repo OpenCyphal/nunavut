@@ -68,7 +68,7 @@ def test_list_inputs(gen_paths: fixtures.GenTestPaths) -> None:
                  '--list-inputs',
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.split(';')
+    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
     completed_wo_empty = sorted([i for i in completed if len(i) > 0])
     assert expected_output == sorted(completed_wo_empty)
 
@@ -94,7 +94,7 @@ def test_list_inputs_w_namespaces(gen_paths: fixtures.GenTestPaths) -> None:
                  '--generate-namespace-types',
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.split(';')
+    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
     completed_wo_empty = sorted([i for i in completed if len(i) > 0])
     assert expected_output == sorted(completed_wo_empty)
 
@@ -114,7 +114,7 @@ def test_list_outputs(gen_paths: fixtures.GenTestPaths) -> None:
                  '--list-outputs',
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.split(';')
+    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
     completed_wo_empty = sorted([i for i in completed if len(i) > 0])
     assert expected_output == sorted(completed_wo_empty)
 
@@ -125,6 +125,6 @@ def test_version(gen_paths: fixtures.GenTestPaths) -> None:
     """
     nnvg_args = ['--version']
 
-    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout
+    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8")
     structured_string = '.'.join(map(str, nunavut.version.__version__))
     assert structured_string == completed
