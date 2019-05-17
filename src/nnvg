@@ -77,7 +77,9 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
 
     generator = nunavut.jinja.Generator(root_namespace,
                                         args.generate_namespace_types,
-                                        pathlib.Path(args.templates))
+                                        pathlib.Path(args.templates),
+                                        trim_blocks=args.trim_blocks,
+                                        lstrip_blocks=args.lstrip_blocks)
 
     if args.list_inputs:
         for input_path in generator.get_templates():
@@ -230,6 +232,18 @@ error will be raised instead preventing overwrites.
 Note that this value is interpreted using python auto base detection.
 Because of this, to provide an octal value, you'll need to prefix your
 literal with '0o' (e.g. --file-mode 0o664).
+''')
+
+    parser.add_argument('--trim-blocks',
+                        action='store_true',
+                        help='''If this is set to True the first newline after a block in a template
+is removed (block, not variable tag!).
+''')
+
+    parser.add_argument('--lstrip-blocks',
+                        action='store_true',
+                        help='''If this is set to True leading spaces and tabs are stripped from the
+start of a line to a block in templates.
 ''')
 
     parser.add_argument('--pp-max-emptylines',

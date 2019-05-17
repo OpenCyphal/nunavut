@@ -124,7 +124,7 @@ class Generator(nunavut.generators.AbstractGenerator):
     """ :class:`~nunavut.generators.AbstractGenerator` implementation that uses
     Jinja2 templates to generate source code.
 
-    :param nunavut.Namespace namespace:  The top-level namespace to generates types
+    :param nunavut.Namespace namespace:    The top-level namespace to generates types
                                            at and from.
     :param bool generate_namespace_types:  typing.Set to true to emit files for namespaces.
                                            False will only generate files for datatypes.
@@ -132,6 +132,11 @@ class Generator(nunavut.generators.AbstractGenerator):
 
     :param bool followlinks:               If True then symbolic links will be followed when
                                            searching for templates.
+    :param bool trim_blocks:               If this is set to True the first newline after a
+                                           block is removed (block, not variable tag!).
+    :param bool lstrip_blocks:             If this is set to True leading spaces and tabs
+                                           are stripped from the start of a line to a block.
+                                           Defaults to False.
     :param typing.Dict[str, typing.Callable] additional_filters: typing.Optional jinja filters to add to the
                                            global environment using the key as the filter name
                                            and the callable as the filter.
@@ -344,6 +349,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                  generate_namespace_types: bool,
                  templates_dir: pathlib.Path,
                  followlinks: bool = False,
+                 trim_blocks: bool = False,
+                 lstrip_blocks: bool = False,
                  additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
                  additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None
                  ):
@@ -377,6 +384,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                                 autoescape=autoesc,
                                 undefined=StrictUndefined,
                                 keep_trailing_newline=True,
+                                lstrip_blocks=lstrip_blocks,
+                                trim_blocks=trim_blocks,
                                 auto_reload=False)
 
         self._add_filters_and_tests(additional_filters, additional_tests)
