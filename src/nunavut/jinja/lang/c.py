@@ -14,8 +14,7 @@ import typing
 
 import pydsdl
 
-from nunavut.jinja.jinja2 import TemplateRuntimeError, contextfilter
-from nunavut.jinja.jinja2.runtime import Context
+from nunavut.jinja.jinja2 import TemplateRuntimeError, environmentfilter, Environment
 
 
 def filter_macrofy(value: str) -> str:
@@ -159,8 +158,8 @@ def filter_to_snake_case(value: str) -> str:
     return _snake_case_pattern_2.sub(lambda x: '_' + x.group(0).lower(), pass1)
 
 
-@contextfilter
-def filter_to_template_unique_name(ctx: Context, base_token: str) -> str:
+@environmentfilter
+def filter_to_template_unique_name(env: Environment, base_token: str) -> str:
     """
     Jinja filter that takes a base token and forms a name that is very
     likely to be unique within the template the filter is invoked. This
@@ -211,4 +210,4 @@ def filter_to_template_unique_name(ctx: Context, base_token: str) -> str:
     else:
         adj_base_token = base_token
 
-    return ctx.environment.globals['_unique_name_generator']('c', ctx.name, adj_base_token, '_', '_')  # type: ignore
+    return env.globals['_unique_name_generator']('c', adj_base_token, '_', '_')  # type: ignore

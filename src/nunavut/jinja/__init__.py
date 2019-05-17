@@ -87,9 +87,9 @@ class _UniqueNameGenerator:
     each template and should be reset after completing generation of a type.
     """
     def __init__(self) -> None:
-        self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, typing.Dict[str, int]]]
+        self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, int]]
 
-    def __call__(self, key: str, template_name: str, base_token: str, prefix: str, suffix: str) -> str:
+    def __call__(self, key: str, base_token: str, prefix: str, suffix: str) -> str:
         """
         Uses a lazy internal index to generate a number unique to a given base_token within a template
         for a given domain (key).
@@ -101,17 +101,11 @@ class _UniqueNameGenerator:
             self._index_map[key] = keymap
 
         try:
-            template_map = keymap[template_name]
-        except KeyError:
-            template_map = {}
-            keymap[template_name] = template_map
-
-        try:
-            next_index = template_map[base_token]
-            template_map[base_token] = next_index + 1
+            next_index = keymap[base_token]
+            keymap[base_token] = next_index + 1
         except KeyError:
             next_index = 0
-            template_map[base_token] = 1
+            keymap[base_token] = 1
 
         return "{prefix}{base_token}{index}{suffix}".format(
             prefix=prefix,
@@ -124,7 +118,7 @@ class Generator(nunavut.generators.AbstractGenerator):
     """ :class:`~nunavut.generators.AbstractGenerator` implementation that uses
     Jinja2 templates to generate source code.
 
-    :param nunavut.Namespace namespace:  The top-level namespace to generates types
+    :param nunavut.Namespace namespace:    The top-level namespace to generates types
                                            at and from.
     :param bool generate_namespace_types:  typing.Set to true to emit files for namespaces.
                                            False will only generate files for datatypes.
@@ -132,6 +126,11 @@ class Generator(nunavut.generators.AbstractGenerator):
 
     :param bool followlinks:               If True then symbolic links will be followed when
                                            searching for templates.
+    :param bool trim_blocks:               If this is set to True the first newline after a
+                                           block is removed (block, not variable tag!).
+    :param bool lstrip_blocks:             If this is set to True leading spaces and tabs
+                                           are stripped from the start of a line to a block.
+                                           Defaults to False.
     :param typing.Dict[str, typing.Callable] additional_filters: typing.Optional jinja filters to add to the
                                            global environment using the key as the filter name
                                            and the callable as the filter.
@@ -344,6 +343,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                  generate_namespace_types: bool,
                  templates_dir: pathlib.Path,
                  followlinks: bool = False,
+                 trim_blocks: bool = False,
+                 lstrip_blocks: bool = False,
                  additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
                  additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None
                  ):
@@ -377,6 +378,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                                 autoescape=autoesc,
                                 undefined=StrictUndefined,
                                 keep_trailing_newline=True,
+                                lstrip_blocks=lstrip_blocks,
+                                trim_blocks=trim_blocks,
                                 auto_reload=False)
 
         self._add_filters_and_tests(additional_filters, additional_tests)

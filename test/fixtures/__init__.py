@@ -7,6 +7,7 @@ import pathlib
 import subprocess
 import typing
 import pydsdl
+import os
 from nunavut import Namespace
 
 
@@ -102,11 +103,20 @@ class DummyType(pydsdl.Any):
         return hash(self._full_name)
 
 
-def run_nnvg(gen_paths: GenTestPaths, args: typing.List[str], check_result: bool = True) -> None:
+def run_nnvg(gen_paths: GenTestPaths,
+             args: typing.List[str],
+             check_result: bool = True,
+             env: typing.Optional[typing.Dict[str, str]] = None) -> subprocess.CompletedProcess:
     """
     Helper to invoke nnvg for unit testing within the proper python coverage wrapper.
     """
     setup = gen_paths.root_dir / pathlib.Path('setup').with_suffix('.cfg')
     coverage_args = ['coverage', 'run', '--parallel-mode', '--rcfile={}'.format(str(setup))]
     nnvg_script = gen_paths.root_dir / pathlib.Path('src') / pathlib.Path('nnvg')
-    subprocess.run(coverage_args + [str(nnvg_script)] + args, check=check_result)
+    this_env = os.environ.copy()
+    if env is not None:
+        this_env.update(env)
+    return subprocess.run(coverage_args + [str(nnvg_script)] + args,
+                          check=check_result,
+                          stdout=subprocess.PIPE,
+                          env=this_env)
