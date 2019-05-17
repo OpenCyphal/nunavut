@@ -78,6 +78,7 @@ def test_lang_c(gen_paths):  # type: ignore
     assert "_nAME0_" == lang_c_output["unique_name_0"]
     assert "_nAME1_" == lang_c_output["unique_name_1"]
     assert "_naME0_" == lang_c_output["unique_name_2"]
+    assert "_0_" == lang_c_output["unique_name_3"]
 
 
 def test_lang_cpp(gen_paths):  # type: ignore
