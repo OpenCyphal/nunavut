@@ -260,7 +260,7 @@ class Namespace(pydsdl.Any):
             yield from cls._recursive_namespace_generator(nested_namespace)
 
     @classmethod
-    def _recursive_data_type_and_namespace_generator(cls,  namespace: 'Namespace') -> \
+    def _recursive_data_type_and_namespace_generator(cls, namespace: 'Namespace') -> \
             typing.Generator[typing.Tuple[pydsdl.Any, pathlib.Path], None, None]:
         yield (namespace, namespace._output_path)
 

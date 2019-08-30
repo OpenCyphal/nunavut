@@ -49,16 +49,37 @@ See :mod:`nunavut.jinja` for full documentation on these. For example::
     # typename filter returns the name of the value's type.
     {{ field | typename }}
 
-Language Support Filters
+C Filters
 -------------------------------------------------
 
-Nunavut also adds some language specific filters and tests. These are documented in
-the :mod:`nunavut.jinja.lang` module and are available in the global environment
-namespaced by language. For example::
+.. autofunction:: nunavut.jinja.lang.c.filter_id
+   :noindex:
+.. autofunction:: nunavut.jinja.lang.c.filter_macrofy
+   :noindex:
+.. autofunction:: nunavut.jinja.lang.c.filter_type_from_primitive
+   :noindex:
+.. autofunction:: nunavut.jinja.lang.c.filter_to_snake_case
+   :noindex:
+.. autofunction:: nunavut.jinja.lang.c.filter_to_template_unique_name
+   :noindex:
 
-    {{T.full_name | c.macrofy}}
-    {{T.full_namespace | cpp.open_namespace}}
+C++ Filters
+-------------------------------------------------
 
+.. autofunction:: nunavut.jinja.lang.cpp.filter_id
+   :noindex:
+.. autofunction:: nunavut.jinja.lang.cpp.filter_open_namespace
+   :noindex:
+.. autofunction:: nunavut.jinja.lang.cpp.filter_close_namespace
+   :noindex:
+
+Python Filters
+-------------------------------------------------
+
+.. autofunction:: nunavut.jinja.lang.py.filter_id
+   :noindex:
+.. autofunction:: nunavut.jinja.lang.py.filter_to_template_unique_name
+   :noindex:
 
 *************************************************
 Template Mapping and Use
@@ -149,3 +170,8 @@ for pydsdl data types. For namespaces this will resolve first to a template name
 
 .. _`Jinja templates documentation`: http://jinja.pocoo.org/docs/2.10/templates/
 .. _`Jinja template inheritance`: http://jinja.pocoo.org/docs/2.10/templates/#template-inheritance
+
+Internals
+=================================================
+
+Nunavut reserves all global identifiers that start with `_nv_` as private internal globals.

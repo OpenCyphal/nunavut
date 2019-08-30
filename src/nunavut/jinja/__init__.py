@@ -86,6 +86,7 @@ class _UniqueNameGenerator:
     This should be made available as a private global "_unique_name_generator" within
     each template and should be reset after completing generation of a type.
     """
+
     def __init__(self) -> None:
         self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, int]]
 
@@ -122,7 +123,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                                            at and from.
     :param bool generate_namespace_types:  typing.Set to true to emit files for namespaces.
                                            False will only generate files for datatypes.
-    :param pathlib.Path templates_dir:     The directory containing the jinja templates.
+    :param typing.Union[pathlib.Path,typing.List[pathlib.Path]] templates_dir:
+                                           The directories containing the jinja templates.
 
     :param bool followlinks:               If True then symbolic links will be followed when
                                            searching for templates.
@@ -341,23 +343,31 @@ class Generator(nunavut.generators.AbstractGenerator):
     def __init__(self,
                  namespace: nunavut.Namespace,
                  generate_namespace_types: bool,
-                 templates_dir: pathlib.Path,
+                 templates_dir: typing.Union[pathlib.Path, typing.List[pathlib.Path]],
                  followlinks: bool = False,
                  trim_blocks: bool = False,
                  lstrip_blocks: bool = False,
                  additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
-                 additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None
+                 additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None,
+                 additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
+                 implicit_language_support: typing.Optional[str] = None
                  ):
 
         super(Generator, self).__init__(namespace, generate_namespace_types)
 
-        if templates_dir is None:
-            raise ValueError("Templates directory argument was None")
-        if not pathlib.Path(templates_dir).exists:
-            raise ValueError(
-                "Templates directory {} did not exist?".format(templates_dir))
+        if not isinstance(templates_dir, list):
+            templates_dirs = [templates_dir]
+        else:
+            templates_dirs = templates_dir
 
-        self._templates_dir = templates_dir
+        for templates_dir_item in templates_dirs:
+            if templates_dir_item is None:
+                raise ValueError("Templates directory argument was None")
+            if not pathlib.Path(templates_dir_item).exists:
+                raise ValueError(
+                    "Templates directory {} did not exist?".format(templates_dir_item))
+
+        self._templates_dirs = templates_dirs
 
         self._type_to_template_lookup_cache = dict()  # type: typing.Dict[pydsdl.Any, pathlib.Path]
 
@@ -365,7 +375,7 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         logger.info("Loading templates from {}".format(templates_dir))
 
-        fs_loader = FileSystemLoader([str(templates_dir)], followlinks=followlinks)
+        fs_loader = FileSystemLoader((str(d) for d in self._templates_dirs), followlinks=followlinks)
 
         autoesc = select_autoescape(enabled_extensions=('htm', 'html', 'xml', 'json'),
                                     default_for_string=False,
@@ -389,6 +399,12 @@ class Generator(nunavut.generators.AbstractGenerator):
         for language_name in get_supported_languages():
             add_language_support(language_name, self._env)
 
+        if additional_globals is not None:
+            self._env.globals.update(additional_globals)
+
+        if implicit_language_support is not None:
+            add_language_support(implicit_language_support, self._env, True)
+
     def get_templates(self) -> typing.List[pathlib.Path]:
         """
         Enumerate all templates found in the templates path.
@@ -398,8 +414,9 @@ class Generator(nunavut.generators.AbstractGenerator):
         """
         if self._templates_list is None:
             self._templates_list = []
-            for template in self._templates_dir.glob("**/*{}".format(self.TEMPLATE_SUFFIX)):
-                self._templates_list.append(template)
+            for template_dir in self._templates_dirs:
+                for template in template_dir.glob("**/*{}".format(self.TEMPLATE_SUFFIX)):
+                    self._templates_list.append(template)
         return self._templates_list
 
     def generate_all(self,

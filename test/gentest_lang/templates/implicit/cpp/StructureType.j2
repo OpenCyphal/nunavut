@@ -1,0 +1,12 @@
+
+{% include "id.j2" %}
+
+lang_cpp = {
+    'namespace': '{{ T.full_namespace }}',
+    'namespace_open': r'''{{ T.full_namespace | open_namespace }}''',
+    'namespace_open_wo_nl': r'''{{ T.full_namespace | open_namespace(False) }}''',
+    'namespace_close': r'''{{ T.full_namespace | close_namespace(True) }}''',
+    'namespace_close_w_comments': r'''{{ T.full_namespace | close_namespace }}'''
+}
+
+tests = {'lang_cpp': lang_cpp, 'lang_any': lang_any}

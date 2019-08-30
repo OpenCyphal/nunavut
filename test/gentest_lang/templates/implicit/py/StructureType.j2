@@ -1,0 +1,12 @@
+
+{% include "id.j2" %}
+
+lang_py = {
+    'unique_name_0': '{{ "NAME" | to_template_unique_name }}',
+    'unique_name_1': '{{ "NAME" | to_template_unique_name }}',
+    'unique_name_2': '{{ "name" | to_template_unique_name }}',
+    'id_0': '{{ "identifier zero" | id }}',
+}
+
+
+tests = {'lang_py': lang_py, 'lang_any': lang_any}
