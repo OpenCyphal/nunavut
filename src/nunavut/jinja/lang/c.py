@@ -79,16 +79,16 @@ C_RESERVED_IDENTIFIERS = frozenset([
 
 # Taken from https://en.cppreference.com/w/c/language/identifier
 C_RESERVED_PATTERNS = frozenset([
-    re.compile(r'(is|to|str|mem|wcs|atomic_|cnd_|mtx_|thrd_|tss_|memory_|memory_order_)[a-z]+'),
-    re.compile(r'u?int[a-zA-Z_0-9]*_t'),
-    re.compile(r'E[A-Z0-9]+'),
-    re.compile(r'FE_[A-Z]+'),
-    re.compile(r'U?INT[a-zA-Z_0-9]*_(MAX|MIN|C)'),
-    re.compile(r'(PRI|SCN)[a-zX]+'),
-    re.compile(r'LC_[A-Z]+'),
-    re.compile(r'SIG_?[A-Z]+'),
-    re.compile(r'TIME_[A-Z]+'),
-    re.compile(r'ATOMIC_[A-Z]+')
+    re.compile(r'^(is|to|str|mem|wcs|atomic_|cnd_|mtx_|thrd_|tss_|memory_|memory_order_)[a-z]{1}'),
+    re.compile(r'^u?int[a-zA-Z_0-9]*_t'),
+    re.compile(r'^E[A-Z0-9]+'),
+    re.compile(r'^FE_[A-Z]{1}'),
+    re.compile(r'^U?INT[a-zA-Z_0-9]*_(MAX|MIN|C)'),
+    re.compile(r'^(PRI|SCN)[a-zX]{1}'),
+    re.compile(r'^LC_[A-Z]{1}'),
+    re.compile(r'^SIG_?[A-Z]{1}'),
+    re.compile(r'^TIME_[A-Z]{1}'),
+    re.compile(r'^ATOMIC_[A-Z]{1}')
 ])
 
 
@@ -130,10 +130,10 @@ class VariableNameEncoder:
             raise TemplateRuntimeError('unknown match')
 
     @staticmethod
-    def _matches(input: str, reserved_patterns: typing.Optional[typing.FrozenSet[typing.Pattern]]) -> bool:
+    def _matches(input_string: str, reserved_patterns: typing.Optional[typing.FrozenSet[typing.Pattern]]) -> bool:
         if reserved_patterns is not None:
             for pattern in reserved_patterns:
-                if pattern.match(input):
+                if pattern.match(input_string):
                     return True
         return False
 
