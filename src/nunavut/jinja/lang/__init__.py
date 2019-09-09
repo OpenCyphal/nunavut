@@ -23,6 +23,13 @@ __language_modules__ = {
     'py': py
 }
 
+__default_output_extensions__ = {
+    'c': '.h',
+    'cpp': '.hpp',
+    'js': '.js',
+    'py': '.py'
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,3 +84,15 @@ def add_language_support(language_name: str, environment: Environment, make_impl
             else:
                 environment.filters["{}.{}".format(
                     language_name, function_name[7:])] = function_tuple[1]
+
+
+def get_default_output_extension(language_name: str) -> str:
+    """
+    For a given supported language get the default file extension to use when generating source
+    code for the language.
+
+    :param str language_name: One of the languages listed in the values returned by :func:`~get_supported_languages`.
+    :returns: A file extension name with a leading dot.
+    :raises KeyError: If the language name is not known by this version of nunavut.
+    """
+    return __default_output_extensions__[language_name]

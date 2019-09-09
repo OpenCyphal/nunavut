@@ -139,6 +139,10 @@ class Generator(nunavut.generators.AbstractGenerator):
     :param typing.Dict[str, typing.Callable] additional_tests: typing.Optional jinja tests to add to the
                                            global environment using the key as the test name
                                            and the callable as the test.
+    :param typing.Dict[str, typing.Any] additional_globals: typing.Optional objects to add to the template
+                                            environment globals collection.
+    :param typing.Optional[str] implicit_language_support: A language to install support for directly into the
+                                            global environment.
     :raises RuntimeError: If any additional filter or test attempts to replace a built-in
                           or otherwise already defined filter or test.
     """
