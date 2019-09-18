@@ -1,7 +1,6 @@
 ****************************************************
-:mod:`nunavut.jinja.lang.cpp` -- C++ Support
+:mod:`nunavut.lang.c` -- C Support
 ****************************************************
 
-.. automodule:: nunavut.jinja.lang.cpp
+.. automodule:: nunavut.lang.c
    :members:
-

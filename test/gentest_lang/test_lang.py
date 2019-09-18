@@ -11,10 +11,10 @@ import pytest
 from typing import Dict
 
 from pydsdl import read_namespace
-from nunavut import build_namespace_tree
-from nunavut.jinja import Generator, lang
+from nunavut import build_namespace_tree, lang
+from nunavut.jinja import Generator
 
-from nunavut.jinja.jinja2 import Environment, TemplateRuntimeError
+from nunavut.jinja.jinja2 import Environment
 
 
 @pytest.fixture
@@ -275,7 +275,7 @@ def test_lang_cpp(gen_paths):  # type: ignore
     assert lang_any['id_E'] == 'NOT_ATOMIC_YO'
     assert lang_any['id_F'] == '_aTOMIC_YO'
 
-    with pytest.raises(TemplateRuntimeError):
+    with pytest.raises(RuntimeError):
         lang.cpp.filter_id('foo', '_', '__')
 
     assert '_flight_ZX005Ftime' == lang.cpp.filter_id(Dummy('_Flight__time'))

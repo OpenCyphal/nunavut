@@ -60,7 +60,7 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
     if hasattr(args, 'implicit_language'):
         implicit_language = args.implicit_language
         if not hasattr(args, 'output_extension') or args.output_extension is None:
-            output_extension = nunavut.jinja.lang.get_default_output_extension(implicit_language)
+            output_extension = nunavut.lang.get_default_output_extension(implicit_language)
         else:
             output_extension = args.output_extension
     else:

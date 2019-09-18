@@ -4,7 +4,7 @@
 # This software is distributed under the terms of the MIT License.
 #
 """
-    jinja-based filters for generating javascript. All filters in this
+    Filters for generating javascript. All filters in this
     module will be available in the template's global namespace as ``js``.
 """
 

@@ -48,7 +48,7 @@ def test_get_all_namespaces(gen_paths):  # type: ignore
     for ns, path in namespace.get_all_namespaces():
         index[path] = ns
 
-    assert len(index) == 2
+    assert len(index) == 3
 
 
 def test_get_all_types(gen_paths):  # type: ignore
@@ -58,7 +58,7 @@ def test_get_all_types(gen_paths):  # type: ignore
     for ns, path in namespace.get_all_types():
         index[path] = ns
 
-    assert len(index) == 3
+    assert len(index) == 5
 
 
 def test_empty_namespace(gen_paths):  # type: ignore
@@ -100,7 +100,7 @@ def test_namespace_namespace_template(gen_paths):  # type: ignore
 def test_namespace_generation(gen_paths):  # type: ignore
     """Test actually generating a namepace file."""
     namespace, root_namespace_path, compound_types = gen_test_namespace(gen_paths, '__module__')
-    assert len(compound_types) == 1
+    assert len(compound_types) == 2
     generator = Generator(namespace, True, gen_paths.templates_dir / Path('default'))
     generator.generate_all()
     for nested_namespace in namespace.get_nested_namespaces():
@@ -124,3 +124,26 @@ def test_build_namespace_tree_from_nothing(gen_paths):  # type: ignore
     namespace = build_namespace_tree([], str(gen_paths.dsdl_dir), gen_paths.out_dir, '.json', '_')
     assert namespace is not None
     assert namespace.full_name == ''
+
+
+def test_namespace_stropping(gen_paths):  # type: ignore
+    """Test generating a namespace that uses a reserved keyword for a given language."""
+    namespace, root_namespace_path, compound_types = gen_test_namespace(gen_paths, '__module__')
+    assert len(compound_types) == 2
+    generator = Generator(namespace, True, gen_paths.templates_dir / Path('default'), implicit_language_support='c')
+    generator.generate_all()
+    for nested_namespace in namespace.get_nested_namespaces():
+        assert nested_namespace.source_file_path == str(Path(root_namespace_path) / Path(*nested_namespace.full_name.split('.')[1:]))
+
+    outfile = gen_paths.find_outfile_in_namespace("scotec.typedef", namespace)
+
+    assert (outfile is not None)
+
+    with open(str(outfile), 'r') as json_file:
+        json_blob = json.load(json_file)
+
+    assert json_blob is not None
+    assert json_blob['scotec.typedef']['namespace'] == 'scotec.typedef'
+
+    output_path_for_stropped = namespace.find_output_path_for_type(compound_types[1])
+    assert (gen_paths.out_dir / 'scotec' / 'typedef' / 'ATOMIC_TYPE_0_1').with_suffix('.json') == output_path_for_stropped

@@ -19,7 +19,7 @@ import re
 import pydsdl
 
 import nunavut.generators
-from nunavut.jinja.lang import (get_supported_languages, add_language_support)
+from nunavut.lang import (get_supported_languages, add_language_support)
 
 from nunavut.jinja.jinja2 import (Environment, FileSystemLoader,
                                   StrictUndefined, TemplateAssertionError,
@@ -396,18 +396,18 @@ class Generator(nunavut.generators.AbstractGenerator):
                                 trim_blocks=trim_blocks,
                                 auto_reload=False)
 
-        self._add_filters_and_tests(additional_filters, additional_tests)
-
         # Add in additional filters and tests for built-in languages this
         # module supports.
         for language_name in get_supported_languages():
             add_language_support(language_name, self._env)
 
+        if implicit_language_support is not None:
+            add_language_support(implicit_language_support, self._env, True)
+
         if additional_globals is not None:
             self._env.globals.update(additional_globals)
 
-        if implicit_language_support is not None:
-            add_language_support(implicit_language_support, self._env, True)
+        self._add_filters_and_tests(additional_filters, additional_tests)
 
     def get_templates(self) -> typing.List[pathlib.Path]:
         """
@@ -447,10 +447,11 @@ class Generator(nunavut.generators.AbstractGenerator):
         member_functions = inspect.getmembers(self, inspect.isroutine)
         for function_tuple in member_functions:
             function_name = function_tuple[0]
+            function_ref = function_tuple[1]
             if len(function_name) > 3 and function_name[0:3] == "is_":
-                self._env.tests[function_name[3:]] = function_tuple[1]
+                self._env.tests[function_name[3:]] = function_ref
             if len(function_name) > 7 and function_name[0:7] == "filter_":
-                self._env.filters[function_name[7:]] = function_tuple[1]
+                self._env.filters[function_name[7:]] = function_ref
 
         if additional_filters is not None:
             for name, additional_filter in additional_filters.items():

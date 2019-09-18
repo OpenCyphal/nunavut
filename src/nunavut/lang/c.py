@@ -4,7 +4,7 @@
 # This software is distributed under the terms of the MIT License.
 #
 """
-    jinja-based filters for generating C. All filters in this
+    Filters for generating C. All filters in this
     module will be available in the template's global namespace as ``c``.
 """
 
@@ -13,8 +13,7 @@ import re
 import typing
 
 import pydsdl
-
-from nunavut.jinja.jinja2 import TemplateRuntimeError, environmentfilter, Environment
+import nunavut
 
 # Taken from https://en.cppreference.com/w/c/keyword
 C_RESERVED_IDENTIFIERS = frozenset([
@@ -107,7 +106,7 @@ class VariableNameEncoder:
         self._encoding_prefix = encoding_prefix
         self._enforce_c_prefix_rules = enforce_c_prefix_rules
         if self._token_start_pattern.match(self._encoding_prefix):
-            raise TemplateRuntimeError('{} is not allowed as a prefix since it can result in illegal identifiers.'.format(self._encoding_prefix))
+            raise RuntimeError('{} is not allowed as a prefix since it can result in illegal identifiers.'.format(self._encoding_prefix))
 
     def _filter_id_illegal_character_replacement(self, m: typing.Match) -> str:
         if m.group(1) is not None:
@@ -127,7 +126,7 @@ class VariableNameEncoder:
         elif m.group(2) is not None:
             return '_{}'.format(m.group(2)[1].lower())
         else:
-            raise TemplateRuntimeError('unknown match')
+            raise RuntimeError('unknown match')
 
     @staticmethod
     def _matches(input_string: str, reserved_patterns: typing.Optional[typing.FrozenSet[typing.Pattern]]) -> bool:
@@ -255,7 +254,7 @@ class _CFit(enum.Enum):
         elif isinstance(value, pydsdl.BooleanType):
             return ('BOOL' if not use_standard_types else 'bool')
         else:
-            raise TemplateRuntimeError("{} is not a known PrimitiveType".format(type(value).__name__))
+            raise RuntimeError("{} is not a known PrimitiveType".format(type(value).__name__))
 
     @classmethod
     def get_best_fit(cls: typing.Type[_CFit_T], bit_length: int) -> _CFit_T:
@@ -268,7 +267,7 @@ class _CFit(enum.Enum):
         elif bit_length <= 64:
             bestfit = _CFit.IN_64
         else:
-            raise TemplateRuntimeError(
+            raise RuntimeError(
                 "Cannot emit a standard type for a primitive that is larger than 64 bits ({}).".format(
                     bit_length
                 )
@@ -331,10 +330,10 @@ def filter_to_snake_case(value: str) -> str:
     return _snake_case_pattern_2.sub(lambda x: '_' + x.group(0).lower(), pass1)
 
 
-@environmentfilter
-def filter_to_template_unique_name(env: Environment, base_token: str) -> str:
+@nunavut.templateEnvironmentFilter
+def filter_to_template_unique_name(env: nunavut.SupportsTemplateEnv, base_token: str) -> str:
     """
-    Jinja filter that takes a base token and forms a name that is very
+    Filter that takes a base token and forms a name that is very
     likely to be unique within the template the filter is invoked. This
     name is also very likely to be a valid C identifier.
 

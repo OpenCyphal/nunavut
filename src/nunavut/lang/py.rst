@@ -1,6 +1,6 @@
 ****************************************************
-:mod:`nunavut.jinja.lang.js` -- JavaScript Support
+:mod:`nunavut.lang.py` -- Python Support
 ****************************************************
 
-.. automodule:: nunavut.jinja.lang.js
+.. automodule:: nunavut.lang.py
    :members:

@@ -4,7 +4,7 @@
 # This software is distributed under the terms of the MIT License.
 #
 """
-    jinja-based filters for generating C++. All filters in this
+    Filters for generating C++. All filters in this
     module will be available in the template's global namespace as ``cpp``.
 """
 
@@ -13,7 +13,7 @@ import os
 import typing
 import re
 
-from nunavut.jinja.lang.c import VariableNameEncoder, C_RESERVED_IDENTIFIERS, C_RESERVED_PATTERNS
+from nunavut.lang.c import VariableNameEncoder, C_RESERVED_IDENTIFIERS, C_RESERVED_PATTERNS
 
 
 # Taken from https://en.cppreference.com/w/cpp/keyword

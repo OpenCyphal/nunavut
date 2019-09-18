@@ -64,7 +64,39 @@ if sys.version_info[:2] < (3, 5):   # pragma: no cover
     print('A newer version of Python is required', file=sys.stderr)
     sys.exit(1)
 
+# for now this is set to a value that is internally compatible with the
+# embedded version of jinja2 we use in Nunavut. If you use this variable
+# instead of its current value you will be insulated from this.
+EnvironmentFilterAttributeName = 'environmentfilter'
+
+
 # +---------------------------------------------------------------------------+
+
+class SupportsTemplateEnv:
+    """
+    Provided as a pseudo `protocol <https://mypy.readthedocs.io/en/latest/protocols.html#simple-user-defined-protocols/>`_.
+    (in anticipation of that becoming part of the core Python typing someday).
+
+    :var Dict globals: A dictionary mapping global names (str) to variables (Any) that are available in
+                       each template's global environment.
+    :var Dict filters: A dictionary mapping filter names (str) to filters (Callable). Filters are simply
+                       global functions available to templates but are most often used to transform a
+                       given input to output emitted by the template.
+    """
+
+    globals = dict()  # type: typing.Dict[str, typing.Any]
+    filters = dict()  # type: typing.Dict[str, typing.Callable]
+    tests = dict()  # type: typing.Dict[str, typing.Callable[[typing.Any], bool]]
+
+
+def templateEnvironmentFilter(filter_func: typing.Callable) -> typing.Callable:
+    """
+    Decorator for marking environment dependent filters.
+    An object supporting the :class:`SupportsTemplateEnv` protocol
+    will be passed to the filter as the first argument.
+    """
+    setattr(filter_func, EnvironmentFilterAttributeName, True)
+    return filter_func
 
 
 class Namespace(pydsdl.Any):
@@ -82,6 +114,8 @@ class Namespace(pydsdl.Any):
                                 be generated.
     :param str extension:       The file suffix to give to generated files.
     :param str namespace_file_stem: The file stem (name) to give to files generated for namespaces.
+    :param typing.Optional[str] implicit_language_support: A language to install support for directly into the
+                                            global environment.
     """
 
     def __init__(self,
@@ -89,10 +123,14 @@ class Namespace(pydsdl.Any):
                  root_namespace_dir: pathlib.Path,
                  base_output_path: pathlib.PurePath,
                  extension: str,
-                 namespace_file_stem: str):
+                 namespace_file_stem: str,
+                 implicit_language_support: typing.Optional[str] = None):
         self._parent = None  # type: typing.Optional[Namespace]
-        self._full_namespace = full_namespace
-        self._namespace_components = full_namespace.split('.')
+        self._id_filter = lambda unfiltered: unfiltered  # type: typing.Callable[[str], str]
+        self._namespace_components = []  # type: typing.List[str]
+        for component in full_namespace.split('.'):
+            self._namespace_components.append(self._id_filter(component))
+        self._full_namespace = '.'.join(self._namespace_components)
         self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components))
         self._output_path = pathlib.Path(self._output_folder / pathlib.PurePath(namespace_file_stem).with_suffix(extension))
         self._source_folder = pathlib.Path(root_namespace_dir / pathlib.PurePath(*self._namespace_components[1:])).resolve()

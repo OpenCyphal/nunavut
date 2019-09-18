@@ -3,16 +3,15 @@
 # Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
 # This software is distributed under the terms of the MIT License.
 #
-"""Language-specific support in jinja templates.
+"""Language-specific support in nunavut.
 
 This package contains modules that provide specific support for generating
-source for various languages using jinja templates.
+source for various languages using templates.
 """
 import inspect
 import typing
 import logging
-
-from nunavut.jinja.jinja2 import Environment
+import nunavut
 
 from . import c, cpp, js, py
 
@@ -42,7 +41,9 @@ def get_supported_languages() -> typing.Iterable[str]:
     return __language_modules__.keys()
 
 
-def add_language_support(language_name: str, environment: Environment, make_implicit: bool = False) -> None:
+def add_language_support(language_name: str,
+                         env: nunavut.SupportsTemplateEnv,
+                         make_implicit: bool = False) -> None:
     """
     Inspects a given language support module and adds all functions
     found whose name starts with "filter\\_" to the provided environment
@@ -54,7 +55,7 @@ def add_language_support(language_name: str, environment: Environment, make_impl
     it.
 
     :param str language_name: The language to add support for.
-    :param Environment environment: The jinja2 environment to inject
+    :param Environment environment: The template environment to inject
         language support into.
     :param bool make_implicit: Populate the environment globals directly with
         the given language features.
@@ -65,13 +66,13 @@ def add_language_support(language_name: str, environment: Environment, make_impl
     """
     if make_implicit:
         try:
-            if environment.globals['_nv_implicit_language'] != language_name:
-                raise RuntimeError('Implicit language support for {} was already installed.'.format(environment.globals['_nv_implicit_language']))
+            if env.globals['_nv_implicit_language'] != language_name:
+                raise RuntimeError('Implicit language support for {} was already installed.'.format(env.globals['_nv_implicit_language']))
             else:
                 logger.warning('Implicit language support for {} added twice.'.format(language_name))
             return
         except KeyError:
-            environment.globals['_nv_implicit_language'] = language_name
+            env.globals['_nv_implicit_language'] = language_name
 
     lang_module = __language_modules__[language_name]
     filters = inspect.getmembers(lang_module, inspect.isfunction)
@@ -79,10 +80,10 @@ def add_language_support(language_name: str, environment: Environment, make_impl
         function_name = function_tuple[0]
         if len(function_name) > 7 and function_name[0:7] == "filter_":
             if make_implicit:
-                environment.filters[function_name[7:]] = function_tuple[1]
+                env.filters[function_name[7:]] = function_tuple[1]
                 logging.debug("Adding implicit filter {} for language {}".format(function_name[7:], language_name))
             else:
-                environment.filters["{}.{}".format(
+                env.filters["{}.{}".format(
                     language_name, function_name[7:])] = function_tuple[1]
 
 

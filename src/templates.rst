@@ -52,33 +52,33 @@ See :mod:`nunavut.jinja` for full documentation on these. For example::
 C Filters
 -------------------------------------------------
 
-.. autofunction:: nunavut.jinja.lang.c.filter_id
+.. autofunction:: nunavut.lang.c.filter_id
    :noindex:
-.. autofunction:: nunavut.jinja.lang.c.filter_macrofy
+.. autofunction:: nunavut.lang.c.filter_macrofy
    :noindex:
-.. autofunction:: nunavut.jinja.lang.c.filter_type_from_primitive
+.. autofunction:: nunavut.lang.c.filter_type_from_primitive
    :noindex:
-.. autofunction:: nunavut.jinja.lang.c.filter_to_snake_case
+.. autofunction:: nunavut.lang.c.filter_to_snake_case
    :noindex:
-.. autofunction:: nunavut.jinja.lang.c.filter_to_template_unique_name
+.. autofunction:: nunavut.lang.c.filter_to_template_unique_name
    :noindex:
 
 C++ Filters
 -------------------------------------------------
 
-.. autofunction:: nunavut.jinja.lang.cpp.filter_id
+.. autofunction:: nunavut.lang.cpp.filter_id
    :noindex:
-.. autofunction:: nunavut.jinja.lang.cpp.filter_open_namespace
+.. autofunction:: nunavut.lang.cpp.filter_open_namespace
    :noindex:
-.. autofunction:: nunavut.jinja.lang.cpp.filter_close_namespace
+.. autofunction:: nunavut.lang.cpp.filter_close_namespace
    :noindex:
 
 Python Filters
 -------------------------------------------------
 
-.. autofunction:: nunavut.jinja.lang.py.filter_id
+.. autofunction:: nunavut.lang.py.filter_id
    :noindex:
-.. autofunction:: nunavut.jinja.lang.py.filter_to_template_unique_name
+.. autofunction:: nunavut.lang.py.filter_to_template_unique_name
    :noindex:
 
 *************************************************

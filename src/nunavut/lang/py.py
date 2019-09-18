@@ -4,22 +4,22 @@
 # This software is distributed under the terms of the MIT License.
 #
 """
-    jinja-based filters for generating python. All filters in this
+    Filters for generating python. All filters in this
     module will be available in the template's global namespace as ``py``.
 """
-from nunavut.jinja.jinja2 import environmentfilter, Environment
+import nunavut
 import typing
 import keyword
 import builtins
 import pydsdl
 
-from nunavut.jinja.lang.c import VariableNameEncoder
+from nunavut.lang.c import VariableNameEncoder
 
 
-@environmentfilter
-def filter_to_template_unique_name(env: Environment, base_token: str) -> str:
+@nunavut.templateEnvironmentFilter
+def filter_to_template_unique_name(env: nunavut.SupportsTemplateEnv, base_token: str) -> str:
     """
-    Jinja filter that takes a base token and forms a name that is very
+    Filter that takes a base token and forms a name that is very
     likely to be unique within the template the filter is invoked. This
     name is also very likely to be a valid Python identifier.
 
