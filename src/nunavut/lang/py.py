@@ -7,17 +7,17 @@
     Filters for generating python. All filters in this
     module will be available in the template's global namespace as ``py``.
 """
-import nunavut
 import typing
 import keyword
 import builtins
 import pydsdl
 
-from nunavut.lang.c import VariableNameEncoder
+from .. import SupportsTemplateEnv, templateEnvironmentFilter
+from .c import VariableNameEncoder
 
 
-@nunavut.templateEnvironmentFilter
-def filter_to_template_unique_name(env: nunavut.SupportsTemplateEnv, base_token: str) -> str:
+@templateEnvironmentFilter
+def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) -> str:
     """
     Filter that takes a base token and forms a name that is very
     likely to be unique within the template the filter is invoked. This

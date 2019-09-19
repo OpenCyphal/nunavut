@@ -8,13 +8,14 @@ from pathlib import Path
 
 import pytest
 
+import inspect
+
 from typing import Dict
 
 from pydsdl import read_namespace
 from nunavut import build_namespace_tree, lang
+from nunavut.lang import LanguageContext, Language
 from nunavut.jinja import Generator
-
-from nunavut.jinja.jinja2 import Environment
 
 
 @pytest.fixture
@@ -36,6 +37,7 @@ class Dummy:
 # | PARAMETERIZED TESTS
 # +---------------------------------------------------------------------------+
 
+
 def ptest_lang_c(gen_paths, implicit):  # type: ignore
     """ Generates and verifies JSON with values filtered using the c language support module.
     """
@@ -50,15 +52,17 @@ def ptest_lang_c(gen_paths, implicit):  # type: ignore
 
     root_namespace = str(root_namespace_dir)
     compound_types = read_namespace(root_namespace, '', allow_unregulated_fixed_port_id=True)
+    language_context = LanguageContext('c' if implicit else None)
     namespace = build_namespace_tree(compound_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      '.py',
-                                     '_')
+                                     '_',
+                                     language_context)
     generator = Generator(namespace,
                           False,
-                          templates_dirs,
-                          implicit_language_support=('c' if implicit else None))
+                          language_context,
+                          templates_dirs)
     generator.generate_all(False)
 
     # Now read back in and verify
@@ -120,16 +124,19 @@ def ptest_lang_cpp(gen_paths, implicit):  # type: ignore
 
     templates_dirs.append(gen_paths.templates_dir / Path("common"))
 
+    language_context = LanguageContext('cpp' if implicit else None)
+
     namespace = build_namespace_tree(compound_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      '.py',
-                                     '_')
+                                     '_',
+                                     language_context)
 
     generator = Generator(namespace,
                           False,
-                          templates_dirs,
-                          implicit_language_support=('cpp' if implicit else None))
+                          language_context,
+                          templates_dirs)
 
     generator.generate_all(False)
 
@@ -182,15 +189,19 @@ def ptest_lang_py(gen_paths, implicit):  # type: ignore
     templates_dirs.append(gen_paths.templates_dir / Path("common"))
 
     compound_types = read_namespace(root_namespace, '', allow_unregulated_fixed_port_id=True)
+
+    language_context = LanguageContext('py' if implicit else None)
+
     namespace = build_namespace_tree(compound_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      '.py',
-                                     '_')
+                                     '_',
+                                     language_context)
     generator = Generator(namespace,
                           False,
-                          templates_dirs,
-                          implicit_language_support=('py' if implicit else None))
+                          language_context,
+                          templates_dirs)
 
     generator.generate_all(False)
 
@@ -323,7 +334,7 @@ def test_lang_py(gen_paths):  # type: ignore
 
 
 def test_lang_py_explicit(gen_paths):  # type: ignore
-    """ 
+    """
     Generates and verifies JSON with values filtered using the python language support module using
     explicit language feature names.
     """
@@ -331,12 +342,39 @@ def test_lang_py_explicit(gen_paths):  # type: ignore
     ptest_lang_py(gen_paths, False)
 
 
-def test_multiple_implicit_languages(gen_paths):  # type: ignore
+def test_language_object() -> None:
     """
-    Verifies that any dsdl type will resolve to an ``Any`` template.
+    Verify that the Language module object works as required.
     """
-    dummy_env = Environment()
-    lang.add_language_support('c', dummy_env, True)
-    lang.add_language_support('c', dummy_env, True)
-    with pytest.raises(RuntimeError):
-        lang.add_language_support('cpp', dummy_env, True)
+    language = Language('c')
+
+    assert 'c' == language.name
+    assert language.get_module() is not None
+
+    found_id = False
+    for function_tuple in inspect.getmembers(language.get_module(), inspect.isfunction):
+        if 'filter_id' == function_tuple[0]:
+            found_id = True
+            break
+    assert found_id
+
+
+def test_language_context() -> None:
+    """
+    Verify that the LanguageContext objects works as required.
+    """
+    context_w_no_target = LanguageContext()
+
+    assert None is context_w_no_target.get_target_language()
+    assert 'c' in context_w_no_target.get_supported_languages()
+    assert 'cpp' in context_w_no_target.get_supported_languages()
+    assert 'py' in context_w_no_target.get_supported_languages()
+
+    assert context_w_no_target.get_id_filter() is not None
+    assert 'if' == context_w_no_target.get_id_filter()('if')
+
+    context_w_target = LanguageContext('c')
+
+    assert context_w_target.get_target_language() is not None
+    assert context_w_target.get_id_filter() is not None
+    assert '_if' == context_w_target.get_id_filter()('if')

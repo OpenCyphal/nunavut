@@ -11,89 +11,102 @@ source for various languages using templates.
 import inspect
 import typing
 import logging
-import nunavut
-
-from . import c, cpp, js, py
-
-__language_modules__ = {
-    'c': c,
-    'cpp': cpp,
-    'js': js,
-    'py': py
-}
-
-__default_output_extensions__ = {
-    'c': '.h',
-    'cpp': '.hpp',
-    'js': '.js',
-    'py': '.py'
-}
+import importlib
 
 logger = logging.getLogger(__name__)
 
 
-def get_supported_languages() -> typing.Iterable[str]:
-    """Get a list of languages this module supports.
-
-    :returns: An iterable of strings which are language names accepted by the
-        :func:`~add_language_support` function.
+class Language:
     """
-    return __language_modules__.keys()
+    Facilities for generating source code for a specific language.
 
-
-def add_language_support(language_name: str,
-                         env: nunavut.SupportsTemplateEnv,
-                         make_implicit: bool = False) -> None:
+    :param str language_name:   The name of the language used by the :mod:`nunavut.lang` module.
     """
-    Inspects a given language support module and adds all functions
-    found whose name starts with "filter\\_" to the provided environment
-    as "[language_name].[function name minus 'filter\\_']".
+    def __init__(self, language_name: str):
+        self._language_name = language_name
+        self._module = None  # type: typing.Optional[typing.Any]
 
-    For example, if a language module foo.py has a filter function
-    "filter_bar" and this method is called with a prefix of "foo"
-    then the environment will have a filter name "foo.bar" added to
-    it.
+    @property
+    def name(self) -> str:
+        """
+        The name of the language used by the :mod:`nunavut.lang` module.
+        """
+        return self._language_name
 
-    :param str language_name: The language to add support for.
-    :param Environment environment: The template environment to inject
-        language support into.
-    :param bool make_implicit: Populate the environment globals directly with
-        the given language features.
+    def get_module(self) -> typing.Any:
+        """
+        Return the python module that contains the language-specific resources.
+        """
+        if self._module is None:
+            self._module = importlib.import_module('nunavut.lang.{}'.format(self._language_name))
+        return self._module
 
-    :raises KeyError: If language_name is not a supported language.
-    :raises RuntimeError: If called on an environment that already had implicit
-                      language support installed.
+
+class LanguageContext:
     """
-    if make_implicit:
-        try:
-            if env.globals['_nv_implicit_language'] != language_name:
-                raise RuntimeError('Implicit language support for {} was already installed.'.format(env.globals['_nv_implicit_language']))
-            else:
-                logger.warning('Implicit language support for {} added twice.'.format(language_name))
-            return
-        except KeyError:
-            env.globals['_nv_implicit_language'] = language_name
-
-    lang_module = __language_modules__[language_name]
-    filters = inspect.getmembers(lang_module, inspect.isfunction)
-    for function_tuple in filters:
-        function_name = function_tuple[0]
-        if len(function_name) > 7 and function_name[0:7] == "filter_":
-            if make_implicit:
-                env.filters[function_name[7:]] = function_tuple[1]
-                logging.debug("Adding implicit filter {} for language {}".format(function_name[7:], language_name))
-            else:
-                env.filters["{}.{}".format(
-                    language_name, function_name[7:])] = function_tuple[1]
-
-
-def get_default_output_extension(language_name: str) -> str:
+    Context object containing the current target language (if any) and used to access
+    :class:`Language` objects.
     """
-    For a given supported language get the default file extension to use when generating source
-    code for the language.
 
-    :param str language_name: One of the languages listed in the values returned by :func:`~get_supported_languages`.
-    :returns: A file extension name with a leading dot.
-    :raises KeyError: If the language name is not known by this version of nunavut.
-    """
-    return __default_output_extensions__[language_name]
+    _default_output_extensions = {
+        'c': '.h',
+        'cpp': '.hpp',
+        'js': '.js',
+        'py': '.py'
+    }
+
+    def __init__(self, target_language: typing.Optional[str] = None):
+        self._target_language = (Language(target_language) if target_language is not None else None)
+        self._language_modules = None  # type: typing.Optional[typing.Dict]
+
+    def get_supported_language_names(self) -> typing.Iterable[str]:
+        """Get a list of target languages supported by Nunavut.
+
+        :returns: An iterable of strings which are languages with special
+            support within Nunavut templates.
+        """
+        return self._default_output_extensions.keys()
+
+    @classmethod
+    def get_default_output_extension(cls, language_name: str) -> str:
+        """
+        For a given supported language get the default file extension to use when generating source
+        code for the language.
+
+        :param str language_name: One of the languages listed in the values returned by :func:`get_supported_language_names()`.
+        :returns: A file extension name with a leading dot.
+        :raises KeyError: If the language name is not known by this version of nunavut.
+        """
+        return cls._default_output_extensions[language_name]
+
+    def get_target_language(self) -> typing.Optional[Language]:
+        """
+        Returns the target language configured on this object or None
+        if no target language was specified.
+        """
+        return self._target_language
+
+    def get_id_filter(self) -> typing.Callable[[str], str]:
+        """
+        A filter that will transform a given string into a valid identifier
+        in the target language. The string is pass through unmodified if no
+        target language was set.
+        """
+        lang_module = self.get_target_language()
+        if lang_module is not None:
+            module_functions = inspect.getmembers(lang_module.get_module(), inspect.isfunction)
+            for function_tuple in module_functions:
+                if function_tuple[0] == 'filter_id':
+                    return typing.cast(typing.Callable[[str], str], function_tuple[1])
+
+        return lambda unfiltered: unfiltered
+
+    def get_supported_languages(self) -> typing.Dict[str, Language]:
+        """
+        Returns a collection of available language support objects.
+        """
+        if self._language_modules is None:
+            self._language_modules = dict()
+            for language_name in self.get_supported_language_names():
+                self._language_modules[language_name] = Language(language_name)
+        return self._language_modules

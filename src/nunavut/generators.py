@@ -14,6 +14,7 @@ import typing
 
 import nunavut
 import nunavut.postprocessors
+import nunavut.lang
 
 
 class AbstractGenerator(metaclass=abc.ABCMeta):
@@ -29,9 +30,11 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
 
     def __init__(self,
                  namespace: nunavut.Namespace,
-                 generate_namespace_types: bool):
+                 generate_namespace_types: bool,
+                 language_context: nunavut.lang.LanguageContext):
         self._namespace = namespace
         self._generate_namespace_types = generate_namespace_types
+        self._language_context = language_context
 
     @property
     def namespace(self) -> nunavut.Namespace:
@@ -48,6 +51,10 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
         will be generated.
         """
         return self._generate_namespace_types
+
+    @property
+    def language_context(self) -> nunavut.lang.LanguageContext:
+        return self._language_context
 
     @abc.abstractmethod
     def generate_all(self,

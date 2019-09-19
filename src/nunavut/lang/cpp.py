@@ -13,7 +13,7 @@ import os
 import typing
 import re
 
-from nunavut.lang.c import VariableNameEncoder, C_RESERVED_IDENTIFIERS, C_RESERVED_PATTERNS
+from .c import VariableNameEncoder, C_RESERVED_IDENTIFIERS, C_RESERVED_PATTERNS
 
 
 # Taken from https://en.cppreference.com/w/cpp/keyword

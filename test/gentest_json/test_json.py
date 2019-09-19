@@ -10,6 +10,7 @@ import pytest
 
 from pydsdl import read_namespace
 from nunavut import build_namespace_tree
+from nunavut.lang import LanguageContext
 from nunavut.jinja import Generator
 
 
@@ -28,12 +29,14 @@ def test_TestType_0_1(gen_paths):  # type: ignore
 
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     root_namespace = str(root_namespace_dir)
+    language_context = LanguageContext()
     namespace = build_namespace_tree(read_namespace(root_namespace, ''),
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      '.json',
-                                     '_')
-    generator = Generator(namespace, False, gen_paths.templates_dir)
+                                     '_',
+                                     language_context)
+    generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
     generator.generate_all(False)
 
     # Now read back in and verify

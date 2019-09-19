@@ -13,7 +13,7 @@ import re
 import typing
 
 import pydsdl
-import nunavut
+from .. import templateEnvironmentFilter, SupportsTemplateEnv
 
 # Taken from https://en.cppreference.com/w/c/keyword
 C_RESERVED_IDENTIFIERS = frozenset([
@@ -77,18 +77,18 @@ C_RESERVED_IDENTIFIERS = frozenset([
 ])
 
 # Taken from https://en.cppreference.com/w/c/language/identifier
-C_RESERVED_PATTERNS = frozenset([
-    re.compile(r'^(is|to|str|mem|wcs|atomic_|cnd_|mtx_|thrd_|tss_|memory_|memory_order_)[a-z]{1}'),
-    re.compile(r'^u?int[a-zA-Z_0-9]*_t'),
-    re.compile(r'^E[A-Z0-9]+'),
-    re.compile(r'^FE_[A-Z]{1}'),
-    re.compile(r'^U?INT[a-zA-Z_0-9]*_(MAX|MIN|C)'),
-    re.compile(r'^(PRI|SCN)[a-zX]{1}'),
-    re.compile(r'^LC_[A-Z]{1}'),
-    re.compile(r'^SIG_?[A-Z]{1}'),
-    re.compile(r'^TIME_[A-Z]{1}'),
-    re.compile(r'^ATOMIC_[A-Z]{1}')
-])
+C_RESERVED_PATTERNS = frozenset(map(re.compile, [
+    r'^(is|to|str|mem|wcs|atomic_|cnd_|mtx_|thrd_|tss_|memory_|memory_order_)[a-z]',
+    r'^u?int[a-zA-Z_0-9]*_t',
+    r'^E[A-Z0-9]+',
+    r'^FE_[A-Z]',
+    r'^U?INT[a-zA-Z_0-9]*_(MAX|MIN|C)',
+    r'^(PRI|SCN)[a-zX]',
+    r'^LC_[A-Z]',
+    r'^SIG_?[A-Z]',
+    r'^TIME_[A-Z]',
+    r'^ATOMIC_[A-Z]'
+]))
 
 
 class VariableNameEncoder:
@@ -330,8 +330,8 @@ def filter_to_snake_case(value: str) -> str:
     return _snake_case_pattern_2.sub(lambda x: '_' + x.group(0).lower(), pass1)
 
 
-@nunavut.templateEnvironmentFilter
-def filter_to_template_unique_name(env: nunavut.SupportsTemplateEnv, base_token: str) -> str:
+@templateEnvironmentFilter
+def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) -> str:
     """
     Filter that takes a base token and forms a name that is very
     likely to be unique within the template the filter is invoked. This

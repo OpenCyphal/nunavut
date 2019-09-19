@@ -17,6 +17,14 @@ by calling pydsdl::
 
     compound_types = read_namespace(root_namespace, include_paths)
 
+Next a :class:`nunavut.lang.LanguageContext` is needed which is used to
+configure all Nunavut objects for a specific target language ::
+
+    from nunavut.lang import LanguageContext
+
+    # Here we are going to generate C headers.
+    langauge_context = LanguageContext('c')
+
 :class:`nunavut.generators.AbstractGenerator` objects require
 a :class:`nunavut.Namespace` tree which can be built from the
 pydsdl type map using :meth:`nunavut.build_namespace_tree`::
@@ -27,26 +35,32 @@ pydsdl type map using :meth:`nunavut.build_namespace_tree`::
                                           root_ns_folder,
                                           out_dir,
                                           '.hpp',
-                                          'Types')
+                                          'Types',
+                                          language_context)
 
 Putting this all together, the typical use of this library looks something like this::
 
     from pydsdl import read_namespace
     from nunavut import build_namespace_tree
+    from nunavut.lang import LanguageContext
     from nunavut.jinja import Generator
 
     # parse the dsdl
     compound_types = read_namespace(root_namespace, include_paths)
+
+    # select a target language
+    langauge_context = LanguageContext('c')
 
     # build the namespace tree
     root_namespace = build_namespace_tree(compound_types,
                                           root_ns_folder,
                                           out_dir,
                                           '.hpp',
-                                          'Types')
+                                          'Types',
+                                          language_context)
 
     # give the root namespace to the generator and...
-    generator = Generator(root_namespace, False, templates_dir)
+    generator = Generator(root_namespace, False, language_context, templates_dir)
 
     # generate all the code!
     generator.generate_all()
@@ -59,6 +73,8 @@ import sys
 import typing
 
 import pydsdl
+
+from . import lang
 
 if sys.version_info[:2] < (3, 5):   # pragma: no cover
     print('A newer version of Python is required', file=sys.stderr)
@@ -114,8 +130,7 @@ class Namespace(pydsdl.Any):
                                 be generated.
     :param str extension:       The file suffix to give to generated files.
     :param str namespace_file_stem: The file stem (name) to give to files generated for namespaces.
-    :param typing.Optional[str] implicit_language_support: A language to install support for directly into the
-                                            global environment.
+    :param lang.LanguageContext language_context: The generated software language context the namespace is within.
     """
 
     def __init__(self,
@@ -124,16 +139,21 @@ class Namespace(pydsdl.Any):
                  base_output_path: pathlib.PurePath,
                  extension: str,
                  namespace_file_stem: str,
-                 implicit_language_support: typing.Optional[str] = None):
+                 language_context: lang.LanguageContext):
         self._parent = None  # type: typing.Optional[Namespace]
-        self._id_filter = lambda unfiltered: unfiltered  # type: typing.Callable[[str], str]
+        self._id_filter = language_context.get_id_filter()
         self._namespace_components = []  # type: typing.List[str]
+        source_namespace_components = []
         for component in full_namespace.split('.'):
             self._namespace_components.append(self._id_filter(component))
+            source_namespace_components.append(component)
         self._full_namespace = '.'.join(self._namespace_components)
         self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components))
         self._output_path = pathlib.Path(self._output_folder / pathlib.PurePath(namespace_file_stem).with_suffix(extension))
-        self._source_folder = pathlib.Path(root_namespace_dir / pathlib.PurePath(*self._namespace_components[1:])).resolve()
+        self._source_folder = pathlib.Path(root_namespace_dir / pathlib.PurePath(*source_namespace_components[1:])).resolve()
+        if not self._source_folder.exists():
+            # to make Python > 3.5 behave the same as Python 3.5
+            raise FileNotFoundError(self._source_folder)
         self._short_name = self._namespace_components[-1]
         self._data_type_to_outputs = dict()  # type: typing.Dict[pydsdl.CompositeType, pathlib.Path]
         self._nested_namespaces = set()  # type: typing.Set[Namespace]
@@ -315,7 +335,8 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
                          root_namespace_dir: str,
                          output_dir: str,
                          extension: str,
-                         namespace_output_stem: str) -> Namespace:
+                         namespace_output_stem: str,
+                         language_context: lang.LanguageContext) -> Namespace:
     """Generates a :class:`nunavut.Namespace` tree.
 
     Given a list of pydsdl types, this method returns a root :class:`nunavut.Namespace`.
@@ -331,7 +352,8 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
             when forming paths, filenames, and extensions.
     :param str namespace_output_stem: The filename stem to give to Namespace output files if
                                       emitted.
-
+    :param lang.LanguageContext language_context: The language context to use when building
+            :class:`nunavut.Namespace` objects.
     :returns: The root :class:`nunavut.Namespace`.
 
     """
@@ -352,7 +374,8 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
                               pathlib.Path(root_namespace_dir),
                               base_path,
                               extension,
-                              namespace_output_stem)
+                              namespace_output_stem,
+                              language_context)
 
         namespaces[str(full_namespace)] = namespace
 

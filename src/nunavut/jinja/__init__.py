@@ -19,7 +19,7 @@ import re
 import pydsdl
 
 import nunavut.generators
-from nunavut.lang import (get_supported_languages, add_language_support)
+import nunavut.lang
 
 from nunavut.jinja.jinja2 import (Environment, FileSystemLoader,
                                   StrictUndefined, TemplateAssertionError,
@@ -141,7 +141,7 @@ class Generator(nunavut.generators.AbstractGenerator):
                                            and the callable as the test.
     :param typing.Dict[str, typing.Any] additional_globals: typing.Optional objects to add to the template
                                             environment globals collection.
-    :param typing.Optional[str] implicit_language_support: A language to install support for directly into the
+    :param typing.Optional[str] target_language_support: A language to install support for directly into the
                                             global environment.
     :raises RuntimeError: If any additional filter or test attempts to replace a built-in
                           or otherwise already defined filter or test.
@@ -347,6 +347,7 @@ class Generator(nunavut.generators.AbstractGenerator):
     def __init__(self,
                  namespace: nunavut.Namespace,
                  generate_namespace_types: bool,
+                 language_context: nunavut.lang.LanguageContext,
                  templates_dir: typing.Union[pathlib.Path, typing.List[pathlib.Path]],
                  followlinks: bool = False,
                  trim_blocks: bool = False,
@@ -354,10 +355,9 @@ class Generator(nunavut.generators.AbstractGenerator):
                  additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
                  additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None,
                  additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
-                 implicit_language_support: typing.Optional[str] = None
                  ):
 
-        super(Generator, self).__init__(namespace, generate_namespace_types)
+        super(Generator, self).__init__(namespace, generate_namespace_types, language_context)
 
         if not isinstance(templates_dir, list):
             templates_dirs = [templates_dir]
@@ -396,13 +396,7 @@ class Generator(nunavut.generators.AbstractGenerator):
                                 trim_blocks=trim_blocks,
                                 auto_reload=False)
 
-        # Add in additional filters and tests for built-in languages this
-        # module supports.
-        for language_name in get_supported_languages():
-            add_language_support(language_name, self._env)
-
-        if implicit_language_support is not None:
-            add_language_support(implicit_language_support, self._env, True)
+        self._add_language_support()
 
         if additional_globals is not None:
             self._env.globals.update(additional_globals)
@@ -438,6 +432,26 @@ class Generator(nunavut.generators.AbstractGenerator):
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
+    def _add_language_support(self) -> None:
+        def add_filters_from_language(env: Environment, language: nunavut.lang.Language, make_implicit: bool) -> None:
+            lang_module = language.get_module()
+            filters = inspect.getmembers(lang_module, inspect.isfunction)
+            for function_tuple in filters:
+                function_name = function_tuple[0]
+                if len(function_name) > 7 and function_name[0:7] == "filter_":
+                    if make_implicit:
+                        env.filters[function_name[7:]] = function_tuple[1]
+                        logging.debug("Adding implicit filter {} for language {}".format(function_name[7:], language.name))
+                    else:
+                        env.filters["{}.{}".format(
+                            language.name, function_name[7:])] = function_tuple[1]
+
+        target_language = self._language_context.get_target_language()
+        if target_language is not None:
+            add_filters_from_language(self._env, target_language, True)
+
+        for supported_language in self._language_context.get_supported_languages().values():
+            add_filters_from_language(self._env, supported_language, False)
 
     def _add_filters_and_tests(self,
                                additional_filters: typing.Optional[typing.Dict[str, typing.Callable]],
