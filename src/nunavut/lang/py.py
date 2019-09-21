@@ -80,7 +80,7 @@ def filter_id(instance: typing.Any, stropping_suffix: str = '_', encoding_prefix
 
        I_like_python
        ZX0038because
-       _if
+       if_
        stropped_if
 
     :param any instance:        Any object or data that either has a name property or can be converted
