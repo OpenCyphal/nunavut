@@ -10,6 +10,7 @@ import pytest
 import fixtures
 import nunavut.version
 
+
 @pytest.fixture
 def gen_paths():  # type: ignore
     from fixtures import GenTestPaths
@@ -55,9 +56,9 @@ def test_list_inputs(gen_paths: fixtures.GenTestPaths) -> None:
         Verifies nnvg's --list-input mode.
     """
     expected_output = sorted([
-            str(gen_paths.templates_dir / pathlib.Path('Any.j2')),
-            str(gen_paths.dsdl_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType.0.8.uavcan')),
-        ])
+        str(gen_paths.templates_dir / pathlib.Path('Any.j2')),
+        str(gen_paths.dsdl_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType.0.8.uavcan')),
+    ])
 
     # when #58 is fixed `str(gen_paths.dsdl_dir / pathlib.Path('scotec') / pathlib.Path('Timer.1.0.uavcan'))`
     # should be added to this list.
@@ -78,11 +79,11 @@ def test_list_inputs_w_namespaces(gen_paths: fixtures.GenTestPaths) -> None:
         This covers some extra logic in nnvg when handling list-input with namespaces.
     """
     expected_output = sorted([
-            str(gen_paths.templates_dir / pathlib.Path('Any.j2')),
-            str(gen_paths.dsdl_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType.0.8.uavcan')),
-            str(gen_paths.dsdl_dir / pathlib.Path('uavcan')),
-            str(gen_paths.dsdl_dir / pathlib.Path('uavcan') / pathlib.Path('test'))
-        ])
+        str(gen_paths.templates_dir / pathlib.Path('Any.j2')),
+        str(gen_paths.dsdl_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType.0.8.uavcan')),
+        str(gen_paths.dsdl_dir / pathlib.Path('uavcan')),
+        str(gen_paths.dsdl_dir / pathlib.Path('uavcan') / pathlib.Path('test'))
+    ])
 
     # when #58 is fixed `str(gen_paths.dsdl_dir / pathlib.Path('scotec') / pathlib.Path('Timer.1.0.uavcan'))`
     # and `str(gen_paths.dsdl_dir / pathlib.Path('scotec')` should be added to this list.
@@ -104,8 +105,8 @@ def test_list_outputs(gen_paths: fixtures.GenTestPaths) -> None:
         Verifies nnvg's --list-output mode.
     """
     expected_output = sorted([
-            str(gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType_0_8.json')),
-        ])
+        str(gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType_0_8.json')),
+    ])
 
     nnvg_args = ['--templates', str(gen_paths.templates_dir),
                  '-O', str(gen_paths.out_dir),
@@ -128,3 +129,23 @@ def test_version(gen_paths: fixtures.GenTestPaths) -> None:
     completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8")
     structured_string = '.'.join(map(str, nunavut.version.__version__))
     assert structured_string == completed
+
+
+def test_target_language(gen_paths: fixtures.GenTestPaths) -> None:
+    """
+        Verifies the behavior when target language support is provided.
+    """
+    expected_output = sorted([
+        str(gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp')),
+    ])
+
+    nnvg_args = ['--templates', str(gen_paths.templates_dir),
+                 '-O', str(gen_paths.out_dir),
+                 '--target-language', 'cpp',
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 '--list-outputs',
+                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    completed_wo_empty = sorted([i for i in completed if len(i) > 0])
+    assert expected_output == sorted(completed_wo_empty)

@@ -11,6 +11,7 @@ import json
 
 from pydsdl import read_namespace
 from nunavut import build_namespace_tree, Namespace
+from nunavut.lang import LanguageContext
 from nunavut.jinja import Generator
 
 
@@ -40,12 +41,14 @@ def test_bfs_of_type_for_template(gen_paths):  # type: ignore
     """ Verifies that our template to type lookup logic does a breadth-first search for a valid
     template when searching type names.
     """
+    language_context = LanguageContext()
     empty_namespace = Namespace('',
                                 gen_paths.dsdl_dir,
                                 gen_paths.out_dir,
                                 '.h',
-                                '_')
-    generator = Generator(empty_namespace, False, gen_paths.templates_dir)
+                                '_',
+                                language_context)
+    generator = Generator(empty_namespace, False, language_context, gen_paths.templates_dir)
     subject = d()
     template_file = generator.filter_type_to_template(subject)
     assert str(Path('c').with_suffix(Generator.TEMPLATE_SUFFIX)) == template_file
@@ -59,12 +62,14 @@ def test_one_template(gen_paths):  # type: ignore
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     root_namespace = str(root_namespace_dir)
     serializable_types = read_namespace(root_namespace, [])
+    language_context = LanguageContext()
     namespace = build_namespace_tree(serializable_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      '.json',
-                                     '_')
-    generator = Generator(namespace, False, gen_paths.templates_dir)
+                                     '_',
+                                     language_context)
+    generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
     generator.generate_all(False)
 
     outfile = gen_paths.find_outfile_in_namespace("uavcan.time.TimeSystem", namespace)
@@ -84,12 +89,14 @@ def test_get_templates(gen_paths):  # type: ignore
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     root_namespace = str(root_namespace_dir)
     serializable_types = read_namespace(root_namespace, [])
+    language_context = LanguageContext()
     namespace = build_namespace_tree(serializable_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      '.json',
-                                     '_')
-    generator = Generator(namespace, False, gen_paths.templates_dir)
+                                     '_',
+                                     language_context)
+    generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
 
     templates = generator.get_templates()
 

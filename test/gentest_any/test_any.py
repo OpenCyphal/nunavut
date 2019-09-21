@@ -11,6 +11,7 @@ import pytest
 from pydsdl import read_namespace
 from nunavut import build_namespace_tree
 from nunavut.jinja import Generator
+from nunavut.lang import LanguageContext
 
 
 @pytest.fixture
@@ -25,12 +26,14 @@ def test_anygen(gen_paths):  # type: ignore
     """
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     type_map = read_namespace(str(root_namespace_dir), '')
+    language_context = LanguageContext()
     namespace = build_namespace_tree(type_map,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      '.h',
-                                     '_')
-    generator = Generator(namespace, False, gen_paths.templates_dir)
+                                     '_',
+                                     language_context)
+    generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
     generator.generate_all(False)
 
     outfile = gen_paths.find_outfile_in_namespace("uavcan.time.SynchronizedTimestamp", namespace)

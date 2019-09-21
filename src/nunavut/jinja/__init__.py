@@ -19,7 +19,7 @@ import re
 import pydsdl
 
 import nunavut.generators
-from nunavut.jinja.lang import (get_supported_languages, add_language_support)
+import nunavut.lang
 
 from nunavut.jinja.jinja2 import (Environment, FileSystemLoader,
                                   StrictUndefined, TemplateAssertionError,
@@ -86,6 +86,7 @@ class _UniqueNameGenerator:
     This should be made available as a private global "_unique_name_generator" within
     each template and should be reset after completing generation of a type.
     """
+
     def __init__(self) -> None:
         self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, int]]
 
@@ -122,7 +123,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                                            at and from.
     :param bool generate_namespace_types:  typing.Set to true to emit files for namespaces.
                                            False will only generate files for datatypes.
-    :param pathlib.Path templates_dir:     The directory containing the jinja templates.
+    :param typing.Union[pathlib.Path,typing.List[pathlib.Path]] templates_dir:
+                                           The directories containing the jinja templates.
 
     :param bool followlinks:               If True then symbolic links will be followed when
                                            searching for templates.
@@ -137,6 +139,10 @@ class Generator(nunavut.generators.AbstractGenerator):
     :param typing.Dict[str, typing.Callable] additional_tests: typing.Optional jinja tests to add to the
                                            global environment using the key as the test name
                                            and the callable as the test.
+    :param typing.Dict[str, typing.Any] additional_globals: typing.Optional objects to add to the template
+                                            environment globals collection.
+    :param typing.Optional[str] target_language_support: A language to install support for directly into the
+                                            global environment.
     :raises RuntimeError: If any additional filter or test attempts to replace a built-in
                           or otherwise already defined filter or test.
     """
@@ -341,23 +347,31 @@ class Generator(nunavut.generators.AbstractGenerator):
     def __init__(self,
                  namespace: nunavut.Namespace,
                  generate_namespace_types: bool,
-                 templates_dir: pathlib.Path,
+                 language_context: nunavut.lang.LanguageContext,
+                 templates_dir: typing.Union[pathlib.Path, typing.List[pathlib.Path]],
                  followlinks: bool = False,
                  trim_blocks: bool = False,
                  lstrip_blocks: bool = False,
                  additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
-                 additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None
+                 additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None,
+                 additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
                  ):
 
-        super(Generator, self).__init__(namespace, generate_namespace_types)
+        super(Generator, self).__init__(namespace, generate_namespace_types, language_context)
 
-        if templates_dir is None:
-            raise ValueError("Templates directory argument was None")
-        if not pathlib.Path(templates_dir).exists:
-            raise ValueError(
-                "Templates directory {} did not exist?".format(templates_dir))
+        if not isinstance(templates_dir, list):
+            templates_dirs = [templates_dir]
+        else:
+            templates_dirs = templates_dir
 
-        self._templates_dir = templates_dir
+        for templates_dir_item in templates_dirs:
+            if templates_dir_item is None:
+                raise ValueError("Templates directory argument was None")
+            if not pathlib.Path(templates_dir_item).exists:
+                raise ValueError(
+                    "Templates directory {} did not exist?".format(templates_dir_item))
+
+        self._templates_dirs = templates_dirs
 
         self._type_to_template_lookup_cache = dict()  # type: typing.Dict[pydsdl.Any, pathlib.Path]
 
@@ -365,7 +379,7 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         logger.info("Loading templates from {}".format(templates_dir))
 
-        fs_loader = FileSystemLoader([str(templates_dir)], followlinks=followlinks)
+        fs_loader = FileSystemLoader((str(d) for d in self._templates_dirs), followlinks=followlinks)
 
         autoesc = select_autoescape(enabled_extensions=('htm', 'html', 'xml', 'json'),
                                     default_for_string=False,
@@ -382,12 +396,12 @@ class Generator(nunavut.generators.AbstractGenerator):
                                 trim_blocks=trim_blocks,
                                 auto_reload=False)
 
-        self._add_filters_and_tests(additional_filters, additional_tests)
+        self._add_language_support()
 
-        # Add in additional filters and tests for built-in languages this
-        # module supports.
-        for language_name in get_supported_languages():
-            add_language_support(language_name, self._env)
+        if additional_globals is not None:
+            self._env.globals.update(additional_globals)
+
+        self._add_filters_and_tests(additional_filters, additional_tests)
 
     def get_templates(self) -> typing.List[pathlib.Path]:
         """
@@ -398,8 +412,9 @@ class Generator(nunavut.generators.AbstractGenerator):
         """
         if self._templates_list is None:
             self._templates_list = []
-            for template in self._templates_dir.glob("**/*{}".format(self.TEMPLATE_SUFFIX)):
-                self._templates_list.append(template)
+            for template_dir in self._templates_dirs:
+                for template in template_dir.glob("**/*{}".format(self.TEMPLATE_SUFFIX)):
+                    self._templates_list.append(template)
         return self._templates_list
 
     def generate_all(self,
@@ -417,6 +432,26 @@ class Generator(nunavut.generators.AbstractGenerator):
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
+    def _add_language_support(self) -> None:
+        def add_filters_from_language(env: Environment, language: nunavut.lang.Language, make_implicit: bool) -> None:
+            lang_module = language.get_module()
+            filters = inspect.getmembers(lang_module, inspect.isfunction)
+            for function_tuple in filters:
+                function_name = function_tuple[0]
+                if len(function_name) > 7 and function_name[0:7] == "filter_":
+                    if make_implicit:
+                        env.filters[function_name[7:]] = function_tuple[1]
+                        logging.debug("Adding implicit filter {} for language {}".format(function_name[7:], language.name))
+                    else:
+                        env.filters["{}.{}".format(
+                            language.name, function_name[7:])] = function_tuple[1]
+
+        target_language = self._language_context.get_target_language()
+        if target_language is not None:
+            add_filters_from_language(self._env, target_language, True)
+
+        for supported_language in self._language_context.get_supported_languages().values():
+            add_filters_from_language(self._env, supported_language, False)
 
     def _add_filters_and_tests(self,
                                additional_filters: typing.Optional[typing.Dict[str, typing.Callable]],
@@ -426,10 +461,11 @@ class Generator(nunavut.generators.AbstractGenerator):
         member_functions = inspect.getmembers(self, inspect.isroutine)
         for function_tuple in member_functions:
             function_name = function_tuple[0]
+            function_ref = function_tuple[1]
             if len(function_name) > 3 and function_name[0:3] == "is_":
-                self._env.tests[function_name[3:]] = function_tuple[1]
+                self._env.tests[function_name[3:]] = function_ref
             if len(function_name) > 7 and function_name[0:7] == "filter_":
-                self._env.filters[function_name[7:]] = function_tuple[1]
+                self._env.filters[function_name[7:]] = function_ref
 
         if additional_filters is not None:
             for name, additional_filter in additional_filters.items():

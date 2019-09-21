@@ -1,6 +1,7 @@
 ****************************************************
-:mod:`nunavut.jinja.lang.py` -- Python Support
+:mod:`nunavut.lang.cpp` -- C++ Support
 ****************************************************
 
-.. automodule:: nunavut.jinja.lang.py
+.. automodule:: nunavut.lang.cpp
    :members:
+

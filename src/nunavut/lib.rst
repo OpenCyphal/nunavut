@@ -34,16 +34,16 @@ nunavut (library)
    :members:
 
 *************************************
-:mod:`nunavut.jinja.lang`
+:mod:`nunavut.lang`
 *************************************
 
-.. automodule:: nunavut.jinja.lang
+.. automodule:: nunavut.lang
    :members:
 
 .. toctree::
    :maxdepth: 2
 
-   jinja/lang/js
-   jinja/lang/c
-   jinja/lang/cpp
-   jinja/lang/py
+   lang/js
+   lang/c
+   lang/cpp
+   lang/py

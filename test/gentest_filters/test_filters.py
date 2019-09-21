@@ -9,6 +9,7 @@ import json
 
 from pydsdl import read_namespace
 from nunavut import build_namespace_tree, Namespace
+from nunavut.lang import LanguageContext
 from nunavut.jinja import Generator
 from nunavut.jinja.jinja2.exceptions import TemplateAssertionError
 
@@ -28,13 +29,15 @@ def test_template_assert(gen_paths):  # type: ignore
     root_path = str(gen_paths.dsdl_dir / Path("uavcan"))
     output_path = gen_paths.out_dir / 'assert'
     compound_types = read_namespace(root_path, [])
+    language_context = LanguageContext()
     namespace = build_namespace_tree(compound_types,
                                      root_path,
                                      output_path,
                                      '.json',
-                                     '_')
+                                     '_',
+                                     language_context)
     template_path = gen_paths.templates_dir / Path('assert')
-    generator = Generator(namespace, False, template_path)
+    generator = Generator(namespace, False, language_context, template_path)
     try:
         generator.generate_all()
         assert False
@@ -49,13 +52,15 @@ def test_type_to_include(gen_paths):  # type: ignore
     root_path = str(gen_paths.dsdl_dir / Path("uavcan"))
     output_path = gen_paths.out_dir / 'type_to_include'
     compound_types = read_namespace(root_path, [])
+    language_context = LanguageContext()
     namespace = build_namespace_tree(compound_types,
                                      root_path,
                                      output_path,
                                      '.json',
-                                     '_')
+                                     '_',
+                                     language_context)
     template_path = gen_paths.templates_dir / Path('type_to_include')
-    generator = Generator(namespace, False, template_path)
+    generator = Generator(namespace, False, language_context, template_path)
     generator.generate_all()
     outfile = gen_paths.find_outfile_in_namespace("uavcan.time.SynchronizedTimestamp", namespace)
 
@@ -72,14 +77,17 @@ def test_custom_filter_and_test(gen_paths):  # type: ignore
     root_path = str(gen_paths.dsdl_dir / Path("uavcan"))
     output_path = gen_paths.out_dir / 'filter_and_test'
     compound_types = read_namespace(root_path, [])
+    language_context = LanguageContext()
     namespace = build_namespace_tree(compound_types,
                                      root_path,
                                      output_path,
                                      '.json',
-                                     '_')
+                                     '_',
+                                     language_context)
     template_path = gen_paths.templates_dir / Path('custom_filter_and_test')
     generator = Generator(namespace,
                           False,
+                          language_context,
                           template_path,
                           additional_filters={'custom_filter': lambda T: 'hi mum'},
                           additional_tests={'custom_test': lambda T: True})
@@ -98,11 +106,13 @@ def test_custom_filter_and_test(gen_paths):  # type: ignore
 
 
 def test_custom_filter_and_test_redefinition(gen_paths):  # type: ignore
-    namespace = Namespace('', Path(), PurePath(), '.txt', '_')
+    language_context = LanguageContext()
+    namespace = Namespace('', Path(), PurePath(), '.txt', '_', language_context)
 
     with pytest.raises(RuntimeError):
         Generator(namespace,
                   False,
+                  language_context,
                   Path(),
                   additional_filters={'type_to_include_path': lambda T: ''},
                   additional_tests={'custom_test': lambda T: False})
@@ -110,6 +120,7 @@ def test_custom_filter_and_test_redefinition(gen_paths):  # type: ignore
     with pytest.raises(RuntimeError):
         Generator(namespace,
                   False,
+                  language_context,
                   Path(),
                   additional_filters={'custom_filter': lambda T: ''},
                   additional_tests={'primitive': lambda T: False})

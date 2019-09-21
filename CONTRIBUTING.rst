@@ -36,110 +36,30 @@ recommend the following environment for vscode::
 Visual Studio Code
 ================================================
 
-If you use vscode for python development you'll need to tweak the following settings to get all the
-linters and previewers to work.
+To use vscode you'll need:
 
-First off, use a `virtualenv`_, installing the project's :code:`requirements.txt` and an editable
-version of the package itself.
+1. vscode
+2. install vscode commandline (`Shell Command: Install`)
+3. virtualenv
 
-This will enable running pytest from vscode. Now you can launch vscode for this repository::
+Do::
 
+    cd path/to/nunavut
+    git submodule update --init --recursive
+    virtualenv -p python3.7 .pyenv
+    source .pyenv/bin/activate
+    pip install -r requirements.txt
+    pip -e install .
     code .
 
-For the python interpreter select the local .venv and set flake8 and mypy as your linters (we don't
-use pylint for this project). The rest of your python environment should now be functional.
-
-
-debugging
-------------------------------------------------
-
-The Python plugin for vscode comes with a full-featured Python debugger. To setup a debug session
-for nnvg open the launch.json for your workspace and add a configuration like the following
-to the configurations array::
-
-    {
-        "name": "Python: nnvg",
-        "type": "python",
-        "request": "launch",
-        "program": "${workspaceFolder}/src/nnvg",
-        "cwd": "${workspaceFolder}",
-        "console": "integratedTerminal",
-        "args": ["--templates", "test/gentest_dsdl/templates",
-                    "--output-extension", ".h",
-                    "-v",
-                    "test/gentest_dsdl/dsdl/uavcan"
-                ]
-    }
+Then install recommended extensions.
 
 .. note ::
 
-    Note that each argument part must be a separate entry in the args array. Using a single space
-    separated string does not work as you might expect since this results in a single string that
-    contains spaces being passed as an argument.
-
-The output for this example will appear under the default output directory for nnvg
-:code:`${workspaceFolder}/nunavut_out`
-
-You can setup a debug session for unit tests using a similar launch configuration that invokes the
-:code:`pytest` module. For example::
-
-    {
-        "name": "Python: pyunit",
-        "type": "python",
-        "request": "launch",
-        "module": "pytest",
-        "cwd": "${workspaceFolder}/test",
-        "console": "integratedTerminal",
-        "args": ["--basetemp=${workspaceFolder}/build",
-                 "-p", "no:cacheprovider",
-                 "-k", "gentest_any"]
-    }
-
-...where :code:`-k` is a pattern to filter for a specific test or set of tests (Omit all args to
-debug all tests). The :code:`--basetemp` and :code:`-p no:cacheprovider` arguments prevent local
-testing from conflicting with tox test runs.
-
-
-.vscode/settings.json
-------------------------------------------------
-
-Here are some excerpts from my :code:`.vscode/settings.json` to help you get your linting,
-unit-tests, and documentation previews all up and running.
-
-I always work in a virtual environment. This selects the python version from that environment. ::
-
-    "python.pythonPath": ".pyenv/bin/python3.7",
-
-We use flake8 and mypy as part of the build. Enabling them in your IDE will give you real-time
-feedback which makes your tox builds less interesting. ::
-
-    "python.linting.pylintEnabled": false,
-    "python.linting.mypyEnabled": true,
-    "python.linting.flake8Enabled": true,
-    "python.linting.enabled": true,
-
-I've found the auto-discovery and pytest integration in vscode is very finicky. First, make sure
-you've done a :code:`pip install -e .` for this repo (as described in the virtualenv section above).
-After that be sure you use these exact settings and it should work ::
-
-    "python.testing.cwd": "${workspaceFolder}",
-    "python.testing.unittestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
-    "python.testing.pyTestEnabled": true,
-    "python.testing.pyTestArgs": ["--rootdir=${workspaceFolder}",
-                                  "${workspaceFolder}/test"],
-
-
-You'll need to tweak two settings to get restructured text preview to work. ::
-
-    "restructuredtext.sphinxBuildPath": "sphinx-build",
-    "restructuredtext.confPath": "${workspaceFolder}/src"
-
-If you installed everything in :code:`requirements.txt` then the python extension for vscode
-will lint your .rst as you type and will support a fairly accurate reStructuredText preview.
-
-Hopefully that helps. Let us know if these settings stop working.
-
+    Until/unless vscode-python Issue 7207 (https://github.com/microsoft/vscode-python/issues/7207/) is fixed
+    you won't be able to use the test auto discovery feature of the ms-python extension. Because of this the
+    checked-in settings.json has pytestEnabled set to false. You can still use the `nunavut-pytest` task to
+    run these tests and the tasks.json define pytest debug configurations.
 
 ************************************************
 Running The Tests
@@ -150,7 +70,7 @@ and running do::
 
     git submodule update --init --recursive
     docker pull uavcan/toxic:py35-py38
-    docker run --rm -it -v /path/to/nunavut:/repo uavcan/toxic:py35-py38
+    docker run --rm -it -v `pwd`:/repo uavcan/toxic:py35-py38
     tox
 
 import file mismatch
@@ -172,12 +92,12 @@ is interfering with your docker test run. To work around this simply delete the 
 example::
 
     #! /usr/bin/env bash
-    cleandirs="src test"
+    clean_dirs="src test"
 
-    for cleandir in $cleandirs
+    for clean_dir in $clean_dirs
     do
-        find $cleandir -name __pycache__ | xargs rm -rf
-        find $cleandir -name \.coverage\* | xargs rm -f
+        find $clean_dir -name __pycache__ | xargs rm -rf
+        find $clean_dir -name \.coverage\* | xargs rm -f
     done
 
 Note that we also delete the .coverage intermediates since they may contain different paths between
@@ -192,7 +112,7 @@ as part of our tox build. This means you can view a local copy after completing 
 test run (See `Running The Tests`_) or do
 :code:`docker run --rm -t -v /path/to/nunavut:/repo uavcan/toxic:py35-py38 /bin/sh -c
 "tox -e docs"` to build the docs target.
-You can open the index.html under .tox/docs/tmp/index.html or run a local webserver::
+You can open the index.html under .tox/docs/tmp/index.html or run a local web-server::
 
     python -m http.server --directory .tox/docs/tmp &
     open http://localhost:8000/index.html
@@ -211,7 +131,7 @@ Coverage
 ================================================
 
 We generate a local html coverage report. You can open the index.html under .tox/report/tmp
-or run a local webserver::
+or run a local web-server::
 
     python -m http.server --directory .tox/report/tmp &
     open http://localhost:8000/index.html

@@ -557,7 +557,7 @@ def do_indent(
         Rename the ``indentfirst`` argument to ``first``.
     """
     if indentfirst is not None:
-        warnings.warn(DeprecationWarning(
+        warnings.warning(DeprecationWarning(
             'The "indentfirst" argument is renamed to "first".'
         ), stacklevel=2)
         first = indentfirst

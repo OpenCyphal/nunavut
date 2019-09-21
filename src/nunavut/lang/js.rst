@@ -1,6 +1,6 @@
 ****************************************************
-:mod:`nunavut.jinja.lang.c` -- C Support
+:mod:`nunavut.lang.js` -- JavaScript Support
 ****************************************************
 
-.. automodule:: nunavut.jinja.lang.c
+.. automodule:: nunavut.lang.js
    :members:

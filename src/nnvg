@@ -28,6 +28,7 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
     import pydsdl
     import nunavut
     import nunavut.jinja
+    import nunavut.lang
 
     def _build_ext_program_postprocessor(program: str, args: argparse.Namespace) -> nunavut.postprocessors.FilePostProcessor:
         subprocess_args = [program]
@@ -54,6 +55,21 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
         return post_processors
 
     #
+    # nunavut: target language(s)
+    #
+
+    if hasattr(args, 'target_language'):
+        target_language = args.target_language
+        if not hasattr(args, 'output_extension') or args.output_extension is None:
+            output_extension = nunavut.lang.LanguageContext.get_default_output_extension(target_language)
+        else:
+            output_extension = args.output_extension
+    else:
+        output_extension = args.output_extension
+        target_language = None
+    language_context = nunavut.lang.LanguageContext(target_language)
+
+    #
     # nunavut : parse
     #
     type_map = pydsdl.read_namespace(args.root_namespace, extra_includes)
@@ -62,8 +78,9 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
         type_map,
         args.root_namespace,
         args.outdir,
-        args.output_extension,
-        args.namespace_output_stem)
+        output_extension,
+        args.namespace_output_stem,
+        language_context)
 
     #
     # nunavut : generate
@@ -77,6 +94,7 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
 
     generator = nunavut.jinja.Generator(root_namespace,
                                         args.generate_namespace_types,
+                                        language_context,
                                         pathlib.Path(args.templates),
                                         trim_blocks=args.trim_blocks,
                                         lstrip_blocks=args.lstrip_blocks)
@@ -173,8 +191,13 @@ separated by colons ":"'''
         else:
             return raw_arg
 
-    parser.add_argument('--output-extension', '-e', default='', type=extension_type,
-                        required='--list-inputs' not in sys.argv,
+    parser.add_argument('--target-language', '-l',
+                        help='''Language support to install into the templates.
+If provided then the output extension (--e) can be inferred otherwise the output
+extension must be provided.''')
+
+    parser.add_argument('--output-extension', '-e', type=extension_type,
+                        required='--list-inputs' not in sys.argv and '--target-language' not in sys.argv and '-l' not in sys.argv,
                         help='The extension to use for generated files.')
 
     parser.add_argument('--dry-run', '-d', action='store_true',

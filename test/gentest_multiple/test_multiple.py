@@ -11,6 +11,7 @@ import json
 
 from pydsdl import read_namespace, FrontendError
 from nunavut import build_namespace_tree
+from nunavut.lang import LanguageContext
 from nunavut.jinja import Generator
 
 import fixtures
@@ -38,12 +39,14 @@ def test_three_roots(gen_paths):  # type: ignore
     includes = [str(gen_paths.dsdl_dir / Path("huckco")),
                 str(gen_paths.dsdl_dir / Path("esmeinc"))]
     compound_types = read_namespace(root_namespace, includes, allow_unregulated_fixed_port_id=True)
+    language_context = LanguageContext()
     namespace = build_namespace_tree(compound_types,
                                      root_namespace,
                                      gen_paths.out_dir,
                                      '.json',
-                                     '_')
-    generator = Generator(namespace, False, gen_paths.templates_dir)
+                                     '_',
+                                     language_context)
+    generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
     generator.generate_all(False)
 
     # Now read back in and verify
