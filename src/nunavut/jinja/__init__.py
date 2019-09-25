@@ -401,6 +401,7 @@ class Generator(nunavut.generators.AbstractGenerator):
         if additional_globals is not None:
             self._env.globals.update(additional_globals)
 
+        self._add_instance_tests_from_root(pydsdl.SerializableType)
         self._add_filters_and_tests(additional_filters, additional_tests)
 
     def get_templates(self) -> typing.List[pathlib.Path]:
@@ -432,6 +433,11 @@ class Generator(nunavut.generators.AbstractGenerator):
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
+    def _add_instance_tests_from_root(self, root: typing.Type[object]) -> None:
+        self._env.tests[root.__name__] = lambda x: isinstance(x, root)
+        for derived in root.__subclasses__():
+            self._add_instance_tests_from_root(derived)
+
     def _add_language_support(self) -> None:
         def add_filters_from_language(env: Environment, language: nunavut.lang.Language, make_implicit: bool) -> None:
             lang_module = language.get_module()
