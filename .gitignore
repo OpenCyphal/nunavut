@@ -32,9 +32,6 @@ dist
 .pydevproject
 .gdbinit
 
-# vsstudio code
-.vscode*
-
 # vagrant
 .vagrant
 

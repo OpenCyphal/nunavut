@@ -49,6 +49,13 @@ See :mod:`nunavut.jinja` for full documentation on these. For example::
     # typename filter returns the name of the value's type.
     {{ field | typename }}
 
+Also, for every pydsdl type there is a test automatically appended to the global environment. This
+means you can do::
+
+    {% if field is IntegerType %}
+        // stuff for integer fields
+    {% endif %}
+
 C Filters
 -------------------------------------------------
 
