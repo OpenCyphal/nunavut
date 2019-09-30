@@ -1,0 +1,19 @@
+steps:
+  - label: ':hammer: tox build and test'
+    id: toxic-docker
+    command: "tox"
+    artifact_paths: 
+      - ".tox/report/tmp/*"
+      - ".tox/mypy/tmp/*"
+      - ".tox/flake8/tmp/*"
+      - ".tox/dist/*.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/toxic:py35-py38-sq"
+          propagate-environment: true
+    env:
+      VERBOSE: 1
+    agents:
+      queue: 'default'
+    timeout_in_minutes: 15
