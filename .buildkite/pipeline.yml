@@ -10,7 +10,7 @@ steps:
     plugins:
       - docker#v3.3.0:
           workdir: /repo
-          image: "uavcan/toxic:py35-py38-sq"
+          image: "uavcan/toxic:py35-py38"
           propagate-environment: true
     env:
       VERBOSE: 1
