@@ -27,7 +27,7 @@ apt-get update
 apt-get -y install software-properties-common
 apt-get -y install git
 
-# deaksnakes maintains a bunch of python versions for Ubuntu.
+# deadsnakes maintains a bunch of python versions for Ubuntu.
 add-apt-repository -y ppa:deadsnakes/ppa
 apt-get update
 apt-get -y install python3.5
