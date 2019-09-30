@@ -2,7 +2,7 @@ steps:
   - label: ':hammer: tox build and test'
     id: toxic-docker
     command: "tox"
-    artifact_paths: 
+    artifact_paths:
       - ".tox/report/tmp/*"
       - ".tox/mypy/tmp/*"
       - ".tox/flake8/tmp/*"
@@ -12,6 +12,11 @@ steps:
           workdir: /repo
           image: "uavcan/toxic:py35-py38"
           propagate-environment: true
+          environment:
+            - "CODACY_PROJECT_TOKEN"
+            - "PYPI_PASSWORD"
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
     env:
       VERBOSE: 1
     agents:
