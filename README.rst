@@ -110,9 +110,9 @@ Nunavut is part of the UAVCAN project:
     :alt: Codacy coverage reports
 .. _badge_coverage: https://www.codacy.com/app/UAVCAN/nunavut?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=UAVCAN/nunavut&amp;utm_campaign=Badge_Coverage
 
-.. |badge_build| image:: https://travis-ci.org/UAVCAN/nunavut.svg?branch=master
+.. |badge_build| image:: https://badge.buildkite.com/7cd0e4b8bc53842e621d316eba6a79be4ee710c30af5fb7845.svg
     :alt: Build status
-.. _badge_build: https://travis-ci.org/UAVCAN/nunavut
+.. _badge_build: https://buildkite.com/uavcan/nunavut
 
 .. |badge_pypi_support| image:: https://img.shields.io/pypi/pyversions/nunavut.svg
     :alt: Supported Python Versions
