@@ -137,7 +137,7 @@ class Namespace(pydsdl.Any):
                  full_namespace: str,
                  root_namespace_dir: pathlib.Path,
                  base_output_path: pathlib.PurePath,
-                 extension: str,
+                 extension: typing.Optional[str],
                  namespace_file_stem: str,
                  language_context: lang.LanguageContext):
         self._parent = None  # type: typing.Optional[Namespace]
@@ -149,7 +149,11 @@ class Namespace(pydsdl.Any):
             source_namespace_components.append(component)
         self._full_namespace = '.'.join(self._namespace_components)
         self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components))
-        self._output_path = pathlib.Path(self._output_folder / pathlib.PurePath(namespace_file_stem).with_suffix(extension))
+        output_path = self._output_folder / pathlib.PurePath(namespace_file_stem)
+        if extension is not None:
+            self._output_path = output_path.with_suffix(extension)
+        else:
+            self._output_path = output_path
         self._source_folder = pathlib.Path(root_namespace_dir / pathlib.PurePath(*source_namespace_components[1:])).resolve()
         if not self._source_folder.exists():
             # to make Python > 3.5 behave the same as Python 3.5
@@ -275,10 +279,12 @@ class Namespace(pydsdl.Any):
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
-    def _add_data_type(self, dsdl_type: pydsdl.CompositeType, extension: str) -> None:
+    def _add_data_type(self, dsdl_type: pydsdl.CompositeType, extension: typing.Optional[str]) -> None:
         filestem = "{}_{}_{}".format(
             dsdl_type.short_name, dsdl_type.version.major, dsdl_type.version.minor)
-        output_path = pathlib.Path(self._output_folder / pathlib.PurePath(filestem).with_suffix(extension))
+        output_path = self._output_folder / pathlib.PurePath(filestem)
+        if extension is not None:
+            output_path = output_path.with_suffix(extension)
         self._data_type_to_outputs[dsdl_type] = output_path
 
     def _add_nested_namespace(self, nested: 'Namespace') -> None:
