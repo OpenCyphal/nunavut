@@ -149,3 +149,16 @@ def test_target_language(gen_paths: fixtures.GenTestPaths) -> None:
     completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
     completed_wo_empty = sorted([i for i in completed if len(i) > 0])
     assert expected_output == sorted(completed_wo_empty)
+
+
+def test_issue_73(gen_paths: fixtures.GenTestPaths) -> None:
+    """
+        Verify that https://github.com/UAVCAN/nunavut/issues/73 hasn't regressed.
+    """
+    nnvg_args = ['--templates', str(gen_paths.templates_dir),
+                 '-O', str(gen_paths.out_dir),
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 '--list-inputs',
+                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')

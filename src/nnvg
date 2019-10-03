@@ -58,7 +58,7 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
     # nunavut: target language(s)
     #
 
-    if hasattr(args, 'target_language'):
+    if hasattr(args, 'target_language') and args.target_language is not None:
         target_language = args.target_language
         if not hasattr(args, 'output_extension') or args.output_extension is None:
             output_extension = nunavut.lang.LanguageContext.get_default_output_extension(target_language)
