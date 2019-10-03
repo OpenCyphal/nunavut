@@ -146,7 +146,6 @@ def _make_parser() -> argparse.ArgumentParser:
 
     nnvg --outdir include --templates c_jinja -e .h dsdl
 
-----
 '''
 
     parser = argparse.ArgumentParser(

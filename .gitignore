@@ -23,6 +23,7 @@ _build
 .env*
 dist
 .clear*
+.DS_Store
 
 # Eclipse
 .metadata

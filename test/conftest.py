@@ -51,7 +51,7 @@ class GenTestPaths:
         self.dsdl_dir = self.test_dir / pathlib.Path('dsdl')
 
         self._keep_temp = keep_temporaries
-        self._out_dir = None  # type: typing.Optional
+        self._out_dir = None  # type: typing.Optional[typing.Any]
         self._build_dir = None  # type: typing.Optional[pathlib.Path]
         self._dsdl_dir = None  # type: typing.Optional[pathlib.Path]
         print('Paths for test "{}" under dir {}'.format(self.test_name, self.test_dir))
@@ -65,10 +65,10 @@ class GenTestPaths:
         if self._out_dir is None:
             if self._keep_temp:
                 self._out_dir = lambda: None
-                setattr(self._out_dir, 'name', tempfile.mkdtemp(dir=str(self.build_dir)))
+                test_output_dir = self._ensure_dir(self.build_dir / pathlib.Path(self.test_name))
+                setattr(self._out_dir, 'name', str(test_output_dir))
             else:
                 self._out_dir = tempfile.TemporaryDirectory(dir=str(self.build_dir))
-            print('GenTestPaths.out_dir is {} for test {}'.format(self._out_dir.name, self.test_name))
         return pathlib.Path(self._out_dir.name)
 
     @property
@@ -105,6 +105,9 @@ def pytest_addoption(parser):  # type: ignore
         If set then the temporary directory used to generate files for each test will be left after
         the test has completed. Normally this directory is temporary and therefore cleaned up automatically.
 
-        **wWARNING**
+        :: WARNING ::
         This will leave orphaned files on disk. They won't be big but there will be a lot of them.
+
+        :: WARNING ::
+        Do not run tests in parallel when using this option.
     '''))

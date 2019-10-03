@@ -26,6 +26,8 @@ version = "{}.{}".format(_version_tuple[0], _version_tuple[1])
 # The full version, including alpha/beta/rc tags
 release = __version__
 
+exclude_patterns = []
+
 
 # -- General configuration ---------------------------------------------------
 
@@ -43,11 +45,12 @@ extensions = [
     'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'sphinxarg.ext'
+    'sphinxarg.ext',
+    'sphinx.ext.intersphinx'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['docs/templates']
+templates_path = ['static/templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -65,13 +68,8 @@ master_doc = 'index'
 # Usually you set "language" from the command line for these cases.
 language = None
 
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []  # type: ignore
-
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = None
+pygments_style = 'monokai'
 
 # Classes should inherit documentation from ancestors.
 autodoc_inherit_docstrings = True
@@ -100,13 +98,13 @@ html_context = {
     "github_user": "UAVCAN",
     "github_repo": "nunavut",
     "github_version": "master",
-    "conf_py_path": "/src/",
+    "conf_py_path": "docs/",
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['docs']
+html_static_path = ['static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -118,9 +116,9 @@ html_static_path = ['docs']
 #
 # html_sidebars = {}
 
-html_logo = 'docs/images/nunavut_logo.svg'
+html_logo = 'static/images/nunavut_logo.svg'
 
-html_favicon = 'docs/images/uavcan_logo_icon.svg'
+html_favicon = 'static/images/uavcan_logo_icon.svg'
 
 html_css_files = ['css/custom.css']
 
@@ -204,7 +202,8 @@ epub_exclude_files = ['search.html']
 # -- Options for intersphinx extension ---------------------------------------
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None)
+    'python': ('https://docs.python.org/3', None),
+    'jinja2': ('http://jinja.pocoo.org/docs/2.10', None)
 }
 
 

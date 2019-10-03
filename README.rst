@@ -84,8 +84,8 @@ Nunavut is part of the UAVCAN project:
 .. _`UAVCAN`: http://uavcan.org
 .. _`UAVCAN website`: http://uavcan.org
 .. _`UAVCAN forum`: https://forum.uavcan.org
-.. _`nunavut`: https://nunavut.readthedocs.io/en/latest/nunavut/lib.html
-.. _`nnvg`: https://nunavut.readthedocs.io/en/latest/index.html
+.. _`nunavut`: https://nunavut.readthedocs.io/en/latest/nunavut/api/modules.html
+.. _`nnvg`: https://nunavut.readthedocs.io/en/latest/cli.html
 .. _`pydsdl`: https://pypi.org/project/pydsdl
 .. _`nunavut template guide`: https://nunavut.readthedocs.io/en/latest/templates.html
 .. _`nunavut contributors guide`: https://nunavut.readthedocs.io/en/latest/dev.html
