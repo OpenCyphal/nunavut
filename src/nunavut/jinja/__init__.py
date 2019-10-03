@@ -21,7 +21,7 @@ import pydsdl
 import nunavut.generators
 import nunavut.lang
 
-from nunavut.jinja.jinja2 import (Environment, FileSystemLoader,
+from nunavut.jinja.jinja2 import (Environment, FileSystemLoader, ChoiceLoader, PackageLoader,
                                   StrictUndefined, TemplateAssertionError,
                                   nodes, select_autoescape, Template)
 from nunavut.jinja.jinja2.ext import Extension
@@ -381,11 +381,21 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         fs_loader = FileSystemLoader((str(d) for d in self._templates_dirs), followlinks=followlinks)
 
+        target_language = self._language_context.get_target_language()
+
+        if target_language is not None:
+            template_loader = ChoiceLoader([
+                fs_loader,
+                PackageLoader(target_language.get_templates_package_name())
+            ])
+        else:
+            template_loader = fs_loader
+
         autoesc = select_autoescape(enabled_extensions=('htm', 'html', 'xml', 'json'),
                                     default_for_string=False,
                                     default=False)
 
-        self._env = Environment(loader=fs_loader,  # nosec
+        self._env = Environment(loader=template_loader,  # nosec
                                 extensions=[nunavut.jinja.jinja2.ext.do,
                                             nunavut.jinja.jinja2.ext.loopcontrols,
                                             JinjaAssert],

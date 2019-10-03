@@ -6,8 +6,9 @@
 
 import pytest
 import json
+import typing
 
-from pydsdl import read_namespace
+from pydsdl import read_namespace, CompositeType
 from nunavut import Namespace, build_namespace_tree
 from nunavut.lang import LanguageContext
 from nunavut.jinja import Generator
@@ -21,22 +22,22 @@ def gen_paths():  # type: ignore
     return GenTestPaths(__file__)
 
 
-def gen_test_namespace(gen_paths, namespace_output_stem, language_context=LanguageContext()):  # type: ignore
+def gen_test_namespace(gen_paths: typing.Any, language_context: LanguageContext) -> \
+        typing.Tuple[Namespace, str, typing.List[CompositeType]]:
     root_namespace_path = str(gen_paths.dsdl_dir / Path("scotec"))
     includes = [str(gen_paths.dsdl_dir / Path("uavcan"))]
     compound_types = read_namespace(root_namespace_path, includes, allow_unregulated_fixed_port_id=True)
     return build_namespace_tree(compound_types,
                                 root_namespace_path,
                                 gen_paths.out_dir,
-                                '.json',
-                                namespace_output_stem,
                                 language_context), root_namespace_path, compound_types
 
 
 def test_namespace_eq(gen_paths):  # type: ignore
     """Verify the get_all_namespaces method in Namespace"""
-    namespace0, _, _ = gen_test_namespace(gen_paths, '_')
-    namespace1 = Namespace('', gen_paths.dsdl_dir, gen_paths.out_dir, '.txt', '_', LanguageContext())
+    language_context = LanguageContext(extension='.json')
+    namespace0, _, _ = gen_test_namespace(gen_paths, language_context)
+    namespace1 = Namespace('', gen_paths.dsdl_dir, gen_paths.out_dir, language_context)
     assert namespace0 == namespace0
     assert namespace1 == namespace1
     assert namespace0 != namespace1
@@ -45,7 +46,7 @@ def test_namespace_eq(gen_paths):  # type: ignore
 
 def test_get_all_namespaces(gen_paths):  # type: ignore
     """Verify the get_all_namespaces method in Namespace"""
-    namespace, _, _ = gen_test_namespace(gen_paths, '_')
+    namespace, _, _ = gen_test_namespace(gen_paths, LanguageContext(extension='.json'))
     index = dict()
     for ns, path in namespace.get_all_namespaces():
         index[path] = ns
@@ -55,7 +56,7 @@ def test_get_all_namespaces(gen_paths):  # type: ignore
 
 def test_get_all_types(gen_paths):  # type: ignore
     """Verify the get_all_namespaces method in Namespace"""
-    namespace, _, _ = gen_test_namespace(gen_paths, '_')
+    namespace, _, _ = gen_test_namespace(gen_paths, LanguageContext(extension='.json'))
     index = dict()
     for ns, path in namespace.get_all_types():
         index[path] = ns
@@ -65,7 +66,7 @@ def test_get_all_types(gen_paths):  # type: ignore
 
 def test_empty_namespace(gen_paths):  # type: ignore
     """Test a namespace object with no children."""
-    namespace = Namespace('', gen_paths.dsdl_dir, gen_paths.out_dir, '.txt', '_', LanguageContext())
+    namespace = Namespace('', gen_paths.dsdl_dir, gen_paths.out_dir, LanguageContext(extension='.txt'))
     assert namespace.full_name == ''
     assert namespace.output_folder == gen_paths.out_dir
     assert namespace.source_file_path == str(gen_paths.dsdl_dir)
@@ -80,8 +81,9 @@ def test_empty_namespace(gen_paths):  # type: ignore
 
 
 def parameterized_test_namespace_(gen_paths, templates_subdir):  # type: ignore
-    namespace, root_namespace_path, _ = gen_test_namespace(gen_paths, '_')
-    generator = Generator(namespace, False, LanguageContext(), gen_paths.templates_dir / Path(templates_subdir))
+    language_context = LanguageContext(extension='.json')
+    namespace, root_namespace_path, _ = gen_test_namespace(gen_paths, language_context)
+    generator = Generator(namespace, False, language_context, gen_paths.templates_dir / Path(templates_subdir))
     generator.generate_all()
     assert namespace.source_file_path == root_namespace_path
     assert namespace.full_name == 'scotec'
@@ -102,9 +104,10 @@ def test_namespace_namespace_template(gen_paths):  # type: ignore
 
 def test_namespace_generation(gen_paths):  # type: ignore
     """Test actually generating a namepace file."""
-    namespace, root_namespace_path, compound_types = gen_test_namespace(gen_paths, '__module__')
+    language_context = LanguageContext(extension='.json', namespace_output_stem='__module__')
+    namespace, root_namespace_path, compound_types = gen_test_namespace(gen_paths, language_context)
     assert len(compound_types) == 2
-    generator = Generator(namespace, True, LanguageContext(), gen_paths.templates_dir / Path('default'))
+    generator = Generator(namespace, True, language_context, gen_paths.templates_dir / Path('default'))
     generator.generate_all()
     for nested_namespace in namespace.get_nested_namespaces():
         nested_namespace_path = Path(root_namespace_path) / Path(*nested_namespace.full_name.split('.')[1:])
@@ -125,7 +128,7 @@ def test_namespace_generation(gen_paths):  # type: ignore
 
 
 def test_build_namespace_tree_from_nothing(gen_paths):  # type: ignore
-    namespace = build_namespace_tree([], str(gen_paths.dsdl_dir), gen_paths.out_dir, '.json', '_', LanguageContext())
+    namespace = build_namespace_tree([], str(gen_paths.dsdl_dir), gen_paths.out_dir, LanguageContext('js'))
     assert namespace is not None
     assert namespace.full_name == ''
 
@@ -133,7 +136,7 @@ def test_build_namespace_tree_from_nothing(gen_paths):  # type: ignore
 def test_namespace_stropping(gen_paths):  # type: ignore
     """Test generating a namespace that uses a reserved keyword for a given language."""
     language_context = LanguageContext('c')
-    namespace, root_namespace_path, compound_types = gen_test_namespace(gen_paths, '__module__', language_context)
+    namespace, root_namespace_path, compound_types = gen_test_namespace(gen_paths, language_context)
     assert len(compound_types) == 2
     generator = Generator(namespace, True, language_context, gen_paths.templates_dir / Path('default'))
     generator.generate_all()
@@ -148,8 +151,7 @@ def test_namespace_stropping(gen_paths):  # type: ignore
     assert json_blob is not None
 
     output_path_for_stropped = namespace.find_output_path_for_type(compound_types[1])
-    out_json_path = (gen_paths.out_dir / 'scotec' / '_typedef' / 'ATOMIC_TYPE_0_1').with_suffix('.json')
-    assert out_json_path == output_path_for_stropped
+    assert (gen_paths.out_dir / 'scotec' / '_typedef' / 'ATOMIC_TYPE_0_1').with_suffix('.h') == output_path_for_stropped
 
 
 def test_python35_resolve_behavior(gen_paths):  # type: ignore
@@ -159,6 +161,4 @@ def test_python35_resolve_behavior(gen_paths):  # type: ignore
         Namespace('foo.bar',
                   gen_paths.dsdl_dir / Path("scotec"),
                   gen_paths.out_dir,
-                  '.json',
-                  '__namespace__',
                   language_context)

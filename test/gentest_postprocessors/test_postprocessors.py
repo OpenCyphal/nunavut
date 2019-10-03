@@ -31,9 +31,7 @@ def _test_common_namespace(gen_paths):  # type: ignore
     return nunavut.build_namespace_tree(pydsdl.read_namespace(root_namespace, ''),
                                         root_namespace_dir,
                                         gen_paths.out_dir,
-                                        '.json',
-                                        '_',
-                                        LanguageContext())
+                                        LanguageContext('js'))
 
 
 def _test_common_post_condition(gen_paths, namespace):  # type: ignore
@@ -74,7 +72,7 @@ def test_unknown_intermediate(gen_paths):  # type: ignore
             return generated
 
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     with pytest.raises(ValueError):
         generator.generate_all(False, True, [InvalidType()])
 
@@ -83,7 +81,7 @@ def test_empty_pp_array(gen_paths):  # type: ignore
     """ Verifies the behavior of a zero length post_processors argument.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [])
 
     _test_common_post_condition(gen_paths, namespace)
@@ -93,7 +91,7 @@ def test_chmod(gen_paths):  # type: ignore
     """ Generates a file using a SetFileMode post-processor.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [nunavut.postprocessors.SetFileMode(0o444)])
 
     outfile = _test_common_post_condition(gen_paths, namespace)
@@ -105,7 +103,7 @@ def test_overwrite(gen_paths):  # type: ignore
     """ Verifies the allow_overwrite flag contracts.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [nunavut.postprocessors.SetFileMode(0o444)])
 
     with pytest.raises(PermissionError):
@@ -120,7 +118,7 @@ def test_overwrite_dryrun(gen_paths):  # type: ignore
     """ Verifies the allow_overwrite flag contracts.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [nunavut.postprocessors.SetFileMode(0o444)])
 
     with pytest.raises(PermissionError):
@@ -195,7 +193,7 @@ def test_move_file(gen_paths):  # type: ignore
     verifier = Verifier()
 
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [mover, verifier])
 
     assert mover.called
@@ -227,7 +225,7 @@ def test_line_pp(gen_paths):  # type: ignore
     line_pp0 = TestLinePostProcessor0()
     line_pp1 = TestLinePostProcessor1()
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [line_pp0, line_pp1])
     assert len(line_pp1._lines) > 0
     _test_common_post_condition(gen_paths, namespace)
@@ -240,14 +238,14 @@ def test_line_pp_returns_none(gen_paths):  # type: ignore
             return None  # type: ignore
 
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     with pytest.raises(ValueError):
         generator.generate_all(False, True, [TestBadLinePostProcessor()])
 
 
 def test_trim_trailing_ws(gen_paths):  # type: ignore
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [nunavut.postprocessors.TrimTrailingWhitespace()])
     outfile = _test_common_post_condition(gen_paths, namespace)
 
@@ -258,7 +256,7 @@ def test_trim_trailing_ws(gen_paths):  # type: ignore
 
 def test_limit_empty_lines(gen_paths):  # type: ignore
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [nunavut.postprocessors.LimitEmptyLines(0)])
     outfile = _test_common_post_condition(gen_paths, namespace)
 
@@ -358,7 +356,7 @@ def test_external_edit_in_place(gen_paths):  # type: ignore
     Test that ExternalProgramEditInPlace is invoked as expected
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     ext_program = gen_paths.test_dir / pathlib.Path('ext_program.py')
     edit_in_place = nunavut.postprocessors.ExternalProgramEditInPlace([str(ext_program)])
     generator.generate_all(False, True, [edit_in_place])
@@ -378,7 +376,7 @@ def test_external_edit_in_place_fail(gen_paths):  # type: ignore
     Test that ExternalProgramEditInPlace handles error as expected.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     ext_program = gen_paths.test_dir / pathlib.Path('ext_program.py')
     simulated_error_args = [str(ext_program), '--simulate-error']
     edit_in_place_checking = nunavut.postprocessors.ExternalProgramEditInPlace(simulated_error_args)

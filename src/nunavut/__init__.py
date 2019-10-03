@@ -34,8 +34,6 @@ pydsdl type map using :meth:`nunavut.build_namespace_tree`::
     root_namespace = build_namespace_tree(compound_types,
                                           root_ns_folder,
                                           out_dir,
-                                          '.hpp',
-                                          'Types',
                                           language_context)
 
 Putting this all together, the typical use of this library looks something like this::
@@ -55,8 +53,6 @@ Putting this all together, the typical use of this library looks something like 
     root_namespace = build_namespace_tree(compound_types,
                                           root_ns_folder,
                                           out_dir,
-                                          '.hpp',
-                                          'Types',
                                           language_context)
 
     # give the root namespace to the generator and...
@@ -129,17 +125,15 @@ class Namespace(pydsdl.Any):
                                 namespaces's datatypes and nested namespaces.
     :param pathlib.PurePath base_output_path: The base path under which all namespaces and datatypes should
                                 be generated.
-    :param str extension:       The file suffix to give to generated files.
-    :param str namespace_file_stem: The file stem (name) to give to files generated for namespaces.
     :param lang.LanguageContext language_context: The generated software language context the namespace is within.
     """
+
+    DefaultOutputStem = '_'
 
     def __init__(self,
                  full_namespace: str,
                  root_namespace_dir: pathlib.Path,
                  base_output_path: pathlib.PurePath,
-                 extension: typing.Optional[str],
-                 namespace_file_stem: str,
                  language_context: lang.LanguageContext):
         self._parent = None  # type: typing.Optional[Namespace]
         self._id_filter = language_context.get_id_filter()
@@ -150,13 +144,13 @@ class Namespace(pydsdl.Any):
             source_namespace_components.append(component)
         self._full_namespace = '.'.join(self._namespace_components)
         self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components))
-        output_path = self._output_folder / pathlib.PurePath(namespace_file_stem)
-        if extension is not None:
-            self._output_path = output_path.with_suffix(extension)
-        else:
-            self._output_path = output_path
-        self._source_folder = pathlib.Path(root_namespace_dir / pathlib.PurePath(*source_namespace_components[1:]))\
-            .resolve()
+        output_stem = language_context.get_default_namespace_output_stem()
+        if output_stem is None:
+            output_stem = self.DefaultOutputStem
+        output_path = self._output_folder / pathlib.PurePath(output_stem)
+        self._output_path = output_path.with_suffix(language_context.get_output_extension())
+        self._source_folder = pathlib.Path(
+            root_namespace_dir / pathlib.PurePath(*source_namespace_components[1:])).resolve()
         if not self._source_folder.exists():
             # to make Python > 3.5 behave the same as Python 3.5
             raise FileNotFoundError(self._source_folder)
@@ -343,8 +337,6 @@ class Namespace(pydsdl.Any):
 def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
                          root_namespace_dir: str,
                          output_dir: str,
-                         extension: str,
-                         namespace_output_stem: str,
                          language_context: lang.LanguageContext) -> Namespace:
     """Generates a :class:`nunavut.Namespace` tree.
 
@@ -356,11 +348,6 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
     :param list types: A list of pydsdl types.
     :param str root_namespace_dir: A path to the folder which is the root namespace.
     :param str output_dir: The base directory under which all generated files will be created.
-    :param str extension: The extension to use for generated file types. All paths and filenames
-            are built using pathlib. See pathlib documentation for platform differences
-            when forming paths, filenames, and extensions.
-    :param str namespace_output_stem: The filename stem to give to Namespace output files if
-                                      emitted.
     :param lang.LanguageContext language_context: The language context to use when building
             :class:`nunavut.Namespace` objects.
     :returns: The root :class:`nunavut.Namespace`.
@@ -382,8 +369,6 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
         namespace = Namespace(full_namespace,
                               pathlib.Path(root_namespace_dir),
                               base_path,
-                              extension,
-                              namespace_output_stem,
                               language_context)
 
         namespaces[str(full_namespace)] = namespace
@@ -413,7 +398,7 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
                     break
                 namespace_index.add(ancestor_ns)
 
-        namespace._add_data_type(dsdl_type, extension)
+        namespace._add_data_type(dsdl_type, language_context.get_output_extension())
 
     # We now have an index of all namespace names and we have Namespace
     # objects for non-empty namespaces. This final loop will build any

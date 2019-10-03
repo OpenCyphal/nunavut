@@ -57,19 +57,18 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
         return post_processors
 
     #
-    # nunavut: target language(s)
+    # nunavut: language context.
     #
+    if args.list_inputs is not None and args.target_language is None and args.output_extension is None:
+        # This is a special case where we know we'll never actually use the output extension since
+        # we are only listing the input files. All other cases require either an output extension or
+        # a valid target language.
+        setattr(args, 'output_extension', '.tmp')
 
-    if hasattr(args, 'target_language') and args.target_language is not None:
-        target_language = args.target_language
-        if not hasattr(args, 'output_extension') or args.output_extension is None:
-            output_extension = nunavut.lang.LanguageContext.get_default_output_extension(target_language)
-        else:
-            output_extension = args.output_extension
-    else:
-        output_extension = args.output_extension
-        target_language = None
-    language_context = nunavut.lang.LanguageContext(target_language)
+    language_context = nunavut.lang.LanguageContext(
+        args.target_language,
+        args.output_extension,
+        args.namespace_output_stem)
 
     #
     # nunavut : parse
@@ -80,8 +79,6 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
         type_map,
         args.root_namespace,
         args.outdir,
-        output_extension,
-        args.namespace_output_stem,
         language_context)
 
     #
