@@ -90,7 +90,8 @@ EnvironmentFilterAttributeName = 'environmentfilter'
 
 class SupportsTemplateEnv:
     """
-    Provided as a pseudo `protocol <https://mypy.readthedocs.io/en/latest/protocols.html#simple-user-defined-protocols/>`_.
+    Provided as a pseudo
+    `protocol <https://mypy.readthedocs.io/en/latest/protocols.html#simple-user-defined-protocols/>`_.
     (in anticipation of that becoming part of the core Python typing someday).
 
     :var Dict globals: A dictionary mapping global names (str) to variables (Any) that are available in
@@ -154,7 +155,8 @@ class Namespace(pydsdl.Any):
             self._output_path = output_path.with_suffix(extension)
         else:
             self._output_path = output_path
-        self._source_folder = pathlib.Path(root_namespace_dir / pathlib.PurePath(*source_namespace_components[1:])).resolve()
+        self._source_folder = pathlib.Path(root_namespace_dir / pathlib.PurePath(*source_namespace_components[1:]))\
+            .resolve()
         if not self._source_folder.exists():
             # to make Python > 3.5 behave the same as Python 3.5
             raise FileNotFoundError(self._source_folder)
@@ -291,7 +293,8 @@ class Namespace(pydsdl.Any):
         self._nested_namespaces.add(nested)
         nested._parent = self
 
-    def _bfs_search_for_output_path(self, data_type: pydsdl.CompositeType, skip_namespace: typing.Set['Namespace']) -> pathlib.Path:
+    def _bfs_search_for_output_path(self, data_type: pydsdl.CompositeType, skip_namespace: typing.Set['Namespace']) \
+            -> pathlib.Path:
         search_queue = collections.deque()  # type: typing.Deque[Namespace]
         search_queue.appendleft(self)
         while len(search_queue) > 0:

@@ -43,3 +43,5 @@ nunavut_out
 
 # Coveralls local config
 .coveralls.yml
+
+.hypothesis

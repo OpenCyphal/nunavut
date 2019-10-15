@@ -18,4 +18,4 @@ version = {}  # type: Dict
 with open('src/nunavut/version.py') as fp:
     exec(fp.read(), version)
 
-setuptools.setup(version='.'.join(map(str, version['__version__'])))
+setuptools.setup(version=version['__version__'])

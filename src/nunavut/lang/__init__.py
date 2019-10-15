@@ -73,7 +73,9 @@ class LanguageContext:
         For a given supported language get the default file extension to use when generating source
         code for the language.
 
-        :param str language_name: One of the languages listed in the values returned by :func:`get_supported_language_names()`.
+        :param str language_name: One of the languages listed in the values returned by
+            :func:`get_supported_language_names()`.
+
         :returns: A file extension name with a leading dot.
         :raises KeyError: If the language name is not known by this version of nunavut.
         """

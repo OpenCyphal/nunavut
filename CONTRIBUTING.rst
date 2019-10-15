@@ -69,8 +69,8 @@ To run the full suite of `tox`_ tests locally you'll need docker. Once you have 
 and running do::
 
     git submodule update --init --recursive
-    docker pull uavcan/toxic:py35-py38
-    docker run --rm -it -v `pwd`:/repo uavcan/toxic:py35-py38
+    docker pull uavcan/toxic:py35-py38-sq
+    docker run --rm -it -v $PWD:/repo uavcan/toxic:py35-py38-sq
     tox
 
 import file mismatch
@@ -110,7 +110,7 @@ Building The Docs
 We rely on `read the docs`_ to build our documentation from github but we also verify this build
 as part of our tox build. This means you can view a local copy after completing a full, successful
 test run (See `Running The Tests`_) or do
-:code:`docker run --rm -t -v $PWD:/repo uavcan/toxic:py35-py38 /bin/sh -c "tox -e docs"` to build
+:code:`docker run --rm -t -v $PWD:/repo uavcan/toxic:py35-py38-sq /bin/sh -c "tox -e docs"` to build
 the docs target. You can open the index.html under .tox/docs/tmp/index.html or run a local
 web-server::
 
@@ -124,7 +124,7 @@ Of course, you can just use `Visual Studio Code`_ to build and preview the docs 
 Coverage and Linting Reports
 ************************************************
 
-We publish the results of our coverage data to `Codacy`_ and the tox build will fail for any mypy
+We publish the results of our coverage data to `sonarcloud`_ and the tox build will fail for any mypy
 or flake8 errors but you can view additional reports locally under the :code:`.tox` dir.
 
 Coverage
@@ -144,10 +144,27 @@ At the end of the mypy run we generate the following summaries:
 - .tox/mypy/tmp/mypy-report-lib/index.txt
 - .tox/mypy/tmp/mypy-report-script/index.txt
 
+************************************************
+Buildkite on aws
+************************************************
+
+The PyPI upload keys should be rotated periodically. To do this you'll need to be an administrator of
+our Buildkite `AWS CloudFormation`_ stack and of our PyPI UAVCAN organization.
+
+    1. Download the buildkite-managedsecretsbucket-xxxxxxxx/nunavut-release/env s3 artifact.
+    2. In your PyPI account settings create a new API key scoped only to the nunavut project and replace
+       the one in the downloaded env file.
+    3. Upload the modified env file::
+
+        aws s3 cp --acl private --sse aws:kms ~/Downloads/env "s3://buildkite-managedsecretsbucket-xxxxxxxx/nunavut-release/env"
+
+    4. Back in the PyPI keys list delete any keys that are older than the one previously in use. You can keep the key
+       you just rotated until you rotate the new key.
 
 .. _`read the docs`: https://readthedocs.org/
 .. _`tox`: https://tox.readthedocs.io/en/latest/
-.. _`Codacy`: https://app.codacy.com/project/UAVCAN/nunavut/dashboard
+.. _`sonarcloud`: https://sonarcloud.io/dashboard?id=UAVCAN_nunavut
 .. _`UAVCAN website`: http://uavcan.org
 .. _`UAVCAN forum`: https://forum.uavcan.org
 .. _`nunavut on read the docs`: https://nunavut.readthedocs.io/en/latest/index.html
+.. _`AWS CloudFormation`: https://aws.amazon.com/cloudformation/

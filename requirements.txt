@@ -19,16 +19,18 @@ pyyaml >= 3.13
 autopep8
 # Useful for vscode development
 rope
-doc8
+isort
 
 # +---------------------------------------------------------------------------+
 # | TEST AND BUILD DEPENDENCIES
 # +---------------------------------------------------------------------------+
 pytest ~= 3.3
+pytest-timeout
 flake8
 coverage
 mypy
 tox
+Sybil
 
 # +---------------------------------------------------------------------------+
 # | DOCUMENTATION AND REPORTING DEPENDENCIES
@@ -36,7 +38,6 @@ tox
 sphinx >= 1.8.5
 sphinx-argparse
 sphinx_rtd_theme
-codacy-coverage
 lxml
 
 # +---------------------------------------------------------------------------+

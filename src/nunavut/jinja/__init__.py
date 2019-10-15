@@ -421,7 +421,8 @@ class Generator(nunavut.generators.AbstractGenerator):
     def generate_all(self,
                      is_dryrun: bool = False,
                      allow_overwrite: bool = True,
-                     post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']] = None) -> int:
+                     post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']] = None) \
+            -> int:
         if self.generate_namespace_types:
             for (parsed_type, output_path) in self.namespace.get_all_types():
                 self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, post_processors)
@@ -447,7 +448,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                 if len(function_name) > 7 and function_name[0:7] == "filter_":
                     if make_implicit:
                         env.filters[function_name[7:]] = function_tuple[1]
-                        logging.debug("Adding implicit filter {} for language {}".format(function_name[7:], language.name))
+                        logging.debug("Adding implicit filter {} for language {}".format(function_name[7:],
+                                                                                         language.name))
                     else:
                         env.filters["{}.{}".format(
                             language.name, function_name[7:])] = function_tuple[1]
@@ -510,8 +512,8 @@ class Generator(nunavut.generators.AbstractGenerator):
         for line_pp in line_pps:
             line_and_lineend = line_pp(line_and_lineend)
             if line_and_lineend is None:
-                raise ValueError('line post processor must return a 2-tuple. To elide a line return a tuple of empty strings.'
-                                 'None is not a valid value.')
+                raise ValueError('line post processor must return a 2-tuple. To elide a line return a tuple of empty'
+                                 'strings. None is not a valid value.')
 
         output_file.write(line_and_lineend[0])
         output_file.write(line_and_lineend[1])
@@ -550,7 +552,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                             template: Template,
                             template_gen: typing.Generator[str, None, None],
                             allow_overwrite: bool,
-                            post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']]) -> None:
+                            post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']]) \
+            -> None:
         """
         Logic that should run from _generate_type iff is_dryrun is False.
         """

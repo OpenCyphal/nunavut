@@ -1,0 +1,10 @@
+# For Auto-scan/Pull-Request Scan.
+
+# Path to sources
+sonar.sources=src
+
+# Path to tests
+sonar.tests=test
+
+# Source encoding
+sonar.sourceEncoding=UTF-8

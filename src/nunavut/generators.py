@@ -60,7 +60,8 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
     def generate_all(self,
                      is_dryrun: bool = False,
                      allow_overwrite: bool = True,
-                     post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']] = None) -> int:
+                     post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']] = None) \
+            -> int:
         """
         Generates all output for a given :class:`nunavut.Namespace` and using
         the templates found by this object.
