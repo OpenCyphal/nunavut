@@ -86,7 +86,8 @@ def parameterized_test_namespace_(gen_paths, templates_subdir):  # type: ignore
     assert namespace.source_file_path == root_namespace_path
     assert namespace.full_name == 'scotec'
     for nested_namespace in namespace.get_nested_namespaces():
-        assert nested_namespace.source_file_path == str(Path(root_namespace_path) / Path(*nested_namespace.full_name.split('.')[1:]))
+        nested_namespace_path = Path(root_namespace_path) / Path(*nested_namespace.full_name.split('.')[1:])
+        assert nested_namespace.source_file_path == str(nested_namespace_path)
 
 
 def test_namespace_any_template(gen_paths):  # type: ignore
@@ -106,7 +107,8 @@ def test_namespace_generation(gen_paths):  # type: ignore
     generator = Generator(namespace, True, LanguageContext(), gen_paths.templates_dir / Path('default'))
     generator.generate_all()
     for nested_namespace in namespace.get_nested_namespaces():
-        assert nested_namespace.source_file_path == str(Path(root_namespace_path) / Path(*nested_namespace.full_name.split('.')[1:]))
+        nested_namespace_path = Path(root_namespace_path) / Path(*nested_namespace.full_name.split('.')[1:])
+        assert nested_namespace.source_file_path == str(nested_namespace_path)
 
     outfile = gen_paths.find_outfile_in_namespace("scotec.mcu", namespace)
 
@@ -146,7 +148,8 @@ def test_namespace_stropping(gen_paths):  # type: ignore
     assert json_blob is not None
 
     output_path_for_stropped = namespace.find_output_path_for_type(compound_types[1])
-    assert (gen_paths.out_dir / 'scotec' / '_typedef' / 'ATOMIC_TYPE_0_1').with_suffix('.json') == output_path_for_stropped
+    out_json_path = (gen_paths.out_dir / 'scotec' / '_typedef' / 'ATOMIC_TYPE_0_1').with_suffix('.json')
+    assert out_json_path == output_path_for_stropped
 
 
 def test_python35_resolve_behavior(gen_paths):  # type: ignore

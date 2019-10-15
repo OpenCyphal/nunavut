@@ -127,8 +127,7 @@ def test_version(gen_paths: fixtures.GenTestPaths) -> None:
     nnvg_args = ['--version']
 
     completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8")
-    structured_string = '.'.join(map(str, nunavut.version.__version__))
-    assert structured_string == completed
+    assert nunavut.version.__version__ == completed
 
 
 def test_target_language(gen_paths: fixtures.GenTestPaths) -> None:

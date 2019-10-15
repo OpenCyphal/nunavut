@@ -9,11 +9,13 @@
 """
 
 import enum
+import functools
 import re
 import typing
 
 import pydsdl
-from .. import templateEnvironmentFilter, SupportsTemplateEnv
+
+from .. import SupportsTemplateEnv, templateEnvironmentFilter
 
 # Taken from https://en.cppreference.com/w/c/keyword
 C_RESERVED_IDENTIFIERS = frozenset([
@@ -77,7 +79,8 @@ C_RESERVED_IDENTIFIERS = frozenset([
 ])
 
 # Taken from https://en.cppreference.com/w/c/language/identifier
-C_RESERVED_PATTERNS = frozenset(map(re.compile, [
+# cspell: disable
+C_RESERVED_PATTERNS = frozenset(map(functools.partial(re.compile, flags=0), [
     r'^(is|to|str|mem|wcs|atomic_|cnd_|mtx_|thrd_|tss_|memory_|memory_order_)[a-z]',
     r'^u?int[a-zA-Z_0-9]*_t',
     r'^E[A-Z0-9]+',
@@ -89,6 +92,7 @@ C_RESERVED_PATTERNS = frozenset(map(re.compile, [
     r'^TIME_[A-Z]',
     r'^ATOMIC_[A-Z]'
 ]))
+# cspell: enable
 
 
 class VariableNameEncoder:
@@ -100,13 +104,18 @@ class VariableNameEncoder:
 
     _token_start_pattern = re.compile(r'(^__)|(^_[A-Z])')
 
-    def __init__(self, stropping_prefix: str, stropping_suffix: str, encoding_prefix: str, enforce_c_prefix_rules: bool = True) -> None:
+    def __init__(self,
+                 stropping_prefix: str,
+                 stropping_suffix: str,
+                 encoding_prefix: str,
+                 enforce_c_prefix_rules: bool = True) -> None:
         self._stropping_prefix = stropping_prefix
         self._stropping_suffix = stropping_suffix
         self._encoding_prefix = encoding_prefix
         self._enforce_c_prefix_rules = enforce_c_prefix_rules
         if self._token_start_pattern.match(self._encoding_prefix):
-            raise RuntimeError('{} is not allowed as a prefix since it can result in illegal identifiers.'.format(self._encoding_prefix))
+            raise RuntimeError('{} is not allowed as a prefix since it can result in illegal identifiers.'.format(
+                self._encoding_prefix))
 
     def _filter_id_illegal_character_replacement(self, m: typing.Match) -> str:
         if m.group(1) is not None:
@@ -139,7 +148,10 @@ class VariableNameEncoder:
     def encode_character(self, c: str) -> str:
         return '{}{:04X}'.format(self._encoding_prefix, ord(c))
 
-    def strop(self, token: str, reserved_words: typing.FrozenSet[str], reserved_patterns: typing.Optional[typing.FrozenSet[typing.Pattern]] = None) -> str:
+    def strop(self,
+              token: str,
+              reserved_words: typing.FrozenSet[str],
+              reserved_patterns: typing.Optional[typing.FrozenSet[typing.Pattern]] = None) -> str:
         encoded = str(self._token_pattern.sub(self._filter_id_illegal_character_replacement, token))
         if encoded in reserved_words or self._matches(encoded, reserved_patterns):
             stropped = (self._stropping_prefix + encoded + self._stropping_suffix)
@@ -186,7 +198,9 @@ def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix
     else:
         raw_name = str(instance)
 
-    return VariableNameEncoder(stropping_prefix, '', encoding_prefix).strop(raw_name, C_RESERVED_IDENTIFIERS, C_RESERVED_PATTERNS)
+    return VariableNameEncoder(stropping_prefix, '', encoding_prefix).strop(raw_name,
+                                                                            C_RESERVED_IDENTIFIERS,
+                                                                            C_RESERVED_PATTERNS)
 
 
 def filter_macrofy(value: str) -> str:

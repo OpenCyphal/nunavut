@@ -20,10 +20,11 @@ project = 'nunavut'
 copyright = '2019 Amazon.com, Inc. or its affiliates. All Rights Reserved. 2019, UAVCAN Development Team'
 author = 'UAVCAN Development Team'
 
+_version_tuple = __version__.split('.')
 # The short X.Y version
-version = "{}.{}".format(__version__[0], __version__[1])
+version = "{}.{}".format(_version_tuple[0], _version_tuple[1])
 # The full version, including alpha/beta/rc tags
-release = str(__version__)
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------

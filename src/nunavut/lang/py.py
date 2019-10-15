@@ -101,7 +101,8 @@ def filter_id(instance: typing.Any, stropping_suffix: str = '_', encoding_prefix
 
     # We use the C variable name encoder since the variable token rules are
     # compatible.
-    return VariableNameEncoder('', stropping_suffix, encoding_prefix, False).strop(raw_name, PYTHON_RESERVED_IDENTIFIERS)
+    return VariableNameEncoder('', stropping_suffix, encoding_prefix, False).strop(raw_name,
+                                                                                   PYTHON_RESERVED_IDENTIFIERS)
 
 
 def filter_full_reference_name(t: pydsdl.CompositeType) -> str:
