@@ -41,7 +41,7 @@ nunavut_out
 # Log files
 *.log
 
-# Coveralls local config
-.coveralls.yml
+# Sonarqube
+.scannerwork
 
 .hypothesis
