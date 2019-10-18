@@ -5,24 +5,17 @@
 #
 import json
 import pathlib
+import re
 import subprocess
 import typing
-import pytest
-import re
 
 import pydsdl
+import pytest
+
 import nunavut
 import nunavut.jinja
 import nunavut.postprocessors
-import fixtures
-
 from nunavut.lang import LanguageContext
-
-
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
 
 
 def _test_common_namespace(gen_paths):  # type: ignore
@@ -127,7 +120,7 @@ def test_overwrite_dryrun(gen_paths):  # type: ignore
     generator.generate_all(True, False)
 
 
-def test_no_overwrite_arg(gen_paths):  # type: ignore
+def test_no_overwrite_arg(gen_paths, run_nnvg):  # type: ignore
     """ Verifies the --no-overwrite argument of nnvg.
     """
     nnvg_cmd = ['--templates', str(gen_paths.templates_dir),
@@ -135,15 +128,15 @@ def test_no_overwrite_arg(gen_paths):  # type: ignore
                 '-e', '.json',
                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd)
+    run_nnvg(gen_paths, nnvg_cmd)
 
     nnvg_cmd.append('--no-overwrite')
 
     with pytest.raises(subprocess.CalledProcessError):
-        fixtures.run_nnvg(gen_paths, nnvg_cmd)
+        run_nnvg(gen_paths, nnvg_cmd)
 
 
-def test_file_mode(gen_paths):  # type: ignore
+def test_file_mode(gen_paths, run_nnvg):  # type: ignore
     """ Verify the --file-mode argument of nnvg.
     """
 
@@ -154,7 +147,7 @@ def test_file_mode(gen_paths):  # type: ignore
                 '--file-mode', oct(file_mode),
                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd)
+    run_nnvg(gen_paths, nnvg_cmd)
 
     outfile = gen_paths.out_dir /\
         pathlib.Path('uavcan') /\
@@ -269,7 +262,7 @@ def test_limit_empty_lines(gen_paths):  # type: ignore
                 assert len(line) > 0
 
 
-def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
+def test_pp_trim_trailing_whitespace(gen_paths, run_nnvg):  # type: ignore
     """ Verify the --pp-trim-trailing-whitespace argument of nnvg.
     """
     outfile = gen_paths.out_dir /\
@@ -282,7 +275,7 @@ def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
                   '-e', '.json',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd_0)
+    run_nnvg(gen_paths, nnvg_cmd_0)
 
     lines_w_trailing = 0
     with open(str(outfile), 'r') as json_file:
@@ -298,14 +291,14 @@ def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
                   '--pp-trim-trailing-whitespace',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd_1)
+    run_nnvg(gen_paths, nnvg_cmd_1)
 
     with open(str(outfile), 'r') as json_file:
         for line in json_file:
             assert re.search(r' +$', line) is None
 
 
-def test_pp_max_emptylines(gen_paths):  # type: ignore
+def test_pp_max_emptylines(gen_paths, run_nnvg):  # type: ignore
     """ Verify the --pp-max-emptylines argument of nnvg.
     """
     outfile = gen_paths.out_dir /\
@@ -318,7 +311,7 @@ def test_pp_max_emptylines(gen_paths):  # type: ignore
                   '-e', '.json',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd_0)
+    run_nnvg(gen_paths, nnvg_cmd_0)
 
     found_empty_line = False
     with open(str(outfile), 'r') as json_file:
@@ -339,7 +332,7 @@ def test_pp_max_emptylines(gen_paths):  # type: ignore
                   '--pp-max-emptylines', '0',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd_1)
+    run_nnvg(gen_paths, nnvg_cmd_1)
 
     with open(str(outfile), 'r') as json_file:
         for line in json_file:
@@ -386,7 +379,7 @@ def test_external_edit_in_place_fail(gen_paths):  # type: ignore
     generator.generate_all(False, True, [edit_in_place_not_checking])
 
 
-def test_pp_run_program(gen_paths):  # type: ignore
+def test_pp_run_program(gen_paths, run_nnvg):  # type: ignore
     outfile = gen_paths.out_dir /\
         pathlib.Path('uavcan') /\
         pathlib.Path('test') /\
@@ -400,7 +393,7 @@ def test_pp_run_program(gen_paths):  # type: ignore
                   '--pp-run-program', str(ext_program),
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_args0)
+    run_nnvg(gen_paths, nnvg_args0)
 
     with open(str(outfile), 'r') as json_file:
         json_blob = json.load(json_file)
@@ -411,7 +404,7 @@ def test_pp_run_program(gen_paths):  # type: ignore
     assert pathlib.Path(outfile).stat().st_mode & 0o777 == 0o444
 
 
-def test_pp_run_program_w_arg(gen_paths):  # type: ignore
+def test_pp_run_program_w_arg(gen_paths, run_nnvg):  # type: ignore
     ext_program = gen_paths.test_dir / pathlib.Path('ext_program.py')
 
     nnvg_args0 = ['--templates', str(gen_paths.templates_dir),
@@ -422,4 +415,4 @@ def test_pp_run_program_w_arg(gen_paths):  # type: ignore
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     with pytest.raises(subprocess.CalledProcessError):
-        fixtures.run_nnvg(gen_paths, nnvg_args0)
+        run_nnvg(gen_paths, nnvg_args0)

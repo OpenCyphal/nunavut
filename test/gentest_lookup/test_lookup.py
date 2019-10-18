@@ -31,12 +31,6 @@ class d(b, c):
     pass
 
 
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
-
-
 def test_bfs_of_type_for_template(gen_paths):  # type: ignore
     """ Verifies that our template to type lookup logic does a breadth-first search for a valid
     template when searching type names.

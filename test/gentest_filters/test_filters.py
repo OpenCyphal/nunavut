@@ -16,12 +16,6 @@ from nunavut.jinja.jinja2.exceptions import TemplateAssertionError
 from pathlib import Path, PurePath
 
 
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
-
-
 def test_template_assert(gen_paths):  # type: ignore
     """
     Tests our template assertion extension.

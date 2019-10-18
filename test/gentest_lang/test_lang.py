@@ -18,12 +18,6 @@ from nunavut.lang import LanguageContext, Language
 from nunavut.jinja import Generator
 
 
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
-
-
 class Dummy:
 
     def __init__(self, name: str) -> None:

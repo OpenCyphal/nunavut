@@ -8,7 +8,7 @@ import pytest
 import json
 import typing
 
-from pydsdl import read_namespace, CompositeType
+from pydsdl import read_namespace, CompositeType, Any
 from nunavut import Namespace, build_namespace_tree
 from nunavut.lang import LanguageContext
 from nunavut.jinja import Generator
@@ -16,10 +16,34 @@ from nunavut.jinja import Generator
 from pathlib import Path
 
 
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
+class DummyType(Any):
+    """Fake dsdl 'any' type for testing."""
+
+    def __init__(self, namespace: str = 'uavcan', name: str = 'Dummy'):
+        self._full_name = '{}.{}'.format(namespace, name)
+
+    # +-----------------------------------------------------------------------+
+    # | DUCK TYPEING: CompositeType
+    # +-----------------------------------------------------------------------+
+    @property
+    def full_name(self) -> str:
+        return self._full_name
+
+    # +-----------------------------------------------------------------------+
+    # | PYTHON DATA MODEL
+    # +-----------------------------------------------------------------------+
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, DummyType):
+            return self._full_name == other._full_name
+        else:
+            return False
+
+    def __str__(self) -> str:
+        return self.full_name
+
+    def __hash__(self) -> int:
+        return hash(self._full_name)
 
 
 def gen_test_namespace(gen_paths: typing.Any, language_context: LanguageContext) -> \
@@ -75,7 +99,6 @@ def test_empty_namespace(gen_paths):  # type: ignore
     assert namespace == namespace
     assert hash(namespace) == hash(namespace)
     assert str(namespace) == str(namespace)
-    from fixtures import DummyType
     with pytest.raises(KeyError):
         namespace.find_output_path_for_type(DummyType())
 

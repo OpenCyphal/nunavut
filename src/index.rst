@@ -19,7 +19,7 @@ Usage
 *************************************
 
 .. argparse::
-   :filename: nnvg
+   :filename: nunavut/cli.py
    :func: _make_parser
    :prog: nnvg
 

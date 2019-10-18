@@ -1,11 +1,10 @@
-#!/usr/bin/env python3
 #
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
 # This software is distributed under the terms of the MIT License.
 #
 """
-    Command-line script for using nunavut and jinja to generate code
+    Command-line for using nunavut and jinja to generate code
     from dsdl definitions.
 """
 
@@ -341,7 +340,3 @@ def main() -> int:
         pass
 
     return _run(args, extra_includes)
-
-
-if __name__ == "__main__":
-    sys.exit(main())

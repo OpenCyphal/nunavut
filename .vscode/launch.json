@@ -8,7 +8,7 @@
             "name": "Python: nnvg",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/src/nnvg",
+            "program": "nnvg",
             "cwd": "${workspaceFolder}/src",
             "args": ["--templates", "${workspaceFolder}/test/gentest_dsdl/templates",
                      "--generate-namespace-types",

@@ -5,19 +5,14 @@
 #
 import pathlib
 import subprocess
+import typing
+
 import pytest
 
-import fixtures
 import nunavut.version
 
 
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
-
-
-def test_UAVCAN_DSDL_INCLUDE_PATH(gen_paths: fixtures.GenTestPaths) -> None:
+def test_UAVCAN_DSDL_INCLUDE_PATH(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """
         Verify that UAVCAN_DSDL_INCLUDE_PATH is used by nnvg.
     """
@@ -28,15 +23,15 @@ def test_UAVCAN_DSDL_INCLUDE_PATH(gen_paths: fixtures.GenTestPaths) -> None:
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     with pytest.raises(subprocess.CalledProcessError):
-        fixtures.run_nnvg(gen_paths, nnvg_args0)
+        run_nnvg(gen_paths, nnvg_args0)
 
     scotec_path = str(gen_paths.dsdl_dir / pathlib.Path('scotec'))
     herringtec_path = str(gen_paths.dsdl_dir / pathlib.Path('herringtec'))
     env = {'UAVCAN_DSDL_INCLUDE_PATH': '{}:{}'.format(herringtec_path, scotec_path)}
-    fixtures.run_nnvg(gen_paths, nnvg_args0, env=env)
+    run_nnvg(gen_paths, nnvg_args0, env=env)
 
 
-def test_nnvg_heals_missing_dot_in_extension(gen_paths: fixtures.GenTestPaths) -> None:
+def test_nnvg_heals_missing_dot_in_extension(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """
         nnvg check for a missing dot in the -e arg and adds it for you. This test
         verifies that logic.
@@ -48,10 +43,10 @@ def test_nnvg_heals_missing_dot_in_extension(gen_paths: fixtures.GenTestPaths) -
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     # This will fail if the dot isn't added by nnvg
-    fixtures.run_nnvg(gen_paths, nnvg_args)
+    run_nnvg(gen_paths, nnvg_args)
 
 
-def test_list_inputs(gen_paths: fixtures.GenTestPaths) -> None:
+def test_list_inputs(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """
         Verifies nnvg's --list-input mode.
     """
@@ -69,12 +64,12 @@ def test_list_inputs(gen_paths: fixtures.GenTestPaths) -> None:
                  '--list-inputs',
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
     completed_wo_empty = sorted([i for i in completed if len(i) > 0])
     assert expected_output == sorted(completed_wo_empty)
 
 
-def test_list_inputs_w_namespaces(gen_paths: fixtures.GenTestPaths) -> None:
+def test_list_inputs_w_namespaces(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """
         This covers some extra logic in nnvg when handling list-input with namespaces.
     """
@@ -95,12 +90,12 @@ def test_list_inputs_w_namespaces(gen_paths: fixtures.GenTestPaths) -> None:
                  '--generate-namespace-types',
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
     completed_wo_empty = sorted([i for i in completed if len(i) > 0])
     assert expected_output == sorted(completed_wo_empty)
 
 
-def test_list_outputs(gen_paths: fixtures.GenTestPaths) -> None:
+def test_list_outputs(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """
         Verifies nnvg's --list-output mode.
     """
@@ -115,22 +110,22 @@ def test_list_outputs(gen_paths: fixtures.GenTestPaths) -> None:
                  '--list-outputs',
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
     completed_wo_empty = sorted([i for i in completed if len(i) > 0])
     assert expected_output == sorted(completed_wo_empty)
 
 
-def test_version(gen_paths: fixtures.GenTestPaths) -> None:
+def test_version(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """
         Verifies nnvg's --version
     """
     nnvg_args = ['--version']
 
-    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8")
+    completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8")
     assert nunavut.version.__version__ == completed
 
 
-def test_target_language(gen_paths: fixtures.GenTestPaths) -> None:
+def test_target_language(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """
         Verifies the behavior when target language support is provided.
     """
@@ -145,12 +140,12 @@ def test_target_language(gen_paths: fixtures.GenTestPaths) -> None:
                  '--list-outputs',
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    completed = fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
     completed_wo_empty = sorted([i for i in completed if len(i) > 0])
     assert expected_output == sorted(completed_wo_empty)
 
 
-def test_issue_73(gen_paths: fixtures.GenTestPaths) -> None:
+def test_issue_73(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """
         Verify that https://github.com/UAVCAN/nunavut/issues/73 hasn't regressed.
     """
@@ -160,4 +155,4 @@ def test_issue_73(gen_paths: fixtures.GenTestPaths) -> None:
                  '--list-inputs',
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')

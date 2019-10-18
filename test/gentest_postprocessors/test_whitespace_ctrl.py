@@ -4,25 +4,17 @@
 # This software is distributed under the terms of the MIT License.
 #
 import pathlib
+import typing
+
 import pytest
 
-import fixtures
+
+def get_path_to_TestType_0_2(gen_paths: typing.Any) -> pathlib.Path:
+    uavcan_dir = pathlib.Path(gen_paths.out_dir / pathlib.Path('uavcan'))
+    return uavcan_dir / pathlib.Path('test') / pathlib.Path('TestType_0_2').with_suffix('.json')
 
 
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
-
-
-def get_path_to_TestType_0_2(gen_paths: fixtures.GenTestPaths) -> pathlib.Path:
-    return pathlib.Path(gen_paths.out_dir /
-                        pathlib.Path('uavcan') /
-                        pathlib.Path('test') /
-                        pathlib.Path('TestType_0_2').with_suffix('.json'))
-
-
-def test_no_trim_blocks(gen_paths: fixtures.GenTestPaths) -> None:
+def test_no_trim_blocks(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """ Ensure trim-blocks is False if --trim-blocks is not supplied.
     """
 
@@ -32,7 +24,7 @@ def test_no_trim_blocks(gen_paths: fixtures.GenTestPaths) -> None:
                   '-e', '.json',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_args0)
+    run_nnvg(gen_paths, nnvg_args0)
 
     with open(str(testtype_path), 'r') as testtype_file:
         lines = testtype_file.readlines()
@@ -40,7 +32,7 @@ def test_no_trim_blocks(gen_paths: fixtures.GenTestPaths) -> None:
     assert 98 == len(lines)
 
 
-def test_trim_blocks(gen_paths: fixtures.GenTestPaths) -> None:
+def test_trim_blocks(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """ Ensure the --trim-blocks switch is hooked up and functional.
     """
 
@@ -51,7 +43,7 @@ def test_trim_blocks(gen_paths: fixtures.GenTestPaths) -> None:
                   '--trim-blocks',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_args0)
+    run_nnvg(gen_paths, nnvg_args0)
 
     with open(str(testtype_path), 'r') as testtype_file:
         lines = testtype_file.readlines()
@@ -59,7 +51,7 @@ def test_trim_blocks(gen_paths: fixtures.GenTestPaths) -> None:
     assert 7 == len(lines)
 
 
-def test_no_lstrip_blocks(gen_paths: fixtures.GenTestPaths) -> None:
+def test_no_lstrip_blocks(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """ Ensure that lstrip_blocks if false if --lstrip-blocks is not supplied.
     """
 
@@ -69,7 +61,7 @@ def test_no_lstrip_blocks(gen_paths: fixtures.GenTestPaths) -> None:
                   '-e', '.json',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_args0)
+    run_nnvg(gen_paths, nnvg_args0)
 
     with open(str(testtype_path), 'r') as testtype_file:
         lines = testtype_file.readlines()
@@ -77,7 +69,7 @@ def test_no_lstrip_blocks(gen_paths: fixtures.GenTestPaths) -> None:
     assert "     \n" == lines[2]
 
 
-def test_lstrip_blocks(gen_paths: fixtures.GenTestPaths) -> None:
+def test_lstrip_blocks(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """ Ensure the --lstrip-blocks switch is hooked up and functional.
     """
 
@@ -88,7 +80,7 @@ def test_lstrip_blocks(gen_paths: fixtures.GenTestPaths) -> None:
                   '--lstrip-blocks',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_args0)
+    run_nnvg(gen_paths, nnvg_args0)
 
     with open(str(testtype_path), 'r') as testtype_file:
         lines = testtype_file.readlines()

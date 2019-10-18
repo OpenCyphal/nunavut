@@ -6,18 +6,11 @@
 import json
 from pathlib import Path
 
-import pytest
-
 from pydsdl import read_namespace
+
 from nunavut import build_namespace_tree
 from nunavut.jinja import Generator
 from nunavut.lang import LanguageContext
-
-
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
 
 
 def test_instance_tests(gen_paths):  # type: ignore

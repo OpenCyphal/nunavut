@@ -14,12 +14,6 @@ from nunavut.lang import LanguageContext
 from nunavut.jinja import Generator
 
 
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
-
-
 def test_TestType_0_1(gen_paths):  # type: ignore
     """ Generates a JSON blob and then reads it back in.
 
