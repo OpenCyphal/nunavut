@@ -15,6 +15,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import textwrap
 import typing
 
 import pytest
@@ -58,7 +59,7 @@ def run_nnvg(request):  # type: ignore
 class GenTestPaths:
     """Helper to generate common paths used in our unit tests."""
 
-    def __init__(self, test_file: str):
+    def __init__(self, test_file: str, keep_temporaries: bool):
         test_file_path = pathlib.Path(test_file)
         self.test_name = test_file_path.parent.stem
         self.test_dir = test_file_path.parent
@@ -66,7 +67,8 @@ class GenTestPaths:
         self.templates_dir = self.test_dir / pathlib.Path('templates')
         self.dsdl_dir = self.test_dir / pathlib.Path('dsdl')
 
-        self._out_dir = None  # type: typing.Optional[tempfile.TemporaryDirectory]
+        self._keep_temp = keep_temporaries
+        self._out_dir = None  # type: typing.Optional
         self._build_dir = None  # type: typing.Optional[pathlib.Path]
         self._dsdl_dir = None  # type: typing.Optional[pathlib.Path]
         print('Paths for test "{}" under dir {}'.format(self.test_name, self.test_dir))
@@ -78,7 +80,11 @@ class GenTestPaths:
         The directory to place test output under for this test case.
         """
         if self._out_dir is None:
-            self._out_dir = tempfile.TemporaryDirectory(dir=str(self.build_dir))
+            if self._keep_temp:
+                self._out_dir = lambda: None
+                setattr(self._out_dir, 'name', tempfile.mkdtemp(dir=str(self.build_dir)))
+            else:
+                self._out_dir = tempfile.TemporaryDirectory(dir=str(self.build_dir))
             print('GenTestPaths.out_dir is {} for test {}'.format(self._out_dir.name, self.test_name))
         return pathlib.Path(self._out_dir.name)
 
@@ -108,4 +114,14 @@ class GenTestPaths:
 
 @pytest.fixture(scope='function')
 def gen_paths(request):  # type: ignore
-    return GenTestPaths(request.module.__file__)
+    return GenTestPaths(request.module.__file__, request.config.option.keep_generated)
+
+
+def pytest_addoption(parser):  # type: ignore
+    parser.addoption("--keep-generated", action="store_true", help=textwrap.dedent('''
+        If set then the temporary directory used to generate files for each test will be left after
+        the test has completed. Normally this directory is temporary and therefore cleaned up automatically.
+
+        **wWARNING**
+        This will leave orphaned files on disk. They won't be big but there will be a lot of them.
+    '''))
