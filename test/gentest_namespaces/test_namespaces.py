@@ -75,7 +75,7 @@ def test_get_all_namespaces(gen_paths):  # type: ignore
     for ns, path in namespace.get_all_namespaces():
         index[path] = ns
 
-    assert len(index) == 3
+    assert len(index) == 4
 
 
 def test_get_all_types(gen_paths):  # type: ignore
@@ -85,7 +85,7 @@ def test_get_all_types(gen_paths):  # type: ignore
     for ns, path in namespace.get_all_types():
         index[path] = ns
 
-    assert len(index) == 5
+    assert len(index) == 6
 
 
 def test_empty_namespace(gen_paths):  # type: ignore
@@ -156,15 +156,22 @@ def test_build_namespace_tree_from_nothing(gen_paths):  # type: ignore
     assert namespace.full_name == ''
 
 
-def test_namespace_stropping(gen_paths):  # type: ignore
+@pytest.mark.parametrize('language_key,expected_file_ext,expected_stropp_part_0,expected_stropp_part_1',
+                         [('c', '.h', '_typedef', 'str'), ('py', '.py', 'typedef', 'str_')])  # type: ignore
+def test_namespace_stropping(gen_paths,
+                             language_key,
+                             expected_file_ext,
+                             expected_stropp_part_0,
+                             expected_stropp_part_1):
     """Test generating a namespace that uses a reserved keyword for a given language."""
-    language_context = LanguageContext('c')
+    language_context = LanguageContext(language_key)
     namespace, root_namespace_path, compound_types = gen_test_namespace(gen_paths, language_context)
     assert len(compound_types) == 2
     generator = Generator(namespace, True, language_context, gen_paths.templates_dir / Path('default'))
     generator.generate_all()
 
-    outfile = gen_paths.find_outfile_in_namespace("scotec._typedef", namespace)
+    expected_stropped_ns = 'scotec.{}.{}'.format(expected_stropp_part_0, expected_stropp_part_1)
+    outfile = gen_paths.find_outfile_in_namespace(expected_stropped_ns, namespace)
 
     assert (outfile is not None)
 
@@ -174,7 +181,9 @@ def test_namespace_stropping(gen_paths):  # type: ignore
     assert json_blob is not None
 
     output_path_for_stropped = namespace.find_output_path_for_type(compound_types[1])
-    assert (gen_paths.out_dir / 'scotec' / '_typedef' / 'ATOMIC_TYPE_0_1').with_suffix('.h') == output_path_for_stropped
+    expected_stable_path = gen_paths.out_dir / 'scotec'
+    expected_path_and_file = expected_stable_path / expected_stropp_part_0 / expected_stropp_part_1 / 'ATOMIC_TYPE_0_1'
+    assert expected_path_and_file.with_suffix(expected_file_ext) == output_path_for_stropped
 
 
 def test_python35_resolve_behavior(gen_paths):  # type: ignore
