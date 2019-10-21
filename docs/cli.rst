@@ -4,22 +4,12 @@
 nnvg
 ################################################
 
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-
-   nunavut/lib
-   templates
-   appendix
-   dev
-
-
 *************************************
 Usage
 *************************************
 
 .. argparse::
-   :filename: nunavut/cli.py
+   :filename: src/nunavut/cli.py
    :func: _make_parser
    :prog: nnvg
 
