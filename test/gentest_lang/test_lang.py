@@ -18,12 +18,6 @@ from nunavut.lang import LanguageContext, Language
 from nunavut.jinja import Generator
 
 
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
-
-
 class Dummy:
 
     def __init__(self, name: str) -> None:
@@ -52,12 +46,10 @@ def ptest_lang_c(gen_paths, implicit):  # type: ignore
 
     root_namespace = str(root_namespace_dir)
     compound_types = read_namespace(root_namespace, '', allow_unregulated_fixed_port_id=True)
-    language_context = LanguageContext('c' if implicit else None)
+    language_context = LanguageContext('c' if implicit else None, '.h' if not implicit else None)
     namespace = build_namespace_tree(compound_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
-                                     '.py',
-                                     '_',
                                      language_context)
     generator = Generator(namespace,
                           False,
@@ -124,13 +116,11 @@ def ptest_lang_cpp(gen_paths, implicit):  # type: ignore
 
     templates_dirs.append(gen_paths.templates_dir / Path("common"))
 
-    language_context = LanguageContext('cpp' if implicit else None)
+    language_context = LanguageContext('cpp' if implicit else None, '.hpp' if not implicit else None)
 
     namespace = build_namespace_tree(compound_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
-                                     '.py',
-                                     '_',
                                      language_context)
 
     generator = Generator(namespace,
@@ -190,13 +180,11 @@ def ptest_lang_py(gen_paths, implicit):  # type: ignore
 
     compound_types = read_namespace(root_namespace, '', allow_unregulated_fixed_port_id=True)
 
-    language_context = LanguageContext('py' if implicit else None)
+    language_context = LanguageContext('py' if implicit else None, '.py' if not implicit else None)
 
     namespace = build_namespace_tree(compound_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
-                                     '.py',
-                                     '_',
                                      language_context)
     generator = Generator(namespace,
                           False,
@@ -346,7 +334,7 @@ def test_language_object() -> None:
     """
     Verify that the Language module object works as required.
     """
-    language = Language('c')
+    language = Language('c', '.h')
 
     assert 'c' == language.name
     assert language.get_module() is not None
@@ -363,7 +351,7 @@ def test_language_context() -> None:
     """
     Verify that the LanguageContext objects works as required.
     """
-    context_w_no_target = LanguageContext()
+    context_w_no_target = LanguageContext(extension='.json')
 
     assert None is context_w_no_target.get_target_language()
     assert 'c' in context_w_no_target.get_supported_languages()
@@ -378,3 +366,18 @@ def test_language_context() -> None:
     assert context_w_target.get_target_language() is not None
     assert context_w_target.get_id_filter() is not None
     assert '_if' == context_w_target.get_id_filter()('if')
+
+
+def test_either_target_or_extension() -> None:
+    """
+    LanguageContext requires either a target or an extension or both but not
+    neither.
+    """
+    _ = LanguageContext(target_language='py')
+    _ = LanguageContext(extension='.py')
+    _ = LanguageContext(target_language='py', extension='.py')
+    with pytest.raises(ValueError):
+        _ = LanguageContext()
+
+    with pytest.raises(KeyError):
+        _ = LanguageContext('foobar')

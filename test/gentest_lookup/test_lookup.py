@@ -31,22 +31,14 @@ class d(b, c):
     pass
 
 
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
-
-
 def test_bfs_of_type_for_template(gen_paths):  # type: ignore
     """ Verifies that our template to type lookup logic does a breadth-first search for a valid
     template when searching type names.
     """
-    language_context = LanguageContext()
+    language_context = LanguageContext(extension='.json')
     empty_namespace = Namespace('',
                                 gen_paths.dsdl_dir,
                                 gen_paths.out_dir,
-                                '.h',
-                                '_',
                                 language_context)
     generator = Generator(empty_namespace, False, language_context, gen_paths.templates_dir)
     subject = d()
@@ -62,12 +54,10 @@ def test_one_template(gen_paths):  # type: ignore
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     root_namespace = str(root_namespace_dir)
     serializable_types = read_namespace(root_namespace, [])
-    language_context = LanguageContext()
+    language_context = LanguageContext(extension='.json')
     namespace = build_namespace_tree(serializable_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
-                                     '.json',
-                                     '_',
                                      language_context)
     generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
     generator.generate_all(False)
@@ -89,12 +79,10 @@ def test_get_templates(gen_paths):  # type: ignore
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     root_namespace = str(root_namespace_dir)
     serializable_types = read_namespace(root_namespace, [])
-    language_context = LanguageContext()
+    language_context = LanguageContext(extension='.json')
     namespace = build_namespace_tree(serializable_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
-                                     '.json',
-                                     '_',
                                      language_context)
     generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
 

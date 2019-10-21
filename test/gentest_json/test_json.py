@@ -14,12 +14,6 @@ from nunavut.lang import LanguageContext
 from nunavut.jinja import Generator
 
 
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
-
-
 def test_TestType_0_1(gen_paths):  # type: ignore
     """ Generates a JSON blob and then reads it back in.
 
@@ -29,12 +23,10 @@ def test_TestType_0_1(gen_paths):  # type: ignore
 
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     root_namespace = str(root_namespace_dir)
-    language_context = LanguageContext()
+    language_context = LanguageContext(extension='.json')
     namespace = build_namespace_tree(read_namespace(root_namespace, ''),
                                      root_namespace_dir,
                                      gen_paths.out_dir,
-                                     '.json',
-                                     '_',
                                      language_context)
     generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
     generator.generate_all(False)

@@ -13,12 +13,6 @@ from nunavut.jinja import Generator
 from pydsdl import read_namespace
 
 
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
-
-
 def test_realgen(gen_paths):  # type: ignore
     """
     Sanity test that runs through the entire public, regulated set of
@@ -26,12 +20,10 @@ def test_realgen(gen_paths):  # type: ignore
     """
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     type_map = read_namespace(str(root_namespace_dir), '')
-    language_context = LanguageContext()
+    language_context = LanguageContext(extension='.h')
     namespace = build_namespace_tree(type_map,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
-                                     '.h',
-                                     '_',
                                      language_context)
     generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
     generator.generate_all(False)

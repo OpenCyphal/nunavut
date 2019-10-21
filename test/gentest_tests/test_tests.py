@@ -6,18 +6,11 @@
 import json
 from pathlib import Path
 
-import pytest
-
 from pydsdl import read_namespace
+
 from nunavut import build_namespace_tree
 from nunavut.jinja import Generator
 from nunavut.lang import LanguageContext
-
-
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
 
 
 def test_instance_tests(gen_paths):  # type: ignore
@@ -31,8 +24,6 @@ def test_instance_tests(gen_paths):  # type: ignore
     namespace = build_namespace_tree(type_map,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
-                                     '.h',
-                                     '_',
                                      language_context)
     generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
     generator.generate_all(False)
@@ -52,4 +43,3 @@ def test_instance_tests(gen_paths):  # type: ignore
     assert json_blob["this_field_is_a_float"]["isSerializableType"] is True
     assert json_blob["this_field_is_a_float"]["isIntegerType"] is False
     assert json_blob["this_field_is_a_float"]["isFloatType"] is True
-    

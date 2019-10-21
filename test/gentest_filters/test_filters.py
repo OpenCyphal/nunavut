@@ -16,12 +16,6 @@ from nunavut.jinja.jinja2.exceptions import TemplateAssertionError
 from pathlib import Path, PurePath
 
 
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
-
-
 def test_template_assert(gen_paths):  # type: ignore
     """
     Tests our template assertion extension.
@@ -29,12 +23,10 @@ def test_template_assert(gen_paths):  # type: ignore
     root_path = str(gen_paths.dsdl_dir / Path("uavcan"))
     output_path = gen_paths.out_dir / 'assert'
     compound_types = read_namespace(root_path, [])
-    language_context = LanguageContext()
+    language_context = LanguageContext(extension='.json')
     namespace = build_namespace_tree(compound_types,
                                      root_path,
                                      output_path,
-                                     '.json',
-                                     '_',
                                      language_context)
     template_path = gen_paths.templates_dir / Path('assert')
     generator = Generator(namespace, False, language_context, template_path)
@@ -52,12 +44,10 @@ def test_type_to_include(gen_paths):  # type: ignore
     root_path = str(gen_paths.dsdl_dir / Path("uavcan"))
     output_path = gen_paths.out_dir / 'type_to_include'
     compound_types = read_namespace(root_path, [])
-    language_context = LanguageContext()
+    language_context = LanguageContext(extension='.json')
     namespace = build_namespace_tree(compound_types,
                                      root_path,
                                      output_path,
-                                     '.json',
-                                     '_',
                                      language_context)
     template_path = gen_paths.templates_dir / Path('type_to_include')
     generator = Generator(namespace, False, language_context, template_path)
@@ -77,12 +67,10 @@ def test_custom_filter_and_test(gen_paths):  # type: ignore
     root_path = str(gen_paths.dsdl_dir / Path("uavcan"))
     output_path = gen_paths.out_dir / 'filter_and_test'
     compound_types = read_namespace(root_path, [])
-    language_context = LanguageContext()
+    language_context = LanguageContext(extension='.json')
     namespace = build_namespace_tree(compound_types,
                                      root_path,
                                      output_path,
-                                     '.json',
-                                     '_',
                                      language_context)
     template_path = gen_paths.templates_dir / Path('custom_filter_and_test')
     generator = Generator(namespace,
@@ -106,8 +94,8 @@ def test_custom_filter_and_test(gen_paths):  # type: ignore
 
 
 def test_custom_filter_and_test_redefinition(gen_paths):  # type: ignore
-    language_context = LanguageContext()
-    namespace = Namespace('', Path(), PurePath(), '.txt', '_', language_context)
+    language_context = LanguageContext(extension='.json')
+    namespace = Namespace('', Path(), PurePath(), language_context)
 
     with pytest.raises(RuntimeError):
         Generator(namespace,

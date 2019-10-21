@@ -5,24 +5,17 @@
 #
 import json
 import pathlib
+import re
 import subprocess
 import typing
-import pytest
-import re
 
 import pydsdl
+import pytest
+
 import nunavut
 import nunavut.jinja
 import nunavut.postprocessors
-import fixtures
-
 from nunavut.lang import LanguageContext
-
-
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
 
 
 def _test_common_namespace(gen_paths):  # type: ignore
@@ -31,9 +24,7 @@ def _test_common_namespace(gen_paths):  # type: ignore
     return nunavut.build_namespace_tree(pydsdl.read_namespace(root_namespace, ''),
                                         root_namespace_dir,
                                         gen_paths.out_dir,
-                                        '.json',
-                                        '_',
-                                        LanguageContext())
+                                        LanguageContext('js'))
 
 
 def _test_common_post_condition(gen_paths, namespace):  # type: ignore
@@ -74,7 +65,7 @@ def test_unknown_intermediate(gen_paths):  # type: ignore
             return generated
 
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     with pytest.raises(ValueError):
         generator.generate_all(False, True, [InvalidType()])
 
@@ -83,7 +74,7 @@ def test_empty_pp_array(gen_paths):  # type: ignore
     """ Verifies the behavior of a zero length post_processors argument.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [])
 
     _test_common_post_condition(gen_paths, namespace)
@@ -93,7 +84,7 @@ def test_chmod(gen_paths):  # type: ignore
     """ Generates a file using a SetFileMode post-processor.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [nunavut.postprocessors.SetFileMode(0o444)])
 
     outfile = _test_common_post_condition(gen_paths, namespace)
@@ -105,7 +96,7 @@ def test_overwrite(gen_paths):  # type: ignore
     """ Verifies the allow_overwrite flag contracts.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [nunavut.postprocessors.SetFileMode(0o444)])
 
     with pytest.raises(PermissionError):
@@ -120,7 +111,7 @@ def test_overwrite_dryrun(gen_paths):  # type: ignore
     """ Verifies the allow_overwrite flag contracts.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [nunavut.postprocessors.SetFileMode(0o444)])
 
     with pytest.raises(PermissionError):
@@ -129,7 +120,7 @@ def test_overwrite_dryrun(gen_paths):  # type: ignore
     generator.generate_all(True, False)
 
 
-def test_no_overwrite_arg(gen_paths):  # type: ignore
+def test_no_overwrite_arg(gen_paths, run_nnvg):  # type: ignore
     """ Verifies the --no-overwrite argument of nnvg.
     """
     nnvg_cmd = ['--templates', str(gen_paths.templates_dir),
@@ -137,15 +128,15 @@ def test_no_overwrite_arg(gen_paths):  # type: ignore
                 '-e', '.json',
                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd)
+    run_nnvg(gen_paths, nnvg_cmd)
 
     nnvg_cmd.append('--no-overwrite')
 
     with pytest.raises(subprocess.CalledProcessError):
-        fixtures.run_nnvg(gen_paths, nnvg_cmd)
+        run_nnvg(gen_paths, nnvg_cmd)
 
 
-def test_file_mode(gen_paths):  # type: ignore
+def test_file_mode(gen_paths, run_nnvg):  # type: ignore
     """ Verify the --file-mode argument of nnvg.
     """
 
@@ -156,7 +147,7 @@ def test_file_mode(gen_paths):  # type: ignore
                 '--file-mode', oct(file_mode),
                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd)
+    run_nnvg(gen_paths, nnvg_cmd)
 
     outfile = gen_paths.out_dir /\
         pathlib.Path('uavcan') /\
@@ -195,7 +186,7 @@ def test_move_file(gen_paths):  # type: ignore
     verifier = Verifier()
 
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [mover, verifier])
 
     assert mover.called
@@ -227,7 +218,7 @@ def test_line_pp(gen_paths):  # type: ignore
     line_pp0 = TestLinePostProcessor0()
     line_pp1 = TestLinePostProcessor1()
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [line_pp0, line_pp1])
     assert len(line_pp1._lines) > 0
     _test_common_post_condition(gen_paths, namespace)
@@ -240,14 +231,14 @@ def test_line_pp_returns_none(gen_paths):  # type: ignore
             return None  # type: ignore
 
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     with pytest.raises(ValueError):
         generator.generate_all(False, True, [TestBadLinePostProcessor()])
 
 
 def test_trim_trailing_ws(gen_paths):  # type: ignore
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [nunavut.postprocessors.TrimTrailingWhitespace()])
     outfile = _test_common_post_condition(gen_paths, namespace)
 
@@ -258,7 +249,7 @@ def test_trim_trailing_ws(gen_paths):  # type: ignore
 
 def test_limit_empty_lines(gen_paths):  # type: ignore
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     generator.generate_all(False, True, [nunavut.postprocessors.LimitEmptyLines(0)])
     outfile = _test_common_post_condition(gen_paths, namespace)
 
@@ -271,7 +262,7 @@ def test_limit_empty_lines(gen_paths):  # type: ignore
                 assert len(line) > 0
 
 
-def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
+def test_pp_trim_trailing_whitespace(gen_paths, run_nnvg):  # type: ignore
     """ Verify the --pp-trim-trailing-whitespace argument of nnvg.
     """
     outfile = gen_paths.out_dir /\
@@ -284,7 +275,7 @@ def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
                   '-e', '.json',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd_0)
+    run_nnvg(gen_paths, nnvg_cmd_0)
 
     lines_w_trailing = 0
     with open(str(outfile), 'r') as json_file:
@@ -300,14 +291,14 @@ def test_pp_trim_trailing_whitespace(gen_paths):  # type: ignore
                   '--pp-trim-trailing-whitespace',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd_1)
+    run_nnvg(gen_paths, nnvg_cmd_1)
 
     with open(str(outfile), 'r') as json_file:
         for line in json_file:
             assert re.search(r' +$', line) is None
 
 
-def test_pp_max_emptylines(gen_paths):  # type: ignore
+def test_pp_max_emptylines(gen_paths, run_nnvg):  # type: ignore
     """ Verify the --pp-max-emptylines argument of nnvg.
     """
     outfile = gen_paths.out_dir /\
@@ -320,7 +311,7 @@ def test_pp_max_emptylines(gen_paths):  # type: ignore
                   '-e', '.json',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd_0)
+    run_nnvg(gen_paths, nnvg_cmd_0)
 
     found_empty_line = False
     with open(str(outfile), 'r') as json_file:
@@ -341,7 +332,7 @@ def test_pp_max_emptylines(gen_paths):  # type: ignore
                   '--pp-max-emptylines', '0',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd_1)
+    run_nnvg(gen_paths, nnvg_cmd_1)
 
     with open(str(outfile), 'r') as json_file:
         for line in json_file:
@@ -358,7 +349,7 @@ def test_external_edit_in_place(gen_paths):  # type: ignore
     Test that ExternalProgramEditInPlace is invoked as expected
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     ext_program = gen_paths.test_dir / pathlib.Path('ext_program.py')
     edit_in_place = nunavut.postprocessors.ExternalProgramEditInPlace([str(ext_program)])
     generator.generate_all(False, True, [edit_in_place])
@@ -378,7 +369,7 @@ def test_external_edit_in_place_fail(gen_paths):  # type: ignore
     Test that ExternalProgramEditInPlace handles error as expected.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(), gen_paths.templates_dir)
+    generator = nunavut.jinja.Generator(namespace, False, LanguageContext(extension='.json'), gen_paths.templates_dir)
     ext_program = gen_paths.test_dir / pathlib.Path('ext_program.py')
     simulated_error_args = [str(ext_program), '--simulate-error']
     edit_in_place_checking = nunavut.postprocessors.ExternalProgramEditInPlace(simulated_error_args)
@@ -388,7 +379,7 @@ def test_external_edit_in_place_fail(gen_paths):  # type: ignore
     generator.generate_all(False, True, [edit_in_place_not_checking])
 
 
-def test_pp_run_program(gen_paths):  # type: ignore
+def test_pp_run_program(gen_paths, run_nnvg):  # type: ignore
     outfile = gen_paths.out_dir /\
         pathlib.Path('uavcan') /\
         pathlib.Path('test') /\
@@ -402,7 +393,7 @@ def test_pp_run_program(gen_paths):  # type: ignore
                   '--pp-run-program', str(ext_program),
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_args0)
+    run_nnvg(gen_paths, nnvg_args0)
 
     with open(str(outfile), 'r') as json_file:
         json_blob = json.load(json_file)
@@ -413,7 +404,7 @@ def test_pp_run_program(gen_paths):  # type: ignore
     assert pathlib.Path(outfile).stat().st_mode & 0o777 == 0o444
 
 
-def test_pp_run_program_w_arg(gen_paths):  # type: ignore
+def test_pp_run_program_w_arg(gen_paths, run_nnvg):  # type: ignore
     ext_program = gen_paths.test_dir / pathlib.Path('ext_program.py')
 
     nnvg_args0 = ['--templates', str(gen_paths.templates_dir),
@@ -424,4 +415,4 @@ def test_pp_run_program_w_arg(gen_paths):  # type: ignore
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     with pytest.raises(subprocess.CalledProcessError):
-        fixtures.run_nnvg(gen_paths, nnvg_args0)
+        run_nnvg(gen_paths, nnvg_args0)

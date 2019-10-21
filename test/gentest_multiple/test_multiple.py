@@ -4,23 +4,15 @@
 # This software is distributed under the terms of the MIT License.
 #
 
+import json
 from pathlib import Path
 
 import pytest
-import json
+from pydsdl import FrontendError, read_namespace
 
-from pydsdl import read_namespace, FrontendError
 from nunavut import build_namespace_tree
-from nunavut.lang import LanguageContext
 from nunavut.jinja import Generator
-
-import fixtures
-
-
-@pytest.fixture
-def gen_paths():  # type: ignore
-    from fixtures import GenTestPaths
-    return GenTestPaths(__file__)
+from nunavut.lang import LanguageContext
 
 
 def test_two_root_error(gen_paths):  # type: ignore
@@ -39,12 +31,10 @@ def test_three_roots(gen_paths):  # type: ignore
     includes = [str(gen_paths.dsdl_dir / Path("huckco")),
                 str(gen_paths.dsdl_dir / Path("esmeinc"))]
     compound_types = read_namespace(root_namespace, includes, allow_unregulated_fixed_port_id=True)
-    language_context = LanguageContext()
+    language_context = LanguageContext(extension='.json')
     namespace = build_namespace_tree(compound_types,
                                      root_namespace,
                                      gen_paths.out_dir,
-                                     '.json',
-                                     '_',
                                      language_context)
     generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
     generator.generate_all(False)
@@ -63,7 +53,7 @@ def test_three_roots(gen_paths):  # type: ignore
     assert json_blob['scotec.FatherType']['attributes'][1]['type'] == 'esmeinc.DaughterType.0.1'
 
 
-def test_three_roots_using_nnvg(gen_paths):  # type: ignore
+def test_three_roots_using_nnvg(gen_paths, run_nnvg):  # type: ignore
     nnvg_cmd = ['--templates', str(gen_paths.templates_dir),
                 '-I', str(gen_paths.dsdl_dir / Path("huckco")),
                 '-I', str(gen_paths.dsdl_dir / Path("esmeinc")),
@@ -71,4 +61,4 @@ def test_three_roots_using_nnvg(gen_paths):  # type: ignore
                 '-e', str('.json'),
                 str(gen_paths.dsdl_dir / Path("scotec"))]
 
-    fixtures.run_nnvg(gen_paths, nnvg_cmd)
+    run_nnvg(gen_paths, nnvg_cmd)
