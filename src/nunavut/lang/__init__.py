@@ -78,9 +78,9 @@ class LanguageContext:
     """
 
     _language_defaults = {
-        'c': ('.h', '__module__'),
-        'cpp': ('.hpp', '__module__'),
-        'js': ('.js', '__module__'),
+        'c': ('.h', '_namespace_'),
+        'cpp': ('.hpp', '_namespace_'),
+        'js': ('.js', '_namespace_'),
         'py': ('.py', '__init__')
     }
 
