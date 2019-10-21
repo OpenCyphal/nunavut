@@ -3,15 +3,10 @@
 # This software is distributed under the terms of the MIT License.
 #
 """
-Enable pytest integration of doctests in source and/or in documentation.
+Fixtures for our tests.
 """
 
 import os
-#
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
-# This software is distributed under the terms of the MIT License.
-#
 import pathlib
 import subprocess
 import tempfile
@@ -19,20 +14,8 @@ import textwrap
 import typing
 
 import pytest
-from sybil import Sybil
-from sybil.parsers.codeblock import CodeBlockParser
-from sybil.parsers.doctest import DocTestParser
 
 from nunavut import Namespace
-
-pytest_collect_file = Sybil(
-    parsers=[
-        DocTestParser(),
-        CodeBlockParser(),
-    ],
-    pattern='*.py',
-    excludes=['test/fixtues/*']
-).pytest()
 
 
 @pytest.fixture
