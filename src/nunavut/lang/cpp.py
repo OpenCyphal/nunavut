@@ -145,24 +145,40 @@ CPP_RESERVED_PATTERNS = frozenset([*C_RESERVED_PATTERNS])
 CPP_NO_DOUBLE_DASH_RULE = re.compile(r'(__)')
 
 
+def _common_filter_id(instance: typing.Any,
+                      stropping_prefix: str,
+                      encoding_prefix: str,
+                      scoping_token: typing.Optional[str] = None) -> str:
+    if hasattr(instance, 'name'):
+        raw_name = str(instance.name)  # type: str
+    else:
+        raw_name = str(instance)
+
+    vne = VariableNameEncoder(stropping_prefix, '', encoding_prefix, scoping_token=scoping_token)
+    out = vne.strop(raw_name, CPP_RESERVED_IDENTIFIERS, CPP_RESERVED_PATTERNS)
+    return CPP_NO_DOUBLE_DASH_RULE.sub('_' + vne.encode_character('_'), out)
+
+
 def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix: str = 'ZX') -> str:
     """
     Filter that produces a valid C and/or C++ identifier for a given object. The encoding may not
     be reversable.
 
-    Example::
+    .. invisible-code-block: python
 
-        {{ "I like c++" | cpp.id }}
-        {{ "if" | cpp.id }}
-        {{ "if" | cpp.id('stropped_') }}
-        {{ "_Reserved" | cpp.id }}
+        from nunavut.lang.cpp import filter_id
 
-    Results Example::
+    >>> filter_id('I like c++')
+    'I_like_cZX002BZX002B'
 
-       I_like_cZX0043ZX0043
-       _if
-       stropped_if
-       _reserved
+    >>> filter_id('if')
+    '_if'
+
+    >>> filter_id('if', 'stropped_')
+    'stropped_if'
+
+    >>> filter_id('_Reserved')
+    '_reserved'
 
     :param any instance:        Any object or data that either has a name property or can be converted
                                 to a string.
@@ -175,14 +191,44 @@ def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix
     :returns: A token that is a valid identifier for C and C++, is not a reserved keyword, and is transformed
               in a deterministic manner based on the provided instance.
     """
-    if hasattr(instance, 'name'):
-        raw_name = str(instance.name)  # type: str
-    else:
-        raw_name = str(instance)
+    return _common_filter_id(instance, stropping_prefix, encoding_prefix)
 
-    vne = VariableNameEncoder(stropping_prefix, '', encoding_prefix)
-    out = vne.strop(raw_name, CPP_RESERVED_IDENTIFIERS, CPP_RESERVED_PATTERNS)
-    return CPP_NO_DOUBLE_DASH_RULE.sub('_' + vne.encode_character('_'), out)
+
+def filter_ns_id(instance: typing.Any,
+                 stropping_prefix: str = '_',
+                 encoding_prefix: str = 'ZX',
+                 scoping_token: str = '::') -> str:
+    """
+    Filter that produces a valid C++ identifier for a given object preserving namespacing if present.
+    Example:
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_ns_id
+        from nunavut.lang.cpp import filter_id
+
+    >>> filter_ns_id('foo::I_\\u2764_c++::Bar')
+    'foo::I_ZX005Cu2764_cZX002BZX002B::Bar'
+
+    whereas using :func:`filter_id` yields the following:
+
+    >>> filter_id('foo::I_\\u2764_c++::Bar')
+    'fooZX003AZX003AI_ZX005Cu2764_cZX002BZX002BZX003AZX003ABar'
+
+    :param any instance:        Any object or data that either has a name property or can be converted
+                                to a string.
+    :param str stropping_prefix: String prepended to the resolved instance name if the encoded value
+                                is a reserved keyword in C.
+    :param str encoding_prefix: The string to insert before any four digit unicode number used to represent
+                                an illegal character.
+                                Note that the caller must ensure the prefix itself consists of only valid
+                                characters for C identifiers.
+    :param str scoping_token:   A token used to scope terms in the identifier. These tokens are not stropped
+                                and are used to separate individual identifiers which are stropped.
+    :returns: A token that is a valid identifier for c++, is not a reserved keyword, and is transformed
+              in a deterministic manner based on the provided instance.
+    """
+    return _common_filter_id(instance, stropping_prefix, encoding_prefix, scoping_token)
 
 
 def filter_open_namespace(full_namespace: str, bracket_on_next_line: bool = True) -> str:

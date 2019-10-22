@@ -6,6 +6,7 @@
 Enable pytest integration of doctests in source and/or in documentation.
 """
 import typing
+from doctest import ELLIPSIS
 from fnmatch import fnmatch
 
 from sybil import Sybil
@@ -28,7 +29,7 @@ def _pytest_integration_that_actually_works() -> typing.Callable:
 
     _sy = Sybil(
         parsers=[
-            DocTestParser(),
+            DocTestParser(optionflags=ELLIPSIS),
             CodeBlockParser(),
         ]
     )

@@ -108,11 +108,13 @@ class VariableNameEncoder:
                  stropping_prefix: str,
                  stropping_suffix: str,
                  encoding_prefix: str,
-                 enforce_c_prefix_rules: bool = True) -> None:
+                 enforce_c_prefix_rules: bool = True,
+                 scoping_token: typing.Optional[str] = None) -> None:
         self._stropping_prefix = stropping_prefix
         self._stropping_suffix = stropping_suffix
         self._encoding_prefix = encoding_prefix
         self._enforce_c_prefix_rules = enforce_c_prefix_rules
+        self._scoping_token = scoping_token
         if self._token_start_pattern.match(self._encoding_prefix):
             raise RuntimeError('{} is not allowed as a prefix since it can result in illegal identifiers.'.format(
                 self._encoding_prefix))
@@ -152,6 +154,18 @@ class VariableNameEncoder:
               token: str,
               reserved_words: typing.FrozenSet[str],
               reserved_patterns: typing.Optional[typing.FrozenSet[typing.Pattern]] = None) -> str:
+        if self._scoping_token is None:
+            return self.strop_part(token, reserved_words, reserved_patterns)
+        else:
+            stropped = []  # type: typing.List[str]
+            for part in token.split(self._scoping_token):
+                stropped.append(self.strop_part(part, reserved_words, reserved_patterns))
+            return self._scoping_token.join(stropped)
+
+    def strop_part(self,
+                   token: str,
+                   reserved_words: typing.FrozenSet[str],
+                   reserved_patterns: typing.Optional[typing.FrozenSet[typing.Pattern]] = None) -> str:
         encoded = str(self._token_pattern.sub(self._filter_id_illegal_character_replacement, token))
         if encoded in reserved_words or self._matches(encoded, reserved_patterns):
             stropped = (self._stropping_prefix + encoded + self._stropping_suffix)
@@ -168,19 +182,21 @@ def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix
     Filter that produces a valid C identifier for a given object. The encoding may not
     be reversable.
 
-        Example::
+    .. invisible-code-block: python
 
-        {{ "I \u2764 c" | c.id }}
-        {{ "if" | c.id }}
-        {{ "if" | c.id('stropped_') }}
-        {{ "_Reserved" | c.id }}
+        from nunavut.lang.c import filter_id
 
-    Results Example::
+    >>> filter_id('I \u2764 c')
+    'I_ZX2764_c'
 
-       I_ZX2764_c
-       _if
-       stropped_if
-       _reserved
+    >>> filter_id('if')
+    '_if'
+
+    >>> filter_id('if', 'stropped_')
+    'stropped_if'
+
+    >>> filter_id('_Reserved')
+    '_reserved'
 
     :param any instance:        Any object or data that either has a name property or can be converted
                                 to a string.
