@@ -2,8 +2,25 @@
 Nunavut
 ################################################
 
-|badge_forum|_ |badge_docs|_ |badge_analysis|_ |badge_coverage|_ |badge_issues|_ |badge_build|_ \
-|badge_pypi_support|_ |badge_pypi_version|_ |badge_github_license|_
++--------------------------------+-----------------------------------+
+| tox build (master)             | |badge_build|_                    |
++--------------------------------+-----------------------------------+
+| generated cpp verification     | |badge_verification_cpp|_         |
++--------------------------------+-----------------------------------+
+| static analysis                | |badge_analysis|_ |badge_issues|_ |
++--------------------------------+-----------------------------------+
+| unit test code coverage        | |badge_coverage|_                 |
++--------------------------------+-----------------------------------+
+| Python versions supported      | |badge_pypi_support|_             |
++--------------------------------+-----------------------------------+
+| latest released version        | |badge_pypi_version|_             |
++--------------------------------+-----------------------------------+
+| documentation                  | |badge_docs|_                     |
++--------------------------------+-----------------------------------+
+| license                        | |badge_github_license|_           |
++--------------------------------+-----------------------------------+
+| community/support              | |badge_forum|_                    |
++--------------------------------+-----------------------------------+
 
 Nunavut is a `UAVCAN`_ DSDL code generator that automates exposing a `pydsdl`_ abstract
 syntax tree to `Jinja2`_ templates allowing authors to generate code, schemas, metadata,
@@ -106,6 +123,10 @@ Nunavut is part of the UAVCAN project:
 .. |badge_build| image:: https://badge.buildkite.com/049dced90c2afed8a2aa072bc513d9e6e1ffc78f9036624efd.svg
     :alt: Build status
 .. _badge_build: https://buildkite.com/uavcan/nunavut-release
+
+.. |badge_verification_cpp| image:: https://badge.buildkite.com/aa0a26b7c212c7913c4ed8869cf49d48f751fa2150e3407cfc.svg
+    :alt: C++ code gen verification status
+.. _badge_verification_cpp: https://buildkite.com/uavcan/nunavut-verification-cpp
 
 .. |badge_pypi_support| image:: https://img.shields.io/pypi/pyversions/nunavut.svg
     :alt: Supported Python Versions

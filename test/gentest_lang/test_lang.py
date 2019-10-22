@@ -13,9 +13,13 @@ import inspect
 from typing import Dict
 
 from pydsdl import read_namespace
-from nunavut import build_namespace_tree, lang
+from nunavut import build_namespace_tree
 from nunavut.lang import LanguageContext, Language
 from nunavut.jinja import Generator
+
+from nunavut.lang.c import filter_id as c_filter_id
+from nunavut.lang.cpp import filter_id as cpp_filter_id
+from nunavut.lang.py import filter_id as py_filter_id
 
 
 class Dummy:
@@ -239,7 +243,7 @@ def test_lang_c(gen_paths):  # type: ignore
     assert lang_any['id_E'] == 'NOT_ATOMIC_YO'
     assert lang_any['id_F'] == '_aTOMIC_YO'
 
-    assert '_flight__time' == lang.c.filter_id(Dummy('_Flight__time'))
+    assert '_flight__time' == c_filter_id(Dummy('_Flight__time'))
 
 
 def test_lang_c_explicit(gen_paths):  # type: ignore
@@ -275,9 +279,9 @@ def test_lang_cpp(gen_paths):  # type: ignore
     assert lang_any['id_F'] == '_aTOMIC_YO'
 
     with pytest.raises(RuntimeError):
-        lang.cpp.filter_id('foo', '_', '__')
+        cpp_filter_id('foo', '_', '__')
 
-    assert '_flight_ZX005Ftime' == lang.cpp.filter_id(Dummy('_Flight__time'))
+    assert '_flight_ZX005Ftime' == cpp_filter_id(Dummy('_Flight__time'))
 
 
 def test_lang_cpp_explicit(gen_paths):  # type: ignore
@@ -287,12 +291,6 @@ def test_lang_cpp_explicit(gen_paths):  # type: ignore
     """
 
     ptest_lang_cpp(gen_paths, False)
-
-
-def test_c_to_snake_case():  # type: ignore
-    assert "scotec_mcu_timer" == lang.c.filter_to_snake_case("scotec.mcu.Timer")
-    assert "scotec_mcu_timer_helper" == lang.c.filter_to_snake_case("scotec.mcu.TimerHelper")
-    assert "aa_bb_c_cc_aaa_a_aa_aaa_aa_aaa_a_a" == lang.c.filter_to_snake_case(" aa bb. cCcAAa_aAa_AAaAa_AAaA_a ")
 
 
 def test_lang_py(gen_paths):  # type: ignore
@@ -318,7 +316,7 @@ def test_lang_py(gen_paths):  # type: ignore
     assert lang_any['id_E'] == 'NOT_ATOMIC_YO'
     assert lang_any['id_F'] == 'ATOMIC_YO'
 
-    assert '_Flight__time' == lang.py.filter_id(Dummy('_Flight__time'))
+    assert '_Flight__time' == py_filter_id(Dummy('_Flight__time'))
 
 
 def test_lang_py_explicit(gen_paths):  # type: ignore

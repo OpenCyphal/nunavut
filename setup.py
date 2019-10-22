@@ -18,4 +18,5 @@ version = {}  # type: Dict
 with open('src/nunavut/version.py') as fp:
     exec(fp.read(), version)
 
-setuptools.setup(version=version['__version__'])
+setuptools.setup(version=version['__version__'],
+                 package_data={'': ['*.j2']})

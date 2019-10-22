@@ -54,7 +54,6 @@
         "isroutine",
         "itertools",
         "kwlist",
-        "libuavcan",
         "macrofy",
         "managedsecretsbucket",
         "markupsafe",

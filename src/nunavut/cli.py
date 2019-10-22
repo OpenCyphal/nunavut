@@ -13,6 +13,7 @@ import logging
 import os
 import pathlib
 import sys
+import textwrap
 import typing
 
 
@@ -93,7 +94,7 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
     generator = nunavut.jinja.Generator(root_namespace,
                                         args.generate_namespace_types,
                                         language_context,
-                                        pathlib.Path(args.templates),
+                                        (pathlib.Path(args.templates) if args.templates is not None else None),
                                         trim_blocks=args.trim_blocks,
                                         lstrip_blocks=args.lstrip_blocks)
 
@@ -138,15 +139,17 @@ def _make_parser() -> argparse.ArgumentParser:
         support sphinx-argparse documentation.
     """
 
-    epilog = '''**Example Usage**::
+    epilog = textwrap.dedent('''
 
-    # This would include j2 templates for a folder named 'c_jinja'
-    # and generate .h files into a directory named 'include' using
-    # dsdl root namespaces found under a folder named 'dsdl'.
+        **Example Usage**::
 
-    nnvg --outdir include --templates c_jinja -e .h dsdl
+            # This would include j2 templates for a folder named 'c_jinja'
+            # and generate .h files into a directory named 'include' using
+            # dsdl root namespaces found under a folder named 'dsdl'.
 
-'''
+            nnvg --outdir include --templates c_jinja -e .h dsdl
+
+    ''')
 
     parser = argparse.ArgumentParser(
         description='Generate code from UAVCAN DSDL using pydsdl and jinja2',
@@ -157,17 +160,20 @@ def _make_parser() -> argparse.ArgumentParser:
                         help='A source directory with DSDL definitions.')
 
     parser.add_argument('--lookup-dir', '-I', default=[], action='append',
-                        help='''List of other namespace directories containing data type definitions that are
-referred to from the target root namespace. For example, if you are reading a
-vendor-specific namespace, the list of lookup directories should always include
-a path to the standard root namespace "uavcan", otherwise the types defined in
-the vendor-specific namespace won't be able to use data types from the standard
-namespace.
+                        help=textwrap.dedent('''
 
-Additional directories can also be specified through the environment variable
-UAVCAN_DSDL_INCLUDE_PATH, where the path entries are
-separated by colons ":"'''
-                        )
+        List of other namespace directories containing data type definitions that are
+        referred to from the target root namespace. For example, if you are reading a
+        vendor-specific namespace, the list of lookup directories should always include
+        a path to the standard root namespace "uavcan", otherwise the types defined in
+        the vendor-specific namespace won't be able to use data types from the standard
+        namespace.
+
+        Additional directories can also be specified through the environment variable
+        UAVCAN_DSDL_INCLUDE_PATH, where the path entries are
+        separated by colons ":"
+
+    ''').lstrip())
 
     parser.add_argument('--verbose', '-v', action='count',
                         help='verbosity level (-v, -vv)')
@@ -178,8 +184,15 @@ separated by colons ":"'''
         '--outdir', '-O', default='nunavut_out', help='output directory')
 
     parser.add_argument('--templates',
-                        required='--list-outputs' not in sys.argv,
-                        help='A path to a directory containing templates to use when generating code.')
+                        help=textwrap.dedent('''
+
+        Paths to a directory containing templates to use when generating code.
+
+        Templates found under these paths will override the built-in templates for a
+        given language. If not target language was provided and no template paths were
+        provided then no templates will be found and no source will be generated.
+
+    ''').lstrip())
 
     def extension_type(raw_arg: str) -> str:
         if len(raw_arg) > 0 and not raw_arg.startswith('.'):
@@ -188,9 +201,14 @@ separated by colons ":"'''
             return raw_arg
 
     parser.add_argument('--target-language', '-l',
-                        help='''Language support to install into the templates.
-If provided then the output extension (--e) can be inferred otherwise the output
-extension must be provided.''')
+                        help=textwrap.dedent('''
+
+        Language support to install into the templates.
+
+        If provided then the output extension (--e) can be inferred otherwise the output
+        extension must be provided.
+
+    ''').lstrip())
 
     ext_required = '--list-inputs' not in sys.argv and '--target-language' not in sys.argv and '-l' not in sys.argv
     parser.add_argument('--output-extension', '-e', type=extension_type,
@@ -201,33 +219,39 @@ extension must be provided.''')
                         help='If True then no files will be generated.')
 
     parser.add_argument('--list-outputs', action='store_true',
-                        help='''Emit a semicolon-separated list of files.
-(implies --dry-run)
-Emits files that would be generated if invoked without --dry-run.
-This command is useful for integrating with CMake and other build
-systems that need a list of targets to determine if a rebuild is
-necessary.'''
-                        )
+                        help=textwrap.dedent('''
+        Emit a semicolon-separated list of files.
+        (implies --dry-run)
+        Emits files that would be generated if invoked without --dry-run.
+        This command is useful for integrating with CMake and other build
+        systems that need a list of targets to determine if a rebuild is
+        necessary.
+
+    ''').lstrip())
 
     parser.add_argument('--list-inputs', action='store_true',
-                        help='''Emit a semicolon-separated list of files.
-(implies --dry-run)
-A list of files that are resolved given input arguments like templates.
-This command is useful for integrating with CMake and other build systems
-that need a list of inputs to determine if a rebuild is necessary.'''
-                        )
+                        help=textwrap.dedent('''
+
+        Emit a semicolon-separated list of files.
+        (implies --dry-run)
+        A list of files that are resolved given input arguments like templates.
+        This command is useful for integrating with CMake and other build systems
+        that need a list of inputs to determine if a rebuild is necessary.
+
+    ''').lstrip())
 
     parser.add_argument('--generate-namespace-types',
                         action='store_true',
-                        help='''If enabled this script will generate source for namespaces.
-All namespaces including and under the root namespace will be treated as a
-pseudo-type and the appropriate template will be used. The generator will
-first look for a template with the stem "Namespace" and will then use the
-"Any" template if that is available. The name of the output file will be
-the default value for the --namespace-output-stem argument and can be
-changed using that argument.
-'''
-                        )
+                        help=textwrap.dedent('''
+        If enabled this script will generate source for namespaces.
+        All namespaces including and under the root namespace will be treated as a
+        pseudo-type and the appropriate template will be used. The generator will
+        first look for a template with the stem "Namespace" and will then use the
+        "Any" template if that is available. The name of the output file will be
+        the default value for the --namespace-output-stem argument and can be
+        changed using that argument.
+
+    ''').lstrip())
 
     parser.add_argument('--namespace-output-stem',
                         default='Namespace',
@@ -235,70 +259,93 @@ changed using that argument.
 
     parser.add_argument('--no-overwrite',
                         action='store_true',
-                        help='''By default, generated files will be silently overwritten by
-subsequent invocations of the generator. If this argument is specified an
-error will be raised instead preventing overwrites.
-''')
+                        help=textwrap.dedent('''
+
+        By default, generated files will be silently overwritten by
+        subsequent invocations of the generator. If this argument is specified an
+        error will be raised instead preventing overwrites.
+
+    ''').lstrip())
 
     parser.add_argument('--file-mode',
                         default=0o444,
                         type=lambda value: int(value, 0),
-                        help='''The filemode each generated file is set to after it is created.
-Note that this value is interpreted using python auto base detection.
-Because of this, to provide an octal value, you'll need to prefix your
-literal with '0o' (e.g. --file-mode 0o664).
-''')
+                        help=textwrap.dedent('''
+
+        The filemode each generated file is set to after it is created.
+        Note that this value is interpreted using python auto base detection.
+        Because of this, to provide an octal value, you'll need to prefix your
+        literal with '0o' (e.g. --file-mode 0o664).
+
+    ''').lstrip())
 
     parser.add_argument('--trim-blocks',
                         action='store_true',
-                        help='''If this is set to True the first newline after a block in a template
-is removed (block, not variable tag!).
-''')
+                        help=textwrap.dedent('''
+
+        If this is set to True the first newline after a block in a template
+        is removed (block, not variable tag!).
+
+    ''').lstrip())
 
     parser.add_argument('--lstrip-blocks',
                         action='store_true',
-                        help='''If this is set to True leading spaces and tabs are stripped from the
-start of a line to a block in templates.
-''')
+                        help=textwrap.dedent('''
+
+        If this is set to True leading spaces and tabs are stripped from the
+        start of a line to a block in templates.
+
+    ''').lstrip())
 
     parser.add_argument('--pp-max-emptylines',
                         type=int,
-                        help='''If provided this will suppress generation of additional consecutive
-empty lines beyond the limit set by this argument.
+                        help=textwrap.dedent('''
 
-Note that this will insert a line post-processor which may reduce
-performance. Consider using a code formatter on the generated output
-to enforce whitespace rules instead.
-''')
+        If provided this will suppress generation of additional consecutive
+        empty lines beyond the limit set by this argument.
+
+        Note that this will insert a line post-processor which may reduce
+        performance. Consider using a code formatter on the generated output
+        to enforce whitespace rules instead.
+
+    ''').lstrip())
 
     parser.add_argument('--pp-trim-trailing-whitespace',
                         action='store_true',
-                        help='''Enables a line post-processor that will elide all whitespace at the
-end of each line.
+                        help=textwrap.dedent('''
 
-Note that this will insert a line post-processor which may reduce
-performance. Consider using a code formatter on the generated output
-to enforce whitespace rules instead.
-''')
+        Enables a line post-processor that will elide all whitespace at the
+        end of each line.
+
+        Note that this will insert a line post-processor which may reduce
+        performance. Consider using a code formatter on the generated output
+        to enforce whitespace rules instead.
+
+    ''').lstrip())
 
     parser.add_argument('-pp-rp', '--pp-run-program',
-                        help='''Runs a program after each file is generated but before the file is
-set to read-only.
+                        help=textwrap.dedent('''
 
-example ::
+        Runs a program after each file is generated but before the file is
+        set to read-only.
 
-    # invokes clang-format with the "in-place" argument on each file after it is
-    # generated.
+        example ::
 
-    nnvg --outdir include --templates c_jinja -e .h -pp-rp clang-format -pp-rpa=-i dsdl
+            # invokes clang-format with the "in-place" argument on each file after it is
+            # generated.
 
-''')
+            nnvg --outdir include --templates c_jinja -e .h -pp-rp clang-format -pp-rpa=-i dsdl
+
+    ''').lstrip())
 
     parser.add_argument('-pp-rpa', '--pp-run-program-arg',
                         action='append',
-                        help='''Additional arguments to provide to the program specified by --pp-run-program.
-The last argument will always be the path to the generated file.
-''')
+                        help=textwrap.dedent('''
+
+        Additional arguments to provide to the program specified by --pp-run-program.
+        The last argument will always be the path to the generated file.
+
+    ''').lstrip())
 
     return parser
 

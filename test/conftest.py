@@ -42,9 +42,9 @@ def run_nnvg(request):  # type: ignore
 class GenTestPaths:
     """Helper to generate common paths used in our unit tests."""
 
-    def __init__(self, test_file: str, keep_temporaries: bool):
+    def __init__(self, test_file: str, keep_temporaries: bool, param_index: int):
         test_file_path = pathlib.Path(test_file)
-        self.test_name = test_file_path.parent.stem
+        self.test_name = '{}_{}'.format(test_file_path.parent.stem, param_index)
         self.test_dir = test_file_path.parent
         self.root_dir = self.test_dir.resolve().parent.parent
         self.templates_dir = self.test_dir / pathlib.Path('templates')
@@ -97,7 +97,7 @@ class GenTestPaths:
 
 @pytest.fixture(scope='function')
 def gen_paths(request):  # type: ignore
-    return GenTestPaths(request.module.__file__, request.config.option.keep_generated)
+    return GenTestPaths(request.module.__file__, request.config.option.keep_generated, request.param_index)
 
 
 def pytest_addoption(parser):  # type: ignore

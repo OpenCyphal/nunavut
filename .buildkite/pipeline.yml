@@ -1,6 +1,6 @@
 steps:
-  - label: ':hammer: tox build, test, and release'
-    if: build.branch == "master"
+  - label: ':python::hammer: tox build, test, and release'
+    if: build.branch == "master" && pipeline.slug == "nunavut-release"
     id: toxic-docker-release
     command: "./.buildkite/release.sh"
     artifact_paths: 
@@ -22,4 +22,21 @@ steps:
     agents:
       queue: 'default'
     timeout_in_minutes: 15
-
+  - label: ':cpp::hammer: verification build'
+    if: pipeline.slug == "nunavut-verification-cpp"
+    id: cpp-docker-verify
+    command: "./.buildkite/verify_cpp.sh"
+    artifact_paths: 
+      - "verification/cpp/build/suite/coverage/all/*"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/libuavcan:1.0"
+          propagate-environment: true
+          environment:
+            - "SONARQUBE_TOKEN"
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+    timeout_in_minutes: 15
