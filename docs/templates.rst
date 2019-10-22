@@ -75,8 +75,6 @@ C++ Filters
 
 .. autofunction:: nunavut.lang.cpp.filter_id
    :noindex:
-.. autofunction:: nunavut.lang.cpp.filter_ns_id
-   :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_open_namespace
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_close_namespace
@@ -86,8 +84,6 @@ Python Filters
 -------------------------------------------------
 
 .. autofunction:: nunavut.lang.py.filter_id
-   :noindex:
-.. autofunction:: nunavut.lang.py.filter_ns_id
    :noindex:
 .. autofunction:: nunavut.lang.py.filter_to_template_unique_name
    :noindex:

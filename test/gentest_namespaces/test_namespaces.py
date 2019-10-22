@@ -5,7 +5,6 @@
 #
 
 import json
-import pathlib
 import typing
 from pathlib import Path
 
@@ -15,7 +14,6 @@ from pydsdl import Any, CompositeType, read_namespace
 from nunavut import Namespace, build_namespace_tree
 from nunavut.jinja import Generator
 from nunavut.lang import LanguageContext
-from nunavut.lang.py import filter_ns_id as py_ns_id
 
 
 class DummyType(Any):
@@ -196,12 +194,3 @@ def test_python35_resolve_behavior(gen_paths):  # type: ignore
                   gen_paths.dsdl_dir / Path("scotec"),
                   gen_paths.out_dir,
                   language_context)
-
-
-def test_issue_75(gen_paths):  # type: ignore
-    type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
-                              [str(gen_paths.dsdl_dir / pathlib.Path('uavcan'))])
-
-    test_subject = next(filter(lambda type: (type.short_name == 'ATOMIC_TYPE'), type_map))
-
-    assert 'scotec.typedef.str_.ATOMIC_TYPE' == py_ns_id(test_subject.full_name)

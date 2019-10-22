@@ -64,22 +64,6 @@ def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) ->
 PYTHON_RESERVED_IDENTIFIERS = frozenset(map(str, list(keyword.kwlist) + dir(builtins)))  # type: typing.FrozenSet[str]
 
 
-def _common_filter_id(instance: typing.Any,
-                      stropping_suffix: str,
-                      encoding_prefix: str,
-                      scoping_token: typing.Optional[str] = None) -> str:
-    if hasattr(instance, 'name'):
-        raw_name = str(instance.name)  # type: str
-    else:
-        raw_name = str(instance)
-
-    # We use the C variable name encoder since the variable token rules are
-    # compatible.
-    return VariableNameEncoder('', stropping_suffix, encoding_prefix, False, scoping_token)\
-        .strop(raw_name,
-               PYTHON_RESERVED_IDENTIFIERS)
-
-
 def filter_id(instance: typing.Any, stropping_suffix: str = '_', encoding_prefix: str = 'ZX') -> str:
     """
     Filter that produces a valid Python identifier for a given object. The encoding may not
@@ -89,47 +73,72 @@ def filter_id(instance: typing.Any, stropping_suffix: str = '_', encoding_prefix
 
         from nunavut.lang.py import filter_id
 
-    >>> filter_id('I like python')
-    'I_like_python'
+    .. code-block:: python
 
-    >>> filter_id('&because')
-    'ZX0026because'
+        # Given
+        I = 'I like python'
 
-    >>> filter_id('if')
-    'if_'
+        # and
+        template = '{{ I | id }}'
 
-    >>> filter_id('if', 'stropped_')
-    'ifstropped_'
+        # then
+        rendered = 'I_like_python'
 
-    :param any instance:        Any object or data that either has a name property or can be converted
-                                to a string.
-    :param str stropping_suffix: String appended to the resolved instance name if the encoded value
-                                is a reserved keyword in python.
-    :param str encoding_prefix: The string to insert before any four digit unicode number used to represent
-                                an illegal character.
-                                Note that the caller must ensure the prefix itself consists of only valid
-                                characters for Python identifiers.
-    :returns: A token that is a valid Python identifier, is not a reserved keyword, and is transformed
-              in a deterministic manner based on the provided instance.
-    """
-    return _common_filter_id(instance, stropping_suffix, encoding_prefix)
-
-
-def filter_ns_id(instance: typing.Any, stropping_suffix: str = '_', encoding_prefix: str = 'ZX') -> str:
-    """
-    Filter that produces a valid Python identifier for a given object. The encoding may not
-    be reversable.
 
     .. invisible-code-block: python
 
-        from nunavut.lang.py import filter_ns_id
-        from nunavut.lang.py import filter_id
+        jinja_filter_tester(filter_id, template, rendered, I=I)
 
-    >>> filter_id('I.like.python.if.3')
-    'IZX002ElikeZX002EpythonZX002EifZX002E3'
+    .. code-block:: python
 
-    >>> filter_ns_id('I.like.python.if.3')
-    'I.like.python.if_._3'
+        # Given
+        I = '&because'
+
+        # and
+        template = '{{ I | id }}'
+
+        # then
+        rendered = 'ZX0026because'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
+
+    .. code-block:: python
+
+        # Given
+        I = 'if'
+
+        # and
+        template = '{{ I | id }}'
+
+        # then
+        rendered = 'if_'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
+
+    .. code-block:: python
+
+        # Given
+        I = 'if'
+
+        # and
+        template = '{{ I | id("stropped_") }}'
+
+        # then
+        rendered = 'ifstropped_'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
 
     :param any instance:        Any object or data that either has a name property or can be converted
                                 to a string.
@@ -142,7 +151,15 @@ def filter_ns_id(instance: typing.Any, stropping_suffix: str = '_', encoding_pre
     :returns: A token that is a valid Python identifier, is not a reserved keyword, and is transformed
               in a deterministic manner based on the provided instance.
     """
-    return _common_filter_id(instance, stropping_suffix, encoding_prefix, scoping_token='.')
+    if hasattr(instance, 'name'):
+        raw_name = str(instance.name)  # type: str
+    else:
+        raw_name = str(instance)
+
+    # We use the C variable name encoder since the variable token rules are
+    # compatible.
+    return VariableNameEncoder('', stropping_suffix, encoding_prefix, False).strop(raw_name,
+                                                                                   PYTHON_RESERVED_IDENTIFIERS)
 
 
 def filter_full_reference_name(t: pydsdl.CompositeType) -> str:
