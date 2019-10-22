@@ -87,6 +87,18 @@ Python Filters
    :noindex:
 .. autofunction:: nunavut.lang.py.filter_to_template_unique_name
    :noindex:
+.. autofunction:: nunavut.lang.py.filter_full_reference_name
+   :noindex:
+.. autofunction:: nunavut.lang.py.filter_short_reference_name
+   :noindex:
+.. autofunction:: nunavut.lang.py.filter_alignment_prefix
+   :noindex:
+.. autofunction:: nunavut.lang.py.filter_imports
+   :noindex:
+.. autofunction:: nunavut.lang.py.filter_longest_id_length
+   :noindex:
+.. autofunction:: nunavut.lang.py.filter_bit_length_set
+   :noindex:
 
 *************************************************
 Template Mapping and Use

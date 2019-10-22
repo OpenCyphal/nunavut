@@ -5,6 +5,7 @@
 """
 Enable pytest integration of doctests in source and/or in documentation.
 """
+import functools
 import typing
 from doctest import ELLIPSIS
 from fnmatch import fnmatch
@@ -15,6 +16,7 @@ from sybil.integration.pytest import SybilFile
 from sybil.parsers.codeblock import CodeBlockParser
 from sybil.parsers.doctest import DocTestParser
 
+from nunavut import EnvironmentFilterAttributeName
 from nunavut.jinja.jinja2 import DictLoader, Environment
 
 
@@ -27,7 +29,10 @@ def jinja_filter_tester(request):  # type: ignore
 
         .. invisible-code-block: python
 
-            def filter_dummy(input):
+            from nunavut import templateEnvironmentFilter
+
+            @templateEnvironmentFilter
+            def filter_dummy(env, input):
                 return input
 
         .. code-block:: python
@@ -52,7 +57,12 @@ def jinja_filter_tester(request):  # type: ignore
                                    expected: str,
                                    **globals: typing.Optional[typing.Dict[str, typing.Any]]) -> str:
         e = Environment(loader=DictLoader({'test': body}))
-        e.filters[filter.__name__[7:]] = filter
+        filter_name = filter.__name__[7:]
+        if hasattr(filter, EnvironmentFilterAttributeName) and getattr(filter, EnvironmentFilterAttributeName):
+            e.filters[filter_name] = functools.partial(filter, e)
+        else:
+            e.filters[filter_name] = filter
+
         if globals is not None:
             e.globals.update(globals)
         rendered = str(e.get_template('test').render())

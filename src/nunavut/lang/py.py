@@ -162,15 +162,184 @@ def filter_id(instance: typing.Any, stropping_suffix: str = '_', encoding_prefix
                                                                                    PYTHON_RESERVED_IDENTIFIERS)
 
 
-def filter_full_reference_name(t: pydsdl.CompositeType) -> str:
-    return '{full}_{major}_{minor}'.format(full=t.full_name, major=t.version.major, minor=t.version.minor)
+def filter_full_reference_name(t: pydsdl.CompositeType, stropping: bool = True) -> str:
+    """
+    Provides a string that is the full namespace, typename, major, and minor version for a given composite type.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.py import filter_full_reference_name
+
+        dummy = lambda: None
+        dummy_version = lambda: None
+        setattr(dummy, 'version', dummy_version)
+
+    .. code-block:: python
+
+        # Given
+        full_name = 'any.str.2Foo'
+        major = 1
+        minor = 2
+
+        # and
+        template = '{{ my_obj | full_reference_name }}'
+
+        # then
+        rendered = 'any_.str_._2Foo_1_2'
+
+    .. invisible-code-block: python
 
 
-def filter_short_reference_name(t: pydsdl.CompositeType) -> str:
-    return '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
+        setattr(dummy_version, 'major', major)
+        setattr(dummy_version, 'minor', minor)
+        setattr(dummy, 'full_name', full_name)
+        setattr(dummy, 'short_name', full_name.split('.')[-1])
+        jinja_filter_tester(filter_full_reference_name, template, rendered, my_obj=dummy)
+
+
+    .. code-block:: python
+
+        # Given
+        full_name = 'any.str.2Foo'
+        major = 1
+        minor = 2
+
+        # and
+        template = '{{ my_obj | full_reference_name(stropping=False) }}'
+
+        # then
+        rendered = 'any.str.2Foo_1_2'
+
+    .. invisible-code-block: python
+
+
+        setattr(dummy_version, 'major', major)
+        setattr(dummy_version, 'minor', minor)
+        setattr(dummy, 'full_name', full_name)
+        setattr(dummy, 'short_name', full_name.split('.')[-1])
+        jinja_filter_tester(filter_full_reference_name, template, rendered, my_obj=dummy)
+
+    :param pydsdl.CompositeType t: The DSDL type to get the fully-resolved reference name for.
+    :param bool stropping: If True then the :func:`filter_id` filter is applied to each component in the identifier.
+    """
+    ns_parts = t.full_name.split('.')
+    if len(ns_parts) > 1:
+        if stropping:
+            ns = list(map(filter_id, ns_parts[:-1]))
+        else:
+            ns = ns_parts[:-1]
+
+    return '.'.join(ns + [filter_short_reference_name(t, stropping)])
+
+
+def filter_short_reference_name(t: pydsdl.CompositeType, stropping: bool = True) -> str:
+    """
+    Provides a string that is a shorted version of the full reference name. This type is unique only within its
+    namespace.
+
+     .. invisible-code-block: python
+
+        from nunavut.lang.py import filter_short_reference_name
+
+        dummy = lambda: None
+        dummy_version = lambda: None
+        setattr(dummy, 'version', dummy_version)
+
+    .. code-block:: python
+
+        # Given
+        short_name = '2Foo'
+        major = 1
+        minor = 2
+
+        # and
+        template = '{{ my_obj | short_reference_name }}'
+
+        # then ('str' is stropped to 'str_' before the version is suffixed)
+        rendered = '_2Foo_1_2'
+
+    .. invisible-code-block: python
+
+        setattr(dummy_version, 'major', major)
+        setattr(dummy_version, 'minor', minor)
+        setattr(dummy, 'short_name', short_name)
+        jinja_filter_tester(filter_short_reference_name, template, rendered, my_obj=dummy)
+
+
+    .. code-block:: python
+
+        # Given
+        short_name = '2Foo'
+        major = 1
+        minor = 2
+
+        # and
+        template = '{{ my_obj | short_reference_name(stropping=False) }}'
+
+        # then
+        rendered = '2Foo_1_2'
+
+    .. invisible-code-block: python
+
+        setattr(dummy_version, 'major', major)
+        setattr(dummy_version, 'minor', minor)
+        setattr(dummy, 'short_name', short_name)
+        jinja_filter_tester(filter_short_reference_name, template, rendered, my_obj=dummy)
+
+    :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
+    """
+    short_name = '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
+    if stropping:
+        return filter_id(short_name)
+    else:
+        return short_name
 
 
 def filter_alignment_prefix(offset: pydsdl.BitLengthSet) -> str:
+    """
+    Provides a string prefix based on a given :class:`pydsdl.BitLengthSet`.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.py import filter_alignment_prefix
+        import pydsdl
+
+    .. code-block:: python
+
+        # Given
+        B = pydsdl.BitLengthSet(32)
+
+        # and
+        template = '{{ B | alignment_prefix }}'
+
+        # then ('str' is stropped to 'str_' before the version is suffixed)
+        rendered = 'aligned'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_alignment_prefix, template, rendered, B=B)
+
+
+    .. code-block:: python
+
+        # Given
+        B = pydsdl.BitLengthSet(32)
+        B.increment(1)
+
+        # and
+        template = '{{ B | alignment_prefix }}'
+
+        # then ('str' is stropped to 'str_' before the version is suffixed)
+        rendered = 'unaligned'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_alignment_prefix, template, rendered, B=B)
+
+
+    :param pydsdl.BitLengthSet offset: A bit length set to test for alignment.
+    :return: 'aligned' or 'unaligned' based on the state of the ``offset`` argument.
+    """
     if isinstance(offset, pydsdl.BitLengthSet):
         return 'aligned' if offset.is_aligned_at_byte() else 'unaligned'
     else:  # pragma: no cover
@@ -178,6 +347,12 @@ def filter_alignment_prefix(offset: pydsdl.BitLengthSet) -> str:
 
 
 def filter_imports(t: pydsdl.CompositeType) -> typing.List[str]:
+    """
+    Returns a list of all modules that must be imported to used a given type.
+
+    :param pydsdl.CompositeType t: The type to scan for dependencies.
+    :return: a list of python module names the provided type depends on.
+    """
     # Make a list of all attributes defined by this type
     if isinstance(t, pydsdl.ServiceType):
         atr = t.request_type.attributes + t.response_type.attributes
@@ -194,9 +369,66 @@ def filter_imports(t: pydsdl.CompositeType) -> typing.List[str]:
     return list(sorted(set(x.full_namespace for x in dep_types if isinstance(x, pydsdl.CompositeType))))
 
 
-def filter_longest_id_length(attributes: typing.List[pydsdl.Attribute]) -> int:
-    return max(map(len, map(filter_id, attributes)))
+def filter_longest_id_length(attributes: typing.List[pydsdl.Attribute], stropping: bool = True) -> int:
+    """
+    Return the length of the longest identifier in a list of :class:`pydsdl.Attribute` objects.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.py import filter_longest_id_length
+
+
+    .. code-block:: python
+
+        # Given
+        I = ['one.str.int.any', 'three.str.int.any']
+
+        # and
+        template = '{{ I | longest_id_length }}'
+
+        # then
+        rendered = '32'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_longest_id_length, template, rendered, I=I)
+
+
+    .. code-block:: python
+
+        # Given
+        I = ['one.str.int.any', 'three.str.int.any']
+
+        # and
+        template = '{{ I | longest_id_length(stropping=False) }}'
+
+        # then
+        rendered = '17'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_longest_id_length, template, rendered, I=I)
+
+
+    :param bool stropping: If True then the :func:`filter_id` filter is applied to each attribute identifier
+                           before comparing lengths else the attributes are not modified.
+    """
+    if stropping:
+        return max(map(len, map(filter_id, attributes)))
+    else:
+        return max(map(len, attributes))
 
 
 def filter_bit_length_set(values: typing.Optional[typing.Union[typing.Iterable[int], int]]) -> pydsdl.BitLengthSet:
+    """
+    Convert an integer or a list of integers into a :class:`pydsdl.BitLengthSet`.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.py import filter_bit_length_set
+        import pydsdl
+
+        assert type(filter_bit_length_set(23)) == pydsdl.BitLengthSet
+
+    """
     return pydsdl.BitLengthSet(values)

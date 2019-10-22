@@ -418,21 +418,41 @@ _snake_case_pattern_2 = re.compile(r'(?<!_)([A-Z])+')
 
 def filter_to_snake_case(value: str) -> str:
     """
-        Filter to transform a string into a snake-case token.
+    Filter to transform a string into a snake-case token.
 
-        Example::
+    .. invisible-code-block: python
 
-            {{ "scotec.mcu.Timer" | c.to_snake_case }} a();
-            {{ "scotec.mcu.TimerHelper" | c.to_snake_case }} b();
+        from nunavut.lang.c import filter_to_snake_case
 
-        Result Example::
+    .. code-block:: python
 
-            scotec_mcu_timer a();
-            scotec_mcu_timer_helper b();
+        # Given
+        template = '{{ "scotec.mcu.Timer" | to_snake_case }} a();'
 
-        :param str value: The string to transform into C snake-case.
+        # then
+        rendered = 'scotec_mcu_timer a();'
 
-        :returns: A valid C99 token using the snake-case convention.
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_snake_case, template, rendered)
+
+
+    .. code-block:: python
+
+        # Given
+        template = '{{ "scotec.mcu.TimerHelper" | to_snake_case }} b();'
+
+        # then
+        rendered = 'scotec_mcu_timer_helper b();'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_snake_case, template, rendered)
+
+    :param str value: The string to transform into C snake-case.
+
+    :returns: A valid C99 token using the snake-case convention.
     """
     pass0 = _snake_case_pattern_0.sub('_', str.strip(value))
     pass1 = _snake_case_pattern_1.sub(lambda x: x.group(0).lower(), pass0)

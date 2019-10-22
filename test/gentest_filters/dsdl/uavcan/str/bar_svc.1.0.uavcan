@@ -1,0 +1,6 @@
+
+uavcan.str.bar.1.0 timestamp
+
+---
+
+uavcan.time.SynchronizedTimestamp.1.0 timestamp
