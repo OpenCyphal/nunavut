@@ -150,19 +150,75 @@ def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix
     Filter that produces a valid C and/or C++ identifier for a given object. The encoding may not
     be reversable.
 
-    Example::
+    .. invisible-code-block: python
 
-        {{ "I like c++" | cpp.id }}
-        {{ "if" | cpp.id }}
-        {{ "if" | cpp.id('stropped_') }}
-        {{ "_Reserved" | cpp.id }}
+        from nunavut.lang.cpp import filter_id
 
-    Results Example::
 
-       I_like_cZX0043ZX0043
-       _if
-       stropped_if
-       _reserved
+    .. code-block:: python
+
+        # Given
+        I = 'I like c++'
+
+        # and
+        template = '{{ I | id }}'
+
+        # then
+        rendered = 'I_like_cZX002BZX002B'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
+
+    .. code-block:: python
+
+        # Given
+        I = 'if'
+
+        # and
+        template = '{{ I | id }}'
+
+        # then
+        rendered = '_if'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
+
+    .. code-block:: python
+
+        # Given
+        I = 'if'
+
+        # and
+        template = '{{ I | id("stropped_") }}'
+
+        # then
+        rendered = 'stropped_if'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
+
+    .. code-block:: python
+
+        # Given
+        I = '_Reserved'
+
+        # and
+        template = '{{ I | id }}'
+
+        # then
+        rendered = '_reserved'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
 
     :param any instance:        Any object or data that either has a name property or can be converted
                                 to a string.

@@ -84,12 +84,12 @@ Nunavut is part of the UAVCAN project:
 .. _`UAVCAN`: http://uavcan.org
 .. _`UAVCAN website`: http://uavcan.org
 .. _`UAVCAN forum`: https://forum.uavcan.org
-.. _`nunavut`: https://nunavut.readthedocs.io/en/latest/nunavut/api/modules.html
-.. _`nnvg`: https://nunavut.readthedocs.io/en/latest/cli.html
+.. _`nunavut`: https://nunavut.readthedocs.io/en/latest/docs/api/modules.html
+.. _`nnvg`: https://nunavut.readthedocs.io/en/latest/docs/cli.html
 .. _`pydsdl`: https://pypi.org/project/pydsdl
-.. _`nunavut template guide`: https://nunavut.readthedocs.io/en/latest/templates.html
-.. _`nunavut contributors guide`: https://nunavut.readthedocs.io/en/latest/dev.html
-.. _`nunavut licenses`: https://nunavut.readthedocs.io/en/latest/appendix.html#licence
+.. _`nunavut template guide`: https://nunavut.readthedocs.io/en/latest/docs/templates.html
+.. _`nunavut contributors guide`: https://nunavut.readthedocs.io/en/latest/docs/dev.html
+.. _`nunavut licenses`: https://nunavut.readthedocs.io/en/latest/docs/appendix.html#licence
 .. _`Jinja2`: https://palletsprojects.com/p/jinja
 .. _`markupsafe`: https://palletsprojects.com/p/markupsafe
 .. _`Canadian territory`: https://en.wikipedia.org/wiki/Nunavut

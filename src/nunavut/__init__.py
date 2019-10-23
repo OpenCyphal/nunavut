@@ -138,23 +138,23 @@ class Namespace(pydsdl.Any):
         self._parent = None  # type: typing.Optional[Namespace]
         self._id_filter = language_context.get_id_filter()
         self._namespace_components = []  # type: typing.List[str]
-        source_namespace_components = []
+        self._namespace_components_stropped = []  # type: typing.List[str]
         for component in full_namespace.split('.'):
-            self._namespace_components.append(self._id_filter(component))
-            source_namespace_components.append(component)
-        self._full_namespace = '.'.join(self._namespace_components)
-        self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components))
+            self._namespace_components_stropped.append(self._id_filter(component))
+            self._namespace_components.append(component)
+        self._full_namespace = '.'.join(self._namespace_components_stropped)
+        self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components_stropped))
         output_stem = language_context.get_default_namespace_output_stem()
         if output_stem is None:
             output_stem = self.DefaultOutputStem
         output_path = self._output_folder / pathlib.PurePath(output_stem)
         self._output_path = output_path.with_suffix(language_context.get_output_extension())
         self._source_folder = pathlib.Path(
-            root_namespace_dir / pathlib.PurePath(*source_namespace_components[1:])).resolve()
+            root_namespace_dir / pathlib.PurePath(*self._namespace_components[1:])).resolve()
         if not self._source_folder.exists():
             # to make Python > 3.5 behave the same as Python 3.5
             raise FileNotFoundError(self._source_folder)
-        self._short_name = self._namespace_components[-1]
+        self._short_name = self._namespace_components_stropped[-1]
         self._data_type_to_outputs = dict()  # type: typing.Dict[pydsdl.CompositeType, pathlib.Path]
         self._nested_namespaces = set()  # type: typing.Set[Namespace]
 

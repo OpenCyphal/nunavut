@@ -69,19 +69,76 @@ def filter_id(instance: typing.Any, stropping_suffix: str = '_', encoding_prefix
     Filter that produces a valid Python identifier for a given object. The encoding may not
     be reversable.
 
-    Example::
+    .. invisible-code-block: python
 
-        {{ "I like python" | py.id }}
-        {{ "&because" | py.id }}
-        {{ "if" | py.id }}
-        {{ "if" | py.id('stropped_') }}
+        from nunavut.lang.py import filter_id
 
-    Results Example::
+    .. code-block:: python
 
-       I_like_python
-       ZX0038because
-       if_
-       ifstropped_
+        # Given
+        I = 'I like python'
+
+        # and
+        template = '{{ I | id }}'
+
+        # then
+        rendered = 'I_like_python'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
+    .. code-block:: python
+
+        # Given
+        I = '&because'
+
+        # and
+        template = '{{ I | id }}'
+
+        # then
+        rendered = 'ZX0026because'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
+
+    .. code-block:: python
+
+        # Given
+        I = 'if'
+
+        # and
+        template = '{{ I | id }}'
+
+        # then
+        rendered = 'if_'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
+
+    .. code-block:: python
+
+        # Given
+        I = 'if'
+
+        # and
+        template = '{{ I | id("stropped_") }}'
+
+        # then
+        rendered = 'ifstropped_'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
 
     :param any instance:        Any object or data that either has a name property or can be converted
                                 to a string.

@@ -36,8 +36,6 @@ with open('.gitignore', 'r') as gif:
         if len(stripped) > 0 and not stripped. startswith('#'):
             exclude_patterns.append(stripped)
 
-print('HERE -> ' + str(exclude_patterns))
-
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.

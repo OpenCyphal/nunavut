@@ -168,19 +168,76 @@ def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix
     Filter that produces a valid C identifier for a given object. The encoding may not
     be reversable.
 
-        Example::
+    .. invisible-code-block: python
 
-        {{ "I \u2764 c" | c.id }}
-        {{ "if" | c.id }}
-        {{ "if" | c.id('stropped_') }}
-        {{ "_Reserved" | c.id }}
+        from nunavut.lang.c import filter_id
 
-    Results Example::
 
-       I_ZX2764_c
-       _if
-       stropped_if
-       _reserved
+    .. code-block:: python
+
+        # Given
+        I = 'I \u2764 c'
+
+        # and
+        template = '{{ I | id }}'
+
+        # then
+        rendered = 'I_ZX2764_c'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
+
+    .. code-block:: python
+
+        # Given
+        I = 'if'
+
+        # and
+        template = '{{ I | id }}'
+
+        # then
+        rendered = '_if'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
+
+    .. code-block:: python
+
+        # Given
+        I = 'if'
+
+        # and
+        template = '{{ I | id("stropped_") }}'
+
+        # then
+        rendered = 'stropped_if'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
+
+    .. code-block:: python
+
+        # Given
+        I = '_Reserved'
+
+        # and
+        template = '{{ I | id }}'
+
+        # then
+        rendered = '_reserved'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, I=I)
+
 
     :param any instance:        Any object or data that either has a name property or can be converted
                                 to a string.
@@ -205,21 +262,31 @@ def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix
 
 def filter_macrofy(value: str) -> str:
     """
-        Filter to transform an input into a valid C preprocessor identifier token.
+    Filter to transform an input into a valid C preprocessor identifier token.
 
-        The following example assumes a string "my full name" as ``full_name``.
 
-        Example::
+    .. invisible-code-block: python
 
-            #ifndef {{T.full_name | c.macrofy}}
+        from nunavut.lang.c import filter_macrofy
 
-        Result Example::
 
-            #ifndef MY_FULL_NAME
+    .. code-block:: python
 
-        :param str value: The value to transform.
+        # Given
+        template = '#ifndef {{ "my full name" | macrofy }}'
 
-        :returns: A valid C preprocessor identifier token.
+        # then
+        rendered = '#ifndef MY_FULL_NAME'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_macrofy, template, rendered)
+
+
+    :param str value: The value to transform.
+
+    :returns: A valid C preprocessor identifier token.
     """
     return value.replace(' ', '_').replace('.', '_').upper()
 
@@ -291,27 +358,55 @@ class _CFit(enum.Enum):
 
 def filter_type_from_primitive(value: pydsdl.PrimitiveType, use_standard_types: bool = True) -> str:
     """
-        Filter to transform a pydsdl :class:`~pydsdl.PrimitiveType` into
-        a valid C type.
+    Filter to transform a pydsdl :class:`~pydsdl.PrimitiveType` into
+    a valid C type.
 
-        The following example assumes that serializable is of :class:`~.pydsdl.UnsignedIntegerType`
-        and has a 32 bit length.
+    .. invisible-code-block: python
 
-        Example::
+        from nunavut.lang.c import filter_type_from_primitive
+        import pydsdl
 
-            {{ field.data_type | c.type_from_primitive(use_standard_types=True) }} std_{{ field.name }};
-            {{ field.data_type | c.type_from_primitive(use_standard_types=False) }} c_{{ field.name }};
 
-        Result Example::
+    .. code-block:: python
 
-            uint32_t std_foo;
-            unsigned long c_foo;
+        # Given
+        template = '{{ unsigned_int_32_type | type_from_primitive(use_standard_types=True) }}'
 
-        :param str value: The dsdl primitive to transform.
+        # then
+        rendered = 'uint32_t'
 
-        :returns: A valid C99 type name.
 
-        :raises TemplateRuntimeError: If the primitive cannot be represented as a standard C type.
+    .. invisible-code-block: python
+
+        test_type = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+        jinja_filter_tester(filter_type_from_primitive,
+                            template,
+                            rendered,
+                            unsigned_int_32_type=test_type)
+
+    .. code-block:: python
+
+        # Given
+        template = '{{ unsigned_int_32_type | type_from_primitive(use_standard_types=False) }}'
+
+        # then
+        rendered = 'unsigned long'
+
+
+    .. invisible-code-block: python
+
+        test_type = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+        jinja_filter_tester(filter_type_from_primitive,
+                            template,
+                            rendered,
+                            unsigned_int_32_type=test_type)
+
+
+    :param str value: The dsdl primitive to transform.
+
+    :returns: A valid C99 type name.
+
+    :raises TemplateRuntimeError: If the primitive cannot be represented as a standard C type.
     """
     return _CFit.get_best_fit(value.bit_length).to_c_type(value, use_standard_types)
 
