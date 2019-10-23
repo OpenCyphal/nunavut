@@ -160,3 +160,46 @@ class LanguageContext:
                 defaults_tuple = self._language_defaults[language_name]
                 self._language_modules[language_name] = Language(language_name, defaults_tuple[0], defaults_tuple[1])
         return self._language_modules
+
+
+class _UniqueNameGenerator:
+    """
+    Functor used by template filters to obtain a unique name within a given template.
+    This should be made available as a private global "_unique_name_generator" within
+    each template and should be reset after completing generation of a type.
+    """
+
+    @classmethod
+    def ensure_generator_in_globals(cls, environment_globals: typing.Dict[str, typing.Any]) -> '_UniqueNameGenerator':
+        from .. import TypeLocalGlobalKey
+
+        if TypeLocalGlobalKey not in environment_globals:
+            environment_globals[TypeLocalGlobalKey] = cls()
+        return typing.cast('_UniqueNameGenerator', environment_globals[TypeLocalGlobalKey])
+
+    def __init__(self) -> None:
+        self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, int]]
+
+    def __call__(self, key: str, base_token: str, prefix: str, suffix: str) -> str:
+        """
+        Uses a lazy internal index to generate a number unique to a given base_token within a template
+        for a given domain (key).
+        """
+        try:
+            keymap = self._index_map[key]
+        except KeyError:
+            keymap = {}
+            self._index_map[key] = keymap
+
+        try:
+            next_index = keymap[base_token]
+            keymap[base_token] = next_index + 1
+        except KeyError:
+            next_index = 0
+            keymap[base_token] = 1
+
+        return "{prefix}{base_token}{index}{suffix}".format(
+            prefix=prefix,
+            base_token=base_token,
+            index=next_index,
+            suffix=suffix)
