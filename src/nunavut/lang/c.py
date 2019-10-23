@@ -287,6 +287,7 @@ def filter_macrofy(value: str) -> str:
 
     :param str value: The value to transform.
 
+
     :returns: A valid C preprocessor identifier token.
     """
     return value.replace(' ', '_').replace('.', '_').upper()
@@ -378,6 +379,7 @@ def filter_type_from_primitive(value: pydsdl.PrimitiveType, use_standard_types: 
 
 
     .. invisible-code-block: python
+
 
         test_type = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
         jinja_filter_tester(filter_type_from_primitive,
