@@ -4,16 +4,17 @@
 # This software is distributed under the terms of the MIT License.
 #
 
-import pytest
 import json
+import pathlib
+from pathlib import Path, PurePath
 
+import pytest
 from pydsdl import read_namespace
-from nunavut import build_namespace_tree, Namespace
-from nunavut.lang import LanguageContext
+
+from nunavut import Namespace, build_namespace_tree
 from nunavut.jinja import Generator
 from nunavut.jinja.jinja2.exceptions import TemplateAssertionError
-
-from pathlib import Path, PurePath
+from nunavut.lang import LanguageContext
 
 
 def test_template_assert(gen_paths):  # type: ignore
@@ -112,3 +113,60 @@ def test_custom_filter_and_test_redefinition(gen_paths):  # type: ignore
                   Path(),
                   additional_filters={'custom_filter': lambda T: ''},
                   additional_tests={'primitive': lambda T: False})
+
+
+def test_python_filter_full_reference_name(gen_paths):  # type: ignore
+    type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('uavcan')), [])
+
+    from nunavut.lang.py import filter_full_reference_name
+
+    test_subject = next(filter(lambda type: (type.short_name == 'SynchronizedTimestamp'), type_map))
+
+    full_reference_name = filter_full_reference_name(test_subject)
+    assert "uavcan.time.SynchronizedTimestamp_1_0" == full_reference_name
+
+
+def test_python_filter_short_reference_name(gen_paths):  # type: ignore
+    type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('uavcan')), [])
+
+    from nunavut.lang.py import filter_short_reference_name
+
+    test_subject = next(filter(lambda type: (type.short_name == 'SynchronizedTimestamp'), type_map))
+    full_reference_name = filter_short_reference_name(test_subject)
+    assert "SynchronizedTimestamp_1_0" == full_reference_name
+
+
+def test_python_filter_alignment_prefix(gen_paths):  # type: ignore
+    from nunavut.lang.py import filter_alignment_prefix
+    from pydsdl import BitLengthSet
+
+    subject = BitLengthSet(64)
+    assert 'aligned' == filter_alignment_prefix(subject)
+    subject.increment(1)
+    assert 'unaligned' == filter_alignment_prefix(subject)
+
+    with pytest.raises(TypeError):
+        filter_alignment_prefix('wrong type')
+
+
+def test_python_filter_imports(gen_paths):  # type: ignore
+    type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('uavcan')), [])
+
+    from nunavut.lang.py import filter_imports
+
+    test_subject = next(filter(lambda type: (type.short_name == 'bar'), type_map))
+    imports = filter_imports(test_subject)
+    assert len(imports) == 1
+    assert 'uavcan.time' == imports[0]
+
+
+def test_python_filter_imports_for_service_type(gen_paths):  # type: ignore
+    type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('uavcan')), [])
+
+    from nunavut.lang.py import filter_imports
+
+    test_subject = next(filter(lambda type: (type.short_name == 'bar_svc'), type_map))
+    imports = filter_imports(test_subject)
+    assert len(imports) == 2
+    assert 'uavcan.str' == imports[0]
+    assert 'uavcan.time' == imports[1]

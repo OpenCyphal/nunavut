@@ -9,7 +9,6 @@
 """
 
 import io
-import os
 import typing
 import re
 
@@ -241,29 +240,43 @@ def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix
     return CPP_NO_DOUBLE_DASH_RULE.sub('_' + vne.encode_character('_'), out)
 
 
-def filter_open_namespace(full_namespace: str, bracket_on_next_line: bool = True) -> str:
+def filter_open_namespace(full_namespace: str, bracket_on_next_line: bool = True, linesep: str = '\n') -> str:
     """
-        Emits c++ opening namspace syntax parsed from a pydsdl "full_namespace",
-        dot-seperated  value.
+    Emits c++ opening namspace syntax parsed from a pydsdl "full_namespace",
+    dot-seperated  value.
 
-        The following example assumes a string "uavcan.foo" as ``full_namespace``.
+    .. invisible-code-block: python
 
-        Example::
+        from nunavut.lang.cpp import filter_open_namespace
+        T = lambda : None;
+        setattr(T, 'full_namespace)', '')
 
-            {{T.full_namespace | cpp.open_namespace}}
+    .. code-block:: python
 
-        Result Example::
+        # Given
+        T.full_namespace = 'uavcan.foo'
 
-            namespace uavcan
-            {
-            namespace foo
-            {
+        # and
+        template = '{{ T.full_namespace | open_namespace }}'
 
-        :param str full_namespace: A dot-seperated namespace string.
-        :param bool bracket_on_next_line: If True (the default) then the opening
-            brackets are placed on a newline after the namespace keyword.
+        # then
+        rendered = '''namespace uavcan
+        {
+        namespace foo
+        {
+        '''
 
-        :returns: C++ namespace declarations with opening brackets.
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_open_namespace, template, rendered, T=T)
+
+    :param str full_namespace: A dot-seperated namespace string.
+    :param bool bracket_on_next_line: If True (the default) then the opening
+        brackets are placed on a newline after the namespace keyword.
+    :param str linesep: The line-seperator to use when emitting new lines.
+                        By default this is ``\\n``.
+
+    :returns: C++ namespace declarations with opening brackets.
     """
 
     with io.StringIO() as content:
@@ -271,41 +284,56 @@ def filter_open_namespace(full_namespace: str, bracket_on_next_line: bool = True
             content.write('namespace ')
             content.write(name)
             if bracket_on_next_line:
-                content.write(os.linesep)
+                content.write(linesep)
             else:
                 content.write(' ')
             content.write('{')
-            content.write(os.linesep)
+            content.write(linesep)
         return content.getvalue()
 
 
-def filter_close_namespace(full_namespace: str, omit_comments: bool = False) -> str:
+def filter_close_namespace(full_namespace: str, omit_comments: bool = False, linesep: str = '\n') -> str:
     """
-        Emits c++ closing namspace syntax parsed from a pydsdl "full_namespace",
-        dot-seperated  value.
+    Emits c++ closing namspace syntax parsed from a pydsdl "full_namespace",
+    dot-seperated  value.
 
-        The following example assumes a string "uavcan.foo" as ``full_namespace``.
+    .. invisible-code-block: python
 
-        Example::
+        from nunavut.lang.cpp import filter_close_namespace
+        T = lambda : None;
+        setattr(T, 'full_namespace)', '')
 
-            {{T.full_namespace | cpp.close_namespace}}
+    .. code-block:: python
 
-        Result Example::
+        # Given
+        T.full_namespace = 'uavcan.foo'
 
-            } // namespace foo
-            } // namespace uavcan
+        # and
+        template = '{{ T.full_namespace | close_namespace }}'
 
-        :param str full_namespace: A dot-seperated namespace string.
-        :param omit_comments: If True then the comments following the closing
-                              bracket are omitted.
+        # then
+        rendered = '''} // namespace foo
+        } // namespace uavcan
+        '''
 
-        :returns: C++ namespace declarations with opening brackets.
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_close_namespace, template, rendered, T=T)
+
+
+    :param str full_namespace: A dot-seperated namespace string.
+    :param bool omit_comments: If True then the comments following the closing
+                               bracket are omitted.
+    :param str linesep: The line-seperator to use when emitting new lines.
+                        By default this is ``\\n``
+
+    :returns: C++ namespace declarations with opening brackets.
     """
     with io.StringIO() as content:
         for name in reversed(full_namespace.split('.')):
             content.write('}')
             if not omit_comments:
-                content.write(' // ')
+                content.write(' // namespace ')
                 content.write(name)
-            content.write(os.linesep)
+            content.write(linesep)
         return content.getvalue()

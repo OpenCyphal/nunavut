@@ -81,8 +81,14 @@ if sys.version_info[:2] < (3, 5):   # pragma: no cover
 # instead of its current value you will be insulated from this.
 EnvironmentFilterAttributeName = 'environmentfilter'
 
+#
+# A key used in template environments to key storage that is erased before
+# processing each new type.
+#
+TypeLocalGlobalKey = '_template_local_global'  # type: str
 
 # +---------------------------------------------------------------------------+
+
 
 class SupportsTemplateEnv:
     """

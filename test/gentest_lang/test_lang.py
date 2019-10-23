@@ -158,9 +158,9 @@ namespace ns {
 }
 }
 '''
-    assert lang_cpp_output["namespace_close_w_comments"] == r'''} // ns
-} // cpp
-} // langtest
+    assert lang_cpp_output["namespace_close_w_comments"] == r'''} // namespace ns
+} // namespace cpp
+} // namespace langtest
 '''
     return generated_values
 

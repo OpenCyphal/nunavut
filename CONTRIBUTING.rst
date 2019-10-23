@@ -114,6 +114,11 @@ example::
 Note that we also delete the .coverage intermediates since they may contain different paths between
 the container and the host build.
 
+Alternatively just nuke everything temporary using git clean::
+
+    git clean -X -d -f
+
+
 ************************************************
 Building The Docs
 ************************************************

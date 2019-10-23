@@ -80,41 +80,6 @@ class JinjaAssert(Extension):
         return caller()
 
 
-class _UniqueNameGenerator:
-    """
-    Functor used by template filters to obtain a unique name within a given template.
-    This should be made available as a private global "_unique_name_generator" within
-    each template and should be reset after completing generation of a type.
-    """
-
-    def __init__(self) -> None:
-        self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, int]]
-
-    def __call__(self, key: str, base_token: str, prefix: str, suffix: str) -> str:
-        """
-        Uses a lazy internal index to generate a number unique to a given base_token within a template
-        for a given domain (key).
-        """
-        try:
-            keymap = self._index_map[key]
-        except KeyError:
-            keymap = {}
-            self._index_map[key] = keymap
-
-        try:
-            next_index = keymap[base_token]
-            keymap[base_token] = next_index + 1
-        except KeyError:
-            next_index = 0
-            keymap[base_token] = 1
-
-        return "{prefix}{base_token}{index}{suffix}".format(
-            prefix=prefix,
-            base_token=base_token,
-            index=next_index,
-            suffix=suffix)
-
-
 class Generator(nunavut.generators.AbstractGenerator):
     """ :class:`~nunavut.generators.AbstractGenerator` implementation that uses
     Jinja2 templates to generate source code.
@@ -568,8 +533,10 @@ class Generator(nunavut.generators.AbstractGenerator):
         Logic that should run from _generate_type iff is_dryrun is False.
         """
 
+        from .. import TypeLocalGlobalKey
+
         # reset the name generator state for this type
-        self._env.globals["_unique_name_generator"] = _UniqueNameGenerator()
+        self._env.globals[TypeLocalGlobalKey] = None
 
         # Predetermine the post processor types.
         line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']

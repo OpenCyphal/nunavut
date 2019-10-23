@@ -5,12 +5,11 @@
 #
 from pathlib import Path
 
-import pytest
+from pydsdl import read_namespace
 
 from nunavut import build_namespace_tree
-from nunavut.lang import LanguageContext
 from nunavut.jinja import Generator
-from pydsdl import read_namespace
+from nunavut.lang import LanguageContext
 
 
 def test_realgen(gen_paths):  # type: ignore
