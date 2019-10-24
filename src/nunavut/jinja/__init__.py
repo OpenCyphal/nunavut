@@ -88,9 +88,12 @@ class Generator(nunavut.generators.AbstractGenerator):
                                            at and from.
     :param bool generate_namespace_types:  typing.Set to true to emit files for namespaces.
                                            False will only generate files for datatypes.
-    :param typing.Union[pathlib.Path,typing.List[pathlib.Path]] templates_dir:
-                                           The directories containing the jinja templates.
-
+    :param templates_dir:                  Directories containing jinja templates. These will be available along
+                                           with any built-in templates provided by the target language. The templates
+                                           at these paths will take precedence masking any built-in templates
+                                           where the names are the same. See :class:`jinja2.ChoiceLoader` for rules
+                                           on the lookup hierarchy.
+    :type templates_dir: typing.Optional[typing.Union[pathlib.Path,typing.List[pathlib.Path]]]
     :param bool followlinks:               If True then symbolic links will be followed when
                                            searching for templates.
     :param bool trim_blocks:               If this is set to True the first newline after a
@@ -313,7 +316,7 @@ class Generator(nunavut.generators.AbstractGenerator):
                  namespace: nunavut.Namespace,
                  generate_namespace_types: bool,
                  language_context: nunavut.lang.LanguageContext,
-                 templates_dir: typing.Union[pathlib.Path, typing.List[pathlib.Path]],
+                 templates_dir: typing.Optional[typing.Union[pathlib.Path, typing.List[pathlib.Path]]] = None,
                  followlinks: bool = False,
                  trim_blocks: bool = False,
                  lstrip_blocks: bool = False,
@@ -324,17 +327,20 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         super(Generator, self).__init__(namespace, generate_namespace_types, language_context)
 
-        if not isinstance(templates_dir, list):
-            templates_dirs = [templates_dir]
+        if templates_dir is None:
+            templates_dirs = []  # type: typing.List[pathlib.Path]
         else:
-            templates_dirs = templates_dir
+            if not isinstance(templates_dir, list):
+                templates_dirs = [templates_dir]
+            else:
+                templates_dirs = templates_dir
 
-        for templates_dir_item in templates_dirs:
-            if templates_dir_item is None:
-                raise ValueError("Templates directory argument was None")
-            if not pathlib.Path(templates_dir_item).exists:
-                raise ValueError(
-                    "Templates directory {} did not exist?".format(templates_dir_item))
+            for templates_dir_item in templates_dirs:
+                if templates_dir_item is None:
+                    raise ValueError("Templates directory argument was None")
+                if not pathlib.Path(templates_dir_item).exists:
+                    raise ValueError(
+                        "Templates directory {} did not exist?".format(templates_dir_item))
 
         self._templates_dirs = templates_dirs
 

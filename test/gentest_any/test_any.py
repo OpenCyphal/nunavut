@@ -11,8 +11,11 @@ from nunavut import build_namespace_tree
 from nunavut.jinja import Generator
 from nunavut.lang import LanguageContext
 
+import pytest
 
-def test_anygen(gen_paths):  # type: ignore
+
+@pytest.mark.parametrize('lang_key', [('cpp')])
+def test_anygen(gen_paths, lang_key):  # type: ignore
     """
     Verifies that any dsdl type will resolve to an ``Any`` template.
     """

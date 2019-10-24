@@ -287,7 +287,6 @@ def filter_macrofy(value: str) -> str:
 
     :param str value: The value to transform.
 
-
     :returns: A valid C preprocessor identifier token.
     """
     return value.replace(' ', '_').replace('.', '_').upper()
@@ -380,7 +379,6 @@ def filter_type_from_primitive(value: pydsdl.PrimitiveType, use_standard_types: 
 
     .. invisible-code-block: python
 
-
         test_type = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
         jinja_filter_tester(filter_type_from_primitive,
                             template,
@@ -450,6 +448,11 @@ def filter_to_snake_case(value: str) -> str:
 
 
     .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_snake_case, template, rendered)
+
+        template = '{{ " aa bb. cCcAAa_aAa_AAaAa_AAaA_a " | to_snake_case }}'
+        rendered = 'aa_bb_c_cc_aaa_a_aa_aaa_aa_aaa_a_a'
 
         jinja_filter_tester(filter_to_snake_case, template, rendered)
 

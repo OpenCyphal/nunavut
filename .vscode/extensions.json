@@ -7,6 +7,10 @@
         "wholroyd.jinja",
         "streetsidesoftware.code-spell-checker",
         "ms-python.python",
-        "lextudio.restructuredtext"
+        "lextudio.restructuredtext",
+        "ms-vscode.cpptools",
+        "twxs.cmake",
+        "vector-of-bool.cmake-tools",
+        "xaver.clang-format"
     ]
 }

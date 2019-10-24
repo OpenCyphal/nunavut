@@ -5,8 +5,9 @@
 
    api/modules
    templates
-   appendix
+   CLI (nnvg) <cli>
+   Verification <../verification/README>
    dev
-   cli
+   Appendix <appendix>
 
 .. include:: ../README.rst

@@ -36,7 +36,7 @@ dist
 # vagrant
 .vagrant
 
-# libuavcan DSDL compiler default output directory
+#  DSDL compiler default output directory
 nunavut_out
 
 # Log files
