@@ -76,16 +76,18 @@ if sys.version_info[:2] < (3, 5):   # pragma: no cover
     print('A newer version of Python is required', file=sys.stderr)
     sys.exit(1)
 
-# for now this is set to a value that is internally compatible with the
-# embedded version of jinja2 we use in Nunavut. If you use this variable
-# instead of its current value you will be insulated from this.
 EnvironmentFilterAttributeName = 'environmentfilter'
+"""
+For now this is set to a value that is internally compatible with the
+embedded version of jinja2 we use in Nunavut. If you use this variable
+instead of its current value you will be insulated from this.
+"""
 
-#
-# A key used in template environments to key storage that is erased before
-# processing each new type.
-#
-TypeLocalGlobalKey = '_template_local_global'  # type: str
+TypeLocalGlobalKey = '_nv_template_local_global'
+"""
+A key used in template environments to key storage that is erased before
+processing each new type.
+"""
 
 # +---------------------------------------------------------------------------+
 

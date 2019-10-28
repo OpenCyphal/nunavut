@@ -267,7 +267,7 @@ def filter_short_reference_name(t: pydsdl.CompositeType, stropping: bool = True)
         # and
         template = '{{ my_obj | short_reference_name }}'
 
-        # then ('str' is stropped to 'str_' before the version is suffixed)
+        # then
         rendered = '_2Foo_1_2'
 
     .. invisible-code-block: python
@@ -358,11 +358,13 @@ def filter_alignment_prefix(offset: pydsdl.BitLengthSet) -> str:
         raise TypeError('Expected BitLengthSet, got {}'.format(type(offset).__name__))
 
 
-def filter_imports(t: pydsdl.CompositeType) -> typing.List[str]:
+def filter_imports(t: pydsdl.CompositeType, sort: bool = True, stropping: bool = True) -> typing.List[str]:
     """
     Returns a list of all modules that must be imported to used a given type.
 
     :param pydsdl.CompositeType t: The type to scan for dependencies.
+    :param bool sort: If true the returned list will be sorted.
+    :param bool stropping: If true the list will contained stropped identifiers.
     :return: a list of python module names the provided type depends on.
     """
     # Make a list of all attributes defined by this type
@@ -371,14 +373,23 @@ def filter_imports(t: pydsdl.CompositeType) -> typing.List[str]:
     else:
         atr = t.attributes
 
+    def array_w_composite_type(data_type: pydsdl.Any) -> bool:
+        return isinstance(data_type, pydsdl.ArrayType) and isinstance(data_type.element_type, pydsdl.CompositeType)
+
     # Extract data types of said attributes; for type constructors such as arrays extract the element type
-    dep_types = list(map(lambda x: x.data_type, atr))  # type: ignore
-    for t in dep_types[:]:
-        if isinstance(t, pydsdl.ArrayType):
-            dep_types.append(t.element_type)
+    dep_types = [x.data_type for x in atr if isinstance(x.data_type, pydsdl.CompositeType)]
+    dep_types += [x.data_type.element_type for x in atr if array_w_composite_type(x.data_type)]
 
     # Make a list of unique full namespaces of referenced composites
-    return list(sorted(set(x.full_namespace for x in dep_types if isinstance(x, pydsdl.CompositeType))))
+    namespace_list = [x.full_namespace for x in dep_types]
+
+    if stropping:
+        namespace_list = ['.'.join([filter_id(y) for y in x.split('.')]) for x in namespace_list]
+
+    if sort:
+        return list(sorted(namespace_list))
+    else:
+        return namespace_list
 
 
 def filter_longest_id_length(attributes: typing.List[pydsdl.Attribute], stropping: bool = True) -> int:

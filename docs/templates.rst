@@ -20,6 +20,17 @@ Environment
 
 Each template has in its global environment the following:
 
+nunavut
+=================================================
+
+A global ``nunavut`` is available in the global namespace with the following properties:
+
+version
+-------------------------------------------------
+
+A `pep 440 <https://www.python.org/dev/peps/pep-0440/>`_ compatible version number for the
+version of Nunavut that the template is running within.
+
 T
 =================================================
 
@@ -78,6 +89,8 @@ C++ Filters
 .. autofunction:: nunavut.lang.cpp.filter_open_namespace
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_close_namespace
+   :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_includes
    :noindex:
 
 Python Filters

@@ -9,10 +9,16 @@
 """
 
 import io
-import typing
+import pathlib
 import re
+import typing
 
-from ..c import VariableNameEncoder, C_RESERVED_IDENTIFIERS, C_RESERVED_PATTERNS
+import pydsdl
+
+from ... import SupportsTemplateEnv, templateEnvironmentFilter
+from ..c import (C_RESERVED_IDENTIFIERS, C_RESERVED_PATTERNS,
+                 VariableNameEncoder)
+from ...lang import LanguageContext
 
 
 # Taken from https://en.cppreference.com/w/cpp/keyword
@@ -337,3 +343,178 @@ def filter_close_namespace(full_namespace: str, omit_comments: bool = False, lin
                 content.write(name)
             content.write(linesep)
         return content.getvalue()
+
+
+def filter_full_reference_name(t: pydsdl.CompositeType, stropping: bool = True) -> str:
+    """
+    Provides a string that is the full namespace, typename, major, and minor version for a given composite type.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_full_reference_name
+
+        dummy = lambda: None
+        dummy_version = lambda: None
+        setattr(dummy, 'version', dummy_version)
+
+    .. code-block:: python
+
+        # Given
+        full_name = 'any.int.2Foo'
+        major = 1
+        minor = 2
+
+        # and
+        template = '{{ my_obj | full_reference_name }}'
+
+        # then
+        rendered = 'any::_int::_2Foo_1_2'
+
+    .. invisible-code-block: python
+
+
+        setattr(dummy_version, 'major', major)
+        setattr(dummy_version, 'minor', minor)
+        setattr(dummy, 'full_name', full_name)
+        setattr(dummy, 'short_name', full_name.split('.')[-1])
+        jinja_filter_tester(filter_full_reference_name, template, rendered, my_obj=dummy)
+
+
+    .. code-block:: python
+
+        # Given
+        full_name = 'any.int.2Foo'
+        major = 1
+        minor = 2
+
+        # and
+        template = '{{ my_obj | full_reference_name(stropping=False) }}'
+
+        # then
+        rendered = 'any::int::2Foo_1_2'
+
+    .. invisible-code-block: python
+
+
+        setattr(dummy_version, 'major', major)
+        setattr(dummy_version, 'minor', minor)
+        setattr(dummy, 'full_name', full_name)
+        setattr(dummy, 'short_name', full_name.split('.')[-1])
+        jinja_filter_tester(filter_full_reference_name, template, rendered, my_obj=dummy)
+
+    :param pydsdl.CompositeType t: The DSDL type to get the fully-resolved reference name for.
+    :param bool stropping: If True then the :func:`filter_id` filter is applied to each component in the identifier.
+    """
+    ns_parts = t.full_name.split('.')
+    if len(ns_parts) > 1:
+        if stropping:
+            ns = list(map(filter_id, ns_parts[:-1]))
+        else:
+            ns = ns_parts[:-1]
+
+    return '::'.join(ns + [filter_short_reference_name(t, stropping)])
+
+
+def filter_short_reference_name(t: pydsdl.CompositeType, stropping: bool = True) -> str:
+    """
+    Provides a string that is a shorted version of the full reference name. This type is unique only within its
+    namespace.
+
+     .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_short_reference_name
+
+        dummy = lambda: None
+        dummy_version = lambda: None
+        setattr(dummy, 'version', dummy_version)
+
+    .. code-block:: python
+
+        # Given
+        short_name = '2Foo'
+        major = 1
+        minor = 2
+
+        # and
+        template = '{{ my_obj | short_reference_name }}'
+
+        # then
+        rendered = '_2Foo_1_2'
+
+    .. invisible-code-block: python
+
+        setattr(dummy_version, 'major', major)
+        setattr(dummy_version, 'minor', minor)
+        setattr(dummy, 'short_name', short_name)
+        jinja_filter_tester(filter_short_reference_name, template, rendered, my_obj=dummy)
+
+
+    .. code-block:: python
+
+        # Given
+        short_name = '2Foo'
+        major = 1
+        minor = 2
+
+        # and
+        template = '{{ my_obj | short_reference_name(stropping=False) }}'
+
+        # then
+        rendered = '2Foo_1_2'
+
+    .. invisible-code-block: python
+
+        setattr(dummy_version, 'major', major)
+        setattr(dummy_version, 'minor', minor)
+        setattr(dummy, 'short_name', short_name)
+        jinja_filter_tester(filter_short_reference_name, template, rendered, my_obj=dummy)
+
+    :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
+    """
+    short_name = '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
+    if stropping:
+        return filter_id(short_name)
+    else:
+        return short_name
+
+
+@templateEnvironmentFilter
+def filter_includes(env: SupportsTemplateEnv,
+                    t: pydsdl.CompositeType,
+                    sort: bool = True,
+                    stropping: bool = True) -> typing.List[str]:
+    """
+    Returns a list of all include paths for a given type.
+
+    :param pydsdl.CompositeType t: The type to scan for dependencies.
+    :param bool sort: If true the returned list will be sorted.
+    :param bool strop: If true the list will contained stropped identifiers.
+    :return: a list of include headers needed for a given type.
+    """
+    # Make a list of all attributes defined by this type
+    if isinstance(t, pydsdl.ServiceType):
+        atr = t.request_type.attributes + t.response_type.attributes
+    else:
+        atr = t.attributes
+
+    dep_types = \
+        [(x.data_type, filter_short_reference_name(x.data_type))
+            for x in atr if isinstance(x.data_type, pydsdl.CompositeType)]
+    dep_types += \
+        [(x.data_type.element_type, filter_short_reference_name(x.data_type.element_type))
+            for x in atr if
+            isinstance(x.data_type, pydsdl.ArrayType) and isinstance(x.data_type.element_type, pydsdl.CompositeType)]
+
+    def make_ns_list(dt: pydsdl.SerializableType) -> typing.List[str]:
+        if stropping:
+            return [filter_id(x) for x in dt.full_namespace.split('.')]
+        else:
+            return typing.cast(typing.List[str], dt.full_namespace.split('.'))
+
+    suffix = LanguageContext.get_from_globals(env.globals).get_output_extension()
+    path_list = [str(pathlib.Path(*make_ns_list(dt)) / pathlib.Path(sr).with_suffix(suffix))
+                 for dt, sr in dep_types]
+
+    if sort:
+        path_list = sorted(path_list)
+    return path_list

@@ -7,6 +7,7 @@
 import json
 import pathlib
 from pathlib import Path, PurePath
+from unittest.mock import MagicMock
 
 import pytest
 from pydsdl import read_namespace
@@ -160,13 +161,59 @@ def test_python_filter_imports(gen_paths):  # type: ignore
     assert 'uavcan.time' == imports[0]
 
 
-def test_python_filter_imports_for_service_type(gen_paths):  # type: ignore
+@pytest.mark.parametrize('stropping,sort', [(True, False), (False, True)])
+def test_python_filter_imports_for_service_type(gen_paths, stropping, sort):  # type: ignore
     type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('uavcan')), [])
 
     from nunavut.lang.py import filter_imports
 
     test_subject = next(filter(lambda type: (type.short_name == 'bar_svc'), type_map))
-    imports = filter_imports(test_subject)
+    imports = filter_imports(test_subject, sort=sort, stropping=stropping)
     assert len(imports) == 2
-    assert 'uavcan.str' == imports[0]
+    if stropping:
+        assert 'uavcan.str_' == imports[0]
+    else:
+        assert 'uavcan.str' == imports[0]
     assert 'uavcan.time' == imports[1]
+
+
+@pytest.mark.parametrize('stropping,sort', [(True, False), (False, True)])
+def test_python_filter_imports_for_array_type(gen_paths, stropping, sort):  # type: ignore
+    uavcan_dir = str(gen_paths.dsdl_dir / pathlib.Path('uavcan'))
+    type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('new')), [uavcan_dir])
+
+    assert len(type_map) == 2
+
+    from nunavut.lang.py import filter_imports
+
+    test_subject = next(filter(lambda type: (type.short_name == 'hotness'), type_map))
+    imports = filter_imports(test_subject, sort=sort, stropping=stropping)
+    assert len(imports) == 3
+    assert 'new' == imports[0]
+    if stropping:
+        assert 'uavcan.str_' == imports[1]
+    else:
+        assert 'uavcan.str' == imports[1]
+    assert 'uavcan.time' == imports[2]
+
+
+@pytest.mark.parametrize('stropping,sort', [(True, False), (False, True)])
+def test_python_filter_includes(gen_paths, stropping, sort):  # type: ignore
+    uavcan_dir = str(gen_paths.dsdl_dir / pathlib.Path('uavcan'))
+    type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('new')), [uavcan_dir])
+    from nunavut.lang.cpp import filter_includes
+
+    test_subject = next(filter(lambda type: (type.short_name == 'hotness'), type_map))
+    mock_environment = MagicMock()
+    mock_language_context = MagicMock()
+    mock_language_context.get_output_extension = MagicMock(return_value='.h')
+    mock_environment.globals = {LanguageContext.ContextInstanceGlobalKey:
+                                mock_language_context}
+    imports = filter_includes(mock_environment, test_subject, sort=sort, stropping=stropping)
+    assert len(imports) == 3
+    if stropping:
+        assert '_new/malloc_1_0.h' == imports[0]
+    else:
+        assert 'new/malloc_1_0.h' == imports[0]
+    assert 'uavcan/str/bar_1_0.h' == imports[1]
+    assert 'uavcan/time/SynchronizedTimestamp_1_0.h' == imports[2]
