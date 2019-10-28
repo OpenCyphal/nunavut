@@ -84,6 +84,59 @@ class LanguageContext:
         'py': ('.py', '__init__')
     }
 
+    ContextInstanceGlobalKey = '_nv_language_context'
+    """
+    A key used in template environments to store a reference to the language context in use.
+    """
+
+    @classmethod
+    def inject_into_globals(cls, instance: 'LanguageContext', globals: typing.Dict) -> None:
+        """
+        Sets a reference to the provided instance in the provided environment globals map using
+        :data:`LanguageContext.ContextInstanceGlobalKey` as the key.
+        """
+        globals[cls.ContextInstanceGlobalKey] = instance
+
+    @classmethod
+    def get_from_globals(cls, globals: typing.Dict) -> 'LanguageContext':
+        """
+        Where :meth:`LanguageContext.inject_into_globals` was used for a given environment this method
+        retrieves the :class:`LanguageContext` from a given set of globals. For example:
+
+        .. invisible-code-block: python
+
+            from nunavut import templateEnvironmentFilter, SupportsTemplateEnv
+            from unittest.mock import MagicMock
+            from nunavut.lang import LanguageContext
+
+            mock_language_context = MagicMock()
+            mock_language_context.get_output_extension = MagicMock(return_value='.h')
+
+        .. code-block:: python
+
+            # Given an environment filter
+            @templateEnvironmentFilter
+            def filter_with_output_extension(env: SupportsTemplateEnv, filename: str) -> str:
+                return filename + LanguageContext.get_from_globals(env.globals).get_output_extension()
+
+            # and a template
+            template  = '#include "{{ "Foo" | with_output_extension }}"'
+
+            # and assuming c++ is the implied language then we expect:
+            rendered = '#include "Foo.h"'
+
+        .. invisible-code-block: python
+
+            globals = {LanguageContext.ContextInstanceGlobalKey: mock_language_context}
+            jinja_filter_tester(filter_with_output_extension,
+                                template,
+                                rendered,
+                                **globals)
+
+
+        """
+        return typing.cast('LanguageContext', globals[cls.ContextInstanceGlobalKey])
+
     def __init__(self,
                  target_language: typing.Optional[str] = None,
                  extension: typing.Optional[str] = None,

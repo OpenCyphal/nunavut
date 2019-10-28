@@ -84,6 +84,40 @@ You will see each test's output under "build/(test name}".
     Don't use this option when running tests in parallel. You will get errors.
 
 
+Sybil Doctest
+================================================
+
+This project makes extensive use of `Sybil <https://sybil.readthedocs.io/en/latest/>`_ doctests.
+These take the form of docstrings with a structure like thus::
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.c import filter_to_snake_case
+
+    .. code-block:: python
+
+        # an input like this:
+        input = "scotec.mcu.Timer"
+
+        # should yield:
+        filter_to_snake_case(input)
+        >>> scotec_mcu_timer
+
+The invisible code block is executed but not displayed in the generated documentation and,
+conversely, ``code-block`` is both rendered using proper syntax formatting in the documentation
+and executed. REPL works the same as it does for :mod:`doctest` but ``assert`` is also a valid
+way to ensure the example is correct especially if used in a trailing ``invisible-code-block``::
+
+    .. invisible-code-block: python
+
+        assert 'scotec_mcu_timer' == filter_to_snake_case(input)
+
+These tests are run as part of the regular pytest build. You can see the Sybil setup in the
+``conftest.py`` found under the ``src`` directory but otherwise shouldn't need to worry about
+it. The simple rule is; if the docstring ends up in the rendered documentation then your
+``code-block`` tests will be executed as unit tests.
+
+
 import file mismatch
 ================================================
 
