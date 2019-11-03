@@ -14,6 +14,12 @@ your dev environment setup.
     - See `nunavut on read the docs`_ for the full set of nunavut documentation.
     - See the `UAVCAN website`_ for documentation on the UAVCAN protocol.
 
+.. warning::
+
+    When committing to master you **must** bump at least the patch number in ``src/nunavut/version.py``
+    or the build will fail on the upload step.
+
+
 ************************************************
 Tools
 ************************************************
