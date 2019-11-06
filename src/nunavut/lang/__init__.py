@@ -218,31 +218,26 @@ class LanguageContext:
 class _UniqueNameGenerator:
     """
     Functor used by template filters to obtain a unique name within a given template.
-    This should be made available as a private global "_unique_name_generator" within
-    each template and should be reset after completing generation of a type.
+    This should be made available as a private global within each template.
     """
+
+    _index_map = {}  # type: typing.Dict[str, typing.Dict[str, int]]
 
     @classmethod
     def ensure_generator_in_globals(cls, environment_globals: typing.Dict[str, typing.Any]) -> '_UniqueNameGenerator':
         from .. import TypeLocalGlobalKey
 
-        if TypeLocalGlobalKey not in environment_globals:
+        if TypeLocalGlobalKey not in environment_globals or environment_globals[TypeLocalGlobalKey] is None:
             environment_globals[TypeLocalGlobalKey] = cls()
         return typing.cast('_UniqueNameGenerator', environment_globals[TypeLocalGlobalKey])
 
-    def __init__(self) -> None:
-        self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, int]]
-
-    def __call__(self, key: str, base_token: str, prefix: str, suffix: str) -> str:
-        """
-        Uses a lazy internal index to generate a number unique to a given base_token within a template
-        for a given domain (key).
-        """
+    @classmethod
+    def _get_next_globally_unique(cls, key: str, base_token: str, prefix: str, suffix: str) -> str:
         try:
-            keymap = self._index_map[key]
+            keymap = cls._index_map[key]
         except KeyError:
             keymap = {}
-            self._index_map[key] = keymap
+            cls._index_map[key] = keymap
 
         try:
             next_index = keymap[base_token]
@@ -256,3 +251,10 @@ class _UniqueNameGenerator:
             base_token=base_token,
             index=next_index,
             suffix=suffix)
+
+    def __call__(self, *args: typing.Any) -> str:
+        """
+        Uses a global index to generate a number unique to a given base_token within a template
+        for a given domain (key).
+        """
+        return self._get_next_globally_unique(*args)

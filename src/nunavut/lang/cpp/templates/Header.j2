@@ -27,17 +27,12 @@
 #ifndef {{T.full_name | c.macrofy}}
 #define {{T.full_name | c.macrofy}}
 
-#include <cstdint>
-{% for n in T | includes -%}
-#include "{{ n }}"
-{%- endfor %}
-
-{{T.full_namespace | cpp.open_namespace}}
-
-{%- block object %}{% endblock -%}
-
-{{T.full_namespace | cpp.close_namespace}}
-
+{% for n in T | includes(prefer_system_includes=False) -%}
+#include {{ n }}
+{% endfor %}
+{{T.full_namespace | open_namespace}}
+{%- block object -%}{%- endblock -%}
+{{T.full_namespace | close_namespace}}
 #endif // {{T.full_name | c.macrofy}}
 
 /*

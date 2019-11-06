@@ -8,6 +8,7 @@ Fixtures for our tests.
 
 import os
 import pathlib
+import re
 import subprocess
 import tempfile
 import textwrap
@@ -111,3 +112,37 @@ def pytest_addoption(parser):  # type: ignore
         :: WARNING ::
         Do not run tests in parallel when using this option.
     '''))
+
+
+class _UniqueNameEvaluator:
+
+    def __init__(self) -> None:
+        self._found_names = set()  # type: typing.Set[str]
+
+    def __call__(self, expected_pattern: str, actual_value: str) -> None:
+        assert re.match(expected_pattern, actual_value) is not None
+        assert actual_value not in self._found_names
+        self._found_names.add(actual_value)
+
+
+@pytest.fixture(scope='function')
+def unique_name_evaluator(request):  # type: ignore
+    """
+    Class that defined ``assert_is_expected_and_unique`` allowing assertion that a set of values
+    in a single test adhere to a provided pattern and are unique values (comparted to other values
+    provided to this method).
+
+    .. code-block:: python
+
+        def test_is_unique(unique_name_evaluator) -> None:
+            value0 = '_foo0_'
+            value1 = '_foo1_'
+            unique_name_evaluator(r'_foo\\d_', value0)
+            unique_name_evaluator(r'_foo\\d_', value1)
+
+            # This next line should fail because value 0 was already evaluated so it
+            # is not unique
+            unique_name_evaluator(r'_foo\\d_', value0)
+
+    """
+    return _UniqueNameEvaluator()

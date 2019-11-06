@@ -210,10 +210,37 @@ def test_python_filter_includes(gen_paths, stropping, sort):  # type: ignore
     mock_environment.globals = {LanguageContext.ContextInstanceGlobalKey:
                                 mock_language_context}
     imports = filter_includes(mock_environment, test_subject, sort=sort, stropping=stropping)
-    assert len(imports) == 3
+    assert len(imports) == 5
+
+    def assert_path_in_imports(path: str) -> None:
+        nonlocal imports
+        assert path in imports
+
     if stropping:
-        assert '_new/malloc_1_0.h' == imports[0]
+        if sort:
+            assert ['<array>',
+                    '<cstdint>',
+                    '"_new/malloc_1_0.h"',
+                    '"uavcan/str/bar_1_0.h"',
+                    '"uavcan/time/SynchronizedTimestamp_1_0.h"'
+                    ] == imports
+        else:
+
+            map(assert_path_in_imports, ('<array>',
+                                         '<cstdint>',
+                                         '"uavcan/time/SynchronizedTimestamp_1_0.h"',
+                                         '"_new/malloc_1_0.h"',
+                                         '"uavcan/str/bar_1_0.h"'))
+    elif sort:
+        assert ['<array>',
+                '<cstdint>',
+                '"new/malloc_1_0.h"',
+                '"uavcan/str/bar_1_0.h"',
+                '"uavcan/time/SynchronizedTimestamp_1_0.h"'
+                ] == imports
     else:
-        assert 'new/malloc_1_0.h' == imports[0]
-    assert 'uavcan/str/bar_1_0.h' == imports[1]
-    assert 'uavcan/time/SynchronizedTimestamp_1_0.h' == imports[2]
+        map(assert_path_in_imports, ('<array>',
+                                     '<cstdint>',
+                                     '"uavcan/time/SynchronizedTimestamp_1_0.h"',
+                                     '"new/malloc_1_0.h"',
+                                     '"uavcan/str/bar_1_0.h"'))

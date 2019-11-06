@@ -326,15 +326,21 @@ class _CFit(enum.Enum):
         else:
             return 'double'
 
-    def to_c_type(self, value: pydsdl.PrimitiveType, use_standard_types: bool = True) -> str:
+    def to_c_type(self,
+                  value: pydsdl.PrimitiveType,
+                  use_standard_types: bool = True,
+                  inttype_prefix: typing.Optional[str] = None) -> str:
+        safe_prefix = '' if inttype_prefix is None else inttype_prefix
         if isinstance(value, pydsdl.UnsignedIntegerType):
-            return (self.to_c_int(False) if not use_standard_types else self.to_std_int(False))
+            return safe_prefix + (self.to_c_int(False) if not use_standard_types else self.to_std_int(False))
         elif isinstance(value, pydsdl.SignedIntegerType):
-            return (self.to_c_int(True) if not use_standard_types else self.to_std_int(True))
+            return safe_prefix + (self.to_c_int(True) if not use_standard_types else self.to_std_int(True))
         elif isinstance(value, pydsdl.FloatType):
             return self.to_c_float()
         elif isinstance(value, pydsdl.BooleanType):
             return ('BOOL' if not use_standard_types else 'bool')
+        elif isinstance(value, pydsdl.VoidType):
+            return 'void'
         else:
             raise RuntimeError("{} is not a known PrimitiveType".format(type(value).__name__))
 

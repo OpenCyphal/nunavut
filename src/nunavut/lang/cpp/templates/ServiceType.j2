@@ -1,14 +1,10 @@
 {% extends "Header.j2" %}
-{% block object %}
-
-class {{ T.short_name }}
+{%- block object -%}
+{{ T | definition_begin }}
 {
-{% for attribute in T.attributes %}
-  // {{ attribute }}
-{% endfor %}
-{% for field in T.fields %}
-  // {{ field }}
-{% endfor %}
-};
-
-{% endblock %}
+{% set composite_type = T.request_type -%}
+{% include '_composite_type.j2' %}
+{% set composite_type = T.response_type -%}
+{% include '_composite_type.j2' %}
+}{{ T | definition_end }}
+{% endblock -%}
