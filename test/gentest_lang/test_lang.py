@@ -213,6 +213,11 @@ def ptest_lang_py(gen_paths, implicit):  # type: ignore
     assert "_NAME1_" == lang_py_output["unique_name_1"]
     assert "_name0_" == lang_py_output["unique_name_2"]
     assert "identifier_zero" == lang_py_output["id_0"]
+
+    many_unique_names = lang_py_output.get("many_unique_names")
+    if many_unique_names is not None:
+        assert [('_f%d_' % x) for x in range(12)] == many_unique_names
+
     return generated_values
 
 # +---------------------------------------------------------------------------+

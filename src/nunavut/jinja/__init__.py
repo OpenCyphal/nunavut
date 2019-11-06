@@ -375,7 +375,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                                 keep_trailing_newline=True,
                                 lstrip_blocks=lstrip_blocks,
                                 trim_blocks=trim_blocks,
-                                auto_reload=False)
+                                auto_reload=False,
+                                cache_size=0)
 
         self._add_language_support()
 
