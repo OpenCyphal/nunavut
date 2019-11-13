@@ -83,12 +83,6 @@ embedded version of jinja2 we use in Nunavut. If you use this variable
 instead of its current value you will be insulated from this.
 """
 
-TypeLocalGlobalKey = '_nv_template_local_global'
-"""
-A key used in template environments to key storage that is erased before
-processing each new type.
-"""
-
 # +---------------------------------------------------------------------------+
 
 

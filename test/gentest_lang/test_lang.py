@@ -297,7 +297,7 @@ def test_lang_cpp_explicit(gen_paths):  # type: ignore
     ptest_lang_cpp(gen_paths, False)
 
 
-def test_lang_py(gen_paths, unique_name_evaluator):  # type: ignore
+def test_lang_py_implicit(gen_paths, unique_name_evaluator):  # type: ignore
     """ Generates and verifies JSON with values filtered using the python language support module.
     """
 

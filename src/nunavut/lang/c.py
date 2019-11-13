@@ -16,7 +16,7 @@ import typing
 import pydsdl
 
 from . import _UniqueNameGenerator
-from .. import SupportsTemplateEnv, templateEnvironmentFilter
+from ..jinja.jinja2 import contextfilter
 
 # Taken from https://en.cppreference.com/w/c/keyword
 C_RESERVED_IDENTIFIERS = frozenset([
@@ -471,8 +471,8 @@ def filter_to_snake_case(value: str) -> str:
     return _snake_case_pattern_2.sub(lambda x: '_' + x.group(0).lower(), pass1)
 
 
-@templateEnvironmentFilter
-def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) -> str:
+@contextfilter
+def filter_to_template_unique_name(context: typing.Any, base_token: str) -> str:
     """
     Filter that takes a base token and forms a name that is very
     likely to be unique within the template the filter is invoked. This
@@ -494,6 +494,7 @@ def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) ->
     .. invisible-code-block: python
 
         from nunavut.lang.c import filter_to_template_unique_name
+        from nunavut.lang import _UniqueNameGenerator
 
     .. code-block:: python
 
@@ -506,6 +507,7 @@ def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) ->
 
     .. invisible-code-block: python
 
+        _UniqueNameGenerator.reset()
         jinja_filter_tester(filter_to_template_unique_name, template, rendered)
 
     .. code-block:: python
@@ -518,6 +520,7 @@ def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) ->
 
     .. invisible-code-block: python
 
+        _UniqueNameGenerator.reset()
         jinja_filter_tester(filter_to_template_unique_name, template, rendered)
 
 
@@ -530,4 +533,4 @@ def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) ->
     else:
         adj_base_token = base_token
 
-    return _UniqueNameGenerator.ensure_generator_in_globals(env.globals)('c', adj_base_token, '_', '_')
+    return _UniqueNameGenerator.get_instance()('c', adj_base_token, '_', '_')

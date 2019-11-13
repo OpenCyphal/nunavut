@@ -585,10 +585,10 @@ class Generator(nunavut.generators.AbstractGenerator):
         Logic that should run from _generate_type iff is_dryrun is False.
         """
 
-        from .. import TypeLocalGlobalKey
+        from ..lang import _UniqueNameGenerator
 
         # reset the name generator state for this type
-        self._env.globals[TypeLocalGlobalKey] = None
+        _UniqueNameGenerator.reset()
 
         # Predetermine the post processor types.
         line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']
