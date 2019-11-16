@@ -16,7 +16,7 @@ import typing
 import pydsdl
 
 from . import _UniqueNameGenerator
-from .. import SupportsTemplateEnv, templateEnvironmentFilter
+from ..jinja.jinja2 import contextfilter
 
 # Taken from https://en.cppreference.com/w/c/keyword
 C_RESERVED_IDENTIFIERS = frozenset([
@@ -326,15 +326,21 @@ class _CFit(enum.Enum):
         else:
             return 'double'
 
-    def to_c_type(self, value: pydsdl.PrimitiveType, use_standard_types: bool = True) -> str:
+    def to_c_type(self,
+                  value: pydsdl.PrimitiveType,
+                  use_standard_types: bool = True,
+                  inttype_prefix: typing.Optional[str] = None) -> str:
+        safe_prefix = '' if inttype_prefix is None else inttype_prefix
         if isinstance(value, pydsdl.UnsignedIntegerType):
-            return (self.to_c_int(False) if not use_standard_types else self.to_std_int(False))
+            return safe_prefix + (self.to_c_int(False) if not use_standard_types else self.to_std_int(False))
         elif isinstance(value, pydsdl.SignedIntegerType):
-            return (self.to_c_int(True) if not use_standard_types else self.to_std_int(True))
+            return safe_prefix + (self.to_c_int(True) if not use_standard_types else self.to_std_int(True))
         elif isinstance(value, pydsdl.FloatType):
             return self.to_c_float()
         elif isinstance(value, pydsdl.BooleanType):
             return ('BOOL' if not use_standard_types else 'bool')
+        elif isinstance(value, pydsdl.VoidType):
+            return 'void'
         else:
             raise RuntimeError("{} is not a known PrimitiveType".format(type(value).__name__))
 
@@ -465,8 +471,8 @@ def filter_to_snake_case(value: str) -> str:
     return _snake_case_pattern_2.sub(lambda x: '_' + x.group(0).lower(), pass1)
 
 
-@templateEnvironmentFilter
-def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) -> str:
+@contextfilter
+def filter_to_template_unique_name(context: typing.Any, base_token: str) -> str:
     """
     Filter that takes a base token and forms a name that is very
     likely to be unique within the template the filter is invoked. This
@@ -488,6 +494,7 @@ def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) ->
     .. invisible-code-block: python
 
         from nunavut.lang.c import filter_to_template_unique_name
+        from nunavut.lang import _UniqueNameGenerator
 
     .. code-block:: python
 
@@ -500,6 +507,7 @@ def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) ->
 
     .. invisible-code-block: python
 
+        _UniqueNameGenerator.reset()
         jinja_filter_tester(filter_to_template_unique_name, template, rendered)
 
     .. code-block:: python
@@ -512,6 +520,7 @@ def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) ->
 
     .. invisible-code-block: python
 
+        _UniqueNameGenerator.reset()
         jinja_filter_tester(filter_to_template_unique_name, template, rendered)
 
 
@@ -524,4 +533,4 @@ def filter_to_template_unique_name(env: SupportsTemplateEnv, base_token: str) ->
     else:
         adj_base_token = base_token
 
-    return _UniqueNameGenerator.ensure_generator_in_globals(env.globals)('c', adj_base_token, '_', '_')
+    return _UniqueNameGenerator.get_instance()('c', adj_base_token, '_', '_')

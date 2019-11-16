@@ -4,19 +4,16 @@
 # This software is distributed under the terms of the MIT License.
 #
 
-from pathlib import Path
-
-import pytest
-
 import inspect
-
+from pathlib import Path
 from typing import Dict
 
+import pytest
 from pydsdl import read_namespace
-from nunavut import build_namespace_tree
-from nunavut.lang import LanguageContext, Language
-from nunavut.jinja import Generator
 
+from nunavut import build_namespace_tree
+from nunavut.jinja import Generator
+from nunavut.lang import Language, LanguageContext
 from nunavut.lang.c import filter_id as c_filter_id
 from nunavut.lang.cpp import filter_id as cpp_filter_id
 from nunavut.lang.py import filter_id as py_filter_id
@@ -36,7 +33,7 @@ class Dummy:
 # +---------------------------------------------------------------------------+
 
 
-def ptest_lang_c(gen_paths, implicit):  # type: ignore
+def ptest_lang_c(gen_paths, implicit, unique_name_evaluator):  # type: ignore
     """ Generates and verifies JSON with values filtered using the c language support module.
     """
 
@@ -99,10 +96,11 @@ def ptest_lang_c(gen_paths, implicit):  # type: ignore
     assert lang_c_output["ctype saturated bool"] == "BOOL"
     assert lang_c_output["ctype_std saturated bool"] == "bool"
 
-    assert "_nAME0_" == lang_c_output["unique_name_0"]
-    assert "_nAME1_" == lang_c_output["unique_name_1"]
-    assert "_naME0_" == lang_c_output["unique_name_2"]
-    assert "_0_" == lang_c_output["unique_name_3"]
+    unique_name_evaluator(r'_nAME\d+_', lang_c_output["unique_name_0"])
+    unique_name_evaluator(r'_nAME\d+_', lang_c_output["unique_name_1"])
+    unique_name_evaluator(r'_naME\d+_', lang_c_output["unique_name_2"])
+    unique_name_evaluator(r'_\d+_', lang_c_output["unique_name_3"])
+
     return generated_values
 
 
@@ -169,7 +167,7 @@ namespace ns {
     return generated_values
 
 
-def ptest_lang_py(gen_paths, implicit):  # type: ignore
+def ptest_lang_py(gen_paths, implicit, unique_name_evaluator):  # type: ignore
     """ Generates and verifies JSON with values filtered using the python language support module.
     """
 
@@ -209,10 +207,16 @@ def ptest_lang_py(gen_paths, implicit):  # type: ignore
     assert len(generated_values) > 0
 
     lang_py_output = generated_values["tests"]["lang_py"]
-    assert "_NAME0_" == lang_py_output["unique_name_0"]
-    assert "_NAME1_" == lang_py_output["unique_name_1"]
-    assert "_name0_" == lang_py_output["unique_name_2"]
+    unique_name_evaluator(r'_NAME\d+_', lang_py_output["unique_name_0"])
+    unique_name_evaluator(r'_NAME\d+_', lang_py_output["unique_name_1"])
+    unique_name_evaluator(r'_name\d+_', lang_py_output["unique_name_2"])
     assert "identifier_zero" == lang_py_output["id_0"]
+
+    many_unique_names = lang_py_output.get("many_unique_names")
+    if many_unique_names is not None:
+        for name in many_unique_names:
+            unique_name_evaluator(r'_f\d+_', name)
+
     return generated_values
 
 # +---------------------------------------------------------------------------+
@@ -220,10 +224,10 @@ def ptest_lang_py(gen_paths, implicit):  # type: ignore
 # +---------------------------------------------------------------------------+
 
 
-def test_lang_c(gen_paths):  # type: ignore
+def test_lang_c(gen_paths, unique_name_evaluator):  # type: ignore
     """ Generates and verifies JSON with values filtered using the c language support module.
     """
-    generated_values = ptest_lang_c(gen_paths, True)
+    generated_values = ptest_lang_c(gen_paths, True, unique_name_evaluator)
     lang_any = generated_values["tests"]["lang_any"]
     assert lang_any['id_0'] == '_123_class__for_u2___ZX0028ZX002Aother_stuffZX002DZX0026ZX002DsuchZX0029'
     assert lang_any['id_1'] == '_reserved'
@@ -246,12 +250,12 @@ def test_lang_c(gen_paths):  # type: ignore
     assert '_flight__time' == c_filter_id(Dummy('_Flight__time'))
 
 
-def test_lang_c_explicit(gen_paths):  # type: ignore
+def test_lang_c_explicit(gen_paths, unique_name_evaluator):  # type: ignore
     """
     Generates and verifies JSON with values filtered using the c language support module using
     explicit language feature names.
     """
-    ptest_lang_c(gen_paths, False)
+    ptest_lang_c(gen_paths, False, unique_name_evaluator)
 
 
 def test_lang_cpp(gen_paths):  # type: ignore
@@ -293,11 +297,11 @@ def test_lang_cpp_explicit(gen_paths):  # type: ignore
     ptest_lang_cpp(gen_paths, False)
 
 
-def test_lang_py(gen_paths):  # type: ignore
+def test_lang_py_implicit(gen_paths, unique_name_evaluator):  # type: ignore
     """ Generates and verifies JSON with values filtered using the python language support module.
     """
 
-    generated_values = ptest_lang_py(gen_paths, True)
+    generated_values = ptest_lang_py(gen_paths, True, unique_name_evaluator)
     lang_any = generated_values["tests"]["lang_any"]
     assert lang_any['id_0'] == '_123_class__for_u2___ZX0028ZX002Aother_stuffZX002DZX0026ZX002DsuchZX0029'
     assert lang_any['id_1'] == '_Reserved'
@@ -319,13 +323,13 @@ def test_lang_py(gen_paths):  # type: ignore
     assert '_Flight__time' == py_filter_id(Dummy('_Flight__time'))
 
 
-def test_lang_py_explicit(gen_paths):  # type: ignore
+def test_lang_py_explicit(gen_paths, unique_name_evaluator):  # type: ignore
     """
     Generates and verifies JSON with values filtered using the python language support module using
     explicit language feature names.
     """
 
-    ptest_lang_py(gen_paths, False)
+    ptest_lang_py(gen_paths, False, unique_name_evaluator)
 
 
 def test_language_object() -> None:

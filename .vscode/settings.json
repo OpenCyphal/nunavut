@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": ".pyenv/bin/python",
+    "python.pythonPath": ".tox/local/bin/python",
     "restructuredtext.sphinxBuildPath": "sphinx-build",
     "restructuredtext.confPath": "${workspaceFolder}",
     "restructuredtext.linter.extraArgs": [
@@ -56,6 +56,7 @@
         "getenv",
         "ifdef",
         "ifndef",
+        "inout",
         "isfunction",
         "isroutine",
         "itertools",
@@ -90,5 +91,6 @@
         "wchar",
         "xargs",
         "yamlfy"
-    ]
+    ],
+    "cmake.configureOnOpen": false
 }

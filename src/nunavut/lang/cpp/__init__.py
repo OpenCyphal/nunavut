@@ -9,7 +9,6 @@
 """
 
 import io
-import pathlib
 import re
 import typing
 
@@ -17,8 +16,9 @@ import pydsdl
 
 from ... import SupportsTemplateEnv, templateEnvironmentFilter
 from ..c import (C_RESERVED_IDENTIFIERS, C_RESERVED_PATTERNS,
-                 VariableNameEncoder)
+                 VariableNameEncoder, _CFit)
 from ...lang import LanguageContext
+from ._support import IncludeGenerator
 
 
 # Taken from https://en.cppreference.com/w/cpp/keyword
@@ -246,7 +246,10 @@ def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix
     return CPP_NO_DOUBLE_DASH_RULE.sub('_' + vne.encode_character('_'), out)
 
 
-def filter_open_namespace(full_namespace: str, bracket_on_next_line: bool = True, linesep: str = '\n') -> str:
+def filter_open_namespace(full_namespace: str,
+                          bracket_on_next_line: bool = True,
+                          linesep: str = '\n',
+                          stropping: bool = True) -> str:
     """
     Emits c++ opening namspace syntax parsed from a pydsdl "full_namespace",
     dot-seperated  value.
@@ -288,7 +291,10 @@ def filter_open_namespace(full_namespace: str, bracket_on_next_line: bool = True
     with io.StringIO() as content:
         for name in full_namespace.split('.'):
             content.write('namespace ')
-            content.write(name)
+            if stropping:
+                content.write(filter_id(name))
+            else:
+                content.write(name)
             if bracket_on_next_line:
                 content.write(linesep)
             else:
@@ -298,7 +304,10 @@ def filter_open_namespace(full_namespace: str, bracket_on_next_line: bool = True
         return content.getvalue()
 
 
-def filter_close_namespace(full_namespace: str, omit_comments: bool = False, linesep: str = '\n') -> str:
+def filter_close_namespace(full_namespace: str,
+                           omit_comments: bool = False,
+                           linesep: str = '\n',
+                           stropping: bool = True) -> str:
     """
     Emits c++ closing namspace syntax parsed from a pydsdl "full_namespace",
     dot-seperated  value.
@@ -340,7 +349,10 @@ def filter_close_namespace(full_namespace: str, omit_comments: bool = False, lin
             content.write('}')
             if not omit_comments:
                 content.write(' // namespace ')
-                content.write(name)
+                if stropping:
+                    content.write(filter_id(name))
+                else:
+                    content.write(name)
             content.write(linesep)
         return content.getvalue()
 
@@ -352,67 +364,101 @@ def filter_full_reference_name(t: pydsdl.CompositeType, stropping: bool = True) 
     .. invisible-code-block: python
 
         from nunavut.lang.cpp import filter_full_reference_name
+        from unittest.mock import MagicMock
+        import pydsdl
 
-        dummy = lambda: None
-        dummy_version = lambda: None
-        setattr(dummy, 'version', dummy_version)
+        my_obj = MagicMock()
+        my_obj.parent_service = None
+        my_obj.version = MagicMock()
 
     .. code-block:: python
 
-        # Given
-        full_name = 'any.int.2Foo'
-        major = 1
-        minor = 2
+        # Given a type with illegal characters for C++
+        my_obj.full_name = 'any.int.2Foo'
+        my_obj.version.major = 1
+        my_obj.version.minor = 2
 
         # and
         template = '{{ my_obj | full_reference_name }}'
 
-        # then
+        # then, with stropping enabled
         rendered = 'any::_int::_2Foo_1_2'
 
     .. invisible-code-block: python
 
+        my_obj.short_name = my_obj.full_name.split('.')[-1]
+        jinja_filter_tester(filter_full_reference_name, template, rendered, my_obj=my_obj)
 
-        setattr(dummy_version, 'major', major)
-        setattr(dummy_version, 'minor', minor)
-        setattr(dummy, 'full_name', full_name)
-        setattr(dummy, 'short_name', full_name.split('.')[-1])
-        jinja_filter_tester(filter_full_reference_name, template, rendered, my_obj=dummy)
-
+        my_obj = MagicMock()
+        my_obj.version = MagicMock()
+        my_obj.parent_service = None
 
     .. code-block:: python
 
-        # Given
-        full_name = 'any.int.2Foo'
-        major = 1
-        minor = 2
+        # Given a type with illegal characters for C++
+        my_obj.full_name = 'any.int.2Foo'
+        my_obj.version.major = 1
+        my_obj.version.minor = 2
 
         # and
         template = '{{ my_obj | full_reference_name(stropping=False) }}'
 
-        # then
+        # then, with stropping disabled
         rendered = 'any::int::2Foo_1_2'
 
     .. invisible-code-block: python
 
+        my_obj.short_name = my_obj.full_name.split('.')[-1]
+        jinja_filter_tester(filter_full_reference_name, template, rendered, my_obj=my_obj)
 
-        setattr(dummy_version, 'major', major)
-        setattr(dummy_version, 'minor', minor)
-        setattr(dummy, 'full_name', full_name)
-        setattr(dummy, 'short_name', full_name.split('.')[-1])
-        jinja_filter_tester(filter_full_reference_name, template, rendered, my_obj=dummy)
+    .. invisible-code-block: python
+
+        my_obj = MagicMock(spec=pydsdl.CompositeType)
+        my_obj.version = MagicMock()
+        my_service = MagicMock(spec=pydsdl.ServiceType)
+        my_service.parent_service = None
+        my_service.version = MagicMock()
+        my_service.attributes = { 'Request': my_obj }
+        my_obj.parent_service = my_service
+
+    Note that for service types
+
+    .. code-block:: python
+
+        # Given a service type
+        my_service.full_name = 'my.Service'
+        my_service.version.major = 1
+        my_service.version.minor = 8
+
+        # and
+        template = '{{ my_service.attributes["Request"] | full_reference_name }}'
+
+        # then
+        rendered = 'my::Service_1_8::Request'
+
+    .. invisible-code-block: python
+
+        my_service.short_name = my_service.full_name.split('.')[-1]
+        my_obj.short_name = 'Request'
+        my_obj.full_name = my_service.full_name + '.' + my_obj.short_name
+
+        jinja_filter_tester(filter_full_reference_name, template, rendered, my_service=my_service)
 
     :param pydsdl.CompositeType t: The DSDL type to get the fully-resolved reference name for.
     :param bool stropping: If True then the :func:`filter_id` filter is applied to each component in the identifier.
     """
     ns_parts = t.full_name.split('.')
-    if len(ns_parts) > 1:
-        if stropping:
-            ns = list(map(filter_id, ns_parts[:-1]))
-        else:
-            ns = ns_parts[:-1]
+    if stropping:
+        ns = list(map(filter_id, ns_parts[:-1]))
+    else:
+        ns = ns_parts[:-1]
 
-    return '::'.join(ns + [filter_short_reference_name(t, stropping)])
+    if t.parent_service is not None:
+        assert len(ns) > 0  # Well-formed DSDL will never have a request or response type that isn't nested.
+        ns = ns[:-1] + [filter_short_reference_name(t.parent_service, stropping=stropping)]
+
+    full_path = ns + [filter_short_reference_name(t, stropping)]
+    return '::'.join(full_path)
 
 
 def filter_short_reference_name(t: pydsdl.CompositeType, stropping: bool = True) -> str:
@@ -420,58 +466,60 @@ def filter_short_reference_name(t: pydsdl.CompositeType, stropping: bool = True)
     Provides a string that is a shorted version of the full reference name. This type is unique only within its
     namespace.
 
-     .. invisible-code-block: python
+    .. invisible-code-block: python
 
         from nunavut.lang.cpp import filter_short_reference_name
+        from unittest.mock import MagicMock
+        import pydsdl
 
-        dummy = lambda: None
-        dummy_version = lambda: None
-        setattr(dummy, 'version', dummy_version)
+        my_type = MagicMock(spec=pydsdl.StructureType)
+        my_type.version = MagicMock()
+        my_type.parent_service = None
 
     .. code-block:: python
 
-        # Given
-        short_name = '2Foo'
-        major = 1
-        minor = 2
+        # Given a type with illegal C++ characters
+        my_type.short_name = '2Foo'
+        my_type.version.major = 1
+        my_type.version.minor = 2
 
         # and
-        template = '{{ my_obj | short_reference_name }}'
+        template = '{{ my_type | short_reference_name }}'
 
-        # then
+        # then, with stropping enabled
         rendered = '_2Foo_1_2'
 
     .. invisible-code-block: python
 
-        setattr(dummy_version, 'major', major)
-        setattr(dummy_version, 'minor', minor)
-        setattr(dummy, 'short_name', short_name)
-        jinja_filter_tester(filter_short_reference_name, template, rendered, my_obj=dummy)
+        jinja_filter_tester(filter_short_reference_name, template, rendered, my_type=my_type)
 
+        my_type = MagicMock(spec=pydsdl.StructureType)
+        my_type.version = MagicMock()
+        my_type.parent_service = None
 
     .. code-block:: python
 
-        # Given
-        short_name = '2Foo'
-        major = 1
-        minor = 2
+        # Given a type with illegal C++ characters
+        my_type.short_name = '2Foo'
+        my_type.version.major = 1
+        my_type.version.minor = 2
 
         # and
-        template = '{{ my_obj | short_reference_name(stropping=False) }}'
+        template = '{{ my_type | short_reference_name(stropping=False) }}'
 
         # then
         rendered = '2Foo_1_2'
 
     .. invisible-code-block: python
 
-        setattr(dummy_version, 'major', major)
-        setattr(dummy_version, 'minor', minor)
-        setattr(dummy, 'short_name', short_name)
-        jinja_filter_tester(filter_short_reference_name, template, rendered, my_obj=dummy)
+        jinja_filter_tester(filter_short_reference_name, template, rendered, my_type=my_type)
 
     :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
     """
-    short_name = '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
+    if t.parent_service is None:
+        short_name = '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
+    else:
+        short_name = t.short_name
     if stropping:
         return filter_id(short_name)
     else:
@@ -482,6 +530,8 @@ def filter_short_reference_name(t: pydsdl.CompositeType, stropping: bool = True)
 def filter_includes(env: SupportsTemplateEnv,
                     t: pydsdl.CompositeType,
                     sort: bool = True,
+                    prefer_system_includes: bool = False,
+                    use_standard_types: bool = True,
                     stropping: bool = True) -> typing.List[str]:
     """
     Returns a list of all include paths for a given type.
@@ -491,30 +541,168 @@ def filter_includes(env: SupportsTemplateEnv,
     :param bool strop: If true the list will contained stropped identifiers.
     :return: a list of include headers needed for a given type.
     """
-    # Make a list of all attributes defined by this type
-    if isinstance(t, pydsdl.ServiceType):
-        atr = t.request_type.attributes + t.response_type.attributes
+
+    include_gen = IncludeGenerator(t, filter_id, filter_short_reference_name, use_standard_types, stropping)
+    return include_gen.generate_include_filepart_list(LanguageContext.get_from_globals(
+        env.globals).get_output_extension(),
+        sort,
+        prefer_system_includes)
+
+
+def filter_declaration(instance: pydsdl.Any, use_standard_types: bool = True) -> str:
+    """
+    Emit a declaration statement for the given instance.
+    """
+    if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.VoidType):
+        return filter_type_from_primitive(instance, use_standard_types)
+    elif isinstance(instance, pydsdl.VariableLengthArrayType):
+        return 'std::vector<{}>'.format(filter_declaration(instance.element_type, use_standard_types))
+    elif isinstance(instance, pydsdl.ArrayType):
+        return 'std::Array<{}>'.format(filter_declaration(instance.element_type, use_standard_types))
     else:
-        atr = t.attributes
+        return filter_full_reference_name(instance)
 
-    dep_types = \
-        [(x.data_type, filter_short_reference_name(x.data_type))
-            for x in atr if isinstance(x.data_type, pydsdl.CompositeType)]
-    dep_types += \
-        [(x.data_type.element_type, filter_short_reference_name(x.data_type.element_type))
-            for x in atr if
-            isinstance(x.data_type, pydsdl.ArrayType) and isinstance(x.data_type.element_type, pydsdl.CompositeType)]
 
-    def make_ns_list(dt: pydsdl.SerializableType) -> typing.List[str]:
-        if stropping:
-            return [filter_id(x) for x in dt.full_namespace.split('.')]
-        else:
-            return typing.cast(typing.List[str], dt.full_namespace.split('.'))
+def filter_definition_begin(instance: pydsdl.CompositeType) -> str:
+    """
+    Emit the start of a definition statement for a composite type.
 
-    suffix = LanguageContext.get_from_globals(env.globals).get_output_extension()
-    path_list = [str(pathlib.Path(*make_ns_list(dt)) / pathlib.Path(sr).with_suffix(suffix))
-                 for dt, sr in dep_types]
+     .. invisible-code-block: python
 
-    if sort:
-        path_list = sorted(path_list)
-    return path_list
+        from nunavut.lang.cpp import filter_definition_begin
+        from unittest.mock import MagicMock
+        import pytest
+        import pydsdl
+
+        my_type = MagicMock(spec=pydsdl.StructureType)
+        my_type.version = MagicMock()
+        my_type.parent_service = None
+
+        with pytest.raises(ValueError):
+            jinja_filter_tester(filter_definition_begin, '{{ my_type | definition_begin }}', '', my_type=MagicMock())
+
+    .. code-block:: python
+
+        # Given a pydsdl.CompositeType "my_type":
+        my_type.short_name = 'Foo'
+        my_type.version.major = 1
+        my_type.version.minor = 0
+
+        # and
+        template = '{{ my_type | definition_begin }}'
+
+        # then
+        rendered = 'struct Foo_1_0'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_definition_begin, template, rendered, my_type=my_type)
+
+        my_union_type = MagicMock(spec=pydsdl.UnionType)
+        my_union_type.version = MagicMock()
+        my_union_type.parent_service = None
+
+    .. code-block:: python
+
+        # Also, given a pydsdl.UnionType "my_union_type":
+        my_union_type.short_name = 'Foo'
+        my_union_type.version.major = 1
+        my_union_type.version.minor = 0
+
+        # and
+        union_template = '{{ my_union_type | definition_begin }}'
+
+        # then
+        rendered = 'union Foo_1_0'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_definition_begin, union_template, rendered, my_union_type=my_union_type)
+
+        my_service_type = MagicMock(spec=pydsdl.ServiceType)
+        my_service_type.version = MagicMock()
+        my_service_type.parent_service = None
+
+    .. code-block:: python
+
+        # Finally, given a pydsdl.Servicetype "my_service_type":
+        my_service_type.short_name = 'Foo'
+        my_service_type.version.major = 1
+        my_service_type.version.minor = 0
+
+        # and
+        template = '{{ my_service_type | definition_begin }}'
+
+        # then
+        rendered = 'namespace Foo_1_0'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_definition_begin, template, rendered, my_service_type=my_service_type)
+
+    """
+    short_name = filter_short_reference_name(instance)
+    if isinstance(instance, pydsdl.StructureType):
+        return 'struct {}'.format(short_name)
+    elif isinstance(instance, pydsdl.UnionType):
+        return 'union {}'.format(short_name)
+    elif isinstance(instance, pydsdl.ServiceType):
+        return 'namespace {}'.format(short_name)
+    else:
+        raise ValueError('{} types cannot be redefined.'.format(type(instance).__name__))
+
+
+def filter_definition_end(instance: pydsdl.CompositeType) -> str:
+    """
+    Emit the end of a definition statement for a composite type.
+
+     .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_definition_end
+        from unittest.mock import MagicMock
+        import pytest
+        import pydsdl
+
+
+        with pytest.raises(ValueError):
+            jinja_filter_tester(filter_definition_end, '{{ my_type | definition_end }}', '', my_type=MagicMock())
+
+        my_type = MagicMock(spec=pydsdl.StructureType)
+        my_type.version = MagicMock()
+        my_type.short_name = 'Foo'
+        my_type.version.major = 1
+        my_type.version.minor = 0
+
+        jinja_filter_tester(filter_definition_end, '{{ my_type | definition_end }}', ';', my_type=my_type)
+
+        my_type = MagicMock(spec=pydsdl.UnionType)
+        my_type.version = MagicMock()
+        my_type.short_name = 'Foo'
+        my_type.version.major = 1
+        my_type.version.minor = 0
+
+        jinja_filter_tester(filter_definition_end, '{{ my_type | definition_end }}', ';', my_type=my_type)
+
+        my_type = MagicMock(spec=pydsdl.ServiceType)
+        my_type.version = MagicMock()
+        my_type.parent_service = None
+        my_type.short_name = 'Foo'
+        my_type.version.major = 1
+        my_type.version.minor = 0
+
+        jinja_filter_tester(filter_definition_end,
+                            '{{ my_type | definition_end }}',
+                            ' // namespace Foo_1_0',
+                            my_type=my_type)
+
+    """
+    if isinstance(instance, pydsdl.StructureType) or isinstance(instance, pydsdl.UnionType):
+        return ';'
+    elif isinstance(instance, pydsdl.ServiceType):
+        return ' // namespace {}'.format(filter_short_reference_name(instance))
+    else:
+        raise ValueError('{} types cannot be redefined.'.format(type(instance).__name__))
+
+
+def filter_type_from_primitive(value: pydsdl.PrimitiveType, use_standard_types: bool = True) -> str:
+    return _CFit.get_best_fit(value.bit_length).to_c_type(value, use_standard_types)

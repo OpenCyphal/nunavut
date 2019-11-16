@@ -9,6 +9,7 @@ import functools
 import typing
 from doctest import ELLIPSIS
 from fnmatch import fnmatch
+from unittest.mock import MagicMock
 
 import pytest
 from sybil import Sybil
@@ -60,6 +61,12 @@ def jinja_filter_tester(request):  # type: ignore
         filter_name = filter.__name__[7:]
         if hasattr(filter, EnvironmentFilterAttributeName) and getattr(filter, EnvironmentFilterAttributeName):
             e.filters[filter_name] = functools.partial(filter, e)
+        else:
+            e.filters[filter_name] = filter
+
+        if hasattr(filter, 'contextfilter') and getattr(filter, 'contextfilter'):
+            context = MagicMock()
+            e.filters[filter_name] = functools.partial(filter, context)
         else:
             e.filters[filter_name] = filter
 

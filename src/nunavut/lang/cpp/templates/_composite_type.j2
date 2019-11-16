@@ -1,0 +1,11 @@
+{{ composite_type | definition_begin }}
+{
+{%- for constant in composite_type.constants %}
+    static constexpr {{ constant.data_type | declaration }} {{ constant.name | id }} = {{ constant.value.native_value.numerator }} / {{ constant.value.native_value.denominator }};
+{%- endfor -%}
+{% for field in composite_type.fields -%}
+{%- if field is not padding %}
+    {{ field.data_type | declaration }} {{ field.name | id }};
+{%- endif -%}
+{%- endfor %}
+}{{ composite_type | definition_end }}

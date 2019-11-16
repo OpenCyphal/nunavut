@@ -8,10 +8,10 @@
 This package contains modules that provide specific support for generating
 source for various languages using templates.
 """
-import inspect
-import typing
-import logging
 import importlib
+import inspect
+import logging
+import typing
 
 logger = logging.getLogger(__name__)
 
@@ -218,24 +218,26 @@ class LanguageContext:
 class _UniqueNameGenerator:
     """
     Functor used by template filters to obtain a unique name within a given template.
-    This should be made available as a private global "_unique_name_generator" within
-    each template and should be reset after completing generation of a type.
+    This should be made available as a private global within each template.
     """
-
-    @classmethod
-    def ensure_generator_in_globals(cls, environment_globals: typing.Dict[str, typing.Any]) -> '_UniqueNameGenerator':
-        from .. import TypeLocalGlobalKey
-
-        if TypeLocalGlobalKey not in environment_globals:
-            environment_globals[TypeLocalGlobalKey] = cls()
-        return typing.cast('_UniqueNameGenerator', environment_globals[TypeLocalGlobalKey])
+    _singleton = None  # type: typing.Optional['_UniqueNameGenerator']
 
     def __init__(self) -> None:
         self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, int]]
 
+    @classmethod
+    def reset(cls) -> None:
+        cls._singleton = cls()
+
+    @classmethod
+    def get_instance(cls) -> '_UniqueNameGenerator':
+        if cls._singleton is None:
+            raise RuntimeError('No _UniqueNameGenerator has been created. Please use reset to create.')
+        return cls._singleton
+
     def __call__(self, key: str, base_token: str, prefix: str, suffix: str) -> str:
         """
-        Uses a lazy internal index to generate a number unique to a given base_token within a template
+        Uses a global index to generate a number unique to a given base_token within a template
         for a given domain (key).
         """
         try:

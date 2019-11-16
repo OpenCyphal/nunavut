@@ -310,6 +310,37 @@ class Generator(nunavut.generators.AbstractGenerator):
         """  # noqa: E501
         return isinstance(value, pydsdl.SerializableType)
 
+    @staticmethod
+    def is_None(value: typing.Any) -> bool:
+        """
+        Tests if a value is ``None``
+
+        .. invisible-code-block: python
+
+            from nunavut.jinja import Generator
+            assert Generator.is_None(None) is True
+            assert Generator.is_None(1) is False
+
+        """
+        return (value is None)
+
+    @staticmethod
+    def is_padding(value: pydsdl.Field) -> bool:
+        """
+        Tests if a value is a padding field.
+
+        .. invisible-code-block: python
+
+            from nunavut.jinja import Generator
+            from unittest.mock import MagicMock
+            import pydsdl
+
+            assert Generator.is_padding(MagicMock(spec=pydsdl.PaddingField)) is True
+            assert Generator.is_padding(MagicMock(spec=pydsdl.Field)) is False
+
+        """
+        return isinstance(value, pydsdl.PaddingField)
+
     # +-----------------------------------------------------------------------+
 
     def __init__(self,
@@ -375,7 +406,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                                 keep_trailing_newline=True,
                                 lstrip_blocks=lstrip_blocks,
                                 trim_blocks=trim_blocks,
-                                auto_reload=False)
+                                auto_reload=False,
+                                cache_size=0)
 
         self._add_language_support()
 
@@ -553,10 +585,10 @@ class Generator(nunavut.generators.AbstractGenerator):
         Logic that should run from _generate_type iff is_dryrun is False.
         """
 
-        from .. import TypeLocalGlobalKey
+        from ..lang import _UniqueNameGenerator
 
         # reset the name generator state for this type
-        self._env.globals[TypeLocalGlobalKey] = None
+        _UniqueNameGenerator.reset()
 
         # Predetermine the post processor types.
         line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']

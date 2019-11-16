@@ -24,19 +24,17 @@ your dev environment setup.
 Tools
 ************************************************
 
-virtualenv
+tox -e local (virtualenv)
 ================================================
 
-I highly recommend using a virtual environment when doing python development. It'll save you hours
+I highly recommend using the local tox environment when doing python development. It'll save you hours
 of lost productivity the first time it keeps you from pulling in an unexpected dependency from your
-global python environment. You can install virtualenv from brew on osx or apt-get on linux. I'd
+global python environment. You can install tox from brew on osx or apt-get on linux. I'd
 recommend the following environment for vscode::
 
     git submodule update --init --recursive
-    virtualenv -p python3.7 .pyenv
-    source .pyenv/bin/activate
-    pip install -r requirements.txt
-    pip -e install .
+    tox -e local
+    source .tox/local/bin/activate
 
 
 Visual Studio Code
@@ -46,16 +44,14 @@ To use vscode you'll need:
 
 1. vscode
 2. install vscode commandline (`Shell Command: Install`)
-3. virtualenv
+3. tox
 
 Do::
 
     cd path/to/nunavut
     git submodule update --init --recursive
-    virtualenv -p python3.7 .pyenv
-    source .pyenv/bin/activate
-    pip install -r requirements.txt
-    pip -e install .
+    tox -e local
+    source .tox/local/bin/activate
     code .
 
 Then install recommended extensions.

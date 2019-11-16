@@ -1,11 +1,29 @@
 
 {% include "id.j2" %}
 
+{# https://github.com/UAVCAN/nunavut/issues/88#issuecomment-546927646 #}
+{% macro generate_unique_items() -%}
+    '{{ 'f'|to_template_unique_name }}',
+    '{{ 'f'|to_template_unique_name }}',
+    '{{ 'f'|to_template_unique_name }}',
+    '{{ 'f'|to_template_unique_name }}',
+{%- endmacro %}
+
+many_unique_names = [
+    '{{ 'f'|to_template_unique_name }}',
+    '{{ 'f'|to_template_unique_name }}',
+    '{{ 'f'|to_template_unique_name }}',
+    '{{ 'f'|to_template_unique_name }}',
+    {{ generate_unique_items() }}
+    {{ generate_unique_items() }}
+]
+
 lang_py = {
     'unique_name_0': '{{ "NAME" | to_template_unique_name }}',
     'unique_name_1': '{{ "NAME" | to_template_unique_name }}',
     'unique_name_2': '{{ "name" | to_template_unique_name }}',
     'id_0': '{{ "identifier zero" | id }}',
+    'many_unique_names': many_unique_names,
 }
 
 
