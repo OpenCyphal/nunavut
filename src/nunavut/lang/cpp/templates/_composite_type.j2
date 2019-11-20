@@ -8,4 +8,12 @@
     {{ field.data_type | declaration }} {{ field.name | id }};
 {%- endif -%}
 {%- endfor %}
+    static {{ typename_unsigned_length }} serialize(std::vector<{{ typename_byte }}>& inout_byte_buffer, {{ typename_unsigned_length }} bit_offset, {{ composite_type | declaration }}& t)
+    {
+        // Not yet implemented.
+        (void)inout_byte_buffer;
+        (void)bit_offset;
+        (void)t;
+        return 0;
+    }
 }{{ composite_type | definition_end }}

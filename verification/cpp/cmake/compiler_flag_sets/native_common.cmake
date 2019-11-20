@@ -15,7 +15,6 @@ set(C_FLAG_SET )
 list(APPEND C_FLAG_SET
                 "-fprofile-arcs"
                 "-ftest-coverage"
-                "--coverage"
                 "-O0"
                 "-DDEBUG"
                 "-ggdb"

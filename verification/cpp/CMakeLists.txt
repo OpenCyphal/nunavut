@@ -114,6 +114,9 @@ create_dsdl_target(dsdl-regulated
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
                    ON)
 
+target_include_directories(dsdl-regulated INTERFACE
+                   ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
 # +---------------------------------------------------------------------------+
 # | FLAG SETS

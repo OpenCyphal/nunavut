@@ -28,8 +28,7 @@ def run_nnvg(request):  # type: ignore
         """
         Helper to invoke nnvg for unit testing within the proper python coverage wrapper.
         """
-        setup = gen_paths.root_dir / pathlib.Path('setup').with_suffix('.cfg')
-        coverage_args = ['coverage', 'run', '--parallel-mode', '--rcfile={}'.format(str(setup)), '-m', 'nunavut']
+        coverage_args = ['coverage', 'run', '--parallel-mode', '-m', 'nunavut']
         this_env = os.environ.copy()
         if env is not None:
             this_env.update(env)

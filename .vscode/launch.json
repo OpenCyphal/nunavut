@@ -34,5 +34,13 @@
             "console": "internalConsole",
             "cwd": "${workspaceFolder}/test"
         },
+        {
+            "name": "Pytest: all doctests",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "console": "internalConsole",
+            "cwd": "${workspaceFolder}/src"
+        },
     ]
 }

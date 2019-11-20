@@ -17,8 +17,11 @@ from sybil.integration.pytest import SybilFile
 from sybil.parsers.codeblock import CodeBlockParser
 from sybil.parsers.doctest import DocTestParser
 
-from nunavut import EnvironmentFilterAttributeName
 from nunavut.jinja.jinja2 import DictLoader, Environment
+from nunavut.lang import LanguageContext
+from nunavut.templates import (ContextFilterAttributeName,
+                               EnvironmentFilterAttributeName,
+                               LanguageFilterAttributeName)
 
 
 @pytest.fixture
@@ -30,7 +33,7 @@ def jinja_filter_tester(request):  # type: ignore
 
         .. invisible-code-block: python
 
-            from nunavut import templateEnvironmentFilter
+            from nunavut.templates import templateEnvironmentFilter
 
             @templateEnvironmentFilter
             def filter_dummy(env, input):
@@ -50,12 +53,13 @@ def jinja_filter_tester(request):  # type: ignore
 
         .. invisible-code-block: python
 
-            jinja_filter_tester(filter_dummy, template, rendered, I=I)
+            jinja_filter_tester(filter_dummy, template, rendered, 'c', I=I)
 
     """
     def _make_filter_test_template(filter: typing.Callable,
                                    body: str,
                                    expected: str,
+                                   target_language: typing.Union[typing.Optional[str], LanguageContext],
                                    **globals: typing.Optional[typing.Dict[str, typing.Any]]) -> str:
         e = Environment(loader=DictLoader({'test': body}))
         filter_name = filter.__name__[7:]
@@ -64,7 +68,7 @@ def jinja_filter_tester(request):  # type: ignore
         else:
             e.filters[filter_name] = filter
 
-        if hasattr(filter, 'contextfilter') and getattr(filter, 'contextfilter'):
+        if hasattr(filter, ContextFilterAttributeName) and getattr(filter, ContextFilterAttributeName):
             context = MagicMock()
             e.filters[filter_name] = functools.partial(filter, context)
         else:
@@ -72,6 +76,18 @@ def jinja_filter_tester(request):  # type: ignore
 
         if globals is not None:
             e.globals.update(globals)
+
+        if isinstance(target_language, LanguageContext):
+            lctx = target_language
+        else:
+            lctx = LanguageContext(target_language)
+
+        if hasattr(filter, LanguageFilterAttributeName):
+            language_name = getattr(filter, LanguageFilterAttributeName)
+            e.filters[filter_name] = functools.partial(filter, lctx.get_language(language_name))
+        else:
+            e.filters[filter_name] = filter
+
         rendered = str(e.get_template('test').render())
         if expected != rendered:
             msg = 'Unexpected template output\n\texpected : {}\n\twas      : {}'.format(expected, rendered)
@@ -101,8 +117,8 @@ def _pytest_integration_that_actually_works() -> typing.Callable:
         fixtures=['jinja_filter_tester']
     )
 
-    def pytest_collect_file(parent: str, path: str) -> typing.Optional[SybilFile]:
-        if fnmatch(path, '**/nunavut/**/*.py') and not any(fnmatch(path, pattern) for pattern in _excludes):
+    def pytest_collect_file(parent: typing.Any, path: typing.Any) -> typing.Optional[SybilFile]:
+        if fnmatch(str(path), '**/nunavut/**/*.py') and not any(fnmatch(str(path), pattern) for pattern in _excludes):
             return SybilFile(path, parent, _sy)
         else:
             return None
