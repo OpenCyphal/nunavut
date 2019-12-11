@@ -8,21 +8,21 @@ Abstractions around template engine internals.
 """
 import typing
 
-EnvironmentFilterAttributeName = 'environmentfilter'
+ENVIRONMENT_FILTER_ATTRIBUTE_NAME = 'environmentfilter'
 """
 For now this is set to a value that is internally compatible with the
 embedded version of jinja2 we use in Nunavut. If you use this variable
 instead of its current value you will be insulated from this.
 """
 
-ContextFilterAttributeName = 'contextfilter'
+CONTEXT_FILTER_ATTRIBUTE_NAME = 'contextfilter'
 """
 For now this is set to a value that is internally compatible with the
 embedded version of jinja2 we use in Nunavut. If you use this variable
 instead of its current value you will be insulated from this.
 """
 
-LanguageFilterAttributeName = 'nv_languagefilter'
+LANGUAGE_FILTER_ATTRIBUTE_NAME = 'nv_languagefilter'
 """
 Nunavut-specific attribute for filters that take their :class:`nunavut.lang.Language`
 as the first argument.
@@ -55,23 +55,23 @@ class SupportsTemplateContext:
     """
 
 
-def templateEnvironmentFilter(filter_func: typing.Callable) -> typing.Callable[..., str]:
+def template_environment_filter(filter_func: typing.Callable) -> typing.Callable[..., str]:
     """
     Decorator for marking environment dependent filters.
     An object supporting the :class:`SupportsTemplateEnv` protocol
     will be passed to the filter as the first argument.
     """
-    setattr(filter_func, EnvironmentFilterAttributeName, True)
+    setattr(filter_func, ENVIRONMENT_FILTER_ATTRIBUTE_NAME, True)
     return filter_func
 
 
-def templateContextFilter(filter_func: typing.Callable) -> typing.Callable[..., str]:
+def template_context_filter(filter_func: typing.Callable) -> typing.Callable[..., str]:
     """
     Decorator for marking context dependent filters.
     An object supporting the :class:`SupportsTemplateContext` protocol
     will be passed to the filter as the first argument.
     """
-    setattr(filter_func, ContextFilterAttributeName, True)
+    setattr(filter_func, CONTEXT_FILTER_ATTRIBUTE_NAME, True)
     return filter_func
 
 
@@ -93,10 +93,10 @@ class GenericTemplateLanguageFilter(typing.Generic[LanguageFilterReturnType]):
         return filter_func
 
     def _annotate_function(self, filter_func: typing.Callable[..., typing.Any]) -> None:
-        setattr(filter_func, LanguageFilterAttributeName, self._language_name_or_module)
+        setattr(filter_func, LANGUAGE_FILTER_ATTRIBUTE_NAME, self._language_name_or_module)
 
 
-class templateLanguageFilter(GenericTemplateLanguageFilter[str]):
+class template_language_filter(GenericTemplateLanguageFilter[str]):
     """
     Decorator for marking template filters that take a :class:`nunavut.lang.Language` object
     as the first argument.
@@ -104,7 +104,7 @@ class templateLanguageFilter(GenericTemplateLanguageFilter[str]):
     pass
 
 
-class templateLanguageListFilter(GenericTemplateLanguageFilter[typing.List[str]]):
+class template_language_list_filter(GenericTemplateLanguageFilter[typing.List[str]]):
     """
     Decorator for marking template filters that take a :class:`nunavut.lang.Language` object
     as the first argument and return a list of strings.
@@ -112,7 +112,7 @@ class templateLanguageListFilter(GenericTemplateLanguageFilter[typing.List[str]]
     pass
 
 
-class templateLanguageIntFilter(GenericTemplateLanguageFilter[int]):
+class template_language_int_filter(GenericTemplateLanguageFilter[int]):
     """
     Decorator for marking template filters that take a :class:`nunavut.lang.Language` object
     as the first argument and return an integer.

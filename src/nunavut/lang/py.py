@@ -14,14 +14,14 @@ import typing
 
 import pydsdl
 
-from ..templates import (SupportsTemplateContext, templateContextFilter,
-                         templateLanguageFilter, templateLanguageIntFilter,
-                         templateLanguageListFilter)
+from ..templates import (SupportsTemplateContext, template_context_filter,
+                         template_language_filter, template_language_int_filter,
+                         template_language_list_filter)
 from . import Language, _UniqueNameGenerator
 from .c import VariableNameEncoder
 
 
-@templateContextFilter
+@template_context_filter
 def filter_to_template_unique_name(context: SupportsTemplateContext, base_token: str) -> str:
     """
     Filter that takes a base token and forms a name that is very
@@ -80,7 +80,7 @@ def filter_to_template_unique_name(context: SupportsTemplateContext, base_token:
 PYTHON_RESERVED_IDENTIFIERS = frozenset(map(str, list(keyword.kwlist) + dir(builtins)))  # type: typing.FrozenSet[str]
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_id(language: Language,
               instance: typing.Any) -> str:
     """
@@ -162,7 +162,7 @@ def filter_id(language: Language,
     return vne.strop(raw_name, frozenset(reserved))
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> str:
     """
     Provides a string that is the full namespace, typename, major, and minor version for a given composite type.
@@ -210,7 +210,7 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
     return '.'.join(ns + [filter_short_reference_name(language, t)])
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> str:
     """
     Provides a string that is a shorted version of the full reference name. This type is unique only within its
@@ -305,7 +305,7 @@ def filter_alignment_prefix(offset: pydsdl.BitLengthSet) -> str:
         raise TypeError('Expected BitLengthSet, got {}'.format(type(offset).__name__))
 
 
-@templateLanguageListFilter(__name__)
+@template_language_list_filter(__name__)
 def filter_imports(language: Language,
                    t: pydsdl.CompositeType,
                    sort: bool = True) -> typing.List[str]:
@@ -341,7 +341,7 @@ def filter_imports(language: Language,
         return namespace_list
 
 
-@templateLanguageIntFilter(__name__)
+@template_language_int_filter(__name__)
 def filter_longest_id_length(language: Language,
                              attributes: typing.List[pydsdl.Attribute]) -> int:
     """

@@ -21,31 +21,31 @@ namespace nunavut
  *
  * @return The number of bits copied.
  */
-template <typename SIZE_TYPE, typename BYTE_TYPE>
-SIZE_TYPE copyBitsAlignedToUnaligned(const BYTE_TYPE* const src,
-                                     BYTE_TYPE* const       dst,
-                                     const SIZE_TYPE        dst_offset_bits,
-                                     const SIZE_TYPE        length_bits)
+template <typename SizeType, typename ByteType>
+SizeType copyBitsAlignedToUnaligned(const ByteType* const src,
+                                    ByteType* const       dst,
+                                    const SizeType        dst_offset_bits,
+                                    const SizeType        length_bits)
 {
     if (nullptr == src || nullptr == dst || length_bits == 0)
     {
         return 0;
     }
-    constexpr SIZE_TYPE bits_in_size_type = sizeof(BYTE_TYPE) * 8U;
-    SIZE_TYPE           bits_copied       = 0;
-    SIZE_TYPE           offset_bits       = dst_offset_bits;
-    const SIZE_TYPE     local_offset      = dst_offset_bits % bits_in_size_type;
+    constexpr SizeType bits_in_SizeType = sizeof(ByteType) * 8U;
+    SizeType           bits_copied      = 0;
+    SizeType           offset_bits      = dst_offset_bits;
+    const SizeType     local_offset     = dst_offset_bits % bits_in_SizeType;
     do
     {
-        SIZE_TYPE       current_byte       = offset_bits / bits_in_size_type;
-        const SIZE_TYPE bits_from_src_byte = bits_in_size_type - local_offset;
-        dst[current_byte] &= static_cast<BYTE_TYPE>(0xFF >> bits_from_src_byte);
-        dst[current_byte] |= static_cast<BYTE_TYPE>(src[current_byte] << local_offset);
-        offset_bits += bits_in_size_type;
+        SizeType       current_byte       = offset_bits / bits_in_SizeType;
+        const SizeType bits_from_src_byte = bits_in_SizeType - local_offset;
+        dst[current_byte] &= static_cast<ByteType>(0xFF >> bits_from_src_byte);
+        dst[current_byte] |= static_cast<ByteType>(src[current_byte] << local_offset);
+        offset_bits += bits_in_SizeType;
         bits_copied += std::min(length_bits, bits_from_src_byte);
         if (offset_bits < length_bits)
         {
-            dst[current_byte] |= static_cast<BYTE_TYPE>(src[offset_bits / bits_in_size_type] >> bits_from_src_byte);
+            dst[current_byte] |= static_cast<ByteType>(src[offset_bits / bits_in_SizeType] >> bits_from_src_byte);
             bits_copied += local_offset;
         }
         else

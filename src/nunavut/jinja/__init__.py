@@ -27,7 +27,7 @@ from nunavut.jinja.jinja2 import (ChoiceLoader, Environment, FileSystemLoader,
                                   select_autoescape)
 from nunavut.jinja.jinja2.ext import Extension
 from nunavut.jinja.jinja2.parser import Parser
-from nunavut.templates import (LanguageFilterAttributeName)
+from nunavut.templates import (LANGUAGE_FILTER_ATTRIBUTE_NAME)
 
 logger = logging.getLogger(__name__)
 
@@ -523,8 +523,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                                      )
 
     def _add_filter_to_environment(self, filter_name: str, filter: typing.Callable[..., str]) -> None:
-        if hasattr(filter, LanguageFilterAttributeName):
-            language_name_or_module_name = getattr(filter, LanguageFilterAttributeName)
+        if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
+            language_name_or_module_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
             filter_language = self._language_context.get_language(language_name_or_module_name)
             resolved_filter = functools.partial(filter, filter_language)  # type: typing.Callable[..., str]
         else:

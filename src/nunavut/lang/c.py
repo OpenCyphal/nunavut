@@ -15,8 +15,8 @@ import typing
 
 import pydsdl
 
-from ..templates import (SupportsTemplateContext, templateContextFilter,
-                         templateLanguageFilter)
+from ..templates import (SupportsTemplateContext, template_context_filter,
+                         template_language_filter)
 from . import Language, _UniqueNameGenerator
 
 # Taken from https://en.cppreference.com/w/c/language/identifier
@@ -104,7 +104,7 @@ class VariableNameEncoder:
             return stropped
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_id(language: Language,
               instance: typing.Any) -> str:
     """
@@ -285,7 +285,7 @@ class _CFit(enum.Enum):
         return cls(bestfit)
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_type_from_primitive(language: Language,
                                value: pydsdl.PrimitiveType,
                                use_standard_types: typing.Optional[bool] = None) -> str:
@@ -400,7 +400,7 @@ def filter_to_snake_case(value: str) -> str:
     return _snake_case_pattern_2.sub(lambda x: '_' + x.group(0).lower(), pass1)
 
 
-@templateContextFilter
+@template_context_filter
 def filter_to_template_unique_name(context: SupportsTemplateContext, base_token: str) -> str:
     """
     Filter that takes a base token and forms a name that is very

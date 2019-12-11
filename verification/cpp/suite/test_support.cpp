@@ -7,11 +7,11 @@
 #include "nunavut/support.hpp"
 #include <vector>
 
-template <typename SIZE_TYPE_FOR_TEST, typename BYTE_TYPE_FOR_TEST>
+template <typename SizeType_FOR_TEST, typename ByteType_FOR_TEST>
 struct SupportTestTypes
 {
-    using SIZE_TYPE = SIZE_TYPE_FOR_TEST;
-    using BYTE_TYPE = BYTE_TYPE_FOR_TEST;
+    using SizeType = SizeType_FOR_TEST;
+    using ByteType = ByteType_FOR_TEST;
 };
 
 /**
@@ -35,16 +35,16 @@ TYPED_TEST_SUITE(SupportTest, MyTypes, );
  */
 TYPED_TEST(SupportTest, UnalignedCopy)
 {
-    std::vector<typename TypeParam::BYTE_TYPE> test_pattern;
-    test_pattern.reserve(sizeof(typename TypeParam::BYTE_TYPE));
+    std::vector<typename TypeParam::ByteType> test_pattern;
+    test_pattern.reserve(sizeof(typename TypeParam::ByteType));
     memset(test_pattern.data(), 0xAA, test_pattern.capacity());
-    std::vector<typename TypeParam::BYTE_TYPE> test_buffer;
+    std::vector<typename TypeParam::ByteType> test_buffer;
     test_buffer.reserve(test_pattern.capacity() + 1);
-    auto copied_bits = nunavut::copyBitsAlignedToUnaligned<typename TypeParam::SIZE_TYPE,
-                                                           typename TypeParam::BYTE_TYPE>(test_pattern.data(),
-                                                                                          test_buffer.data(),
-                                                                                          0,
-                                                                                          test_pattern.capacity());
+    auto copied_bits = nunavut::copyBitsAlignedToUnaligned<typename TypeParam::SizeType,
+                                                           typename TypeParam::ByteType>(test_pattern.data(),
+                                                                                         test_buffer.data(),
+                                                                                         0,
+                                                                                         test_pattern.capacity());
     ASSERT_EQ(test_pattern.capacity(), copied_bits);
     ASSERT_EQ(static_cast<unsigned>(test_buffer[0] & 0xFF), 0xAAU);
 }

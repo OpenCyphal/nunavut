@@ -16,7 +16,7 @@ import typing
 import pydsdl
 
 from ...lang import Language
-from ...templates import templateLanguageFilter, templateLanguageListFilter
+from ...templates import template_language_filter, template_language_list_filter
 from ..c import C_RESERVED_PATTERNS, VariableNameEncoder, _CFit
 from ._support import IncludeGenerator
 
@@ -25,7 +25,7 @@ CPP_RESERVED_PATTERNS = frozenset([*C_RESERVED_PATTERNS])
 CPP_NO_DOUBLE_DASH_RULE = re.compile(r'(__)')
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_id(language: Language,
               instance: typing.Any) -> str:
     """
@@ -104,7 +104,7 @@ def filter_id(language: Language,
     return CPP_NO_DOUBLE_DASH_RULE.sub('_' + vne.encode_character('_'), out)
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_open_namespace(language: Language,
                           full_namespace: str,
                           bracket_on_next_line: bool = True,
@@ -163,7 +163,7 @@ def filter_open_namespace(language: Language,
         return content.getvalue()
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_close_namespace(language: Language,
                            full_namespace: str,
                            omit_comments: bool = False,
@@ -217,7 +217,7 @@ def filter_close_namespace(language: Language,
         return content.getvalue()
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> str:
     """
     Provides a string that is the full namespace, typename, major, and minor version for a given composite type.
@@ -303,7 +303,7 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
     return '::'.join(full_path)
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> str:
     """
     Provides a string that is a shorted version of the full reference name. This type is unique only within its
@@ -352,7 +352,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
         return short_name
 
 
-@templateLanguageListFilter(__name__)
+@template_language_list_filter(__name__)
 def filter_includes(language: Language,
                     t: pydsdl.CompositeType,
                     sort: bool = True,
@@ -380,7 +380,7 @@ def filter_includes(language: Language,
                                                       prefer_system_includes)
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_declaration(language: Language,
                        instance: pydsdl.Any,
                        use_standard_types: typing.Optional[bool] = None) -> str:
@@ -399,7 +399,7 @@ def filter_declaration(language: Language,
         return filter_full_reference_name(language, instance)
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_definition_begin(language: Language, instance: pydsdl.CompositeType) -> str:
     """
     Emit the start of a definition statement for a composite type.
@@ -493,7 +493,7 @@ def filter_definition_begin(language: Language, instance: pydsdl.CompositeType) 
         raise ValueError('{} types cannot be redefined.'.format(type(instance).__name__))
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_definition_end(language: Language, instance: pydsdl.CompositeType) -> str:
     """
     Emit the end of a definition statement for a composite type.
@@ -547,7 +547,7 @@ def filter_definition_end(language: Language, instance: pydsdl.CompositeType) ->
         raise ValueError('{} types cannot be redefined.'.format(type(instance).__name__))
 
 
-@templateLanguageFilter(__name__)
+@template_language_filter(__name__)
 def filter_type_from_primitive(language: Language,
                                value: pydsdl.PrimitiveType,
                                use_standard_types: typing.Optional[bool] = None) -> str:

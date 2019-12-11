@@ -19,9 +19,9 @@ from sybil.parsers.doctest import DocTestParser
 
 from nunavut.jinja.jinja2 import DictLoader, Environment
 from nunavut.lang import LanguageContext
-from nunavut.templates import (ContextFilterAttributeName,
-                               EnvironmentFilterAttributeName,
-                               LanguageFilterAttributeName)
+from nunavut.templates import (CONTEXT_FILTER_ATTRIBUTE_NAME,
+                               ENVIRONMENT_FILTER_ATTRIBUTE_NAME,
+                               LANGUAGE_FILTER_ATTRIBUTE_NAME)
 
 
 @pytest.fixture
@@ -33,9 +33,9 @@ def jinja_filter_tester(request):  # type: ignore
 
         .. invisible-code-block: python
 
-            from nunavut.templates import templateEnvironmentFilter
+            from nunavut.templates import template_environment_filter
 
-            @templateEnvironmentFilter
+            @template_environment_filter
             def filter_dummy(env, input):
                 return input
 
@@ -63,12 +63,12 @@ def jinja_filter_tester(request):  # type: ignore
                                    **globals: typing.Optional[typing.Dict[str, typing.Any]]) -> str:
         e = Environment(loader=DictLoader({'test': body}))
         filter_name = filter.__name__[7:]
-        if hasattr(filter, EnvironmentFilterAttributeName) and getattr(filter, EnvironmentFilterAttributeName):
+        if hasattr(filter, ENVIRONMENT_FILTER_ATTRIBUTE_NAME) and getattr(filter, ENVIRONMENT_FILTER_ATTRIBUTE_NAME):
             e.filters[filter_name] = functools.partial(filter, e)
         else:
             e.filters[filter_name] = filter
 
-        if hasattr(filter, ContextFilterAttributeName) and getattr(filter, ContextFilterAttributeName):
+        if hasattr(filter, CONTEXT_FILTER_ATTRIBUTE_NAME) and getattr(filter, CONTEXT_FILTER_ATTRIBUTE_NAME):
             context = MagicMock()
             e.filters[filter_name] = functools.partial(filter, context)
         else:
@@ -82,8 +82,8 @@ def jinja_filter_tester(request):  # type: ignore
         else:
             lctx = LanguageContext(target_language)
 
-        if hasattr(filter, LanguageFilterAttributeName):
-            language_name = getattr(filter, LanguageFilterAttributeName)
+        if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
+            language_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
             e.filters[filter_name] = functools.partial(filter, lctx.get_language(language_name))
         else:
             e.filters[filter_name] = filter
