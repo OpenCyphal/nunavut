@@ -7,7 +7,6 @@
 import json
 import pathlib
 from pathlib import Path, PurePath
-from unittest.mock import MagicMock
 
 import pytest
 from pydsdl import read_namespace
@@ -117,23 +116,26 @@ def test_custom_filter_and_test_redefinition(gen_paths):  # type: ignore
 
 
 def test_python_filter_full_reference_name(gen_paths):  # type: ignore
+    lctx = LanguageContext()
     type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('uavcan')), [])
 
     from nunavut.lang.py import filter_full_reference_name
 
     test_subject = next(filter(lambda type: (type.short_name == 'SynchronizedTimestamp'), type_map))
 
-    full_reference_name = filter_full_reference_name(test_subject)
+    full_reference_name = filter_full_reference_name(lctx.get_language('nunavut.lang.py'), test_subject)
     assert "uavcan.time.SynchronizedTimestamp_1_0" == full_reference_name
 
 
 def test_python_filter_short_reference_name(gen_paths):  # type: ignore
+    lctx = LanguageContext()
+
     type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('uavcan')), [])
 
     from nunavut.lang.py import filter_short_reference_name
 
     test_subject = next(filter(lambda type: (type.short_name == 'SynchronizedTimestamp'), type_map))
-    full_reference_name = filter_short_reference_name(test_subject)
+    full_reference_name = filter_short_reference_name(lctx.get_language('nunavut.lang.py'), test_subject)
     assert "SynchronizedTimestamp_1_0" == full_reference_name
 
 
@@ -151,24 +153,31 @@ def test_python_filter_alignment_prefix(gen_paths):  # type: ignore
 
 
 def test_python_filter_imports(gen_paths):  # type: ignore
+    lctx = LanguageContext()
+
     type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('uavcan')), [])
 
     from nunavut.lang.py import filter_imports
 
     test_subject = next(filter(lambda type: (type.short_name == 'bar'), type_map))
-    imports = filter_imports(test_subject)
+    imports = filter_imports(lctx.get_language('nunavut.lang.py'), test_subject)
     assert len(imports) == 1
     assert 'uavcan.time' == imports[0]
 
 
 @pytest.mark.parametrize('stropping,sort', [(True, False), (False, True)])
 def test_python_filter_imports_for_service_type(gen_paths, stropping, sort):  # type: ignore
+    lctx = LanguageContext()
+    lctx.config.set('nunavut.lang.py', 'enable_stropping', str(stropping))
+    assert stropping == lctx.config.getboolean('nunavut.lang.py', 'enable_stropping')
+
     type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('uavcan')), [])
 
     from nunavut.lang.py import filter_imports
 
+    lctx.get_language('nunavut.lang.py').get_reserved_identifiers()
     test_subject = next(filter(lambda type: (type.short_name == 'bar_svc'), type_map))
-    imports = filter_imports(test_subject, sort=sort, stropping=stropping)
+    imports = filter_imports(lctx.get_language('nunavut.lang.py'), test_subject, sort=sort)
     assert len(imports) == 2
     if stropping:
         assert 'uavcan.str_' == imports[0]
@@ -179,6 +188,9 @@ def test_python_filter_imports_for_service_type(gen_paths, stropping, sort):  # 
 
 @pytest.mark.parametrize('stropping,sort', [(True, False), (False, True)])
 def test_python_filter_imports_for_array_type(gen_paths, stropping, sort):  # type: ignore
+    lctx = LanguageContext()
+    lctx.config.set('nunavut.lang.py', 'enable_stropping', str(stropping))
+
     uavcan_dir = str(gen_paths.dsdl_dir / pathlib.Path('uavcan'))
     type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('new')), [uavcan_dir])
 
@@ -187,7 +199,7 @@ def test_python_filter_imports_for_array_type(gen_paths, stropping, sort):  # ty
     from nunavut.lang.py import filter_imports
 
     test_subject = next(filter(lambda type: (type.short_name == 'hotness'), type_map))
-    imports = filter_imports(test_subject, sort=sort, stropping=stropping)
+    imports = filter_imports(lctx.get_language('nunavut.lang.py'), test_subject, sort=sort)
     assert len(imports) == 3
     assert 'new' == imports[0]
     if stropping:
@@ -199,17 +211,15 @@ def test_python_filter_imports_for_array_type(gen_paths, stropping, sort):  # ty
 
 @pytest.mark.parametrize('stropping,sort', [(True, False), (False, True)])
 def test_python_filter_includes(gen_paths, stropping, sort):  # type: ignore
+    lctx = LanguageContext(target_language='cpp', extension='.h')
+    lctx.config.set('nunavut.lang.cpp', 'enable_stropping', str(stropping))
+
     uavcan_dir = str(gen_paths.dsdl_dir / pathlib.Path('uavcan'))
     type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('new')), [uavcan_dir])
     from nunavut.lang.cpp import filter_includes
 
     test_subject = next(filter(lambda type: (type.short_name == 'hotness'), type_map))
-    mock_environment = MagicMock()
-    mock_language_context = MagicMock()
-    mock_language_context.get_output_extension = MagicMock(return_value='.h')
-    mock_environment.globals = {LanguageContext.ContextInstanceGlobalKey:
-                                mock_language_context}
-    imports = filter_includes(mock_environment, test_subject, sort=sort, stropping=stropping)
+    imports = filter_includes(lctx.get_language('nunavut.lang.cpp'), test_subject, sort=sort)
     assert len(imports) == 5
 
     def assert_path_in_imports(path: str) -> None:

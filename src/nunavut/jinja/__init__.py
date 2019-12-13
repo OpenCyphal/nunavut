@@ -9,23 +9,25 @@
 
 import collections
 import datetime
+import functools
 import inspect
+import io
 import logging
 import pathlib
-import typing
-import io
 import re
+import typing
 
 import pydsdl
 
 import nunavut.generators
 import nunavut.lang
-
-from nunavut.jinja.jinja2 import (Environment, FileSystemLoader, ChoiceLoader, PackageLoader,
-                                  StrictUndefined, TemplateAssertionError,
-                                  nodes, select_autoescape, Template)
+from nunavut.jinja.jinja2 import (ChoiceLoader, Environment, FileSystemLoader,
+                                  PackageLoader, StrictUndefined, Template,
+                                  TemplateAssertionError, nodes,
+                                  select_autoescape)
 from nunavut.jinja.jinja2.ext import Extension
 from nunavut.jinja.jinja2.parser import Parser
+from nunavut.templates import (LANGUAGE_FILTER_ATTRIBUTE_NAME)
 
 logger = logging.getLogger(__name__)
 
@@ -353,8 +355,7 @@ class Generator(nunavut.generators.AbstractGenerator):
                  lstrip_blocks: bool = False,
                  additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
                  additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None,
-                 additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
-                 ):
+                 additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None):
 
         super(Generator, self).__init__(namespace, generate_namespace_types, language_context)
 
@@ -389,7 +390,7 @@ class Generator(nunavut.generators.AbstractGenerator):
             template_loader = ChoiceLoader([
                 fs_loader,
                 PackageLoader(target_language.get_templates_package_name())
-            ])
+            ])  # type: 'nunavut.jinja.jinja2.loaders.BaseLoader'
         else:
             template_loader = fs_loader
 
@@ -417,7 +418,6 @@ class Generator(nunavut.generators.AbstractGenerator):
         self._add_nunavut_globals()
         self._add_instance_tests_from_root(pydsdl.SerializableType)
         self._add_filters_and_tests(additional_filters, additional_tests)
-        nunavut.lang.LanguageContext.inject_into_globals(self._language_context, self._env.globals)
 
     def get_templates(self) -> typing.List[pathlib.Path]:
         """
@@ -467,26 +467,16 @@ class Generator(nunavut.generators.AbstractGenerator):
             self._add_instance_tests_from_root(derived)
 
     def _add_language_support(self) -> None:
-        def add_filters_from_language(env: Environment, language: nunavut.lang.Language, make_implicit: bool) -> None:
-            lang_module = language.get_module()
-            filters = inspect.getmembers(lang_module, inspect.isfunction)
-            for function_tuple in filters:
-                function_name = function_tuple[0]
-                if len(function_name) > 7 and function_name[0:7] == "filter_":
-                    if make_implicit:
-                        env.filters[function_name[7:]] = function_tuple[1]
-                        logging.debug("Adding implicit filter {} for language {}".format(function_name[7:],
-                                                                                         language.name))
-                    else:
-                        env.filters["{}.{}".format(
-                            language.name, function_name[7:])] = function_tuple[1]
-
         target_language = self._language_context.get_target_language()
         if target_language is not None:
-            add_filters_from_language(self._env, target_language, True)
+            for key, value in target_language.get_filters(make_implicit=True).items():
+                self._add_filter_to_environment(key, value)
+            self._env.globals.update(target_language.get_globals(True))
 
         for supported_language in self._language_context.get_supported_languages().values():
-            add_filters_from_language(self._env, supported_language, False)
+            for key, value in supported_language.get_filters(make_implicit=False).items():
+                self._add_filter_to_environment(key, value)
+            self._env.globals.update(supported_language.get_globals(False))
 
     def _add_filters_and_tests(self,
                                additional_filters: typing.Optional[typing.Dict[str, typing.Callable]],
@@ -500,13 +490,13 @@ class Generator(nunavut.generators.AbstractGenerator):
             if len(function_name) > 3 and function_name[0:3] == "is_":
                 self._env.tests[function_name[3:]] = function_ref
             if len(function_name) > 7 and function_name[0:7] == "filter_":
-                self._env.filters[function_name[7:]] = function_ref
+                self._add_filter_to_environment(function_name[7:], function_ref)
 
         if additional_filters is not None:
             for name, additional_filter in additional_filters.items():
                 if name in self._env.filters:
                     raise RuntimeError('filter {} was already defined.'.format(name))
-                self._env.filters[name] = additional_filter
+                self._add_filter_to_environment(name, additional_filter)
 
         if additional_tests is not None:
             for name, additional_test in additional_tests.items():
@@ -531,6 +521,15 @@ class Generator(nunavut.generators.AbstractGenerator):
                                      allow_overwrite,
                                      post_processors
                                      )
+
+    def _add_filter_to_environment(self, filter_name: str, filter: typing.Callable[..., str]) -> None:
+        if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
+            language_name_or_module_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
+            filter_language = self._language_context.get_language(language_name_or_module_name)
+            resolved_filter = functools.partial(filter, filter_language)  # type: typing.Callable[..., str]
+        else:
+            resolved_filter = filter
+        self._env.filters[filter_name] = resolved_filter
 
     @staticmethod
     def _filter_and_write_line(line_and_lineend: typing.Tuple[str, str],

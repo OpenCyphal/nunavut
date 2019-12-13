@@ -1,17 +1,18 @@
 nunavut.lang package
 ====================
 
+Subpackages
+-----------
+
+.. toctree::
+
+   nunavut.lang.cpp
+
 Submodules
 ----------
 
 
 .. automodule:: nunavut.lang.c
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: nunavut.lang.cpp
    :members:
    :undoc-members:
    :show-inheritance:

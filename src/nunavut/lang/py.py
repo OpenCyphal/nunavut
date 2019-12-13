@@ -7,18 +7,22 @@
     Filters for generating python. All filters in this
     module will be available in the template's global namespace as ``py``.
 """
-import typing
-import keyword
 import builtins
+import functools
+import keyword
+import typing
+
 import pydsdl
 
+from ..templates import (SupportsTemplateContext, template_context_filter,
+                         template_language_filter, template_language_int_filter,
+                         template_language_list_filter)
+from . import Language, _UniqueNameGenerator
 from .c import VariableNameEncoder
-from . import _UniqueNameGenerator
-from ..jinja.jinja2 import contextfilter
 
 
-@contextfilter
-def filter_to_template_unique_name(context: typing.Any, base_token: str) -> str:
+@template_context_filter
+def filter_to_template_unique_name(context: SupportsTemplateContext, base_token: str) -> str:
     """
     Filter that takes a base token and forms a name that is very
     likely to be unique within the template the filter is invoked. This
@@ -52,7 +56,7 @@ def filter_to_template_unique_name(context: typing.Any, base_token: str) -> str:
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_to_template_unique_name, template, rendered)
+        jinja_filter_tester(filter_to_template_unique_name, template, rendered, 'py')
 
     .. code-block:: python
 
@@ -64,7 +68,7 @@ def filter_to_template_unique_name(context: typing.Any, base_token: str) -> str:
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_to_template_unique_name, template, rendered)
+        jinja_filter_tester(filter_to_template_unique_name, template, rendered, 'py')
 
     :param str base_token: A token to include in the base name.
     :returns: A name that is likely to be valid python identifier and is likely to
@@ -76,7 +80,9 @@ def filter_to_template_unique_name(context: typing.Any, base_token: str) -> str:
 PYTHON_RESERVED_IDENTIFIERS = frozenset(map(str, list(keyword.kwlist) + dir(builtins)))  # type: typing.FrozenSet[str]
 
 
-def filter_id(instance: typing.Any, stropping_suffix: str = '_', encoding_prefix: str = 'ZX') -> str:
+@template_language_filter(__name__)
+def filter_id(language: Language,
+              instance: typing.Any) -> str:
     """
     Filter that produces a valid Python identifier for a given object. The encoding may not
     be reversable.
@@ -99,7 +105,7 @@ def filter_id(instance: typing.Any, stropping_suffix: str = '_', encoding_prefix
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_id, template, rendered, I=I)
+        jinja_filter_tester(filter_id, template, rendered, 'py', I=I)
 
     .. code-block:: python
 
@@ -115,7 +121,7 @@ def filter_id(instance: typing.Any, stropping_suffix: str = '_', encoding_prefix
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_id, template, rendered, I=I)
+        jinja_filter_tester(filter_id, template, rendered, 'py', I=I)
 
 
     .. code-block:: python
@@ -132,34 +138,11 @@ def filter_id(instance: typing.Any, stropping_suffix: str = '_', encoding_prefix
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_id, template, rendered, I=I)
-
-
-    .. code-block:: python
-
-        # Given
-        I = 'if'
-
-        # and
-        template = '{{ I | id("stropped_") }}'
-
-        # then
-        rendered = 'ifstropped_'
-
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_id, template, rendered, I=I)
+        jinja_filter_tester(filter_id, template, rendered, 'py', I=I)
 
 
     :param any instance:        Any object or data that either has a name property or can be converted
                                 to a string.
-    :param str stropping_suffix: String appended to the resolved instance name if the encoded value
-                                is a reserved keyword in python.
-    :param str encoding_prefix: The string to insert before any four digit unicode number used to represent
-                                an illegal character.
-                                Note that the caller must ensure the prefix itself consists of only valid
-                                characters for Python identifiers.
     :returns: A token that is a valid Python identifier, is not a reserved keyword, and is transformed
               in a deterministic manner based on the provided instance.
     """
@@ -170,11 +153,17 @@ def filter_id(instance: typing.Any, stropping_suffix: str = '_', encoding_prefix
 
     # We use the C variable name encoder since the variable token rules are
     # compatible.
-    return VariableNameEncoder('', stropping_suffix, encoding_prefix, False).strop(raw_name,
-                                                                                   PYTHON_RESERVED_IDENTIFIERS)
+    reserved = set(language.get_reserved_identifiers())
+    reserved.update(PYTHON_RESERVED_IDENTIFIERS)
+    vne = VariableNameEncoder(language.stropping_prefix,
+                              language.stropping_suffix,
+                              language.encoding_prefix,
+                              False)
+    return vne.strop(raw_name, frozenset(reserved))
 
 
-def filter_full_reference_name(t: pydsdl.CompositeType, stropping: bool = True) -> str:
+@template_language_filter(__name__)
+def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> str:
     """
     Provides a string that is the full namespace, typename, major, and minor version for a given composite type.
 
@@ -206,45 +195,23 @@ def filter_full_reference_name(t: pydsdl.CompositeType, stropping: bool = True) 
         setattr(dummy_version, 'minor', minor)
         setattr(dummy, 'full_name', full_name)
         setattr(dummy, 'short_name', full_name.split('.')[-1])
-        jinja_filter_tester(filter_full_reference_name, template, rendered, my_obj=dummy)
+        jinja_filter_tester(filter_full_reference_name, template, rendered, 'py', my_obj=dummy)
 
-
-    .. code-block:: python
-
-        # Given
-        full_name = 'any.str.2Foo'
-        major = 1
-        minor = 2
-
-        # and
-        template = '{{ my_obj | full_reference_name(stropping=False) }}'
-
-        # then
-        rendered = 'any.str.2Foo_1_2'
-
-    .. invisible-code-block: python
-
-
-        setattr(dummy_version, 'major', major)
-        setattr(dummy_version, 'minor', minor)
-        setattr(dummy, 'full_name', full_name)
-        setattr(dummy, 'short_name', full_name.split('.')[-1])
-        jinja_filter_tester(filter_full_reference_name, template, rendered, my_obj=dummy)
 
     :param pydsdl.CompositeType t: The DSDL type to get the fully-resolved reference name for.
-    :param bool stropping: If True then the :func:`filter_id` filter is applied to each component in the identifier.
     """
     ns_parts = t.full_name.split('.')
     if len(ns_parts) > 1:
-        if stropping:
-            ns = list(map(filter_id, ns_parts[:-1]))
+        if language.enable_stropping:
+            ns = list(map(functools.partial(filter_id, language), ns_parts[:-1]))
         else:
             ns = ns_parts[:-1]
 
-    return '.'.join(ns + [filter_short_reference_name(t, stropping)])
+    return '.'.join(ns + [filter_short_reference_name(language, t)])
 
 
-def filter_short_reference_name(t: pydsdl.CompositeType, stropping: bool = True) -> str:
+@template_language_filter(__name__)
+def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> str:
     """
     Provides a string that is a shorted version of the full reference name. This type is unique only within its
     namespace.
@@ -275,34 +242,14 @@ def filter_short_reference_name(t: pydsdl.CompositeType, stropping: bool = True)
         setattr(dummy_version, 'major', major)
         setattr(dummy_version, 'minor', minor)
         setattr(dummy, 'short_name', short_name)
-        jinja_filter_tester(filter_short_reference_name, template, rendered, my_obj=dummy)
+        jinja_filter_tester(filter_short_reference_name, template, rendered, 'py', my_obj=dummy)
 
-
-    .. code-block:: python
-
-        # Given
-        short_name = '2Foo'
-        major = 1
-        minor = 2
-
-        # and
-        template = '{{ my_obj | short_reference_name(stropping=False) }}'
-
-        # then
-        rendered = '2Foo_1_2'
-
-    .. invisible-code-block: python
-
-        setattr(dummy_version, 'major', major)
-        setattr(dummy_version, 'minor', minor)
-        setattr(dummy, 'short_name', short_name)
-        jinja_filter_tester(filter_short_reference_name, template, rendered, my_obj=dummy)
 
     :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
     """
     short_name = '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
-    if stropping:
-        return filter_id(short_name)
+    if language.enable_stropping:
+        return filter_id(language, short_name)
     else:
         return short_name
 
@@ -329,7 +276,7 @@ def filter_alignment_prefix(offset: pydsdl.BitLengthSet) -> str:
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_alignment_prefix, template, rendered, B=B)
+        jinja_filter_tester(filter_alignment_prefix, template, rendered, 'py', B=B)
 
 
     .. code-block:: python
@@ -346,7 +293,7 @@ def filter_alignment_prefix(offset: pydsdl.BitLengthSet) -> str:
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_alignment_prefix, template, rendered, B=B)
+        jinja_filter_tester(filter_alignment_prefix, template, rendered, 'py', B=B)
 
 
     :param pydsdl.BitLengthSet offset: A bit length set to test for alignment.
@@ -358,13 +305,15 @@ def filter_alignment_prefix(offset: pydsdl.BitLengthSet) -> str:
         raise TypeError('Expected BitLengthSet, got {}'.format(type(offset).__name__))
 
 
-def filter_imports(t: pydsdl.CompositeType, sort: bool = True, stropping: bool = True) -> typing.List[str]:
+@template_language_list_filter(__name__)
+def filter_imports(language: Language,
+                   t: pydsdl.CompositeType,
+                   sort: bool = True) -> typing.List[str]:
     """
     Returns a list of all modules that must be imported to used a given type.
 
     :param pydsdl.CompositeType t: The type to scan for dependencies.
     :param bool sort: If true the returned list will be sorted.
-    :param bool stropping: If true the list will contained stropped identifiers.
     :return: a list of python module names the provided type depends on.
     """
     # Make a list of all attributes defined by this type
@@ -383,8 +332,8 @@ def filter_imports(t: pydsdl.CompositeType, sort: bool = True, stropping: bool =
     # Make a list of unique full namespaces of referenced composites
     namespace_list = [x.full_namespace for x in dep_types]
 
-    if stropping:
-        namespace_list = ['.'.join([filter_id(y) for y in x.split('.')]) for x in namespace_list]
+    if language.enable_stropping:
+        namespace_list = ['.'.join([filter_id(language, y) for y in x.split('.')]) for x in namespace_list]
 
     if sort:
         return list(sorted(namespace_list))
@@ -392,7 +341,9 @@ def filter_imports(t: pydsdl.CompositeType, sort: bool = True, stropping: bool =
         return namespace_list
 
 
-def filter_longest_id_length(attributes: typing.List[pydsdl.Attribute], stropping: bool = True) -> int:
+@template_language_int_filter(__name__)
+def filter_longest_id_length(language: Language,
+                             attributes: typing.List[pydsdl.Attribute]) -> int:
     """
     Return the length of the longest identifier in a list of :class:`pydsdl.Attribute` objects.
 
@@ -414,30 +365,12 @@ def filter_longest_id_length(attributes: typing.List[pydsdl.Attribute], stroppin
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_longest_id_length, template, rendered, I=I)
+        jinja_filter_tester(filter_longest_id_length, template, rendered, 'py', I=I)
 
 
-    .. code-block:: python
-
-        # Given
-        I = ['one.str.int.any', 'three.str.int.any']
-
-        # and
-        template = '{{ I | longest_id_length(stropping=False) }}'
-
-        # then
-        rendered = '17'
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_longest_id_length, template, rendered, I=I)
-
-
-    :param bool stropping: If True then the :func:`filter_id` filter is applied to each attribute identifier
-                           before comparing lengths else the attributes are not modified.
     """
-    if stropping:
-        return max(map(len, map(filter_id, attributes)))
+    if language.enable_stropping:
+        return max(map(len, map(functools.partial(filter_id, language), attributes)))
     else:
         return max(map(len, attributes))
 

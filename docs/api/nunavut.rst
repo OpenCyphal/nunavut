@@ -31,6 +31,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: nunavut.templates
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: nunavut.version
    :members:
    :undoc-members:

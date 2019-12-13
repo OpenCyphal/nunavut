@@ -4,9 +4,9 @@
 # This software is distributed under the terms of the MIT License.
 #
 
-import inspect
 from pathlib import Path
 from typing import Dict
+from unittest.mock import MagicMock
 
 import pytest
 from pydsdl import read_namespace
@@ -69,6 +69,7 @@ def ptest_lang_c(gen_paths, implicit, unique_name_evaluator):  # type: ignore
 
     assert len(generated_values) > 0
 
+    # cspell: disable
     lang_c_output = generated_values["tests"]["lang_c"]
     assert lang_c_output["namespace"] == "langtest.c"
     assert lang_c_output["namespace_macrofy"] == "LANGTEST_C"
@@ -100,6 +101,8 @@ def ptest_lang_c(gen_paths, implicit, unique_name_evaluator):  # type: ignore
     unique_name_evaluator(r'_nAME\d+_', lang_c_output["unique_name_1"])
     unique_name_evaluator(r'_naME\d+_', lang_c_output["unique_name_2"])
     unique_name_evaluator(r'_\d+_', lang_c_output["unique_name_3"])
+
+    # cspell: enable
 
     return generated_values
 
@@ -225,8 +228,12 @@ def ptest_lang_py(gen_paths, implicit, unique_name_evaluator):  # type: ignore
 
 
 def test_lang_c(gen_paths, unique_name_evaluator):  # type: ignore
-    """ Generates and verifies JSON with values filtered using the c language support module.
     """
+    Generates and verifies JSON with values filtered using the c language support module.
+    """
+    lctx = LanguageContext()
+
+    # cspell: disable
     generated_values = ptest_lang_c(gen_paths, True, unique_name_evaluator)
     lang_any = generated_values["tests"]["lang_any"]
     assert lang_any['id_0'] == '_123_class__for_u2___ZX0028ZX002Aother_stuffZX002DZX0026ZX002DsuchZX0029'
@@ -235,9 +242,8 @@ def test_lang_c(gen_paths, unique_name_evaluator):  # type: ignore
     assert lang_any['id_3'] == '_register'
     assert lang_any['id_4'] == 'False'
     assert lang_any['id_5'] == '_return'
-    assert lang_any['id_6'] == ':poop:return'
     assert lang_any['id_7'] == 'I_ZX2764_UAVCAN'
-    assert lang_any['id_8'] == 'I_0x2764_UAVCAN'
+    assert lang_any['id_8'] == '_1_ZX2764_UAVCAN'
 
     assert lang_any['id_9'] == 'str'
     assert lang_any['id_A'] == '_strr'
@@ -246,8 +252,9 @@ def test_lang_c(gen_paths, unique_name_evaluator):  # type: ignore
     assert lang_any['id_D'] == '_lC_Is_reserved'
     assert lang_any['id_E'] == 'NOT_ATOMIC_YO'
     assert lang_any['id_F'] == '_aTOMIC_YO'
+    # cspell: enable
 
-    assert '_flight__time' == c_filter_id(Dummy('_Flight__time'))
+    assert '_flight__time' == c_filter_id(lctx.get_language('nunavut.lang.c'), Dummy('_Flight__time'))
 
 
 def test_lang_c_explicit(gen_paths, unique_name_evaluator):  # type: ignore
@@ -262,7 +269,9 @@ def test_lang_cpp(gen_paths):  # type: ignore
     """
     Generates and verifies JSON with values filtered using the cpp language module.
     """
+    lctx = LanguageContext()
 
+    # cspell: disable
     generated_values = ptest_lang_cpp(gen_paths, True)
     lang_any = generated_values["tests"]["lang_any"]
     assert lang_any['id_0'] == '_123_class_ZX005Ffor_u2_ZX005F_ZX0028ZX002Aother_stuffZX002DZX0026ZX002DsuchZX0029'
@@ -271,9 +280,8 @@ def test_lang_cpp(gen_paths):  # type: ignore
     assert lang_any['id_3'] == '_register'
     assert lang_any['id_4'] == 'False'
     assert lang_any['id_5'] == '_return'
-    assert lang_any['id_6'] == ':poop:return'
     assert lang_any['id_7'] == 'I_ZX2764_UAVCAN'
-    assert lang_any['id_8'] == 'I_0x2764_UAVCAN'
+    assert lang_any['id_8'] == '_1_ZX2764_UAVCAN'
     assert lang_any['id_9'] == 'str'
     assert lang_any['id_A'] == '_strr'
     assert lang_any['id_B'] == '_uINT_FOO_MIN'
@@ -282,10 +290,10 @@ def test_lang_cpp(gen_paths):  # type: ignore
     assert lang_any['id_E'] == 'NOT_ATOMIC_YO'
     assert lang_any['id_F'] == '_aTOMIC_YO'
 
-    with pytest.raises(RuntimeError):
-        cpp_filter_id('foo', '_', '__')
+    lang_cpp = lctx.get_language('nunavut.lang.cpp')
 
-    assert '_flight_ZX005Ftime' == cpp_filter_id(Dummy('_Flight__time'))
+    assert '_flight_ZX005Ftime' == cpp_filter_id(lang_cpp, Dummy('_Flight__time'))
+    # cspell: enable
 
 
 def test_lang_cpp_explicit(gen_paths):  # type: ignore
@@ -300,8 +308,10 @@ def test_lang_cpp_explicit(gen_paths):  # type: ignore
 def test_lang_py_implicit(gen_paths, unique_name_evaluator):  # type: ignore
     """ Generates and verifies JSON with values filtered using the python language support module.
     """
+    lctx = LanguageContext()
 
     generated_values = ptest_lang_py(gen_paths, True, unique_name_evaluator)
+    # cspell: disable
     lang_any = generated_values["tests"]["lang_any"]
     assert lang_any['id_0'] == '_123_class__for_u2___ZX0028ZX002Aother_stuffZX002DZX0026ZX002DsuchZX0029'
     assert lang_any['id_1'] == '_Reserved'
@@ -309,9 +319,8 @@ def test_lang_py_implicit(gen_paths, unique_name_evaluator):  # type: ignore
     assert lang_any['id_3'] == 'register'
     assert lang_any['id_4'] == 'False_'
     assert lang_any['id_5'] == 'return_'
-    assert lang_any['id_6'] == 'return:poop:'
     assert lang_any['id_7'] == 'I_ZX2764_UAVCAN'
-    assert lang_any['id_8'] == 'I_0x2764_UAVCAN'
+    assert lang_any['id_8'] == '_1_ZX2764_UAVCAN'
     assert lang_any['id_9'] == 'str_'
     assert lang_any['id_A'] == 'strr'
     assert lang_any['id_B'] == 'UINT_FOO_MIN'
@@ -320,7 +329,8 @@ def test_lang_py_implicit(gen_paths, unique_name_evaluator):  # type: ignore
     assert lang_any['id_E'] == 'NOT_ATOMIC_YO'
     assert lang_any['id_F'] == 'ATOMIC_YO'
 
-    assert '_Flight__time' == py_filter_id(Dummy('_Flight__time'))
+    assert '_Flight__time' == py_filter_id(lctx.get_language('nunavut.lang.py'), Dummy('_Flight__time'))
+    # cspell: enable
 
 
 def test_lang_py_explicit(gen_paths, unique_name_evaluator):  # type: ignore
@@ -336,17 +346,16 @@ def test_language_object() -> None:
     """
     Verify that the Language module object works as required.
     """
-    language = Language('c', '.h')
+    mock_config = MagicMock()
+    language = Language('c', mock_config)
 
     assert 'c' == language.name
-    assert language.get_module() is not None
 
-    found_id = False
-    for function_tuple in inspect.getmembers(language.get_module(), inspect.isfunction):
-        if 'filter_id' == function_tuple[0]:
-            found_id = True
-            break
-    assert found_id
+    implicit_filters = language.get_filters(make_implicit=True)
+    assert 'id' in implicit_filters
+
+    explicit_filters = language.get_filters(make_implicit=False)
+    assert 'c.macrofy' in explicit_filters
 
 
 def test_language_context() -> None:
@@ -360,14 +369,19 @@ def test_language_context() -> None:
     assert 'cpp' in context_w_no_target.get_supported_languages()
     assert 'py' in context_w_no_target.get_supported_languages()
 
-    assert context_w_no_target.get_id_filter() is not None
-    assert 'if' == context_w_no_target.get_id_filter()('if')
+    assert context_w_no_target.get_target_id_filter() is not None
+    assert 'if' == context_w_no_target.get_target_id_filter()('if')
 
     context_w_target = LanguageContext('c')
 
     assert context_w_target.get_target_language() is not None
-    assert context_w_target.get_id_filter() is not None
-    assert '_if' == context_w_target.get_id_filter()('if')
+    assert context_w_target.get_target_id_filter() is not None
+    assert '_if' == context_w_target.get_target_id_filter()('if')
+
+    target_language = context_w_target.get_target_language()
+    assert target_language is not None
+    target_named_types = target_language.get_named_types()
+    assert 'byte' in target_named_types
 
 
 def test_either_target_or_extension() -> None:
@@ -378,8 +392,19 @@ def test_either_target_or_extension() -> None:
     _ = LanguageContext(target_language='py')
     _ = LanguageContext(extension='.py')
     _ = LanguageContext(target_language='py', extension='.py')
-    with pytest.raises(ValueError):
-        _ = LanguageContext()
+    text_extension = LanguageContext()
+    with pytest.raises(RuntimeError):
+        _ = text_extension.get_output_extension()
 
     with pytest.raises(KeyError):
         _ = LanguageContext('foobar')
+
+
+def test_config_overrides(gen_paths):  # type: ignore
+    """
+    Test providing different configuration values to a LanguageContext object.
+    """
+    additional_config_files = [gen_paths.root_dir / Path('tox').with_suffix('.ini')]
+    lctx = LanguageContext(additional_config_files=additional_config_files)
+    assert '.hc' == lctx.get_language('c').extension
+    assert 'This is a test' == lctx.get_language('c').get_config_value('option_not_in_properties')

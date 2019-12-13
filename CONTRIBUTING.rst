@@ -175,15 +175,12 @@ Of course, you can just use `Visual Studio Code`_ to build and preview the docs 
 apidoc
 ================================================
 
-We manually generate the api doc using ``sphinx-apidoc``. To regenerate do the following ::
+We manually generate the api doc using ``sphinx-apidoc``. To regenerate use ``tox -e gen-apidoc``.
 
-    sphinx-apidoc --doc-project library -E -o docs/api src "**/conftest.py" "src/nunavut/jinja/jinja2/**" "src/nunavut/jinja/markupsafe/**"
+.. warning::
 
-.. note::
+    ``tox -e gen-apidoc`` will start by deleting the docs/api directory.
 
-    If you've changed things a lot you might need to remove the api directory first.
-
-This will create a new change you will need to submit in a PR.
 
 ************************************************
 Coverage and Linting Reports

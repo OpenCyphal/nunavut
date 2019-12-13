@@ -15,69 +15,9 @@ import typing
 
 import pydsdl
 
-from . import _UniqueNameGenerator
-from ..jinja.jinja2 import contextfilter
-
-# Taken from https://en.cppreference.com/w/c/keyword
-C_RESERVED_IDENTIFIERS = frozenset([
-    'asm',
-    'auto',
-    'break',
-    'case',
-    'char',
-    'const',
-    'continue',
-    'default',
-    'defined',
-    'do',
-    'double',
-    'error',
-    'else',
-    'elif',
-    'endif',
-    'enum',
-    'extern',
-    'float',
-    'for',
-    'fortran',
-    'goto',
-    'if',
-    'ifdef',
-    'ifndef',
-    'include',
-    'inline',
-    'int',
-    'line',
-    'long',
-    'pragma',
-    'register',
-    'restrict',
-    'return',
-    'short',
-    'signed',
-    'sizeof',
-    'static',
-    'struct',
-    'switch',
-    'typedef',
-    'undef',
-    'union',
-    'unsigned',
-    'void',
-    'volatile',
-    'while',
-    '_Alignas',
-    '_Alignof',
-    '_Atomic',
-    '_Bool',
-    '_Complex',
-    '_Generic',
-    '_Imaginary',
-    '_Noreturn',
-    '_Pragma',
-    '_Static_assert',
-    '_Thread_local'
-])
+from ..templates import (SupportsTemplateContext, template_context_filter,
+                         template_language_filter)
+from . import Language, _UniqueNameGenerator
 
 # Taken from https://en.cppreference.com/w/c/language/identifier
 # cspell: disable
@@ -164,7 +104,9 @@ class VariableNameEncoder:
             return stropped
 
 
-def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix: str = 'ZX') -> str:
+@template_language_filter(__name__)
+def filter_id(language: Language,
+              instance: typing.Any) -> str:
     """
     Filter that produces a valid C identifier for a given object. The encoding may not
     be reversable.
@@ -188,7 +130,7 @@ def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_id, template, rendered, I=I)
+        jinja_filter_tester(filter_id, template, rendered, 'c', I=I)
 
 
     .. code-block:: python
@@ -205,23 +147,7 @@ def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_id, template, rendered, I=I)
-
-
-    .. code-block:: python
-
-        # Given
-        I = 'if'
-
-        # and
-        template = '{{ I | id("stropped_") }}'
-
-        # then
-        rendered = 'stropped_if'
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_id, template, rendered, I=I)
+        jinja_filter_tester(filter_id, template, rendered, 'c', I=I)
 
 
     .. code-block:: python
@@ -237,17 +163,11 @@ def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_id, template, rendered, I=I)
+        jinja_filter_tester(filter_id, template, rendered, 'c', I=I)
 
 
     :param any instance:        Any object or data that either has a name property or can be converted
                                 to a string.
-    :param str stropping_prefix: String prepended to the resolved instance name if the encoded value
-                                is a reserved keyword in C.
-    :param str encoding_prefix: The string to insert before any four digit unicode number used to represent
-                                an illegal character.
-                                Note that the caller must ensure the prefix itself consists of only valid
-                                characters for C identifiers.
     :returns: A token that is a valid identifier for C, is not a reserved keyword, and is transformed
               in a deterministic manner based on the provided instance.
     """
@@ -256,9 +176,11 @@ def filter_id(instance: typing.Any, stropping_prefix: str = '_', encoding_prefix
     else:
         raw_name = str(instance)
 
-    return VariableNameEncoder(stropping_prefix, '', encoding_prefix).strop(raw_name,
-                                                                            C_RESERVED_IDENTIFIERS,
-                                                                            C_RESERVED_PATTERNS)
+    reserved_identifiers = frozenset(language.get_reserved_identifiers())
+    vne = VariableNameEncoder(language.stropping_prefix, language.stropping_suffix, language.encoding_prefix)
+    return vne.strop(raw_name,
+                     reserved_identifiers,
+                     C_RESERVED_PATTERNS)
 
 
 def filter_macrofy(value: str) -> str:
@@ -282,7 +204,7 @@ def filter_macrofy(value: str) -> str:
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_macrofy, template, rendered)
+        jinja_filter_tester(filter_macrofy, template, rendered, 'c')
 
 
     :param str value: The value to transform.
@@ -363,7 +285,10 @@ class _CFit(enum.Enum):
         return cls(bestfit)
 
 
-def filter_type_from_primitive(value: pydsdl.PrimitiveType, use_standard_types: bool = True) -> str:
+@template_language_filter(__name__)
+def filter_type_from_primitive(language: Language,
+                               value: pydsdl.PrimitiveType,
+                               use_standard_types: typing.Optional[bool] = None) -> str:
     """
     Filter to transform a pydsdl :class:`~pydsdl.PrimitiveType` into
     a valid C type.
@@ -389,6 +314,7 @@ def filter_type_from_primitive(value: pydsdl.PrimitiveType, use_standard_types: 
         jinja_filter_tester(filter_type_from_primitive,
                             template,
                             rendered,
+                            'c',
                             unsigned_int_32_type=test_type)
 
     .. code-block:: python
@@ -406,6 +332,7 @@ def filter_type_from_primitive(value: pydsdl.PrimitiveType, use_standard_types: 
         jinja_filter_tester(filter_type_from_primitive,
                             template,
                             rendered,
+                            'c',
                             unsigned_int_32_type=test_type)
 
 
@@ -415,6 +342,8 @@ def filter_type_from_primitive(value: pydsdl.PrimitiveType, use_standard_types: 
 
     :raises TemplateRuntimeError: If the primitive cannot be represented as a standard C type.
     """
+    if use_standard_types is None:
+        use_standard_types = bool(language.get_config_value('use_standard_types'))
     return _CFit.get_best_fit(value.bit_length).to_c_type(value, use_standard_types)
 
 
@@ -441,7 +370,7 @@ def filter_to_snake_case(value: str) -> str:
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_to_snake_case, template, rendered)
+        jinja_filter_tester(filter_to_snake_case, template, rendered, 'c')
 
 
     .. code-block:: python
@@ -455,12 +384,12 @@ def filter_to_snake_case(value: str) -> str:
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_to_snake_case, template, rendered)
+        jinja_filter_tester(filter_to_snake_case, template, rendered, 'c')
 
         template = '{{ " aa bb. cCcAAa_aAa_AAaAa_AAaA_a " | to_snake_case }}'
         rendered = 'aa_bb_c_cc_aaa_a_aa_aaa_aa_aaa_a_a'
 
-        jinja_filter_tester(filter_to_snake_case, template, rendered)
+        jinja_filter_tester(filter_to_snake_case, template, rendered, 'c')
 
     :param str value: The string to transform into C snake-case.
 
@@ -471,8 +400,8 @@ def filter_to_snake_case(value: str) -> str:
     return _snake_case_pattern_2.sub(lambda x: '_' + x.group(0).lower(), pass1)
 
 
-@contextfilter
-def filter_to_template_unique_name(context: typing.Any, base_token: str) -> str:
+@template_context_filter
+def filter_to_template_unique_name(context: SupportsTemplateContext, base_token: str) -> str:
     """
     Filter that takes a base token and forms a name that is very
     likely to be unique within the template the filter is invoked. This
@@ -508,7 +437,7 @@ def filter_to_template_unique_name(context: typing.Any, base_token: str) -> str:
     .. invisible-code-block: python
 
         _UniqueNameGenerator.reset()
-        jinja_filter_tester(filter_to_template_unique_name, template, rendered)
+        jinja_filter_tester(filter_to_template_unique_name, template, rendered, 'c')
 
     .. code-block:: python
 
@@ -521,7 +450,7 @@ def filter_to_template_unique_name(context: typing.Any, base_token: str) -> str:
     .. invisible-code-block: python
 
         _UniqueNameGenerator.reset()
-        jinja_filter_tester(filter_to_template_unique_name, template, rendered)
+        jinja_filter_tester(filter_to_template_unique_name, template, rendered, 'c')
 
 
     :param str base_token: A token to include in the base name.

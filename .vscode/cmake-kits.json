@@ -1,0 +1,16 @@
+[
+    {
+        "name": "native-gcc",
+        "toolchainFile": "${workspaceFolder}/verification/cpp/cmake/toolchains/gcc-native.cmake",
+        "cmakeSettings": {
+            "NUNAVUT_FLAG_SET": "../cmake/compiler_flag_sets/native.cmake"
+        }
+    },
+    {
+        "name": "native-clang",
+        "toolchainFile": "${workspaceFolder}/verification/cpp/cmake/toolchains/clang-native.cmake",
+        "cmakeSettings": {
+            "NUNAVUT_FLAG_SET": "../cmake/compiler_flag_sets/native.cmake"
+        }
+    }
+]

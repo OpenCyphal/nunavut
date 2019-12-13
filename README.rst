@@ -45,7 +45,7 @@ Partial example: generating a C struct
         {
     {%- for attribute in T.attributes %}
     {%- if attribute is constant %}
-            const {{ attribute.data_type | c.type_from_primitive(use_standard_types=True) }} {{ attribute.name }} = {{ attribute.value }};
+            const {{ attribute.data_type | c.type_from_primitive }} {{ attribute.name }} = {{ attribute.value }};
     {% endif -%}
     {% endfor %}
 
