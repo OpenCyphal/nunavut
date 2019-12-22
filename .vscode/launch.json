@@ -24,7 +24,7 @@
             "module": "pytest",
             "args": ["${file}"],
             "console": "internalConsole",
-            "cwd": "${workspaceFolder}/test"
+            "cwd": "${workspaceFolder}"
         },
         {
             "name": "Pytest: all tests",
@@ -32,15 +32,7 @@
             "request": "launch",
             "module": "pytest",
             "console": "internalConsole",
-            "cwd": "${workspaceFolder}/test"
-        },
-        {
-            "name": "Pytest: all doctests",
-            "type": "python",
-            "request": "launch",
-            "module": "pytest",
-            "console": "internalConsole",
-            "cwd": "${workspaceFolder}/src"
-        },
+            "cwd": "${workspaceFolder}"
+        }
     ]
 }

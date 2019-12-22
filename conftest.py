@@ -6,6 +6,7 @@
 Fixtures for our tests.
 """
 
+import functools
 import os
 import pathlib
 import re
@@ -13,10 +14,22 @@ import subprocess
 import tempfile
 import textwrap
 import typing
+from doctest import ELLIPSIS
+from fnmatch import fnmatch
+from unittest.mock import MagicMock
 
 import pytest
+from sybil import Sybil
+from sybil.integration.pytest import SybilFile
+from sybil.parsers.codeblock import CodeBlockParser
+from sybil.parsers.doctest import DocTestParser
 
 from nunavut import Namespace
+from nunavut.jinja.jinja2 import DictLoader, Environment
+from nunavut.lang import LanguageContext
+from nunavut.templates import (CONTEXT_FILTER_ATTRIBUTE_NAME,
+                               ENVIRONMENT_FILTER_ATTRIBUTE_NAME,
+                               LANGUAGE_FILTER_ATTRIBUTE_NAME)
 
 
 @pytest.fixture
@@ -42,11 +55,14 @@ def run_nnvg(request):  # type: ignore
 class GenTestPaths:
     """Helper to generate common paths used in our unit tests."""
 
-    def __init__(self, test_file: str, keep_temporaries: bool, param_index: int):
+    def __init__(self, test_file: str, keep_temporaries: bool, node_name: str):
         test_file_path = pathlib.Path(test_file)
-        self.test_name = '{}_{}'.format(test_file_path.parent.stem, param_index)
+        self.test_name = '{}_{}'.format(test_file_path.parent.stem, node_name)
         self.test_dir = test_file_path.parent
-        self.root_dir = self.test_dir.resolve().parent.parent
+        search_dir = self.test_dir.resolve()
+        while search_dir.is_dir() and not (search_dir / pathlib.Path('src')).is_dir():
+            search_dir = search_dir.parent
+        self.root_dir = search_dir
         self.templates_dir = self.test_dir / pathlib.Path('templates')
         self.dsdl_dir = self.test_dir / pathlib.Path('dsdl')
 
@@ -97,7 +113,7 @@ class GenTestPaths:
 
 @pytest.fixture(scope='function')
 def gen_paths(request):  # type: ignore
-    return GenTestPaths(request.module.__file__, request.config.option.keep_generated, request.param_index)
+    return GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
 
 
 def pytest_addoption(parser):  # type: ignore
@@ -145,3 +161,108 @@ def unique_name_evaluator(request):  # type: ignore
 
     """
     return _UniqueNameEvaluator()
+
+
+@pytest.fixture
+def jinja_filter_tester(request):  # type: ignore
+    """
+    Use to create fluent but testable documentation for Jinja filters.
+
+    Example::
+
+        .. invisible-code-block: python
+
+            from nunavut.templates import template_environment_filter
+
+            @template_environment_filter
+            def filter_dummy(env, input):
+                return input
+
+        .. code-block:: python
+
+            # Given
+            I = 'foo'
+
+            # and
+            template = '{{ I | dummy }}'
+
+            # then
+            rendered = I
+
+
+        .. invisible-code-block: python
+
+            jinja_filter_tester(filter_dummy, template, rendered, 'c', I=I)
+
+    """
+    def _make_filter_test_template(filter: typing.Callable,
+                                   body: str,
+                                   expected: str,
+                                   target_language: typing.Union[typing.Optional[str], LanguageContext],
+                                   **globals: typing.Optional[typing.Dict[str, typing.Any]]) -> str:
+        e = Environment(loader=DictLoader({'test': body}))
+        filter_name = filter.__name__[7:]
+        if hasattr(filter, ENVIRONMENT_FILTER_ATTRIBUTE_NAME) and getattr(filter, ENVIRONMENT_FILTER_ATTRIBUTE_NAME):
+            e.filters[filter_name] = functools.partial(filter, e)
+        else:
+            e.filters[filter_name] = filter
+
+        if hasattr(filter, CONTEXT_FILTER_ATTRIBUTE_NAME) and getattr(filter, CONTEXT_FILTER_ATTRIBUTE_NAME):
+            context = MagicMock()
+            e.filters[filter_name] = functools.partial(filter, context)
+        else:
+            e.filters[filter_name] = filter
+
+        if globals is not None:
+            e.globals.update(globals)
+
+        if isinstance(target_language, LanguageContext):
+            lctx = target_language
+        else:
+            lctx = LanguageContext(target_language)
+
+        if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
+            language_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
+            e.filters[filter_name] = functools.partial(filter, lctx.get_language(language_name))
+        else:
+            e.filters[filter_name] = filter
+
+        rendered = str(e.get_template('test').render())
+        if expected != rendered:
+            msg = 'Unexpected template output\n\texpected : {}\n\twas      : {}'.format(expected, rendered)
+            raise AssertionError(msg)
+        return rendered
+
+    return _make_filter_test_template
+
+
+def _pytest_integration_that_actually_works() -> typing.Callable:
+    """
+    Sybil matching is pretty broken. We'll have to help it out here. The problem is that
+    exclude patterns passed into the Sybil object are matched against file name stems such that
+    files cannot be excluded by path.
+    """
+
+    _excludes = [
+        '**/markupsafe/*',
+        '**/jinja2/*',
+    ]
+
+    _sy = Sybil(
+        parsers=[
+            DocTestParser(optionflags=ELLIPSIS),
+            CodeBlockParser(),
+        ],
+        fixtures=['jinja_filter_tester', 'gen_paths']
+    )
+
+    def pytest_collect_file(parent: typing.Any, path: typing.Any) -> typing.Optional[SybilFile]:
+        if fnmatch(str(path), '**/nunavut/**/*.py') and not any(fnmatch(str(path), pattern) for pattern in _excludes):
+            return SybilFile(path, parent, _sy)
+        else:
+            return None
+
+    return pytest_collect_file
+
+
+pytest_collect_file = _pytest_integration_that_actually_works()

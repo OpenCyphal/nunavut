@@ -29,6 +29,6 @@ if [ ! -d build ]; then
     mkdir build
 fi
 cd build
-cmake -DNUNAVUT_CPP_FLAG_SET=linux -DVIRTUALENV_OUTPUT="$PWD/.pyenv" ..
+cmake -DNUNAVUT_CPP_FLAG_SET=linux ..
 cmake --build . --target all -- -j4
 cmake --build . --target cov_all

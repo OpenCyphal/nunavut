@@ -23,22 +23,25 @@ class IncludeGenerator(nunavut.DependencyBuilder):
                  language: Language,
                  t: pydsdl.CompositeType,
                  id_filter: typing.Callable[[Language, str], str],
-                 short_reference_name_filter: typing.Callable[..., str],
-                 use_standard_types: bool):
+                 short_reference_name_filter: typing.Callable[..., str]):
         super().__init__(t)
         self._language = language
-        self._use_standard_types = use_standard_types
+        self._use_standard_types = bool(self._language.get_config_value_as_bool('use_standard_types', True))
         self._id = id_filter
         self._short_reference_name_filter = short_reference_name_filter
 
     def generate_include_filepart_list(self,
                                        output_extension: str,
-                                       sort: bool,
-                                       prefer_system_includes: bool) -> typing.List[str]:
+                                       sort: bool) -> typing.List[str]:
         dep_types = self.direct()
 
         path_list = [self._make_path(dt, output_extension) for dt in dep_types.composite_types]
 
+        if not self._language.omit_serialization_support:
+            from .support import list_support_headers
+            path_list += [str(p) for p in list_support_headers(self._language.support_namespace)]
+
+        prefer_system_includes = bool(self._language.get_config_value_as_bool('prefer_system_includes', False))
         if prefer_system_includes:
             path_list_with_punctuation = ['<{}>'.format(p) for p in path_list]
         else:

@@ -181,19 +181,20 @@ by type if this seems useful for your project. Simply use the
 Namespace Templates
 =================================================
 
-By setting the :code:`generate_namespace_types` parameter of :class:`~nunavut.jinja.Generator` to
-true the generator will invoke a template for the root namespace and all nested namespaces allowing
-for languages where namespaces are first class objects. For example::
+If the :code:`generate_namespace_types` parameter of :class:`~nunavut.jinja.Generator` is
+:code:`YES` then the generator will always invoke a template for the root namespace and all
+nested namespaces regardless of language. :code:`NO` suppresses this behavior and :code:`DEFAULT`
+will choose the behavior based on the target language. For example::
 
     root_namespace = build_namespace_tree(compound_types,
                                           root_ns_folder,
                                           out_dir,
                                           language_context)
 
-    generator = Generator(root_namespace, True, templates_dir)
+    generator = Generator(root_namespace, YesNoDefault.DEFAULT)
 
-This could be used to generate python :code:`__init__.py` files which would define each namespace
-as a python module.
+Would generate python :code:`__init__.py` files to define each namespace as a python module but
+would not generate any additional headers for C++.
 
 The :class:`~nunavut.jinja.Generator` will use the same template name resolution logic as used
 for pydsdl data types. For namespaces this will resolve first to a template named

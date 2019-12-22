@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 import pytest
 from pydsdl import read_namespace
 
-from nunavut import build_namespace_tree
+from nunavut import build_namespace_tree, YesNoDefault
 from nunavut.jinja import Generator
 from nunavut.lang import Language, LanguageContext
 from nunavut.lang.c import filter_id as c_filter_id
@@ -53,9 +53,7 @@ def ptest_lang_c(gen_paths, implicit, unique_name_evaluator):  # type: ignore
                                      gen_paths.out_dir,
                                      language_context)
     generator = Generator(namespace,
-                          False,
-                          language_context,
-                          templates_dirs)
+                          templates_dir=templates_dirs)
     generator.generate_all(False)
 
     # Now read back in and verify
@@ -129,9 +127,7 @@ def ptest_lang_cpp(gen_paths, implicit):  # type: ignore
                                      language_context)
 
     generator = Generator(namespace,
-                          False,
-                          language_context,
-                          templates_dirs)
+                          templates_dir=templates_dirs)
 
     generator.generate_all(False)
 
@@ -192,9 +188,8 @@ def ptest_lang_py(gen_paths, implicit, unique_name_evaluator):  # type: ignore
                                      gen_paths.out_dir,
                                      language_context)
     generator = Generator(namespace,
-                          False,
-                          language_context,
-                          templates_dirs)
+                          generate_namespace_types=YesNoDefault.NO,
+                          templates_dir=templates_dirs)
 
     generator.generate_all(False)
 
@@ -347,7 +342,7 @@ def test_language_object() -> None:
     Verify that the Language module object works as required.
     """
     mock_config = MagicMock()
-    language = Language('c', mock_config)
+    language = Language('c', mock_config, True)
 
     assert 'c' == language.name
 
@@ -356,6 +351,8 @@ def test_language_object() -> None:
 
     explicit_filters = language.get_filters(make_implicit=False)
     assert 'c.macrofy' in explicit_filters
+
+    assert language.omit_serialization_support
 
 
 def test_language_context() -> None:

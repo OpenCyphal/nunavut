@@ -8,15 +8,24 @@
     {{ field.data_type | declaration }} {{ field.name | id }};
 {%- endif -%}
 {%- endfor %}
+{%- if not nunavut.support.omit %}
     static {{ typename_unsigned_length }} serialize(
         std::vector<{{ typename_byte }}>& inout_byte_buffer,
         {{ typename_unsigned_length }} bit_offset,
         {{ composite_type | declaration }}& t)
     {
         // Not yet implemented.
-        (void)inout_byte_buffer;
-        (void)bit_offset;
-        (void)t;
+        const {{ typename_byte_ptr }} bits_in = { reinterpret_cast<{{typename_byte_ptr}}>(&t) };
+{%- for field in composite_type.fields %}
+{%- if field is VariableLengthArrayType %}
+        // var array here
+{%- elif field is FixedLengthArrayType %}
+        // static array here
+{%- else %}
+        bit_offset += {{ nunavut.support.namespace | to_namespace_qualifier }}copyBitsAlignedToUnaligned<{{ typename_unsigned_length }}, {{typename_byte}}>( bits_in, inout_byte_buffer, bit_offset, 4 );
+{%- endif %}
+{%- endfor %}
         return 0;
     }
+{%- endif %}
 }{{ composite_type | definition_end }}

@@ -24,9 +24,9 @@ def test_anygen(gen_paths, lang_key):  # type: ignore
     language_context = LanguageContext(extension='.json')
     namespace = build_namespace_tree(type_map,
                                      root_namespace_dir,
-                                     gen_paths.out_dir,
+                                     str(gen_paths.out_dir),
                                      language_context)
-    generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
+    generator = Generator(namespace, templates_dir=gen_paths.templates_dir)
     generator.generate_all(False)
 
     outfile = gen_paths.find_outfile_in_namespace("uavcan.time.SynchronizedTimestamp", namespace)

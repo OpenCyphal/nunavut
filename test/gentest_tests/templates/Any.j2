@@ -5,7 +5,8 @@
         "type": "{{ field.data_type }}",
         "isSerializableType":{% if field.data_type is SerializableType %}true{% else %}false{% endif %},
         "isFloatType":{% if field.data_type is FloatType %}true{% else %}false{% endif %},
-        "isIntegerType":{% if field.data_type is IntegerType %}true{% else %}false{% endif %}
+        "isIntegerType":{% if field.data_type is IntegerType %}true{% else %}false{% endif %},
+        "isIntegerType_field":{% if field is IntegerType %}true{% else %}false{% endif %}
     }{% if not loop.last %},{% endif %}
 {% endfor %}
 }

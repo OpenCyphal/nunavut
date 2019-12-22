@@ -21,6 +21,7 @@ import pydsdl
 
 import nunavut.generators
 import nunavut.lang
+import nunavut.postprocessors
 from nunavut.jinja.jinja2 import (ChoiceLoader, Environment, FileSystemLoader,
                                   PackageLoader, StrictUndefined, Template,
                                   TemplateAssertionError, nodes,
@@ -88,8 +89,9 @@ class Generator(nunavut.generators.AbstractGenerator):
 
     :param nunavut.Namespace namespace:    The top-level namespace to generates types
                                            at and from.
-    :param bool generate_namespace_types:  typing.Set to true to emit files for namespaces.
-                                           False will only generate files for datatypes.
+    :param nunavut.YesNoDefault generate_namespace_types:  Set to YES to emit files for namespaces.
+                                           NO will suppress namespace file generation and DEFAULT will
+                                           use the language's preference.
     :param templates_dir:                  Directories containing jinja templates. These will be available along
                                            with any built-in templates provided by the target language. The templates
                                            at these paths will take precedence masking any built-in templates
@@ -111,8 +113,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                                            and the callable as the test.
     :param typing.Dict[str, typing.Any] additional_globals: typing.Optional objects to add to the template
                                             environment globals collection.
-    :param typing.Optional[str] target_language_support: A language to install support for directly into the
-                                            global environment.
+    :param post_processors: A list of :class:`nunavut.postprocessors.PostProcessor`
+    :type post_processors: typing.Optional[typing.List[nunavut.postprocessors.PostProcessor]]
     :raises RuntimeError: If any additional filter or test attempts to replace a built-in
                           or otherwise already defined filter or test.
     """
@@ -347,17 +349,20 @@ class Generator(nunavut.generators.AbstractGenerator):
 
     def __init__(self,
                  namespace: nunavut.Namespace,
-                 generate_namespace_types: bool,
-                 language_context: nunavut.lang.LanguageContext,
+                 generate_namespace_types: nunavut.YesNoDefault = nunavut.YesNoDefault.DEFAULT,
                  templates_dir: typing.Optional[typing.Union[pathlib.Path, typing.List[pathlib.Path]]] = None,
                  followlinks: bool = False,
                  trim_blocks: bool = False,
                  lstrip_blocks: bool = False,
                  additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
                  additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None,
-                 additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None):
+                 additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
+                 post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']] = None):
 
-        super(Generator, self).__init__(namespace, generate_namespace_types, language_context)
+        super().__init__(namespace,
+                         generate_namespace_types)
+
+        self._post_processors = post_processors
 
         if templates_dir is None:
             templates_dirs = []  # type: typing.List[pathlib.Path]
@@ -384,7 +389,7 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         fs_loader = FileSystemLoader((str(d) for d in self._templates_dirs), followlinks=followlinks)
 
-        target_language = self._language_context.get_target_language()
+        target_language = self._namespace.get_language_context().get_target_language()
 
         if target_language is not None:
             template_loader = ChoiceLoader([
@@ -415,7 +420,7 @@ class Generator(nunavut.generators.AbstractGenerator):
         if additional_globals is not None:
             self._env.globals.update(additional_globals)
 
-        self._add_nunavut_globals()
+        self._add_nunavut_globals(target_language)
         self._add_instance_tests_from_root(pydsdl.SerializableType)
         self._add_filters_and_tests(additional_filters, additional_tests)
 
@@ -435,45 +440,67 @@ class Generator(nunavut.generators.AbstractGenerator):
 
     def generate_all(self,
                      is_dryrun: bool = False,
-                     allow_overwrite: bool = True,
-                     post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']] = None) \
+                     allow_overwrite: bool = True) \
             -> int:
         if self.generate_namespace_types:
             for (parsed_type, output_path) in self.namespace.get_all_types():
-                self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, post_processors)
+                self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, self._post_processors)
         else:
             for (parsed_type, output_path) in self.namespace.get_all_datatypes():
-                self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, post_processors)
+                self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, self._post_processors)
         return 0
 
     @property
     def language_context(self) -> nunavut.lang.LanguageContext:
-        return self._language_context
+        return self._namespace.get_language_context()
 
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
-    def _add_nunavut_globals(self) -> None:
+    def _add_nunavut_globals(self, target_language: typing.Optional[nunavut.lang.Language]) -> None:
         """
         Add globals namespaced as 'nunavut'.
         """
         import nunavut.version
-        self._env.globals['nunavut'] = {'version': nunavut.version.__version__}
-        pass
+
+        # Helper global so we don't have to futz around with the "omit_serialization_support"
+        # logic in the templates. The omit_serialization_support property of the Language
+        # object is read-only so this boolean will remain consistent for the Environment.
+        if target_language is not None:
+            omit_serialization_support = target_language.omit_serialization_support
+            support_namespace = target_language.support_namespace
+        else:
+            # If there is no target language then we cannot generate serialization support.
+            omit_serialization_support = True
+            support_namespace = []
+
+        self._env.globals['nunavut'] = {
+            'version': nunavut.version.__version__,
+            'support': {
+                'omit': omit_serialization_support,
+                'namespace': support_namespace
+            }
+        }
 
     def _add_instance_tests_from_root(self, root: typing.Type[object]) -> None:
-        self._env.tests[root.__name__] = lambda x: isinstance(x, root)
+        def _field_is_instance(field_or_datatype: typing.Any) -> bool:
+            if isinstance(field_or_datatype, pydsdl.Field):
+                return isinstance(field_or_datatype.data_type, root)
+            else:
+                return isinstance(field_or_datatype, root)
+
+        self._env.tests[root.__name__] = _field_is_instance
         for derived in root.__subclasses__():
             self._add_instance_tests_from_root(derived)
 
     def _add_language_support(self) -> None:
-        target_language = self._language_context.get_target_language()
+        target_language = self.language_context.get_target_language()
         if target_language is not None:
             for key, value in target_language.get_filters(make_implicit=True).items():
                 self._add_filter_to_environment(key, value)
             self._env.globals.update(target_language.get_globals(True))
 
-        for supported_language in self._language_context.get_supported_languages().values():
+        for supported_language in self.language_context.get_supported_languages().values():
             for key, value in supported_language.get_filters(make_implicit=False).items():
                 self._add_filter_to_environment(key, value)
             self._env.globals.update(supported_language.get_globals(False))
@@ -525,7 +552,7 @@ class Generator(nunavut.generators.AbstractGenerator):
     def _add_filter_to_environment(self, filter_name: str, filter: typing.Callable[..., str]) -> None:
         if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
             language_name_or_module_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
-            filter_language = self._language_context.get_language(language_name_or_module_name)
+            filter_language = self.language_context.get_language(language_name_or_module_name)
             resolved_filter = functools.partial(filter, filter_language)  # type: typing.Callable[..., str]
         else:
             resolved_filter = filter

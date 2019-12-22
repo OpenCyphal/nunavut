@@ -6,7 +6,6 @@
 
 from pathlib import Path
 
-import pytest
 import json
 
 from pydsdl import read_namespace
@@ -40,7 +39,7 @@ def test_bfs_of_type_for_template(gen_paths):  # type: ignore
                                 gen_paths.dsdl_dir,
                                 gen_paths.out_dir,
                                 language_context)
-    generator = Generator(empty_namespace, False, language_context, gen_paths.templates_dir)
+    generator = Generator(empty_namespace, templates_dir=gen_paths.templates_dir)
     subject = d()
     template_file = generator.filter_type_to_template(subject)
     assert str(Path('c').with_suffix(Generator.TEMPLATE_SUFFIX)) == template_file
@@ -59,7 +58,7 @@ def test_one_template(gen_paths):  # type: ignore
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      language_context)
-    generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
+    generator = Generator(namespace, templates_dir=gen_paths.templates_dir)
     generator.generate_all(False)
 
     outfile = gen_paths.find_outfile_in_namespace("uavcan.time.TimeSystem", namespace)
@@ -84,7 +83,7 @@ def test_get_templates(gen_paths):  # type: ignore
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      language_context)
-    generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
+    generator = Generator(namespace, templates_dir=gen_paths.templates_dir)
 
     templates = generator.get_templates()
 
