@@ -310,7 +310,7 @@ def filter_imports(language: Language,
                    t: pydsdl.CompositeType,
                    sort: bool = True) -> typing.List[str]:
     """
-    Returns a list of all modules that must be imported to used a given type.
+    Returns a list of all modules that must be imported to use a given type.
 
     :param pydsdl.CompositeType t: The type to scan for dependencies.
     :param bool sort: If true the returned list will be sorted.

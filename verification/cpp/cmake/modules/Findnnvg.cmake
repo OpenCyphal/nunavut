@@ -103,16 +103,16 @@ endfunction(create_dsdl_target)
 # | CONFIGURE: PYTHON ENVIRONMENT
 # +---------------------------------------------------------------------------+
 
-if(NOT VIRTUALENV)
+if(NOT TOX)
 
-    message(STATUS "virtualenv was not found. You must have nunavut and its"
+    message(STATUS "tox was not found. You must have nunavut and its"
                    " dependencies available in the global python environment.")
 
     find_program(NNVG nnvg)
 
 else()
 
-    find_program(NNVG nnvg HINTS ${VIRTUALENV_PYTHON_BIN})
+    find_program(NNVG nnvg HINTS ${TOX_LOCAL_PYTHON_BIN})
 
     if (NOT NNVG)
         message(WARNING "nnvg program was not found. The build will probably fail. (${NNVG})")

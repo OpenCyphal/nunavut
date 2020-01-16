@@ -77,21 +77,9 @@ file(WRITE ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/README.txt
 find_package(lcov REQUIRED)
 
 #
-# We need python, of course.
+# We need tox to enable a reproducable python environment.
 #
-find_package(python3 REQUIRED)
-
-#
-# We need virtualenv to enable a reproducable python environment.
-#
-find_package(virtualenv REQUIRED)
-
-#
-# Install Nunavut into our local environment.
-#
-execute_process(COMMAND ${PIP} --isolated --disable-pip-version-check install --editable ${NUNAVUT_PROJECT_ROOT}
-                WORKING_DIRECTORY ${NUNAVUT_PROJECT_ROOT})
-
+find_package(tox REQUIRED)
 
 # +---------------------------------------------------------------------------+
 # | SOURCE GENERATION
@@ -114,9 +102,10 @@ create_dsdl_target(dsdl-regulated
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
                    ON)
 
-target_include_directories(dsdl-regulated INTERFACE
-                   ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
+# Bring this back if we end up with test-specific headers.
+# target_include_directories(dsdl-regulated INTERFACE
+#                    ${CMAKE_CURRENT_SOURCE_DIR}/include
+# )
 
 # +---------------------------------------------------------------------------+
 # | FLAG SETS

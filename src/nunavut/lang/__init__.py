@@ -23,7 +23,10 @@ class Language:
     """
     Facilities for generating source code for a specific language.
 
-    :param str language_name:   The name of the language used by the :mod:`nunavut.lang` module.
+    :param str language_name:                The name of the language used by the :mod:`nunavut.lang` module.
+    :param configparser.ConfigParser config: The parser to load language properties from.
+    :param bool omit_serialization_support:  The value to set for the :func:`omit_serialization_support` property
+                                             for this language.
     """
 
     @classmethod
@@ -41,11 +44,14 @@ class Language:
 
     def __init__(self,
                  language_name: str,
-                 config: configparser.ConfigParser):
+                 config: configparser.ConfigParser,
+                 omit_serialization_support: bool):
         self._language_name = language_name
         self._section = 'nunavut.lang.{}'.format(language_name)
         self._filters = self._find_filters_for_language(language_name)
         self._config = config
+        self._omit_serialization_support = omit_serialization_support
+        self._module = None  # type: typing.Optional[typing.Any]
 
     @property
     def extension(self) -> str:
@@ -83,6 +89,36 @@ class Language:
         return self._config.get(self._section, 'stropping_suffix')
 
     @property
+    def support_namespace(self) -> typing.List[str]:
+        """
+        The hierarchial namespace used by the support headers. The property
+        is a dot separated string when specified in configuration. This
+        property returns that value split into namespace components with the
+        first identifier being the first index in the array, etc.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import Language
+            import configparser
+
+            config = configparser.ConfigParser()
+            config.add_section('nunavut.lang.cpp')
+
+
+            lang_cpp = Language('cpp', config, True)
+
+        .. code-block:: python
+
+            config.set('nunavut.lang.cpp', 'support_namespace', 'foo.bar')
+            assert len(lang_cpp.support_namespace) == 2
+            assert lang_cpp.support_namespace[0] == 'foo'
+            assert lang_cpp.support_namespace[1] == 'bar'
+
+        """
+        namespace_str = self._config.get(self._section, 'support_namespace', fallback='')
+        return namespace_str.split('.')
+
+    @property
     def encoding_prefix(self) -> str:
         """
         The string to prepend to an encoding hex value.
@@ -95,6 +131,29 @@ class Language:
         Whether or not to strop identifiers for this language.
         """
         return self._config.getboolean(self._section, 'enable_stropping')
+
+    @property
+    def has_standard_namespace_files(self) -> bool:
+        """
+        Whether or not the language defines special namespace files as part of
+        its core standard (e.g. python's __init__).
+        """
+        return self._config.getboolean(self._section, 'has_standard_namespace_files')
+
+    @property
+    def omit_serialization_support(self) -> bool:
+        """
+        If True then generators should not include serialization routines, types,
+        or support libraries for this language.
+        """
+        return self._omit_serialization_support
+
+    @property
+    def module(self) -> typing.Any:
+        if self._module is None:
+            import importlib
+            self._module = importlib.import_module('nunavut.lang.{}'.format(self._language_name))
+        return self._module
 
     def get_config_value(self,
                          key: str,
@@ -112,6 +171,72 @@ class Language:
         :raises: KeyError if the key does not exist and a default_value was not provied.
         """
         return self._config.get(self._section, key, fallback=default_value)
+
+    def get_config_value_as_bool(self, key: str, default_value: bool = False) -> bool:
+        """
+        Get an optional language property from the language configuration returning a boolean. The rules
+        for boolean conversion are as follows:
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import Language
+            import configparser
+
+            config = configparser.ConfigParser()
+            config.add_section('nunavut.lang.cpp')
+
+            lang_cpp = Language('cpp', config, True)
+
+        .. code-block:: python
+
+            # "Any string" = True
+            config.set('nunavut.lang.cpp', 'v', 'Any string')
+            assert lang_cpp.get_config_value_as_bool('v')
+
+            # "true" = True
+            config.set('nunavut.lang.cpp', 'v', 'true')
+            assert lang_cpp.get_config_value_as_bool('v')
+
+            # "TrUe" = True
+            config.set('nunavut.lang.cpp', 'v', 'TrUe')
+            assert lang_cpp.get_config_value_as_bool('v')
+
+            # "1" = True
+            config.set('nunavut.lang.cpp', 'v', '1')
+            assert lang_cpp.get_config_value_as_bool('v')
+
+            # "false" = False
+            config.set('nunavut.lang.cpp', 'v', 'false')
+            assert not lang_cpp.get_config_value_as_bool('v')
+
+            # "FaLse" = False
+            config.set('nunavut.lang.cpp', 'v', 'FaLse')
+            assert not lang_cpp.get_config_value_as_bool('v')
+
+            # "0" = False
+            config.set('nunavut.lang.cpp', 'v', '0')
+            assert not lang_cpp.get_config_value_as_bool('v')
+
+            # "" = False
+            config.set('nunavut.lang.cpp', 'v', '')
+            assert not lang_cpp.get_config_value_as_bool('v')
+
+            # False if not defined
+            assert not lang_cpp.get_config_value_as_bool('not_a_key')
+
+            # True if not defined but default_value is True
+            assert lang_cpp.get_config_value_as_bool('not_a_key', True)
+
+        :param str key: The config value to retrieve.
+        :param bool default_value: The value to use if no value existed.
+        :return: The config value as either True or False.
+        :rtype: bool
+        """
+        result = self._config.get(self._section, key, fallback='' if not default_value else '1')
+        if result.lower() == 'false' or result == '0':
+            return False
+        else:
+            return bool(result)
 
     def get_templates_package_name(self) -> str:
         """
@@ -182,6 +307,8 @@ class LanguageContext:
         These will override any values found in the :file:`nunavut.lang.properties.ini` file and files
         appearing later in this list will override value found in earlier entries.
     :type additional_config_files: typing.List[pathlib.Path]
+    :param bool omit_serialization_support_for_target: If True then generators should not include
+        serialization routines, types, or support libraries for the target language.
     :raises ValueError: If extension is None and no target language was provided.
     :raises KeyError: If the target language is not known.
     """
@@ -219,7 +346,8 @@ class LanguageContext:
                  target_language: typing.Optional[str] = None,
                  extension: typing.Optional[str] = None,
                  namespace_output_stem: typing.Optional[str] = None,
-                 additional_config_files: typing.List[pathlib.Path] = []):
+                 additional_config_files: typing.List[pathlib.Path] = [],
+                 omit_serialization_support_for_target: bool = True):
         self._extension = extension
         self._namespace_output_stem = namespace_output_stem
         self._config = self._load_config(*additional_config_files)
@@ -229,7 +357,8 @@ class LanguageContext:
             self._target_language = None
         else:
             try:
-                self._target_language = Language(target_language, self._config)
+                self._target_language = Language(target_language, self._config,
+                                                 omit_serialization_support_for_target)
             except ImportError:
                 raise KeyError('{} is not a supported language'.format(target_language))
             if namespace_output_stem is not None:
@@ -248,7 +377,7 @@ class LanguageContext:
                 self._languages[language_name] = self._target_language
             else:
                 try:
-                    self._languages[language_name] = Language(language_name, self._config)
+                    self._languages[language_name] = Language(language_name, self._config, False)
                 except ImportError:
                     raise KeyError('{} is not a supported language'.format(language_name))
 

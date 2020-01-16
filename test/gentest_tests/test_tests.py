@@ -25,7 +25,7 @@ def test_instance_tests(gen_paths):  # type: ignore
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      language_context)
-    generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
+    generator = Generator(namespace, templates_dir=gen_paths.templates_dir)
     generator.generate_all(False)
 
     outfile = gen_paths.find_outfile_in_namespace("buncho.serializables", namespace)
@@ -39,7 +39,9 @@ def test_instance_tests(gen_paths):  # type: ignore
     assert json_blob["this_field_is_an_int32"]["isSerializableType"] is True
     assert json_blob["this_field_is_an_int32"]["isIntegerType"] is True
     assert json_blob["this_field_is_an_int32"]["isFloatType"] is False
+    assert json_blob["this_field_is_an_int32"]["isIntegerType_field"] is True
 
     assert json_blob["this_field_is_a_float"]["isSerializableType"] is True
     assert json_blob["this_field_is_a_float"]["isIntegerType"] is False
+    assert json_blob["this_field_is_a_float"]["isIntegerType_field"] is False
     assert json_blob["this_field_is_a_float"]["isFloatType"] is True

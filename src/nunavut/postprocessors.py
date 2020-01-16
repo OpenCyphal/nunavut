@@ -50,7 +50,6 @@ class FilePostProcessor(PostProcessor):
 
         ...
 
-        my_generator.generate_all(False, True, [ClangFormat('clang-format')])
     """
 
     @abc.abstractmethod

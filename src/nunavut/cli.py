@@ -68,7 +68,8 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
     language_context = nunavut.lang.LanguageContext(
         args.target_language,
         args.output_extension,
-        args.namespace_output_stem)
+        args.namespace_output_stem,
+        omit_serialization_support_for_target=args.omit_serialization_support)
 
     #
     # nunavut : parse
@@ -91,18 +92,21 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
             sys.stdout.write(';')
         return 0
 
+    generate_namespace_types = (nunavut.YesNoDefault.YES
+                                if args.generate_namespace_types
+                                else nunavut.YesNoDefault.DEFAULT)
     generator = nunavut.jinja.Generator(root_namespace,
-                                        args.generate_namespace_types,
-                                        language_context,
+                                        generate_namespace_types,
                                         (pathlib.Path(args.templates) if args.templates is not None else None),
                                         trim_blocks=args.trim_blocks,
-                                        lstrip_blocks=args.lstrip_blocks)
+                                        lstrip_blocks=args.lstrip_blocks,
+                                        post_processors=_build_post_processor_list_from_args(args))
 
     if args.list_inputs:
         for input_path in generator.get_templates():
             sys.stdout.write(str(input_path.resolve()))
             sys.stdout.write(';')
-        if args.generate_namespace_types:
+        if generator.generate_namespace_types:
             for output_type, _ in root_namespace.get_all_types():
                 sys.stdout.write(str(output_type.source_file_path))
                 sys.stdout.write(';')
@@ -112,9 +116,14 @@ def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
                 sys.stdout.write(';')
         return 0
 
+    if args.omit_serialization_support is None or not args.omit_serialization_support:
+        from nunavut.generators import create_support_generator
+        support_generator = create_support_generator(root_namespace)
+        support_generator.generate_all(is_dryrun=args.dry_run,
+                                       allow_overwrite=not args.no_overwrite)
+
     return generator.generate_all(is_dryrun=args.dry_run,
-                                  allow_overwrite=not args.no_overwrite,
-                                  post_processors=_build_post_processor_list_from_args(args))
+                                  allow_overwrite=not args.no_overwrite)
 
 
 class _LazyVersionAction(argparse._VersionAction):
@@ -250,6 +259,16 @@ def _make_parser() -> argparse.ArgumentParser:
         "Any" template if that is available. The name of the output file will be
         the default value for the --namespace-output-stem argument and can be
         changed using that argument.
+
+    ''').lstrip())
+
+    parser.add_argument('--omit-serialization-support',
+                        '-pod',
+                        action='store_true',
+                        help=textwrap.dedent('''
+        If provided then the types generated will be POD datatypes with no additional logic.
+        By default types generated include serialization routines and additional support libraries,
+        headers, or methods.
 
     ''').lstrip())
 

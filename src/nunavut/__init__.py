@@ -56,7 +56,7 @@ Putting this all together, the typical use of this library looks something like 
                                           language_context)
 
     # give the root namespace to the generator and...
-    generator = Generator(root_namespace, False, language_context, templates_dir)
+    generator = Generator(root_namespace)
 
     # generate all the code!
     generator.generate_all()
@@ -64,6 +64,7 @@ Putting this all together, the typical use of this library looks something like 
 """
 
 import collections
+import enum
 import pathlib
 import sys
 import typing
@@ -75,6 +76,39 @@ from . import lang
 if sys.version_info[:2] < (3, 5):   # pragma: no cover
     print('A newer version of Python is required', file=sys.stderr)
     sys.exit(1)
+
+
+class YesNoDefault(enum.Enum):
+    """
+    Trinary type for decisions that allow a default behavior to be requested that can
+    be different based on other contexts. For example:
+
+    .. invisible-code-block: python
+
+        from datetime import datetime
+        from nunavut import YesNoDefault
+
+    .. code-block:: python
+
+        def should_we_order_pizza(answer: YesNoDefault) -> bool:
+            if answer == YesNoDefault.YES or (
+               answer == YesNoDefault.DEFAULT and
+               datetime.today().isoweekday() == 5):
+                # if yes or if we are taking the default action which is to
+                # order pizza on Friday, and today is Friday, then we order pizza
+                return True
+            else:
+                return False
+
+    .. invisible-code-block: python
+
+        assert should_we_order_pizza(YesNoDefault.YES)
+        assert not should_we_order_pizza(YesNoDefault.NO)
+
+    """
+    NO = 0
+    YES = 1
+    DEFAULT = 2
 
 # +---------------------------------------------------------------------------+
 
@@ -115,6 +149,7 @@ class Namespace(pydsdl.Any):
         if output_stem is None:
             output_stem = self.DefaultOutputStem
         output_path = self._output_folder / pathlib.PurePath(output_stem)
+        self._support_output_folder = base_output_path
         self._output_path = output_path.with_suffix(language_context.get_output_extension())
         self._source_folder = pathlib.Path(
             root_namespace_dir / pathlib.PurePath(*self._namespace_components[1:])).resolve()
@@ -124,6 +159,7 @@ class Namespace(pydsdl.Any):
         self._short_name = self._namespace_components_stropped[-1]
         self._data_type_to_outputs = dict()  # type: typing.Dict[pydsdl.CompositeType, pathlib.Path]
         self._nested_namespaces = set()  # type: typing.Set[Namespace]
+        self._language_context = language_context
 
     @property
     def output_folder(self) -> pathlib.Path:
@@ -131,6 +167,15 @@ class Namespace(pydsdl.Any):
         The folder where this namespace's output file and datatypes are generated.
         """
         return self._output_folder
+
+    def get_support_output_folder(self) -> pathlib.PurePath:
+        return self._support_output_folder
+
+    def get_language_context(self) -> 'lang.LanguageContext':
+        """
+        The generated software language context the namespace is within.
+        """
+        return self._language_context
 
     def get_root_namespace(self) -> 'Namespace':
         """
@@ -506,3 +551,37 @@ class DependencyBuilder:
                 inout_dependencies.uses_float = True
             elif isinstance(dt, pydsdl.BooleanType):
                 inout_dependencies.uses_bool = True
+
+# +---------------------------------------------------------------------------+
+# | GENERATION HELPERS
+# +---------------------------------------------------------------------------+
+
+
+def generate_types(language_key: str,
+                   root_namespace_dir: pathlib.Path,
+                   out_dir: pathlib.Path,
+                   omit_serialization_support: bool = True,
+                   is_dryrun: bool = False,
+                   allow_overwrite: bool = True,
+                   lookup_directories: typing.Optional[typing.Iterable[str]] = None) -> None:
+    """
+    Helper method that uses default settings and built-in templates to generate types for a given
+    language. This method is the most direct way to generate code using Nunavut.
+    """
+    from nunavut.generators import create_builtin_source_generator, create_support_generator
+
+    language_context = lang.LanguageContext(language_key,
+                                            omit_serialization_support_for_target=omit_serialization_support)
+
+    if lookup_directories is None:
+        lookup_directories = []
+
+    type_map = pydsdl.read_namespace(str(root_namespace_dir), lookup_directories)
+
+    namespace = build_namespace_tree(type_map,
+                                     str(root_namespace_dir),
+                                     str(out_dir),
+                                     language_context)
+
+    create_support_generator(namespace).generate_all(is_dryrun, allow_overwrite)
+    create_builtin_source_generator(namespace).generate_all(is_dryrun, allow_overwrite)

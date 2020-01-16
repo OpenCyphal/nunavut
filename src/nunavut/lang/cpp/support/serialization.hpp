@@ -1,19 +1,29 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * UAVCAN serialization support routines.                                                                     +-+ +-+
+ *                                                                                                            | | | |
+ *                                                                                                            \  -  /
+ *                                                                                                              ---
+ *                                                                                                               o
+ * +------------------------------------------------------------------------------------------------------------------+
  */
+
 #ifndef NUNAVUT_SUPPORT_HPP_INCLUDED
 #define NUNAVUT_SUPPORT_HPP_INCLUDED
 
 #include <cstdint>
 #include <algorithm>
+#include <vector>
 
 namespace nunavut
 {
+namespace support
+{
 /**
- * Copy aligned bits from a byte array to another byte array using arbitrary alignment.
+ * Copy aligned bits from a byte buffer to another byte buffer using arbitrary alignment.
  *
- * @param  src              The byte array to copy from.
- * @param  dst              The byte array to copy data into.
+ * @param  src              The byte buffer to copy from.
+ * @param  dst              The byte buffer to copy data into.
  * @param  dst_offset_bits  The offset, in bits, from the start of the dst array to
  *                          start writing to.
  * @param  length_bits      The total length of bits to copy. The caller must ensure
@@ -22,12 +32,12 @@ namespace nunavut
  * @return The number of bits copied.
  */
 template <typename SizeType, typename ByteType>
-SizeType copyBitsAlignedToUnaligned(const ByteType* const src,
-                                    ByteType* const       dst,
-                                    const SizeType        dst_offset_bits,
-                                    const SizeType        length_bits)
+SizeType copyBitsAlignedToUnaligned(const ByteType* const  src,
+                                    std::vector<ByteType>& dst,
+                                    const SizeType         dst_offset_bits,
+                                    const SizeType         length_bits)
 {
-    if (nullptr == src || nullptr == dst || length_bits == 0)
+    if (nullptr == src || length_bits == 0)
     {
         return 0;
     }
@@ -58,6 +68,7 @@ SizeType copyBitsAlignedToUnaligned(const ByteType* const src,
     return bits_copied;
 }
 
+}  // namespace support
 }  // namespace nunavut
 
 #endif  // NUNAVUT_SUPPORT_HPP_INCLUDED

@@ -26,8 +26,7 @@
 
 #ifndef {{T.full_name | c.macrofy}}
 #define {{T.full_name | c.macrofy}}
-
-{% for n in T | includes(prefer_system_includes=False) -%}
+{% for n in T | includes -%}
 #include {{ n }}
 {% endfor %}
 {{T.full_namespace | open_namespace}}

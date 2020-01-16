@@ -4,7 +4,7 @@
  * Tests of the Nunavut support header.
  */
 #include "gmock/gmock.h"
-#include "nunavut/support.hpp"
+#include "nunavut/support/serialization.hpp"
 #include <vector>
 
 template <typename SizeType_FOR_TEST, typename ByteType_FOR_TEST>
@@ -40,11 +40,12 @@ TYPED_TEST(SupportTest, UnalignedCopy)
     memset(test_pattern.data(), 0xAA, test_pattern.capacity());
     std::vector<typename TypeParam::ByteType> test_buffer;
     test_buffer.reserve(test_pattern.capacity() + 1);
-    auto copied_bits = nunavut::copyBitsAlignedToUnaligned<typename TypeParam::SizeType,
-                                                           typename TypeParam::ByteType>(test_pattern.data(),
-                                                                                         test_buffer.data(),
-                                                                                         0,
-                                                                                         test_pattern.capacity());
+    auto copied_bits =
+        nunavut::support::copyBitsAlignedToUnaligned<typename TypeParam::SizeType,
+                                                     typename TypeParam::ByteType>(test_pattern.data(),
+                                                                                   test_buffer,
+                                                                                   0,
+                                                                                   test_pattern.capacity());
     ASSERT_EQ(test_pattern.capacity(), copied_bits);
     ASSERT_EQ(static_cast<unsigned>(test_buffer[0] & 0xFF), 0xAAU);
 }

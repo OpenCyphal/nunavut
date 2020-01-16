@@ -10,19 +10,61 @@
 
 import functools
 import io
+import pathlib
 import re
 import typing
 
 import pydsdl
 
+from ...generators import AbstractGenerator
 from ...lang import Language
-from ...templates import template_language_filter, template_language_list_filter
+from ...templates import (template_language_filter,
+                          template_language_list_filter)
 from ..c import C_RESERVED_PATTERNS, VariableNameEncoder, _CFit
-from ._support import IncludeGenerator
+from ._utilities import IncludeGenerator
 
 CPP_RESERVED_PATTERNS = frozenset([*C_RESERVED_PATTERNS])
 
 CPP_NO_DOUBLE_DASH_RULE = re.compile(r'(__)')
+
+
+class SupportGenerator(AbstractGenerator):
+    """
+    Copy C++ support types to the :func:`support_output_folder <nunavut.Namespace.get_support_output_folder()>`.
+    This class name is expected by the :func:`nunavut.generators.create_support_generator()` method.
+
+    .. invisible-code-block: python
+
+        import pathlib
+        from unittest.mock import MagicMock, NonCallableMagicMock
+        from nunavut import YesNoDefault
+        from nunavut.lang import LanguageContext
+        from nunavut.lang.cpp import SupportGenerator
+
+        language_context = LanguageContext()
+        namespace = NonCallableMagicMock()
+        namespace.get_language_context = MagicMock()
+        namespace.get_language_context.return_value = language_context
+        namespace.get_support_output_folder = MagicMock()
+        namespace.get_support_output_folder.return_value = gen_paths.out_dir
+
+    .. code-block:: python
+
+        generator = SupportGenerator(namespace, YesNoDefault.DEFAULT)
+        assert 0 == generator.generate_all()
+
+    """
+    def generate_all(self,
+                     is_dryrun: bool = False,
+                     allow_overwrite: bool = True) \
+            -> int:
+        from .support import copy_support_headers
+        language = self.namespace.get_language_context().get_language(__package__)
+
+        output_folder = pathlib.Path(self.namespace.get_support_output_folder())
+        copy_support_headers(language.support_namespace, output_folder, allow_overwrite)
+
+        return 0
 
 
 @template_language_filter(__name__)
@@ -355,29 +397,20 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 @template_language_list_filter(__name__)
 def filter_includes(language: Language,
                     t: pydsdl.CompositeType,
-                    sort: bool = True,
-                    prefer_system_includes: bool = False,
-                    use_standard_types: typing.Optional[bool] = None) -> typing.List[str]:
+                    sort: bool = True) -> typing.List[str]:
     """
     Returns a list of all include paths for a given type.
 
     :param pydsdl.CompositeType t: The type to scan for dependencies.
     :param bool sort: If true the returned list will be sorted.
-    :param bool strop: If true the list will contained stropped identifiers.
     :return: a list of include headers needed for a given type.
     """
-
-    if use_standard_types is None:
-        use_standard_types = bool(language.get_config_value('use_standard_types'))
 
     include_gen = IncludeGenerator(language,
                                    t,
                                    filter_id,
-                                   filter_short_reference_name,
-                                   use_standard_types)
-    return include_gen.generate_include_filepart_list(language.extension,
-                                                      sort,
-                                                      prefer_system_includes)
+                                   filter_short_reference_name)
+    return include_gen.generate_include_filepart_list(language.extension, sort)
 
 
 @template_language_filter(__name__)
@@ -554,3 +587,42 @@ def filter_type_from_primitive(language: Language,
     if use_standard_types is None:
         use_standard_types = bool(language.get_config_value('use_standard_types'))
     return _CFit.get_best_fit(value.bit_length).to_c_type(value, use_standard_types)
+
+
+def filter_to_namespace_qualifier(namespace_list: typing.List[str]) -> str:
+    """
+    Converts a list of namespace names into a qualifer string. For example:
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_to_namespace_qualifier
+        import pydsdl
+
+
+    .. code-block:: python
+
+        my_namespace = ['foo', 'bar']
+        template = '{{ my_namespace | to_namespace_qualifier }}myType()'
+        expected = 'foo::bar::myType()'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_namespace_qualifier, template, expected, 'cpp', my_namespace=my_namespace)
+
+    This filter gracefully handles empty namespace lists:
+
+    .. code-block:: python
+
+        my_namespace = []
+        template = '{{ my_namespace | to_namespace_qualifier }}myType()'
+        expected = 'myType()'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_namespace_qualifier, template, expected, 'cpp', my_namespace=my_namespace)
+
+    """
+    if namespace_list is None or len(namespace_list) == 0:
+        return ''
+    else:
+        return '::'.join(namespace_list) + '::'

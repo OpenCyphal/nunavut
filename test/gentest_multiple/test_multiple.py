@@ -36,7 +36,7 @@ def test_three_roots(gen_paths):  # type: ignore
                                      root_namespace,
                                      gen_paths.out_dir,
                                      language_context)
-    generator = Generator(namespace, False, language_context, gen_paths.templates_dir)
+    generator = Generator(namespace, templates_dir=gen_paths.templates_dir)
     generator.generate_all(False)
 
     # Now read back in and verify

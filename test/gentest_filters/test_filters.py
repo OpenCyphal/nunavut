@@ -30,7 +30,7 @@ def test_template_assert(gen_paths):  # type: ignore
                                      output_path,
                                      language_context)
     template_path = gen_paths.templates_dir / Path('assert')
-    generator = Generator(namespace, False, language_context, template_path)
+    generator = Generator(namespace, templates_dir=template_path)
     try:
         generator.generate_all()
         assert False
@@ -51,7 +51,7 @@ def test_type_to_include(gen_paths):  # type: ignore
                                      output_path,
                                      language_context)
     template_path = gen_paths.templates_dir / Path('type_to_include')
-    generator = Generator(namespace, False, language_context, template_path)
+    generator = Generator(namespace, templates_dir=template_path)
     generator.generate_all()
     outfile = gen_paths.find_outfile_in_namespace("uavcan.time.SynchronizedTimestamp", namespace)
 
@@ -75,9 +75,7 @@ def test_custom_filter_and_test(gen_paths):  # type: ignore
                                      language_context)
     template_path = gen_paths.templates_dir / Path('custom_filter_and_test')
     generator = Generator(namespace,
-                          False,
-                          language_context,
-                          template_path,
+                          templates_dir=template_path,
                           additional_filters={'custom_filter': lambda T: 'hi mum'},
                           additional_tests={'custom_test': lambda T: True})
 
@@ -100,17 +98,11 @@ def test_custom_filter_and_test_redefinition(gen_paths):  # type: ignore
 
     with pytest.raises(RuntimeError):
         Generator(namespace,
-                  False,
-                  language_context,
-                  Path(),
                   additional_filters={'type_to_include_path': lambda T: ''},
                   additional_tests={'custom_test': lambda T: False})
 
     with pytest.raises(RuntimeError):
         Generator(namespace,
-                  False,
-                  language_context,
-                  Path(),
                   additional_filters={'custom_filter': lambda T: ''},
                   additional_tests={'primitive': lambda T: False})
 
