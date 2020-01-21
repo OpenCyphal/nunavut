@@ -138,6 +138,7 @@ def test_target_language(gen_paths: typing.Any, run_nnvg: typing.Callable) -> No
                  '--target-language', 'cpp',
                  '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
                  '--list-outputs',
+                 '--omit-serialization-support',
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')

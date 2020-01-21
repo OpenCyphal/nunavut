@@ -67,6 +67,22 @@ means you can do::
         // stuff for integer fields
     {% endif %}
 
+Common Filters
+-------------------------------------------------
+
+.. autofunction:: nunavut.jinja.Generator.filter_yamlfy
+   :noindex:
+.. autofunction:: nunavut.jinja.Generator.filter_type_to_template
+   :noindex:
+.. autofunction:: nunavut.jinja.Generator.filter_type_to_include_path
+   :noindex:
+.. autofunction:: nunavut.jinja.Generator.filter_typename
+   :noindex:
+.. autofunction:: nunavut.jinja.Generator.filter_alignment_prefix
+   :noindex:
+.. autofunction:: nunavut.jinja.Generator.filter_bit_length_set
+   :noindex:
+
 C Filters
 -------------------------------------------------
 
@@ -90,7 +106,25 @@ C++ Filters
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_close_namespace
    :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_full_reference_name
+   :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_short_reference_name
+   :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_includes
+   :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_declaration
+   :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_definition_begin
+   :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_definition_end
+   :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_type_from_primitive
+   :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_to_template_unique_name
+   :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_as_boolean_value
+   :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_indent
    :noindex:
 
 Python Filters
@@ -104,13 +138,9 @@ Python Filters
    :noindex:
 .. autofunction:: nunavut.lang.py.filter_short_reference_name
    :noindex:
-.. autofunction:: nunavut.lang.py.filter_alignment_prefix
-   :noindex:
 .. autofunction:: nunavut.lang.py.filter_imports
    :noindex:
 .. autofunction:: nunavut.lang.py.filter_longest_id_length
-   :noindex:
-.. autofunction:: nunavut.lang.py.filter_bit_length_set
    :noindex:
 
 *************************************************

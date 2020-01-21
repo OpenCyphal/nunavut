@@ -91,7 +91,7 @@ class Language:
     @property
     def support_namespace(self) -> typing.List[str]:
         """
-        The hierarchial namespace used by the support headers. The property
+        The hierarchial namespace used by the support software. The property
         is a dot separated string when specified in configuration. This
         property returns that value split into namespace components with the
         first identifier being the first index in the array, etc.

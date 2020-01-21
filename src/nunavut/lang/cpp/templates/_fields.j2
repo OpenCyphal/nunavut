@@ -1,0 +1,5 @@
+{% for field in composite_type.fields -%}
+{%- if field is not padding %}
+    {{ field.data_type | declaration }} {{ field | id }};
+{%- endif -%}
+{%- endfor %}

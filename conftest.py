@@ -15,12 +15,11 @@ import tempfile
 import textwrap
 import typing
 from doctest import ELLIPSIS
-from fnmatch import fnmatch
 from unittest.mock import MagicMock
 
 import pytest
 from sybil import Sybil
-from sybil.integration.pytest import SybilFile
+from sybil.integration.pytest import SybilFile, SybilItem
 from sybil.parsers.codeblock import CodeBlockParser
 from sybil.parsers.doctest import DocTestParser
 
@@ -164,6 +163,28 @@ def unique_name_evaluator(request):  # type: ignore
 
 
 @pytest.fixture
+def assert_language_config_value(request):  # type: ignore
+    """
+    Assert that a given configuration value is set for the target language.
+    """
+    def _assert_language_config_value(target_language: typing.Union[typing.Optional[str], LanguageContext],
+                                      key: str,
+                                      expected_value: typing.Any,
+                                      message: typing.Optional[str]) -> None:
+        if isinstance(target_language, LanguageContext):
+            lctx = target_language
+        else:
+            lctx = LanguageContext(target_language)
+
+        language = lctx.get_target_language()
+        if language is None:
+            raise AssertionError('Unable to determine target language from provided arguments.')
+        if expected_value != language.get_config_value(key):
+            raise AssertionError(message)
+    return _assert_language_config_value
+
+
+@pytest.fixture
 def jinja_filter_tester(request):  # type: ignore
     """
     Use to create fluent but testable documentation for Jinja filters.
@@ -236,6 +257,19 @@ def jinja_filter_tester(request):  # type: ignore
     return _make_filter_test_template
 
 
+class NewSybilFile(SybilFile):
+    """
+    Adapt Sybil to newer pytest versions.
+    """
+    def __init__(self, fspath, parent, sybil):  # type: ignore
+        super().__init__(path=fspath, parent=parent, sybil=sybil)
+
+    def collect(self):  # type: ignore
+        self.document = self.sybil.parse(self.fspath.strpath)
+        for example in self.document:
+            yield SybilItem.from_parent(self, sybil=self.sybil, example=example)
+
+
 def _pytest_integration_that_actually_works() -> typing.Callable:
     """
     Sybil matching is pretty broken. We'll have to help it out here. The problem is that
@@ -243,22 +277,22 @@ def _pytest_integration_that_actually_works() -> typing.Callable:
     files cannot be excluded by path.
     """
 
-    _excludes = [
-        '**/markupsafe/*',
-        '**/jinja2/*',
-    ]
-
     _sy = Sybil(
         parsers=[
             DocTestParser(optionflags=ELLIPSIS),
             CodeBlockParser(),
         ],
-        fixtures=['jinja_filter_tester', 'gen_paths']
+        pattern='**/nunavut/**/*.py',
+        excludes=[
+            '**/markupsafe/*',
+            '**/jinja2/*',
+        ],
+        fixtures=['jinja_filter_tester', 'gen_paths', 'assert_language_config_value']
     )
 
-    def pytest_collect_file(parent: typing.Any, path: typing.Any) -> typing.Optional[SybilFile]:
-        if fnmatch(str(path), '**/nunavut/**/*.py') and not any(fnmatch(str(path), pattern) for pattern in _excludes):
-            return SybilFile(path, parent, _sy)
+    def pytest_collect_file(parent: typing.Any, path: typing.Any) -> typing.Optional[typing.Any]:
+        if _sy.should_test_filename(str(path)):
+            return NewSybilFile.from_parent(parent, fspath=path, sybil=_sy)
         else:
             return None
 

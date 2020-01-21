@@ -10,6 +10,7 @@ pydsdl AST into source code.
 """
 
 import abc
+import pathlib
 import typing
 
 import nunavut
@@ -60,10 +61,18 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
         return self._generate_namespace_types
 
     @abc.abstractmethod
+    def get_templates(self) -> typing.Iterable[pathlib.Path]:
+        """
+        Enumerate all templates found in the templates path.
+        :returns: A list of paths to all templates found by this Generator object.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def generate_all(self,
                      is_dryrun: bool = False,
                      allow_overwrite: bool = True) \
-            -> int:
+            -> typing.Iterable[pathlib.Path]:
         """
         Generates all output for a given :class:`nunavut.Namespace` and using
         the templates found by this object.
@@ -79,16 +88,6 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
 
-def create_builtin_source_generator(namespace: nunavut.Namespace) -> 'AbstractGenerator':
-    """
-    Create a new :class:`Generator <nunavut.generators.AbstractGenerator>` that uses internal templates
-    and configuration to generate source code for DSDL messages.
-    """
-    from nunavut.jinja import Generator
-
-    return Generator(namespace)
-
-
 def create_support_generator(namespace: nunavut.Namespace) -> 'AbstractGenerator':
     """
     Create a new :class:`Generator <nunavut.generators.AbstractGenerator>` that uses embedded support
@@ -97,11 +96,14 @@ def create_support_generator(namespace: nunavut.Namespace) -> 'AbstractGenerator
     is set or if serialization support has been turned off a no-op generator will be returned instead.
     """
     class _NoOpSupportGenerator(AbstractGenerator):
+        def get_templates(self) -> typing.Iterable[pathlib.Path]:
+            return []
+
         def generate_all(self,
                          is_dryrun: bool = False,
                          allow_overwrite: bool = True) \
-                -> int:
-            return 0
+                -> typing.Iterable[pathlib.Path]:
+            return []
 
     target_language = namespace.get_language_context().get_target_language()
     if target_language is None or target_language.omit_serialization_support:
@@ -110,3 +112,16 @@ def create_support_generator(namespace: nunavut.Namespace) -> 'AbstractGenerator
         SupportGenerator = getattr(target_language.module, 'SupportGenerator', _NoOpSupportGenerator)  \
             # type: typing.Type[AbstractGenerator]
         return SupportGenerator(namespace)
+
+
+def create_generators(namespace: nunavut.Namespace, **kwargs: typing.Any) -> \
+        typing.Tuple['AbstractGenerator', 'AbstractGenerator']:
+    """
+    Create the two generators used by Nunavut; a code-generator and a support-library generator.
+    :param  nunavut.Namespace namespace:  The namespace to generate code within.
+    :param  kwargs: A list of arguments that are forwarded to the generator constructors.
+    :return: Tuple with the first item being the code-generator and the second the support-library
+        generator.
+    """
+    from nunavut.jinja import Generator
+    return (Generator(namespace, **kwargs), create_support_generator(namespace))

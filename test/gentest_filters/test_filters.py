@@ -131,19 +131,6 @@ def test_python_filter_short_reference_name(gen_paths):  # type: ignore
     assert "SynchronizedTimestamp_1_0" == full_reference_name
 
 
-def test_python_filter_alignment_prefix(gen_paths):  # type: ignore
-    from nunavut.lang.py import filter_alignment_prefix
-    from pydsdl import BitLengthSet
-
-    subject = BitLengthSet(64)
-    assert 'aligned' == filter_alignment_prefix(subject)
-    subject.increment(1)
-    assert 'unaligned' == filter_alignment_prefix(subject)
-
-    with pytest.raises(TypeError):
-        filter_alignment_prefix('wrong type')
-
-
 def test_python_filter_imports(gen_paths):  # type: ignore
     lctx = LanguageContext()
 

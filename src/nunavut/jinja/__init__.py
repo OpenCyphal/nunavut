@@ -28,7 +28,7 @@ from nunavut.jinja.jinja2 import (ChoiceLoader, Environment, FileSystemLoader,
                                   select_autoescape)
 from nunavut.jinja.jinja2.ext import Extension
 from nunavut.jinja.jinja2.parser import Parser
-from nunavut.templates import (LANGUAGE_FILTER_ATTRIBUTE_NAME)
+from nunavut.templates import LANGUAGE_FILTER_ATTRIBUTE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -40,13 +40,16 @@ logger = logging.getLogger(__name__)
 class JinjaAssert(Extension):
     """
     Jinja2 extension that allows ``{% assert T.attribute %}`` statements. Templates should
-    uses these statements where False values would result in malformed source code.
+    uses these statements where False values would result in malformed source code ::
+
+       {% assert False %}
+
     """
 
     tags = set(['assert'])
 
     def __init__(self, environment: Environment):
-        super(JinjaAssert, self).__init__(environment)
+        super().__init__(environment)
 
     def parse(self, parser: Parser) -> nodes.Node:
         """
@@ -182,7 +185,8 @@ class Generator(nunavut.generators.AbstractGenerator):
         search_queue.appendleft(type(value))
         template_path = pathlib.Path(type(value).__name__).with_suffix(self.TEMPLATE_SUFFIX)
 
-        def _find_template_by_name(name: str, templates: typing.List[pathlib.Path]) -> typing.Optional[pathlib.Path]:
+        def _find_template_by_name(name: str, templates: typing.Iterable[pathlib.Path]) \
+                -> typing.Optional[pathlib.Path]:
             for template_path in templates:
                 if template_path.stem == name:
                     return template_path
@@ -216,11 +220,11 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         Example::
 
-            #include "{{ T.my_type | type_to_include_path }}"
+            # include "{{ T.my_type | type_to_include_path }}"
 
         Result Example:
 
-            #include "foo/bar/my_type.h"
+            # include "foo/bar/my_type.h"
 
         :param typing.Any value: The type to emit an include for.
         :param bool resolve: If True the path returned will be absolute else the path will
@@ -255,6 +259,72 @@ class Generator(nunavut.generators.AbstractGenerator):
         :returns: The ``__name__`` of the python type.
         """
         return type(value).__name__
+
+    @staticmethod
+    def filter_alignment_prefix(offset: pydsdl.BitLengthSet) -> str:
+        """
+        Provides a string prefix based on a given :class:`pydsdl.BitLengthSet`.
+
+        .. invisible-code-block: python
+
+            from nunavut.jinja import Generator
+            import pydsdl
+
+        .. code-block:: python
+
+            # Given
+            B = pydsdl.BitLengthSet(32)
+
+            # and
+            template = '{{ B | alignment_prefix }}'
+
+            # then ('str' is stropped to 'str_' before the version is suffixed)
+            rendered = 'aligned'
+
+        .. invisible-code-block: python
+
+            jinja_filter_tester(Generator.filter_alignment_prefix, template, rendered, 'py', B=B)
+
+
+        .. code-block:: python
+
+            # Given
+            B = pydsdl.BitLengthSet(32)
+            B.increment(1)
+
+            # and
+            template = '{{ B | alignment_prefix }}'
+
+            # then ('str' is stropped to 'str_' before the version is suffixed)
+            rendered = 'unaligned'
+
+        .. invisible-code-block: python
+
+            jinja_filter_tester(Generator.filter_alignment_prefix, template, rendered, 'py', B=B)
+
+
+        :param pydsdl.BitLengthSet offset: A bit length set to test for alignment.
+        :return: 'aligned' or 'unaligned' based on the state of the ``offset`` argument.
+        """
+        if isinstance(offset, pydsdl.BitLengthSet):
+            return 'aligned' if offset.is_aligned_at_byte() else 'unaligned'
+        else:  # pragma: no cover
+            raise TypeError('Expected BitLengthSet, got {}'.format(type(offset).__name__))
+
+    @staticmethod
+    def filter_bit_length_set(values: typing.Optional[typing.Union[typing.Iterable[int], int]]) -> pydsdl.BitLengthSet:
+        """
+        Convert an integer or a list of integers into a :class:`pydsdl.BitLengthSet`.
+
+        .. invisible-code-block: python
+
+            from nunavut.jinja import Generator
+            import pydsdl
+
+            assert type(Generator.filter_bit_length_set(23)) == pydsdl.BitLengthSet
+
+        """
+        return pydsdl.BitLengthSet(values)
 
     # +-----------------------------------------------------------------------+
     # | JINJA : tests
@@ -345,6 +415,38 @@ class Generator(nunavut.generators.AbstractGenerator):
         """
         return isinstance(value, pydsdl.PaddingField)
 
+    @staticmethod
+    def is_saturated(t: pydsdl.PrimitiveType) -> bool:
+        """
+        Tests if a type is a saturated type or not.
+
+        .. invisible-code-block: python
+
+            from nunavut.jinja import Generator
+            from unittest.mock import MagicMock
+            import pydsdl
+            import pytest
+
+            saturated_mock = MagicMock(spec=pydsdl.PrimitiveType)
+            saturated_mock.cast_mode = pydsdl.PrimitiveType.CastMode.SATURATED
+            assert Generator.is_saturated(saturated_mock) is True
+
+            truncated_mock = MagicMock(spec=pydsdl.PrimitiveType)
+            truncated_mock.cast_mode = pydsdl.PrimitiveType.CastMode.TRUNCATED
+            assert Generator.is_saturated(truncated_mock) is False
+
+            with pytest.raises(TypeError):
+                 Generator.is_saturated(MagicMock(spec=pydsdl.SerializableType))
+
+        """
+        if isinstance(t, pydsdl.PrimitiveType):
+            return {
+                pydsdl.PrimitiveType.CastMode.SATURATED: True,
+                pydsdl.PrimitiveType.CastMode.TRUNCATED: False,
+            }[t.cast_mode]
+        else:
+            raise TypeError('Cast mode is not defined for {}'.format(type(t).__name__))
+
     # +-----------------------------------------------------------------------+
 
     def __init__(self,
@@ -424,7 +526,7 @@ class Generator(nunavut.generators.AbstractGenerator):
         self._add_instance_tests_from_root(pydsdl.SerializableType)
         self._add_filters_and_tests(additional_filters, additional_tests)
 
-    def get_templates(self) -> typing.List[pathlib.Path]:
+    def get_templates(self) -> typing.Iterable[pathlib.Path]:
         """
         Enumerate all templates found in the templates path.
         :data:`~TEMPLATE_SUFFIX` as the suffix for the filename.
@@ -441,14 +543,19 @@ class Generator(nunavut.generators.AbstractGenerator):
     def generate_all(self,
                      is_dryrun: bool = False,
                      allow_overwrite: bool = True) \
-            -> int:
+            -> typing.Iterable[pathlib.Path]:
+        generated = []  # type: typing.List[pathlib.Path]
         if self.generate_namespace_types:
             for (parsed_type, output_path) in self.namespace.get_all_types():
-                self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, self._post_processors)
+                generated.append(
+                    self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, self._post_processors)
+                )
         else:
             for (parsed_type, output_path) in self.namespace.get_all_datatypes():
-                self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, self._post_processors)
-        return 0
+                generated.append(
+                    self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, self._post_processors)
+                )
+        return generated
 
     @property
     def language_context(self) -> nunavut.lang.LanguageContext:
@@ -536,7 +643,8 @@ class Generator(nunavut.generators.AbstractGenerator):
                        output_path: pathlib.Path,
                        is_dryrun: bool,
                        allow_overwrite: bool,
-                       post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']]) -> None:
+                       post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']]) \
+            -> pathlib.Path:
         template_name = self.filter_type_to_template(input_type)
         self._env.globals["now_utc"] = datetime.datetime.utcnow()
         template = self._env.get_template(template_name)
@@ -548,6 +656,7 @@ class Generator(nunavut.generators.AbstractGenerator):
                                      allow_overwrite,
                                      post_processors
                                      )
+        return output_path
 
     def _add_filter_to_environment(self, filter_name: str, filter: typing.Callable[..., str]) -> None:
         if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):

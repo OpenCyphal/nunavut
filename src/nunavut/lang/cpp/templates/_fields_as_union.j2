@@ -1,0 +1,13 @@
+    {{ composite_type.tag_field_type | declaration }} tag;
+    union {
+{%- for field in composite_type.fields -%}
+{%- if field is not padding %}
+        {{ field.data_type | declaration }} {{ field.name | id }};
+{%- endif -%}
+{%- endfor %}
+    };
+{%- for field in composite_type.fields -%}
+{%- if field is not padding %}
+    bool {{ ('is_' + field.name)  | id }}() { return (tag == {{ loop.index0 }}); }
+{%- endif -%}
+{%- endfor %}

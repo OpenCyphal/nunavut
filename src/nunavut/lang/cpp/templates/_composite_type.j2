@@ -3,28 +3,17 @@
 {%- for constant in composite_type.constants %}
     static constexpr {{ constant.data_type | declaration }} {{ constant.name | id }} = {{ constant.value.native_value.numerator }} / {{ constant.value.native_value.denominator }};
 {%- endfor -%}
-{% for field in composite_type.fields -%}
-{%- if field is not padding %}
-    {{ field.data_type | declaration }} {{ field.name | id }};
-{%- endif -%}
-{%- endfor %}
+{% if composite_type is UnionType %}
+{% include '_fields_as_union.j2' %}
+{% else %}
+{% include '_fields.j2' %}
+{% endif %}
 {%- if not nunavut.support.omit %}
-    static {{ typename_unsigned_length }} serialize(
+    {{ typename_unsigned_length }} serialize(
         std::vector<{{ typename_byte }}>& inout_byte_buffer,
-        {{ typename_unsigned_length }} bit_offset,
-        {{ composite_type | declaration }}& t)
+        std::size_t bit_offset = 0)
     {
-        // Not yet implemented.
-        const {{ typename_byte_ptr }} bits_in = { reinterpret_cast<{{typename_byte_ptr}}>(&t) };
-{%- for field in composite_type.fields %}
-{%- if field is VariableLengthArrayType %}
-        // var array here
-{%- elif field is FixedLengthArrayType %}
-        // static array here
-{%- else %}
-        bit_offset += {{ nunavut.support.namespace | to_namespace_qualifier }}copyBitsAlignedToUnaligned<{{ typename_unsigned_length }}, {{typename_byte}}>( bits_in, inout_byte_buffer, bit_offset, 4 );
-{%- endif %}
-{%- endfor %}
+        nunavut::support::LittleEndianSerializer<{{typename_byte}}, {{composite_type | minimum_required_capacity_bits}}> _ser_(inout_byte_buffer, bit_offset);
         return 0;
     }
 {%- endif %}
