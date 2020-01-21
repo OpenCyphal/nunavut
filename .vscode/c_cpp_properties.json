@@ -1,16 +1,16 @@
 {
     "configurations": [
         {
-            "name": "Mac",
+            "name": "Mac-cpp",
             "intelliSenseMode": "clang-x64",
             "includePath": [
                 "${workspaceFolder}/submodules/googletest/googlemock/include",
-                "${workspaceFolder}/verification/cpp/build/generated",
-                "${workspaceFolder}/verification/cpp/include"
+                "${workspaceFolder}/verification/build/generated"
             ],
             "browse": {
                 "path": [
-                    "${workspaceFolder}/verification/cpp/test"
+                    "${workspaceFolder}/verification/cpp/suite",
+                    "${workspaceFolder}/verification/c/suite"
                 ],
                 "limitSymbolsToIncludedHeaders": false
             },
@@ -24,16 +24,16 @@
             "cppStandard": "c++11"
         },
         {
-            "name": "Linux",
+            "name": "Linux-cpp",
             "intelliSenseMode": "gcc-x64",
             "includePath": [
                 "${workspaceFolder}/submodules/googletest/googlemock/include",
-                "${workspaceFolder}/verification/cpp/build/generated",
-                "${workspaceFolder}/verification/cpp/include"
+                "${workspaceFolder}/verification/build/generated"
             ],
             "browse": {
                 "path": [
-                    "${workspaceFolder}/verification/cpp/test"
+                    "${workspaceFolder}/verification/cpp/suite",
+                    "${workspaceFolder}/verification/c/suite"
                 ],
                 "limitSymbolsToIncludedHeaders": false
             },

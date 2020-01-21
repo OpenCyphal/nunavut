@@ -1,0 +1,67 @@
+{%- for constant in composite_type.constants %}
+#define {{ composite_type | c.macrofy }}_{{ constant.name | c.macrofy }} {{ constant | constant_value }}
+{%- endfor %}
+{%- if composite_type.fields | length == 0 %}
+{#- 
+    C++ doesn't tolerate empty types. To maintain compatibility we define any empty
+    composite type as a byte.
+#}
+typedef {{ typename_byte }} {{ composite_type | full_reference_name }};
+{%- else %}
+typedef struct
+{
+{%- if composite_type is UnionType -%}
+{% include '_fields_as_union.j2' %}
+{%- else -%}
+{% include '_fields.j2' %}
+{%- endif %}
+} {{ composite_type | full_reference_name }};
+{%- endif %}
+{%- for field in composite_type.fields %}
+{%- if field.data_type is ArrayType %}
+
+/* ArrayType macros for {{ field.name }} field of {{ composite_type | full_reference_name }}. */
+#define {{ composite_type | full_reference_name }}_{{ field.name | macrofy(partial_token=True) }}_ARRAY_CAPACITY ({{ field.data_type.capacity }}U)
+#define {{ composite_type | full_reference_name }}_{{ field.name | macrofy(partial_token=True) }}_ARRAY_IS_VARIABLE_LENGTH {% if field.data_type is VariableLengthArrayType -%}
+    (1U)
+{%- else -%}
+    (0U)
+{%- endif %}
+#define {{ composite_type | full_reference_name }}_{{ field.name | macrofy(partial_token=True) }}_ARRAY_LENGTH(PTR_TO_{{ composite_type.short_name | macrofy }}) \
+{%- if field.data_type is VariableLengthArrayType %}
+    ((PTR_TO_{{ composite_type.short_name | macrofy }})->{{ field | id }}_length)
+{%- else %}
+    ({{ field.data_type.capacity }}U)
+{%- endif %}
+{%- endif %}
+{%- endfor %}
+{% import '_init_macros.j2' as init_macros %}
+/**
+ * Initialize an {{ composite_type | declaration }} instance to default values.
+ * No memory is allocated within this method.
+ *
+ * @param inout_instance A structure instance to Initialize.
+ * @return The inout_instance for fluency.
+ */
+inline {{ composite_type | declaration }}* init_{{ composite_type | declaration | to_snake_case }}({{ composite_type | declaration }}* inout_instance)
+{
+    if (inout_instance)
+    {
+        {%- if composite_type.fields | length == 0 %}
+        (*inout_instance) = 0;
+        {%- else %}
+        {%- if composite_type is UnionType %}
+        inout_instance->_tag_ = 0;
+        {{ init_macros.init_field("inout_instance", composite_type.fields[0]) }}
+        {%- else -%}
+        {%- for field in composite_type.fields %}
+        {{ init_macros.init_field("inout_instance", field) }}
+        {%- endfor %}
+        {%- endif -%}
+        {%- endif %}
+    }
+    return inout_instance;
+}
+{%- if not nunavut.support.omit %}
+/* TODO: issue #112, add serialization support for C types. */
+{%- endif %}

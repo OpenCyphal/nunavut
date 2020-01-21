@@ -1,0 +1,11 @@
+{%- for field in composite_type.fields %}
+{%- if field is not padding %}
+    {{ field.data_type | declaration }} {{ field | id }}
+    {%- if field.data_type is ArrayType -%}
+        [{{ field.data_type.capacity }}]
+    {%- endif -%};
+{%- if field is VariableLengthArrayType %}
+    {{ typename_unsigned_length }} {{ field | id }}_length;
+{%- endif -%}
+{%- endif -%}
+{%- endfor %}

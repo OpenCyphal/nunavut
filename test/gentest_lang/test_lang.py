@@ -92,7 +92,7 @@ def ptest_lang_c(gen_paths, implicit, unique_name_evaluator):  # type: ignore
     assert lang_c_output["ctype truncated uint64"] == "unsigned long long"
     assert lang_c_output["ctype saturated int64"] == "long long"
 
-    assert lang_c_output["ctype saturated bool"] == "BOOL"
+    assert lang_c_output["ctype saturated bool"] == "NUVT_BOOL"
     assert lang_c_output["ctype_std saturated bool"] == "bool"
 
     unique_name_evaluator(r'_nAME\d+_', lang_c_output["unique_name_0"])

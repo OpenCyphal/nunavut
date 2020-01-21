@@ -15,9 +15,10 @@ import typing
 
 import pydsdl
 
-from ..templates import (SupportsTemplateContext, template_context_filter,
-                         template_language_filter)
-from . import Language, _UniqueNameGenerator
+from ...templates import (SupportsTemplateContext, template_context_filter,
+                          template_language_filter, template_language_list_filter)
+from .. import Language, _UniqueNameGenerator
+from .._common import IncludeGenerator
 
 # Taken from https://en.cppreference.com/w/c/language/identifier
 # cspell: disable
@@ -183,15 +184,16 @@ def filter_id(language: Language,
                      C_RESERVED_PATTERNS)
 
 
-def filter_macrofy(value: str) -> str:
+@template_language_filter(__name__)
+def filter_macrofy(language: Language, value: str, partial_token: bool = False) -> str:
     """
     Filter to transform an input into a valid C preprocessor identifier token.
 
-
     .. invisible-code-block: python
 
+        from nunavut.lang import LanguageContext, Language
         from nunavut.lang.c import filter_macrofy
-
+        from unittest.mock import MagicMock
 
     .. code-block:: python
 
@@ -207,11 +209,84 @@ def filter_macrofy(value: str) -> str:
         jinja_filter_tester(filter_macrofy, template, rendered, 'c')
 
 
+    .. code-block:: python
+
+        # Given
+        template = '#ifndef {{ "namespaced.Type.register" | macrofy }}'
+
+        # then
+        rendered = '#ifndef NAMESPACED_TYPE__REGISTER'
+
+        # Because register is a reserved word and is therefore stropped
+        # before being transformed.
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_macrofy, template, rendered, 'c')
+
+    .. code-block:: python
+
+        # Given
+        template = '#ifndef {{ "_starts_with_underscore" | macrofy }}'
+
+        # then
+        rendered = '#ifndef _sTARTS_WITH_UNDERSCORE'
+
+        # Because the final token is stropped and must obey language
+        # rules.
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_macrofy, template, rendered, 'c')
+
+        # Given
+        template = '#ifndef {{ "_invalid.register" | macrofy }}'
+
+        # then
+        rendered = '#ifndef _INVALID_REGISTER'
+
+        context = MagicMock(spec=LanguageContext)
+        language = MagicMock(spec=Language)
+        language.enable_stropping = False
+        context.get_language = MagicMock(return_value=language)
+        jinja_filter_tester(filter_macrofy, template, rendered, context)
+
+    .. code-block:: python
+
+        # You can disable stropping or override with the "partial_token" parameter
+        # which allows invalid identifiers to be generated.
+
+        # Given
+        template = '#ifndef FOO{{ "_invalid.register" | macrofy(partial_token=True) }}'
+
+        # then
+        rendered = '#ifndef FOO_INVALID__REGISTER'
+
+        # Stropping is still enabled so tokens are still stropped but the partial_token
+        # parameter skips stropping the final token.
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_macrofy, template, rendered, 'c')
+
     :param str value: The value to transform.
+    :param bool partial_token: If True then the token returned is not stropped as it is assumed to be
+        a partial token that will be concatinated with another token. The default, False, always returns
+        a stropped token when stropping is enabled for the langauge.
 
     :returns: A valid C preprocessor identifier token.
     """
-    return value.replace(' ', '_').replace('.', '_').upper()
+    tokens = str(value).replace(' ', '.').split('.')
+    if language.enable_stropping:
+        stropped_tokens = list(map(functools.partial(filter_id, language), tokens))
+    else:
+        stropped_tokens = tokens
+    uppercase_stropped_tokens = [c.upper() for c in stropped_tokens]
+    macrofied_value = '_'.join(uppercase_stropped_tokens)
+    if partial_token or not language.enable_stropping:
+        return macrofied_value
+    else:
+        return filter_id(language, macrofied_value)
 
 
 _CFit_T = typing.TypeVar('_CFit_T', bound='_CFit')
@@ -260,7 +335,7 @@ class _CFit(enum.Enum):
         elif isinstance(value, pydsdl.FloatType):
             return self.to_c_float()
         elif isinstance(value, pydsdl.BooleanType):
-            return ('BOOL' if not use_standard_types else 'bool')
+            return ('NUVT_BOOL' if not use_standard_types else 'bool')
         elif isinstance(value, pydsdl.VoidType):
             return 'void'
         else:
@@ -349,7 +424,7 @@ def filter_type_from_primitive(language: Language,
 
 _snake_case_pattern_0 = re.compile(r'[\W]+')
 _snake_case_pattern_1 = re.compile(r'(?<=_)([A-Z])+')
-_snake_case_pattern_2 = re.compile(r'(?<!_)([A-Z])+')
+_snake_case_pattern_2 = re.compile(r'(?<=[a-z])([A-Z])+')
 
 
 def filter_to_snake_case(value: str) -> str:
@@ -386,6 +461,19 @@ def filter_to_snake_case(value: str) -> str:
 
         jinja_filter_tester(filter_to_snake_case, template, rendered, 'c')
 
+    .. code-block:: python
+
+        # and Given
+        template = '{{ "SCOTEC_MCU_TimerHelper" | to_snake_case }} b();'
+
+        # then
+        rendered = 'scotec_mcu_timer_helper b();'
+
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_snake_case, template, rendered, 'c')
+
         template = '{{ " aa bb. cCcAAa_aAa_AAaAa_AAaA_a " | to_snake_case }}'
         rendered = 'aa_bb_c_cc_aaa_a_aa_aaa_aa_aaa_a_a'
 
@@ -397,7 +485,7 @@ def filter_to_snake_case(value: str) -> str:
     """
     pass0 = _snake_case_pattern_0.sub('_', str.strip(value))
     pass1 = _snake_case_pattern_1.sub(lambda x: x.group(0).lower(), pass0)
-    return _snake_case_pattern_2.sub(lambda x: '_' + x.group(0).lower(), pass1)
+    return _snake_case_pattern_2.sub(lambda x: '_' + x.group(0).lower(), pass1).lower()
 
 
 @template_context_filter
@@ -463,3 +551,213 @@ def filter_to_template_unique_name(context: SupportsTemplateContext, base_token:
         adj_base_token = base_token
 
     return _UniqueNameGenerator.get_instance()('c', adj_base_token, '_', '_')
+
+
+@template_language_filter(__name__)
+def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> str:
+    """
+    Provides a string that is a shorted version of the full reference name.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.c import filter_short_reference_name
+        from unittest.mock import MagicMock
+        import pydsdl
+
+        my_type = MagicMock(spec=pydsdl.StructureType)
+        my_type.version = MagicMock()
+        my_type.parent_service = None
+
+    .. code-block:: python
+
+        # Given a type with illegal C characters
+        my_type.short_name = '2Foo'
+        my_type.version.major = 1
+        my_type.version.minor = 2
+
+        # and
+        template = '{{ my_type | short_reference_name }}'
+
+        # then, with stropping enabled
+        rendered = '_2Foo_1_2'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_short_reference_name, template, rendered, 'c', my_type=my_type)
+
+        my_type = MagicMock(spec=pydsdl.StructureType)
+        my_type.version = MagicMock()
+        my_type.parent_service = None
+
+    :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
+    """
+    if t.parent_service is None:
+        short_name = '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
+    else:
+        short_name = t.short_name
+    if language.enable_stropping:
+        return filter_id(language, short_name)
+    else:
+        return short_name
+
+
+@template_language_list_filter(__name__)
+def filter_includes(language: Language,
+                    t: pydsdl.CompositeType,
+                    sort: bool = True) -> typing.List[str]:
+    """
+    Returns a list of all include paths for a given type.
+
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.c import filter_includes
+        from unittest.mock import MagicMock
+        import pydsdl
+
+        my_type = MagicMock(spec=pydsdl.UnionType)
+        my_type.version = MagicMock()
+        my_type.parent_service = None
+
+    .. code-block:: python
+
+        # Listing the includes for a union with only integer types:
+        template = '{% for include in my_type | includes %}{{include}}{% endfor %}'
+
+        # stdint.h will be generated if the "use_standard_int" configuration is
+        # not disabled.
+        rendered = '<stdint.h>'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_includes, template, rendered, 'c', my_type=my_type)
+
+    :param pydsdl.CompositeType t: The type to scan for dependencies.
+    :param bool sort: If true the returned list will be sorted.
+    :return: a list of include headers needed for a given type.
+    """
+
+    include_gen = IncludeGenerator(language,
+                                   t,
+                                   filter_id,
+                                   filter_short_reference_name)
+    return include_gen.generate_include_filepart_list(language.extension, sort)
+
+
+@template_language_filter(__name__)
+def filter_declaration(language: Language,
+                       instance: pydsdl.Any) -> str:
+    """
+    Emit a declaration statement for the given instance.
+    """
+    if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.VoidType):
+        return filter_type_from_primitive(language, instance)
+    elif isinstance(instance, pydsdl.ArrayType):
+        return '{}'.format(
+            filter_declaration(language, instance.element_type))
+    else:
+        return filter_full_reference_name(language, instance)
+
+
+@template_language_filter(__name__)
+def filter_constant_value(language: Language,
+                          constant: pydsdl.Constant) -> str:
+    use_standard_types = bool(language.get_config_value('use_standard_types'))
+    if isinstance(constant.data_type, pydsdl.BooleanType):
+        if use_standard_types:
+            return ('true' if constant.value.native_value else 'false')
+        else:
+            return ('NUVT_TRUE' if constant.value.native_value else 'NUVT_FALSE')
+    elif isinstance(constant.data_type, pydsdl.IntegerType):
+        return str(constant.value.native_value)
+    elif isinstance(constant.data_type, pydsdl.FloatType):
+        return '( {} / {} )'.format(constant.value.native_value.numerator, constant.value.native_value.denominator)
+    else:
+        raise ValueError('Constant with data_type "{}" was malformed.'.format(type(constant.data_type).__name__))
+
+
+@template_language_filter(__name__)
+def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> str:
+    """
+    Provides a string that is the full namespace, typename, major, and minor version for a given composite type.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.c import filter_full_reference_name
+        from unittest.mock import MagicMock
+        import pydsdl
+
+        my_obj = MagicMock()
+        my_obj.parent_service = None
+        my_obj.version = MagicMock()
+
+    .. code-block:: python
+
+        # Given a type with illegal characters for C++
+        my_obj.full_name = 'any.int.2Foo'
+        my_obj.version.major = 1
+        my_obj.version.minor = 2
+
+        # and
+        template = '{{ my_obj | full_reference_name }}'
+
+        # then, with stropping enabled
+        rendered = 'ANY__INT__2Foo_1_2'
+
+    .. invisible-code-block: python
+
+        my_obj.short_name = my_obj.full_name.split('.')[-1]
+        jinja_filter_tester(filter_full_reference_name, template, rendered, 'c', my_obj=my_obj)
+
+        my_obj = MagicMock()
+        my_obj.version = MagicMock()
+        my_obj.parent_service = None
+
+    .. invisible-code-block: python
+
+        my_obj = MagicMock(spec=pydsdl.CompositeType)
+        my_obj.version = MagicMock()
+        my_service = MagicMock(spec=pydsdl.ServiceType)
+        my_service.parent_service = None
+        my_service.version = MagicMock()
+        my_service.attributes = { 'Request': my_obj }
+        my_obj.parent_service = my_service
+
+    Note that for service types
+
+    .. code-block:: python
+
+        # Given a service type
+        my_service.full_name = 'my.Service'
+        my_service.version.major = 1
+        my_service.version.minor = 8
+
+        # and
+        template = '{{ my_service.attributes["Request"] | full_reference_name }}'
+
+        # then
+        rendered = 'MY_SERVICE_1_8_Request'
+
+    .. invisible-code-block: python
+
+        my_service.short_name = my_service.full_name.split('.')[-1]
+        my_obj.short_name = 'Request'
+        my_obj.full_name = my_service.full_name + '.' + my_obj.short_name
+
+        jinja_filter_tester(filter_full_reference_name, template, rendered, 'c', my_service=my_service)
+
+    :param pydsdl.CompositeType t: The DSDL type to get the fully-resolved reference name for.
+    """
+    ns_parts = t.full_name.split('.')
+    if language.enable_stropping:
+        ns = list(map(functools.partial(filter_id, language), ns_parts[:-1]))
+    else:
+        ns = ns_parts[:-1]
+
+    if t.parent_service is not None:
+        assert len(ns) > 0  # Well-formed DSDL will never have a request or response type that isn't nested.
+        ns = ns[:-1] + [filter_short_reference_name(language, t.parent_service)]
+
+    ns = [c.upper() for c in ns]
+    full_path = ns + [filter_short_reference_name(language, t)]
+    return '_'.join(full_path)

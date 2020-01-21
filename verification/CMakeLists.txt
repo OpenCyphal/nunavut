@@ -16,7 +16,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/utils.cmake)
 
 if (NOT DEFINED NUNAVUT_PROJECT_ROOT)
     get_filename_component(NUNAVUT_PROJECT_ROOT
-                           "${CMAKE_SOURCE_DIR}/../../"
+                           "${CMAKE_SOURCE_DIR}/../"
                            REALPATH BASE_DIR
                            "${CMAKE_BINARY_DIR}")
     message(STATUS "Setting NUNAVUT_PROJECT_ROOT = ${NUNAVUT_PROJECT_ROOT}")
@@ -24,25 +24,20 @@ else()
     message(STATUS "Using ${NUNAVUT_PROJECT_ROOT} for NUNAVUT_PROJECT_ROOT")
 endif()
 
-if (NOT DEFINED NUNAVUT_SUBMODULES_ROOT)
-    set(NUNAVUT_SUBMODULES_ROOT "${NUNAVUT_PROJECT_ROOT}/submodules")
-    message(STATUS "Setting NUNAVUT_SUBMODULES_ROOT = ${NUNAVUT_SUBMODULES_ROOT}")
-else()
-    message(STATUS "Using ${NUNAVUT_SUBMODULES_ROOT} for NUNAVUT_SUBMODULES_ROOT")
-endif()
+set(NUNAVUT_VERIFICATION_LANG "unspecified" CACHE STRING "The Nunavut output language to verify.")
+set(NUNAVUT_SUBMODULES_ROOT "${NUNAVUT_PROJECT_ROOT}/submodules" CACHE STRING "The path to git submodules for the project.")
+set(NUNAVUT_FLAG_SET "native" CACHE STRING "The flags to apply while building (See cmake/compiler_flag_sets).")
 
-if (NOT DEFINED NUNAVUT_VERIFICATION_CPP_ROOT)
-    set(NUNAVUT_VERIFICATION_CPP_ROOT "${NUNAVUT_PROJECT_ROOT}/verification/cpp")
-    message(STATUS "Setting NUNAVUT_VERIFICATION_CPP_ROOT = ${NUNAVUT_VERIFICATION_CPP_ROOT}")
+if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp")
+    set(NUNAVUT_VERIFICATION_ROOT "${CMAKE_SOURCE_DIR}/cpp")
+    message(STATUS "NUNAVUT_VERIFICATION_LANG is C++ (${NUNAVUT_VERIFICATION_LANG})")
+    message(STATUS "Setting NUNAVUT_VERIFICATION_ROOT = ${NUNAVUT_VERIFICATION_ROOT}")
+elseif(NUNAVUT_VERIFICATION_LANG STREQUAL "c")
+    set(NUNAVUT_VERIFICATION_ROOT "${CMAKE_SOURCE_DIR}/c")
+    message(STATUS "NUNAVUT_VERIFICATION_LANG is C (${NUNAVUT_VERIFICATION_LANG})")
+    message(STATUS "Setting NUNAVUT_VERIFICATION_ROOT = ${NUNAVUT_VERIFICATION_ROOT}")
 else()
-    message(STATUS "Using ${NUNAVUT_VERIFICATION_CPP_ROOT} for NUNAVUT_VERIFICATION_CPP_ROOT")
-endif()
-
-if(NOT NUNAVUT_CPP_FLAG_SET)
-    message(STATUS "NUNAVUT_CPP_FLAG_SET was not defined. Setting to \"native\" as a default")
-    set(NUNAVUT_CPP_FLAG_SET ${CMAKE_SOURCE_DIR}/cmake/compiler_flag_sets/native.cmake)
-else()
-    set(NUNAVUT_CPP_FLAG_SET ${CMAKE_SOURCE_DIR}/cmake/compiler_flag_sets/${NUNAVUT_CPP_FLAG_SET}.cmake)
+    message(FATAL_ERROR "Unknown or no verification language (${NUNAVUT_VERIFICATION_LANG}). Try cmake -DNUNAVUT_VERIFICATION_LANG:string=[cpp|c]")
 endif()
 
 #
@@ -53,12 +48,12 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 #
 # All generated source can be found under this directory.
 #
-set(NUNAVUT_GENERATED_ROOT ${CMAKE_CURRENT_BINARY_DIR}/generated)
+set(NUNAVUT_GENERATED_ROOT ${CMAKE_BINARY_DIR}/generated)
 
 #
 # All test binaries and reports will be created under this directory.
 #
-set(NUNAVUT_VERIFICATIONS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/suite)
+set(NUNAVUT_VERIFICATIONS_BINARY_DIR ${CMAKE_BINARY_DIR}/suite)
 
 #
 # Write a README to create the tests folder.
@@ -95,12 +90,14 @@ find_package(gtest REQUIRED)
 find_package(nnvg REQUIRED)
 
 #
-# Generate all types defined in the UAVCAN v1 public_regulated_data_types set.
+# Generate types for the UAVCAN v1 public_regulated_data_types set.
 #
 create_dsdl_target(dsdl-regulated
-                   ${NUNAVUT_GENERATED_ROOT}
+                   ${NUNAVUT_VERIFICATION_LANG}
+                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
                    ON)
+
 
 # Bring this back if we end up with test-specific headers.
 # target_include_directories(dsdl-regulated INTERFACE
@@ -113,7 +110,7 @@ create_dsdl_target(dsdl-regulated
 #
 # Load all our compile flag sets into the appropriate places.
 #
-apply_flag_set(${NUNAVUT_CPP_FLAG_SET})
+apply_flag_set("${CMAKE_SOURCE_DIR}/cmake/compiler_flag_sets/${NUNAVUT_FLAG_SET}.cmake")
 
 
 # +---------------------------------------------------------------------------+
@@ -125,7 +122,7 @@ apply_flag_set(${NUNAVUT_CPP_FLAG_SET})
 file(GLOB NATIVE_TESTS
      LIST_DIRECTORIES false
      RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-     ${CMAKE_CURRENT_SOURCE_DIR}/suite/test_*.cpp
+     ${NUNAVUT_VERIFICATION_ROOT}/suite/test_*.cpp
 )
 
 add_custom_target(
@@ -143,7 +140,7 @@ set(ALL_TEST_COVERAGE "")
 
 foreach(NATIVE_TEST ${NATIVE_TESTS})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
-    define_native_unit_test(${NATIVE_TEST_NAME} ${NATIVE_TEST} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
+    define_native_unit_test(${NATIVE_TEST_NAME} ${NATIVE_TEST} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} dsdl-regulated)
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
     define_natve_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})

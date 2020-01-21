@@ -1,0 +1,10 @@
+{% extends "Header.j2" %}
+{%- block object -%}
+{% set composite_type = T -%}
+{% include '_composite_type.j2' %}
+{%- for field in composite_type.fields -%}
+{%- if field is not padding %}
+#define IS_{{ composite_type | full_reference_name }}_{{ field.name | macrofy(partial_token=True) }}(TAGGED_UNION_PTR) ((TAGGED_UNION_PTR) && (TAGGED_UNION_PTR)->_tag_ == {{ loop.index0 }})
+{%- endif -%}
+{%- endfor %}
+{% endblock -%}

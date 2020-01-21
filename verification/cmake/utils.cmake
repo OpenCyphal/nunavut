@@ -78,11 +78,12 @@ endfunction()
 # param: ARG_TEST_SOURCE List[path] - A list of source files to compile into
 #                               the test binary.
 # param: ARG_OUTDIR path - A path to output test binaries and coverage data under.
+# param: ARG_TYPE_GEN_TARGET str - The target that generates the types under test.
 #
-function(define_native_unit_test ARG_TEST_NAME ARG_TEST_SOURCE ARG_OUTDIR)
+function(define_native_unit_test ARG_TEST_NAME ARG_TEST_SOURCE ARG_OUTDIR ARG_TYPE_GEN_TARGET)
 
      add_executable(${ARG_TEST_NAME} ${ARG_TEST_SOURCE})
-     target_link_libraries(${ARG_TEST_NAME} dsdl-regulated)
+     target_link_libraries(${ARG_TEST_NAME} ${ARG_TYPE_GEN_TARGET})
      target_link_libraries(${ARG_TEST_NAME} gmock_main)
 
      set_target_properties(${ARG_TEST_NAME}

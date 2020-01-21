@@ -1,6 +1,6 @@
 #
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright (C) 2018-2020  UAVCAN Development Team  <uavcan.org>
 # This software is distributed under the terms of the MIT License.
 #
 """Language-specific support in nunavut.
@@ -51,7 +51,6 @@ class Language:
         self._filters = self._find_filters_for_language(language_name)
         self._config = config
         self._omit_serialization_support = omit_serialization_support
-        self._module = None  # type: typing.Optional[typing.Any]
 
     @property
     def extension(self) -> str:
@@ -149,11 +148,17 @@ class Language:
         return self._omit_serialization_support
 
     @property
-    def module(self) -> typing.Any:
-        if self._module is None:
-            import importlib
-            self._module = importlib.import_module('nunavut.lang.{}'.format(self._language_name))
-        return self._module
+    def support_files(self) -> typing.Generator[pathlib.Path, None, None]:
+        """
+        Iterates over non-templated supporting files embedded within the Nunavut distribution.
+        """
+        module = importlib.import_module('nunavut.lang.{}.support'.format(self._language_name))
+
+        # All language support modules must provide a list_support_files method
+        # to allow the copy generator access to the packaged support files.
+        list_support_files = getattr(module, 'list_support_files')  \
+            # type: typing.Callable[[], typing.Generator[pathlib.Path, None, None]]
+        return list_support_files()
 
     def get_config_value(self,
                          key: str,

@@ -26,7 +26,7 @@ documentation, etc.
 
 Partial example: generating a C struct
 
-.. code-block::
+.. code-block:: c
 
        /*
         * UAVCAN data structure definition
@@ -39,17 +39,30 @@ Partial example: generating a C struct
         #ifndef {{T.full_name | c.macrofy}}
         #define {{T.full_name | c.macrofy}}
 
-        typedef struct {{T.full_name | c.to_snake_case}}Type
-        {
-    {%- for attribute in T.attributes %}
-    {%- if attribute is constant %}
-            const {{ attribute.data_type | c.type_from_primitive }} {{ attribute.name }} = {{ attribute.value }};
-    {% endif -%}
-    {% endfor %}
+        {%- for constant in T.constants %}
+        #define {{ T | c.macrofy }}_{{ constant.name | c.macrofy }} {{ constant | constant_value }}
+        {%- endfor %}
 
+        typedef struct
+        {
+            /*
+                Note that we're not handling union types properly in this simplified example.
+                Unions take a bit more logic to generate correctly.
+            */
+            {%- for field in T.fields %}
+            {%- if field is not padding %}
+                {{ field.data_type | declaration }} {{ field | id }}
+                {%- if field.data_type is ArrayType -%}
+                    [{{ field.data_type.capacity }}]
+                {%- endif -%};
+            {%- if field is VariableLengthArrayType %}
+                {{ typename_unsigned_length }} {{ field | id }}_length;
+            {%- endif -%}
+            {%- endif -%}
+            {%- endfor %}
     ...
 
-        } {{ T.full_name | c.to_snake_case }};
+        } {{ composite_type | full_reference_name }};
 
         #endif // {{T.full_name | c.macrofy}}
 

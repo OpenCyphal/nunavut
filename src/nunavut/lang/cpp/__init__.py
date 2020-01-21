@@ -11,64 +11,20 @@
 import functools
 import io
 import math
-import pathlib
 import re
 import typing
 
 import pydsdl
 
-from ...generators import AbstractGenerator
-from ...lang import Language, _UniqueNameGenerator
+from .. import Language, _UniqueNameGenerator
+from .._common import IncludeGenerator
 from ...templates import (template_language_filter,
                           template_language_list_filter)
 from ..c import C_RESERVED_PATTERNS, VariableNameEncoder, _CFit
-from ._utilities import IncludeGenerator
 
 CPP_RESERVED_PATTERNS = frozenset([*C_RESERVED_PATTERNS])
 
 CPP_NO_DOUBLE_DASH_RULE = re.compile(r'(__)')
-
-
-class SupportGenerator(AbstractGenerator):
-    """
-    Copy C++ support types to the :func:`support_output_folder <nunavut.Namespace.get_support_output_folder()>`.
-    This class name is expected by the :func:`nunavut.generators.create_support_generator()` method.
-
-    .. invisible-code-block: python
-
-        import pathlib
-        from unittest.mock import MagicMock, NonCallableMagicMock
-        from nunavut import YesNoDefault
-        from nunavut.lang import LanguageContext
-        from nunavut.lang.cpp import SupportGenerator
-
-        language_context = LanguageContext()
-        namespace = NonCallableMagicMock()
-        namespace.get_language_context = MagicMock()
-        namespace.get_language_context.return_value = language_context
-        namespace.get_support_output_folder = MagicMock()
-        namespace.get_support_output_folder.return_value = gen_paths.out_dir
-
-    .. code-block:: python
-
-        generator = SupportGenerator(namespace, YesNoDefault.DEFAULT)
-        assert len(generator.generate_all()) > 0
-
-    """
-
-    def get_templates(self) -> typing.Iterable[pathlib.Path]:
-        from .support import list_support_files
-        return list_support_files()
-
-    def generate_all(self,
-                     is_dryrun: bool = False,
-                     allow_overwrite: bool = True) \
-            -> typing.Iterable[pathlib.Path]:
-        from .support import copy_support_headers
-        language = self.namespace.get_language_context().get_language(__package__)
-
-        output_folder = pathlib.Path(self.namespace.get_support_output_folder())
-        return copy_support_headers(language.support_namespace, output_folder, allow_overwrite, is_dryrun)
 
 
 @template_language_filter(__name__)
@@ -419,20 +375,17 @@ def filter_includes(language: Language,
 
 @template_language_filter(__name__)
 def filter_declaration(language: Language,
-                       instance: pydsdl.Any,
-                       use_standard_types: typing.Optional[bool] = None) -> str:
+                       instance: pydsdl.Any) -> str:
     """
     Emit a declaration statement for the given instance.
     """
-    if use_standard_types is None:
-        use_standard_types = bool(language.get_config_value('use_standard_types'))
     if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.VoidType):
-        return filter_type_from_primitive(language, instance, use_standard_types)
+        return filter_type_from_primitive(language, instance)
     elif isinstance(instance, pydsdl.VariableLengthArrayType):
-        return 'std::vector<{}>'.format(filter_declaration(language, instance.element_type, use_standard_types))
+        return 'std::vector<{}>'.format(filter_declaration(language, instance.element_type))
     elif isinstance(instance, pydsdl.ArrayType):
         return 'std::array<{},{}>'.format(
-            filter_declaration(language, instance.element_type, use_standard_types),
+            filter_declaration(language, instance.element_type),
             instance.capacity)
     else:
         return filter_full_reference_name(language, instance)
@@ -586,10 +539,8 @@ def filter_definition_end(language: Language, instance: pydsdl.CompositeType) ->
 
 @template_language_filter(__name__)
 def filter_type_from_primitive(language: Language,
-                               value: pydsdl.PrimitiveType,
-                               use_standard_types: typing.Optional[bool] = None) -> str:
-    if use_standard_types is None:
-        use_standard_types = bool(language.get_config_value('use_standard_types'))
+                               value: pydsdl.PrimitiveType) -> str:
+    use_standard_types = bool(language.get_config_value('use_standard_types'))
     ctype = _CFit.get_best_fit(value.bit_length).to_c_type(value, use_standard_types)
     return (ctype if not use_standard_types else 'std::' + ctype)
 

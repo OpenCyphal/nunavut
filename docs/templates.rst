@@ -96,6 +96,16 @@ C Filters
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_to_template_unique_name
    :noindex:
+.. autofunction:: nunavut.lang.c.filter_short_reference_name
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_includes
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_declaration
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_constant_value
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_full_reference_name
+   :noindex:
 
 C++ Filters
 -------------------------------------------------
@@ -118,6 +128,8 @@ C++ Filters
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_definition_end
    :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_to_namespace_qualifier
+   :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_type_from_primitive
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_to_template_unique_name
@@ -125,6 +137,8 @@ C++ Filters
 .. autofunction:: nunavut.lang.cpp.filter_as_boolean_value
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_indent
+   :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_minimum_required_capacity_bits
    :noindex:
 
 Python Filters

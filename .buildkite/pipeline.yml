@@ -25,7 +25,7 @@ steps:
   - label: ':cpp::hammer: verification build'
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
     id: cpp-docker-verify
-    command: "./.buildkite/verify_cpp.sh"
+    command: "./.buildkite/verify.sh"
     skip: true
     artifact_paths: 
       - "verification/cpp/build/suite/coverage/all/*"

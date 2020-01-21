@@ -18,7 +18,6 @@ from ..templates import (SupportsTemplateContext, template_context_filter,
                          template_language_filter, template_language_int_filter,
                          template_language_list_filter)
 from . import Language, _UniqueNameGenerator
-from .c import VariableNameEncoder
 
 
 @template_context_filter
@@ -44,6 +43,7 @@ def filter_to_template_unique_name(context: SupportsTemplateContext, base_token:
     .. invisible-code-block: python
 
         from nunavut.lang.py import filter_to_template_unique_name
+        from nunavut.lang import _UniqueNameGenerator
 
     .. code-block:: python
 
@@ -55,7 +55,7 @@ def filter_to_template_unique_name(context: SupportsTemplateContext, base_token:
         rendered = '_f0_,_f1_,_f2_,_bar0_'
 
     .. invisible-code-block: python
-
+        _UniqueNameGenerator.reset()
         jinja_filter_tester(filter_to_template_unique_name, template, rendered, 'py')
 
     .. code-block:: python
@@ -155,6 +155,7 @@ def filter_id(language: Language,
     # compatible.
     reserved = set(language.get_reserved_identifiers())
     reserved.update(PYTHON_RESERVED_IDENTIFIERS)
+    from .c import VariableNameEncoder
     vne = VariableNameEncoder(language.stropping_prefix,
                               language.stropping_suffix,
                               language.encoding_prefix,

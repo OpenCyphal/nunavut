@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # This software is distributed under the terms of the MIT License.
 #
 
@@ -24,11 +24,19 @@ set -o pipefail
 
 # +----------------------------------------------------------+
 
-pushd verification/cpp
-if [ ! -d build ]; then
-    mkdir build
+pushd verification
+if [ ! -d build_cpp ]; then
+    mkdir build_cpp
 fi
-cd build
-cmake -DNUNAVUT_CPP_FLAG_SET=linux ..
+pushd build_cpp
+cmake -DNUNAVUT_FLAG_SET=linux -DNUNAVUT_VERIFICATION_LANG=cpp ..
+cmake --build . --target all -- -j4
+cmake --build . --target cov_all
+popd
+if [ ! -d build_c ]; then
+    mkdir build_c
+fi
+pushd build_c
+cmake -DNUNAVUT_FLAG_SET=linux -DNUNAVUT_VERIFICATION_LANG=c ..
 cmake --build . --target all -- -j4
 cmake --build . --target cov_all

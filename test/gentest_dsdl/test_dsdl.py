@@ -10,7 +10,7 @@ import pytest
 from nunavut import generate_types
 
 
-@pytest.mark.parametrize('lang_key,generate_support', [('cpp', False), ('cpp', True)])
+@pytest.mark.parametrize('lang_key,generate_support', [('cpp', False), ('cpp', True), ('c', False), ('c', True)])
 def test_realgen(gen_paths, lang_key, generate_support):  # type: ignore
     """
     Sanity test that runs through the entire public, regulated set of

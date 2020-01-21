@@ -1,5 +1,5 @@
-nunavut.lang.cpp package
-========================
+nunavut.lang.c package
+======================
 
 Subpackages
 -----------
@@ -7,13 +7,13 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   nunavut.lang.cpp.support
-   nunavut.lang.cpp.templates
+   nunavut.lang.c.support
+   nunavut.lang.c.templates
 
 Module contents
 ---------------
 
-.. automodule:: nunavut.lang.cpp
+.. automodule:: nunavut.lang.c
    :members:
    :undoc-members:
    :show-inheritance:

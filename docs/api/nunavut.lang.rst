@@ -5,17 +5,13 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
+   nunavut.lang.c
    nunavut.lang.cpp
 
 Submodules
 ----------
-
-
-.. automodule:: nunavut.lang.c
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 
 .. automodule:: nunavut.lang.js

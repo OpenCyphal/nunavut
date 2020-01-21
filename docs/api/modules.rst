@@ -1,4 +1,4 @@
-Library
+library
 =======
 
 .. toctree::

@@ -4,20 +4,14 @@
 #
 
 # +---------------------------------------------------------------------------+
-# | CONSTANTS
-# +---------------------------------------------------------------------------+
-set(NNVG_EXTENSION .hpp)
-
-# +---------------------------------------------------------------------------+
 # | BUILD FUNCTIONS
 # +---------------------------------------------------------------------------+
 #
 # :function: create_dsdl_target
 # Creates a target that will generate source code from dsdl definitions.
 #
-# The source is generated to files with ${NNVG_EXTENSION} as the extension.
-#
 # :param str ARG_TARGET_NAME:               The name to give the target.
+# :param str ARG_OUTPUT_LANGUAGE            The language to generate for this target.
 # :param Path ARG_OUTPUT_FOLDER:            The directory to generate all source under.
 # :param Path ARG_DSDL_ROOT_DIR:            A directory containing the root namespace dsdl.
 # :param bool ARG_ENABLE_CLANG_FORMAT:      If ON then clang-format will be run on each generated file.
@@ -26,7 +20,7 @@ set(NNVG_EXTENSION .hpp)
 #           will generate. For example, if ARG_TARGET_NAME == 'foo-bar' then after calling this function
 #           ${foo-bar-OUTPUT} will be set to the list of output files.
 #
-function (create_dsdl_target ARG_TARGET_NAME ARG_OUTPUT_FOLDER ARG_DSDL_ROOT_DIR ARG_ENABLE_CLANG_FORMAT)
+function (create_dsdl_target ARG_TARGET_NAME ARG_OUTPUT_LANGUAGE ARG_OUTPUT_FOLDER ARG_DSDL_ROOT_DIR ARG_ENABLE_CLANG_FORMAT)
 
     set(LOOKUP_DIR_CMD_ARGS "")
 
@@ -38,8 +32,7 @@ function (create_dsdl_target ARG_TARGET_NAME ARG_OUTPUT_FOLDER ARG_DSDL_ROOT_DIR
 
     execute_process(COMMAND ${NNVG}
                                 --list-outputs
-                                --target-language cpp
-                                --output-extension ${NNVG_EXTENSION}
+                                --target-language ${ARG_OUTPUT_LANGUAGE}
                                 -O ${ARG_OUTPUT_FOLDER}
                                 ${LOOKUP_DIR_CMD_ARGS}
                                 ${ARG_DSDL_ROOT_DIR}
@@ -54,7 +47,7 @@ function (create_dsdl_target ARG_TARGET_NAME ARG_OUTPUT_FOLDER ARG_DSDL_ROOT_DIR
 
     execute_process(COMMAND ${NNVG}
                                 --list-inputs
-                                --target-language cpp
+                                --target-language ${ARG_OUTPUT_LANGUAGE}
                                 -O ${ARG_OUTPUT_FOLDER}
                                 ${LOOKUP_DIR_CMD_ARGS}
                                 ${ARG_DSDL_ROOT_DIR}
@@ -75,8 +68,7 @@ function (create_dsdl_target ARG_TARGET_NAME ARG_OUTPUT_FOLDER ARG_DSDL_ROOT_DIR
 
     add_custom_command(OUTPUT ${OUTPUT_FILES}
                        COMMAND ${NNVG}
-                                    --target-language cpp
-                                    --output-extension ${NNVG_EXTENSION}
+                                    --target-language ${ARG_OUTPUT_LANGUAGE}
                                     -O ${ARG_OUTPUT_FOLDER}
                                     ${LOOKUP_DIR_CMD_ARGS}
                                     ${CLANG_FORMAT_ARGS}
