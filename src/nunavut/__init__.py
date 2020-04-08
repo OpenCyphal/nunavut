@@ -524,6 +524,8 @@ class DependencyBuilder:
         if isinstance(t, pydsdl.ServiceType):
             return [attr.data_type for attr in t.request_type.attributes] + \
                 [attr.data_type for attr in t.response_type.attributes]
+        elif isinstance(t, pydsdl.TaggedUnionType):
+            return [attr.data_type for attr in t.union_type.attributes]
         else:
             return [attr.data_type for attr in t.attributes]
 

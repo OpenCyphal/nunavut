@@ -319,6 +319,8 @@ def filter_imports(language: Language,
     # Make a list of all attributes defined by this type
     if isinstance(t, pydsdl.ServiceType):
         atr = t.request_type.attributes + t.response_type.attributes
+    elif isinstance(t, pydsdl.TaggedUnionType):
+        atr = t.union_type.attributes
     else:
         atr = t.attributes
 
