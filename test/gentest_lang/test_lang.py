@@ -46,7 +46,7 @@ def ptest_lang_c(gen_paths, implicit, unique_name_evaluator):  # type: ignore
     templates_dirs.append(gen_paths.templates_dir / Path("common"))
 
     root_namespace = str(root_namespace_dir)
-    compound_types = read_namespace(root_namespace, '', allow_unregulated_fixed_port_id=True)
+    compound_types = read_namespace(root_namespace, [], allow_unregulated_fixed_port_id=True)
     language_context = LanguageContext('c' if implicit else None, '.h' if not implicit else None)
     namespace = build_namespace_tree(compound_types,
                                      root_namespace_dir,
@@ -111,7 +111,7 @@ def ptest_lang_cpp(gen_paths, implicit):  # type: ignore
 
     root_namespace_dir = gen_paths.dsdl_dir / Path("langtest")
     root_namespace = str(root_namespace_dir)
-    compound_types = read_namespace(root_namespace, '', allow_unregulated_fixed_port_id=True)
+    compound_types = read_namespace(root_namespace, [], allow_unregulated_fixed_port_id=True)
     if implicit:
         templates_dirs = [gen_paths.templates_dir / Path("implicit") / Path("cpp")]
     else:
@@ -179,7 +179,7 @@ def ptest_lang_py(gen_paths, implicit, unique_name_evaluator):  # type: ignore
 
     templates_dirs.append(gen_paths.templates_dir / Path("common"))
 
-    compound_types = read_namespace(root_namespace, '', allow_unregulated_fixed_port_id=True)
+    compound_types = read_namespace(root_namespace, [], allow_unregulated_fixed_port_id=True)
 
     language_context = LanguageContext('py' if implicit else None, '.py' if not implicit else None)
 

@@ -21,7 +21,7 @@ from nunavut.lang import LanguageContext
 def _test_common_namespace(gen_paths, target_language: str = 'js', extension: str = '.json'):  # type: ignore
     root_namespace_dir = gen_paths.dsdl_dir / pathlib.Path("uavcan")
     root_namespace = str(root_namespace_dir)
-    return nunavut.build_namespace_tree(pydsdl.read_namespace(root_namespace, ''),
+    return nunavut.build_namespace_tree(pydsdl.read_namespace(root_namespace, []),
                                         root_namespace_dir,
                                         gen_paths.out_dir,
                                         LanguageContext(target_language, extension=extension))

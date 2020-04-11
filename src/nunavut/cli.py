@@ -17,7 +17,7 @@ import textwrap
 import typing
 
 
-def _run(args: argparse.Namespace, extra_includes: str) -> int:  # noqa: C901
+def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # noqa: C901
     '''
         Post command-line setup and parsing logic to execute nunavut
         library routines based on input.

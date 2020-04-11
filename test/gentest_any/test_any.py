@@ -20,7 +20,7 @@ def test_anygen(gen_paths, lang_key):  # type: ignore
     Verifies that any dsdl type will resolve to an ``Any`` template.
     """
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
-    type_map = read_namespace(str(root_namespace_dir), '')
+    type_map = read_namespace(str(root_namespace_dir), [])
     language_context = LanguageContext(extension='.json')
     namespace = build_namespace_tree(type_map,
                                      root_namespace_dir,
