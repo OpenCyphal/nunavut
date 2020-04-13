@@ -385,7 +385,7 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         self._templates_list = None  # type: typing.Optional[typing.List[pathlib.Path]]
 
-        logger.info("Loading templates from {}".format(templates_dir))
+        logger.info("Loading templates from {}".format(templates_dirs))
 
         fs_loader = FileSystemLoader((str(d) for d in self._templates_dirs), followlinks=followlinks)
 
