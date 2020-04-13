@@ -25,7 +25,7 @@ import nunavut.postprocessors
 from nunavut.jinja.jinja2 import (ChoiceLoader, Environment, FileSystemLoader,
                                   PackageLoader, StrictUndefined, Template,
                                   TemplateAssertionError, nodes,
-                                  select_autoescape, FileSystemBytecodeCache)
+                                  select_autoescape)
 from nunavut.jinja.jinja2.ext import Extension
 from nunavut.jinja.jinja2.parser import Parser
 from nunavut.templates import (LANGUAGE_FILTER_ATTRIBUTE_NAME)
@@ -413,8 +413,7 @@ class Generator(nunavut.generators.AbstractGenerator):
                                 lstrip_blocks=lstrip_blocks,
                                 trim_blocks=trim_blocks,
                                 auto_reload=False,
-                                cache_size=0,
-                                bytecode_cache=FileSystemBytecodeCache())
+                                cache_size=0)
 
         self._add_language_support()
 
