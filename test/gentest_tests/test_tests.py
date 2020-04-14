@@ -19,7 +19,7 @@ def test_instance_tests(gen_paths):  # type: ignore
     all of its subclasses.
     """
     root_namespace_dir = gen_paths.dsdl_dir / Path("buncho")
-    type_map = read_namespace(str(root_namespace_dir), '')
+    type_map = read_namespace(str(root_namespace_dir), [])
     language_context = LanguageContext('js')
     namespace = build_namespace_tree(type_map,
                                      root_namespace_dir,

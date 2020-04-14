@@ -329,8 +329,12 @@ def filter_imports(language: Language,
     dep_types = [x.data_type for x in atr if isinstance(x.data_type, pydsdl.CompositeType)]
     dep_types += [x.data_type.element_type for x in atr if array_w_composite_type(x.data_type)]
 
-    # Make a list of unique full namespaces of referenced composites
-    namespace_list = [x.full_namespace for x in dep_types]
+    # Make a list of unique full namespaces of referenced composites. Keep the original ordering.
+    namespace_list = []
+    for dt in dep_types:
+        ns = dt.full_namespace
+        if ns not in namespace_list:
+            namespace_list.append(ns)
 
     if language.enable_stropping:
         namespace_list = ['.'.join([filter_id(language, y) for y in x.split('.')]) for x in namespace_list]
