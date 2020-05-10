@@ -1,5 +1,5 @@
 ################################################
-Nunavut
+Nunavut: DSDL template engine
 ################################################
 
 +--------------------------------+-----------------------------------+
@@ -22,7 +22,7 @@ Nunavut
 | community/support              | |badge_forum|_                    |
 +--------------------------------+-----------------------------------+
 
-Nunavut is a `UAVCAN`_ DSDL code generator that automates exposing a `pydsdl`_ abstract
+Nunavut is a `UAVCAN`_ DSDL template engine that exposes a `pydsdl`_ abstract
 syntax tree to `Jinja2`_ templates allowing authors to generate code, schemas, metadata,
 documentation, etc.
 
