@@ -13,7 +13,7 @@
         std::vector<{{ typename_byte }}>& inout_byte_buffer,
         std::size_t bit_offset = 0)
     {
-        nunavut::support::LittleEndianSerializer<{{typename_byte}}, {{composite_type | minimum_required_capacity_bits}}> _ser_(inout_byte_buffer, bit_offset);
+        // TODO: implement this routine
         return 0;
     }
 {%- endif %}
