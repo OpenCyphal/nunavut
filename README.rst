@@ -5,8 +5,6 @@ Nunavut: DSDL template engine
 +--------------------------------+-----------------------------------+
 | tox build (master)             | |badge_build|_                    |
 +--------------------------------+-----------------------------------+
-| generated cpp verification     | |badge_verification_cpp|_         |
-+--------------------------------+-----------------------------------+
 | static analysis                | |badge_analysis|_ |badge_issues|_ |
 +--------------------------------+-----------------------------------+
 | unit test code coverage        | |badge_coverage|_                 |

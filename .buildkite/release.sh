@@ -28,7 +28,7 @@ if [ -z "${BUILDKITE+xxx}" ]; then
     echo "Not BUILDKITE. Skipping artifact download."
     mkdir -p test/build_native_gcc
 else
-    buildkite-agent artifact download ".tox/report/tmp/" .
+    buildkite-agent artifact download ".tox/report/tmp/*" .
 fi
 
 export NUNAVUT_FULL_VERSION=$(grep __version__ src/nunavut/version.py | awk '{print $3}' | sed -E "s/'([0-9]+\.[0-9]+\.[0-9]+)'/\1/g")
