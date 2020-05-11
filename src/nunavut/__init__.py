@@ -169,6 +169,9 @@ class Namespace(pydsdl.Any):
         return self._output_folder
 
     def get_support_output_folder(self) -> pathlib.PurePath:
+        """
+        The folder under which support artifacts are generated.
+        """
         return self._support_output_folder
 
     def get_language_context(self) -> 'lang.LanguageContext':
@@ -563,12 +566,13 @@ def generate_types(language_key: str,
                    omit_serialization_support: bool = True,
                    is_dryrun: bool = False,
                    allow_overwrite: bool = True,
-                   lookup_directories: typing.Optional[typing.Iterable[str]] = None) -> None:
+                   lookup_directories: typing.Optional[typing.Iterable[str]] = None,
+                   allow_unregulated_fixed_port_id: bool = False) -> None:
     """
     Helper method that uses default settings and built-in templates to generate types for a given
     language. This method is the most direct way to generate code using Nunavut.
     """
-    from nunavut.generators import create_builtin_source_generator, create_support_generator
+    from nunavut.generators import create_generators
 
     language_context = lang.LanguageContext(language_key,
                                             omit_serialization_support_for_target=omit_serialization_support)
@@ -576,12 +580,15 @@ def generate_types(language_key: str,
     if lookup_directories is None:
         lookup_directories = []
 
-    type_map = pydsdl.read_namespace(str(root_namespace_dir), lookup_directories)
+    type_map = pydsdl.read_namespace(str(root_namespace_dir),
+                                     lookup_directories,
+                                     allow_unregulated_fixed_port_id=allow_unregulated_fixed_port_id)
 
     namespace = build_namespace_tree(type_map,
                                      str(root_namespace_dir),
                                      str(out_dir),
                                      language_context)
 
-    create_support_generator(namespace).generate_all(is_dryrun, allow_overwrite)
-    create_builtin_source_generator(namespace).generate_all(is_dryrun, allow_overwrite)
+    generator, support_generator = create_generators(namespace)
+    support_generator.generate_all(is_dryrun, allow_overwrite)
+    generator.generate_all(is_dryrun, allow_overwrite)

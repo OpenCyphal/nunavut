@@ -9,11 +9,17 @@ Test the generation of serialization support generically and for python.
 from pathlib import Path
 
 from nunavut import generate_types
+import pytest
 
 
-def test_no_serialization_cpp(gen_paths):  # type: ignore
-    root_namespace_dir = gen_paths.root_dir / Path("submodules") / Path("public_regulated_data_types") / Path("uavcan")
-    generate_types('cpp',
+@pytest.mark.parametrize('lang_key', ['cpp'])
+def test_hello_serialization(gen_paths, lang_key):  # type: ignore
+    """
+    don't know yet
+    """
+    root_namespace_dir = gen_paths.dsdl_dir / Path("basic")
+    generate_types(lang_key,
                    root_namespace_dir,
                    gen_paths.out_dir,
-                   omit_serialization_support=True)
+                   omit_serialization_support=False,
+                   allow_unregulated_fixed_port_id=True)

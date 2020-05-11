@@ -86,24 +86,33 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
     # nunavut : generate
     #
 
+    generator_args = {
+        'generate_namespace_types': (nunavut.YesNoDefault.YES
+                                     if args.generate_namespace_types
+                                     else nunavut.YesNoDefault.DEFAULT),
+        'templates_dir': (pathlib.Path(args.templates) if args.templates is not None else None),
+        'trim_blocks': args.trim_blocks,
+        'lstrip_blocks': args.lstrip_blocks,
+        'post_processors': _build_post_processor_list_from_args(args)
+    }
+
+    from nunavut.generators import create_generators
+    generator, support_generator = create_generators(root_namespace, **generator_args)
+
     if args.list_outputs:
-        for _, output_path in root_namespace.get_all_datatypes():
+        for output_path in generator.generate_all(is_dryrun=True):
+            sys.stdout.write(str(output_path))
+            sys.stdout.write(';')
+        for output_path in support_generator.generate_all(is_dryrun=True):
             sys.stdout.write(str(output_path))
             sys.stdout.write(';')
         return 0
 
-    generate_namespace_types = (nunavut.YesNoDefault.YES
-                                if args.generate_namespace_types
-                                else nunavut.YesNoDefault.DEFAULT)
-    generator = nunavut.jinja.Generator(root_namespace,
-                                        generate_namespace_types,
-                                        (pathlib.Path(args.templates) if args.templates is not None else None),
-                                        trim_blocks=args.trim_blocks,
-                                        lstrip_blocks=args.lstrip_blocks,
-                                        post_processors=_build_post_processor_list_from_args(args))
-
     if args.list_inputs:
         for input_path in generator.get_templates():
+            sys.stdout.write(str(input_path.resolve()))
+            sys.stdout.write(';')
+        for input_path in support_generator.get_templates():
             sys.stdout.write(str(input_path.resolve()))
             sys.stdout.write(';')
         if generator.generate_namespace_types:
@@ -117,13 +126,12 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
         return 0
 
     if args.omit_serialization_support is None or not args.omit_serialization_support:
-        from nunavut.generators import create_support_generator
-        support_generator = create_support_generator(root_namespace)
         support_generator.generate_all(is_dryrun=args.dry_run,
                                        allow_overwrite=not args.no_overwrite)
 
-    return generator.generate_all(is_dryrun=args.dry_run,
-                                  allow_overwrite=not args.no_overwrite)
+    generator.generate_all(is_dryrun=args.dry_run,
+                           allow_overwrite=not args.no_overwrite)
+    return 0
 
 
 class _LazyVersionAction(argparse._VersionAction):
@@ -198,8 +206,8 @@ def _make_parser() -> argparse.ArgumentParser:
         Paths to a directory containing templates to use when generating code.
 
         Templates found under these paths will override the built-in templates for a
-        given language. If not target language was provided and no template paths were
-        provided then no templates will be found and no source will be generated.
+        given language. If no target language was provided and no template paths were
+        provided then no source will be generated.
 
     ''').lstrip())
 

@@ -16,7 +16,8 @@ __version__ = "1.0.0"
 
 def copy_support_headers(target_namespace: typing.List[str],
                          copy_to_folder: pathlib.Path,
-                         allow_overwrite: bool) -> typing.List[pathlib.Path]:
+                         allow_overwrite: bool,
+                         is_dryrun: bool = False) -> typing.List[pathlib.Path]:
     """
     Copy C++ support headers out of the Nunavut package and into the folder specified.
 
@@ -35,6 +36,9 @@ def copy_support_headers(target_namespace: typing.List[str],
         with pytest.raises(PermissionError):
             copied = copy_support_headers(['nunavut', 'support'], gen_paths.out_dir, False)
 
+        # Dryruns do not check for overwrite
+        copied = copy_support_headers(['nunavut', 'support'], gen_paths.out_dir, False, True)
+
     .. invisible-code-block: python
 
         assert len(copied) > 0
@@ -44,6 +48,8 @@ def copy_support_headers(target_namespace: typing.List[str],
     :param pathlib.Path copy_to_folder: The folder to copy the headers into.
     :param bool allow_overwrite: If True then this method will copy the support files over
         existing files of the same name.
+    :param bool is_dryrun: If True then no files are actually copied. The return becomes a list
+        of files that would have been copied if this parameter were False.
     :return: A list of paths to the copied headers.
     :raises: PermissionError if :attr:`allow_overwrite` is False and the file exists.
     """
@@ -64,11 +70,32 @@ def copy_support_headers(target_namespace: typing.List[str],
             pass
     for resource in resources:
         target = namespaced_path / pathlib.Path(resource)
-        if not allow_overwrite and target.exists():
-            raise PermissionError('{} exists. Refusing to overwrite.'.format(str(target)))
-        shutil.copy(pkg_resources.resource_filename(__name__, str(resource)), str(namespaced_path))
+        if not is_dryrun:
+            if not allow_overwrite and target.exists():
+                raise PermissionError('{} exists. Refusing to overwrite.'.format(str(target)))
+            shutil.copy(pkg_resources.resource_filename(__name__, str(resource)), str(namespaced_path))
         copied.append(target)
     return copied
+
+
+def list_support_files() -> typing.List[pathlib.Path]:
+    """
+    Get a list of paths to C++ support files embedded in this package.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp.support import list_support_files
+        paths = list_support_files()
+        assert len(paths) > 0
+
+    :return: A list of file resources embedded in this package.
+    """
+    import pkg_resources
+    files = []
+    resources = [r for r in pkg_resources.resource_listdir(__name__, '.') if r.endswith('.hpp')]
+    for resource in resources:
+        files.append(pathlib.Path(pkg_resources.resource_filename(__name__, str(resource))))
+    return files
 
 
 def list_support_headers(target_namespace: typing.List[str]) -> typing.List[pathlib.Path]:

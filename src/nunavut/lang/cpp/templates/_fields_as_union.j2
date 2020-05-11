@@ -1,0 +1,17 @@
+    /*
+    TODO: finish me. intrinsic support for C++ is an incomplete feature. Watch
+          https://github.com/UAVCAN/nunavut/issues/91 for progress.
+    {{ composite_type.tag_field_type | declaration }} _tag_;
+    union {
+{%- for field in composite_type.fields -%}
+{%- if field is not padding %}
+        {{ field.data_type | declaration }} {{ field.name | id }};
+{%- endif -%}
+{%- endfor %}
+    };
+{%- for field in composite_type.fields -%}
+{%- if field is not padding %}
+    bool {{ ('is_' + field.name)  | id }}() const { return (_tag_ == {{ loop.index0 }}); }
+{%- endif -%}
+{%- endfor %}
+    */

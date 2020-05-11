@@ -8,7 +8,8 @@
  * +------------------------------------------------------------------------------------------------------------------+
  *
  * Generator:
- * nunavut-{{ nunavut.version }}
+ * nunavut-{{ nunavut.version }} (serialization was {% if nunavut.support.omit %}not {% endif %}enabled)
+ *
  *
  * Source File:
  * {{ T.source_file_path }}
@@ -33,7 +34,3 @@
 {%- block object -%}{%- endblock -%}
 {{T.full_namespace | close_namespace}}
 #endif // {{T.full_name | c.macrofy}}
-
-/*
-{{ T | yamlfy }}
-*/

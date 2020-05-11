@@ -1,8 +1,8 @@
 steps:
-  - label: ':python::hammer: tox build, test, and release'
+  - label: ':python::hammer: tox build, test, and report'
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
-    id: toxic-docker-release
-    command: "./.buildkite/release.sh"
+    id: toxic-docker-build
+    command: "tox"
     artifact_paths: 
       - ".tox/report/tmp/*"
       - ".tox/mypy/tmp/*"
@@ -23,9 +23,10 @@ steps:
       queue: 'default'
     timeout_in_minutes: 15
   - label: ':cpp::hammer: verification build'
-    if: pipeline.slug == "nunavut-verification-cpp"
+    if: build.branch == "master" && pipeline.slug == "nunavut-release"
     id: cpp-docker-verify
     command: "./.buildkite/verify_cpp.sh"
+    skip: true
     artifact_paths: 
       - "verification/cpp/build/suite/coverage/all/*"
     plugins:
@@ -34,7 +35,24 @@ steps:
           image: "uavcan/libuavcan:1.0"
           propagate-environment: true
           environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+    timeout_in_minutes: 15
+  - wait
+  - label: ':python::amazon-s3::sonarqube: release'
+    if: build.branch == "master" && pipeline.slug == "nunavut-release"
+    id: toxic-docker-release
+    command: "./.buildkite/release.sh"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/toxic:py35-py38-sq"
+          propagate-environment: true
+          environment:
             - "SONARQUBE_TOKEN"
+            - "PYPI_PASSWORD"
             - "BUILDKITE"
             - "BUILDKITE_BUILD_NUMBER"
     agents:

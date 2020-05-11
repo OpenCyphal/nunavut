@@ -254,57 +254,6 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
         return short_name
 
 
-def filter_alignment_prefix(offset: pydsdl.BitLengthSet) -> str:
-    """
-    Provides a string prefix based on a given :class:`pydsdl.BitLengthSet`.
-
-    .. invisible-code-block: python
-
-        from nunavut.lang.py import filter_alignment_prefix
-        import pydsdl
-
-    .. code-block:: python
-
-        # Given
-        B = pydsdl.BitLengthSet(32)
-
-        # and
-        template = '{{ B | alignment_prefix }}'
-
-        # then ('str' is stropped to 'str_' before the version is suffixed)
-        rendered = 'aligned'
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_alignment_prefix, template, rendered, 'py', B=B)
-
-
-    .. code-block:: python
-
-        # Given
-        B = pydsdl.BitLengthSet(32)
-        B.increment(1)
-
-        # and
-        template = '{{ B | alignment_prefix }}'
-
-        # then ('str' is stropped to 'str_' before the version is suffixed)
-        rendered = 'unaligned'
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_alignment_prefix, template, rendered, 'py', B=B)
-
-
-    :param pydsdl.BitLengthSet offset: A bit length set to test for alignment.
-    :return: 'aligned' or 'unaligned' based on the state of the ``offset`` argument.
-    """
-    if isinstance(offset, pydsdl.BitLengthSet):
-        return 'aligned' if offset.is_aligned_at_byte() else 'unaligned'
-    else:  # pragma: no cover
-        raise TypeError('Expected BitLengthSet, got {}'.format(type(offset).__name__))
-
-
 @template_language_list_filter(__name__)
 def filter_imports(language: Language,
                    t: pydsdl.CompositeType,
@@ -377,18 +326,3 @@ def filter_longest_id_length(language: Language,
         return max(map(len, map(functools.partial(filter_id, language), attributes)))
     else:
         return max(map(len, attributes))
-
-
-def filter_bit_length_set(values: typing.Optional[typing.Union[typing.Iterable[int], int]]) -> pydsdl.BitLengthSet:
-    """
-    Convert an integer or a list of integers into a :class:`pydsdl.BitLengthSet`.
-
-    .. invisible-code-block: python
-
-        from nunavut.lang.py import filter_bit_length_set
-        import pydsdl
-
-        assert type(filter_bit_length_set(23)) == pydsdl.BitLengthSet
-
-    """
-    return pydsdl.BitLengthSet(values)

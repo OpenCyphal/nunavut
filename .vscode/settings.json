@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": ".tox/local/bin/python",
+    "python.pythonPath": "./.tox/local/bin/python3",
     "restructuredtext.sphinxBuildPath": "sphinx-build",
     "restructuredtext.confPath": "${workspaceFolder}",
     "restructuredtext.linter.extraArgs": [
@@ -35,7 +35,9 @@
         "Armin",
         "Buildkite",
         "Doctest",
+        "Kirienko",
         "Noreturn",
+        "Pavel",
         "Pytest",
         "Pytest's",
         "Ronacher",
@@ -46,6 +48,7 @@
         "chmod",
         "compl",
         "conftest",
+        "ctype",
         "datetime",
         "deque",
         "deserialize",
