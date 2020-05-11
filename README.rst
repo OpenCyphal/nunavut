@@ -122,10 +122,6 @@ Nunavut is part of the UAVCAN project:
     :alt: Build status
 .. _badge_build: https://buildkite.com/uavcan/nunavut-release
 
-.. |badge_verification_cpp| image:: https://badge.buildkite.com/aa0a26b7c212c7913c4ed8869cf49d48f751fa2150e3407cfc.svg
-    :alt: C++ code gen verification status
-.. _badge_verification_cpp: https://buildkite.com/uavcan/nunavut-verification-cpp
-
 .. |badge_pypi_support| image:: https://img.shields.io/pypi/pyversions/nunavut.svg
     :alt: Supported Python Versions
 .. _badge_pypi_support: https://pypi.org/project/nunavut/
