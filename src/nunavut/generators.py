@@ -178,7 +178,7 @@ class CopyFromPackageGenerator(AbstractGenerator):
 
         if not is_dryrun:
             import shutil
-            os.makedirs(target_path, exist_ok=True)
+            os.makedirs(str(target_path), exist_ok=True)
 
         copied = []  # type: typing.List[pathlib.Path]
         for resource in self.get_templates():
@@ -186,7 +186,7 @@ class CopyFromPackageGenerator(AbstractGenerator):
             if not is_dryrun:
                 if not allow_overwrite and target.exists():
                     raise PermissionError('{} exists. Refusing to overwrite.'.format(str(target)))
-                shutil.copy(resource, str(target_path))
+                shutil.copy(str(resource), str(target_path))
             copied.append(target)
         return copied
 

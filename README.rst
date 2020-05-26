@@ -26,7 +26,7 @@ documentation, etc.
 
 Partial example: generating a C struct
 
-.. code-block:: c
+.. code-block:: jinja
 
        /*
         * UAVCAN data structure definition
