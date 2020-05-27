@@ -41,7 +41,7 @@ typedef struct
  * No memory is allocated within this method.
  *
  * @param inout_instance A structure instance to Initialize.
- * @return The inout_instance for fluency.
+ * @return The inout_instance pointer for fluency.
  */
 inline {{ composite_type | declaration }}* init_{{ composite_type | declaration | to_snake_case }}({{ composite_type | declaration }}* inout_instance)
 {
