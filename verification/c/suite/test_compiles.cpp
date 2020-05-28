@@ -13,7 +13,8 @@
 /**
  * Verify that a simple struct type compiles.
  */
-TEST(GeneralTests, StructCompiles) {
+TEST(GeneralTests, StructCompiles)
+{
     UAVCAN_TIME_TimeSystem_0_1 subject;
     subject.value = 1;
     ASSERT_EQ(1, subject.value);
