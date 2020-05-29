@@ -42,7 +42,7 @@ typedef struct
  *
  * @param out_instance A structure instance to Initialize.
  */
-inline void init_{{ composite_type | declaration | to_snake_case }}({{ composite_type | declaration }}* out_instance)
+inline void init_{{ composite_type | declaration | to_snake_case }}({{ composite_type | declaration }}* const out_instance)
 {
     if (out_instance)
     {
