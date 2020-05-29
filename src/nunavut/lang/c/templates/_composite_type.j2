@@ -40,27 +40,25 @@ typedef struct
  * Initialize an {{ composite_type | declaration }} instance to default values.
  * No memory is allocated within this method.
  *
- * @param inout_instance A structure instance to Initialize.
- * @return The inout_instance pointer for fluency.
+ * @param out_instance A structure instance to Initialize.
  */
-inline {{ composite_type | declaration }}* init_{{ composite_type | declaration | to_snake_case }}({{ composite_type | declaration }}* inout_instance)
+inline void init_{{ composite_type | declaration | to_snake_case }}({{ composite_type | declaration }}* out_instance)
 {
-    if (inout_instance)
+    if (out_instance)
     {
         {%- if composite_type.fields | length == 0 %}
-        (*inout_instance) = 0;
+        (*out_instance) = 0;
         {%- else %}
         {%- if composite_type is UnionType %}
-        inout_instance->_tag_ = 0;
-        {{ init_macros.init_field("inout_instance", composite_type.fields[0]) }}
+        out_instance->_tag_ = 0;
+        {{ init_macros.init_field("out_instance", composite_type.fields[0]) }}
         {%- else -%}
         {%- for field in composite_type.fields %}
-        {{ init_macros.init_field("inout_instance", field) }}
+        {{ init_macros.init_field("out_instance", field) }}
         {%- endfor %}
         {%- endif -%}
         {%- endif %}
     }
-    return inout_instance;
 }
 {%- if not nunavut.support.omit %}
 /* TODO: issue #112, add serialization support for C types. */
