@@ -21,18 +21,23 @@ typedef struct
 {%- if field.data_type is ArrayType %}
 
 /* ArrayType macros for {{ field.name }} field of {{ composite_type | full_reference_name }}. */
-#define {{ composite_type | full_reference_name }}_{{ field.name | macrofy(partial_token=True) }}_ARRAY_CAPACITY ({{ field.data_type.capacity }}U)
-#define {{ composite_type | full_reference_name }}_{{ field.name | macrofy(partial_token=True) }}_ARRAY_IS_VARIABLE_LENGTH {% if field.data_type is VariableLengthArrayType -%}
+#define {{ composite_type | full_reference_name }}_{{ field.name }}_ARRAY_CAPACITY ({{ field.data_type.capacity }}U)
+#define {{ composite_type | full_reference_name }}_{{ field.name }}_ARRAY_IS_VARIABLE_LENGTH {% if field.data_type is VariableLengthArrayType -%}
     ({{ valuetoken_true }})
 {%- else -%}
     ({{ valuetoken_false }})
 {%- endif %}
-#define {{ composite_type | full_reference_name }}_{{ field.name | macrofy(partial_token=True) }}_ARRAY_LENGTH(PTR_TO_{{ composite_type.short_name | macrofy }}) \
+inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}_{{ field.name | to_snake_case }}_array_length(
+    const {{ composite_type | declaration }}* const instance)
+{
 {%- if field.data_type is VariableLengthArrayType %}
-    ((PTR_TO_{{ composite_type.short_name | macrofy }})->{{ field | id }}_length)
+    return (instance == {{ valuetoken_null }}) ? 0 : instance->{{ field | id }}_length;
 {%- else %}
-    ({{ field.data_type.capacity }}U)
+    /* Not used for fixed arrays. */
+    (void)instance;
+    return ({{ field.data_type.capacity }}U);
 {%- endif %}
+}
 {%- endif %}
 {%- endfor %}
 {% import '_init_macros.j2' as init_macros %}

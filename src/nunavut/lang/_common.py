@@ -80,9 +80,11 @@ class IncludeGenerator(DependencyBuilder):
         return ['<{}>'.format(include) for include in sorted(std_includes)]
 
     def _get_std_includes_for_c(self, dep_types: Dependencies) -> typing.List[str]:
-        std_includes = ['stdlib.h']  # type: typing.List[str]
-        # we always include stdlib since initializers require the use of NULL
+        std_includes = []  # type: typing.List[str]
         if self._language.get_config_value_as_bool('use_standard_types'):
+            std_includes.append('stdlib.h')
+            # we always include stdlib if standard types are in use since initializers
+            # require the use of NULL
             if dep_types.uses_integer:
                 std_includes.append('stdint.h')
             if dep_types.uses_bool:

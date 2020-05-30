@@ -5,8 +5,7 @@
 #
 
 from pathlib import Path
-from tempfile import NamedTemporaryFile
-from typing import Dict
+from typing import Dict, Any, Callable
 from unittest.mock import MagicMock
 
 import pytest
@@ -34,7 +33,11 @@ class Dummy:
 # +---------------------------------------------------------------------------+
 
 
-def ptest_lang_c(gen_paths, implicit, unique_name_evaluator, use_standard_types):  # type: ignore
+def ptest_lang_c(gen_paths: Any,
+                 implicit: bool,
+                 unique_name_evaluator: Any,
+                 use_standard_types: bool,
+                 configurable_language_context_factory: Callable) -> Dict:
     """ Generates and verifies JSON with values filtered using the c language support module.
     """
 
@@ -49,14 +52,10 @@ def ptest_lang_c(gen_paths, implicit, unique_name_evaluator, use_standard_types)
     root_namespace = str(root_namespace_dir)
     compound_types = read_namespace(root_namespace, [], allow_unregulated_fixed_port_id=True)
 
-    with NamedTemporaryFile() as config_overrides:
-        config_overrides.writelines([
-            bytearray('[nunavut.lang.c]\n', 'utf8'),
-            bytearray('use_standard_types = {}'.format(use_standard_types), 'utf8')
-        ])
-        config_overrides.flush()
-        language_context = LanguageContext('c' if implicit else None, '.h' if not implicit else None,
-                                           additional_config_files=[Path(config_overrides.name)])
+    config_overrides = {'nunavut.lang.c': {'use_standard_types': use_standard_types}}
+    language_context = configurable_language_context_factory(config_overrides,
+                                                             'c' if implicit else None,
+                                                             '.h' if not implicit else None)
     namespace = build_namespace_tree(compound_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
@@ -111,7 +110,6 @@ def ptest_lang_c(gen_paths, implicit, unique_name_evaluator, use_standard_types)
     unique_name_evaluator(r'_\d+_', lang_c_output["unique_name_3"])
 
     # cspell: enable
-
     return generated_values
 
 
@@ -233,14 +231,19 @@ def ptest_lang_py(gen_paths, implicit, unique_name_evaluator):  # type: ignore
 
 
 @pytest.mark.parametrize('implicit,use_standard_types', [(True, True), (True, False), (False, True), (False, False)])
-def test_lang_c(gen_paths, unique_name_evaluator, implicit, use_standard_types):  # type: ignore
+def test_lang_c(gen_paths: Any,
+                unique_name_evaluator: Any,
+                implicit: bool,
+                use_standard_types: bool,
+                configurable_language_context_factory: Callable) -> None:
     """
     Generates and verifies JSON with values filtered using the c language support module.
     """
     lctx = LanguageContext()
 
     # cspell: disable
-    generated_values = ptest_lang_c(gen_paths, implicit, unique_name_evaluator, use_standard_types)
+    generated_values = ptest_lang_c(gen_paths, implicit, unique_name_evaluator,
+                                    use_standard_types, configurable_language_context_factory)
     if implicit:
         lang_any = generated_values["tests"]["lang_any"]
         assert lang_any['id_0'] == '_123_class__for_u2___ZX0028ZX002Aother_stuffZX002DZX0026ZX002DsuchZX0029'
