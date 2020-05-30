@@ -25,7 +25,6 @@ class IncludeGenerator(DependencyBuilder):
                  short_reference_name_filter: typing.Callable[..., str]):
         super().__init__(t)
         self._language = language
-        self._use_standard_types = bool(self._language.get_config_value_as_bool('use_standard_types', True))
         self._id = id_filter
         self._short_reference_name_filter = short_reference_name_filter
 
@@ -71,7 +70,7 @@ class IncludeGenerator(DependencyBuilder):
 
     def _get_std_includes_for_cpp(self, dep_types: Dependencies) -> typing.List[str]:
         std_includes = []  # type: typing.List[str]
-        if self._use_standard_types:
+        if self._language.get_config_value_as_bool('use_standard_types'):
             if dep_types.uses_integer:
                 std_includes.append('cstdint')
             if dep_types.uses_array:
@@ -82,7 +81,7 @@ class IncludeGenerator(DependencyBuilder):
 
     def _get_std_includes_for_c(self, dep_types: Dependencies) -> typing.List[str]:
         std_includes = []  # type: typing.List[str]
-        if self._use_standard_types:
+        if self._language.get_config_value_as_bool('use_standard_types'):
             if dep_types.uses_integer:
                 std_includes.append('stdint.h')
             if dep_types.uses_bool:

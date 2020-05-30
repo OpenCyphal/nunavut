@@ -5,8 +5,7 @@ lang_c = {
     'namespace': '{{ T.full_namespace }}',
     'namespace_macrofy': '{{ T.full_namespace | macrofy }}',
 {%- for attribute in T.attributes %}
-    'ctype_std {{ attribute.data_type }}': '{{ attribute.data_type | type_from_primitive }}',
-    'ctype {{ attribute.data_type }}': '{{ attribute.data_type | type_from_primitive(False) }}',
+    'ctype {{ attribute.data_type }}': '{{ attribute.data_type | type_from_primitive }}',
 {%- endfor %}
     'unique_name_0': '{{ "nAME" | to_template_unique_name }}',
     'unique_name_1': '{{ "NAME" | to_template_unique_name }}',

@@ -325,8 +325,9 @@ class _CFit(enum.Enum):
 
     def to_c_type(self,
                   value: pydsdl.PrimitiveType,
-                  use_standard_types: bool = True,
+                  language: Language,
                   inttype_prefix: typing.Optional[str] = None) -> str:
+        use_standard_types = language.get_config_value_as_bool('use_standard_types')
         safe_prefix = '' if inttype_prefix is None else inttype_prefix
         if isinstance(value, pydsdl.UnsignedIntegerType):
             return safe_prefix + (self.to_c_int(False) if not use_standard_types else self.to_std_int(False))
@@ -335,11 +336,11 @@ class _CFit(enum.Enum):
         elif isinstance(value, pydsdl.FloatType):
             return self.to_c_float()
         elif isinstance(value, pydsdl.BooleanType):
-            return ('NUVT_BOOL' if not use_standard_types else 'bool')
+            return language.get_named_types()['boolean']
         elif isinstance(value, pydsdl.VoidType):
             return 'void'
         else:
-            raise RuntimeError("{} is not a known PrimitiveType".format(type(value).__name__))
+            raise RuntimeError('{} is not a known PrimitiveType'.format(type(value).__name__))
 
     @classmethod
     def get_best_fit(cls: typing.Type[_CFit_T], bit_length: int) -> _CFit_T:
@@ -362,8 +363,7 @@ class _CFit(enum.Enum):
 
 @template_language_filter(__name__)
 def filter_type_from_primitive(language: Language,
-                               value: pydsdl.PrimitiveType,
-                               use_standard_types: typing.Optional[bool] = None) -> str:
+                               value: pydsdl.PrimitiveType) -> str:
     """
     Filter to transform a pydsdl :class:`~pydsdl.PrimitiveType` into
     a valid C type.
@@ -377,7 +377,7 @@ def filter_type_from_primitive(language: Language,
     .. code-block:: python
 
         # Given
-        template = '{{ unsigned_int_32_type | type_from_primitive(use_standard_types=True) }}'
+        template = '{{ unsigned_int_32_type | type_from_primitive }}'
 
         # then
         rendered = 'uint32_t'
@@ -392,34 +392,13 @@ def filter_type_from_primitive(language: Language,
                             'c',
                             unsigned_int_32_type=test_type)
 
-    .. code-block:: python
-
-        # Given
-        template = '{{ unsigned_int_32_type | type_from_primitive(use_standard_types=False) }}'
-
-        # then
-        rendered = 'unsigned long'
-
-
-    .. invisible-code-block: python
-
-        test_type = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
-        jinja_filter_tester(filter_type_from_primitive,
-                            template,
-                            rendered,
-                            'c',
-                            unsigned_int_32_type=test_type)
-
-
     :param str value: The dsdl primitive to transform.
 
     :returns: A valid C99 type name.
 
     :raises TemplateRuntimeError: If the primitive cannot be represented as a standard C type.
     """
-    if use_standard_types is None:
-        use_standard_types = bool(language.get_config_value('use_standard_types'))
-    return _CFit.get_best_fit(value.bit_length).to_c_type(value, use_standard_types)
+    return _CFit.get_best_fit(value.bit_length).to_c_type(value, language)
 
 
 _snake_case_pattern_0 = re.compile(r'[\W]+')
@@ -662,12 +641,33 @@ def filter_declaration(language: Language,
 @template_language_filter(__name__)
 def filter_constant_value(language: Language,
                           constant: pydsdl.Constant) -> str:
-    use_standard_types = bool(language.get_config_value('use_standard_types'))
+    """
+    Provides a string that is the full namespace, typename, major, and minor version for a given composite type.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.c import filter_constant_value
+        from unittest.mock import MagicMock
+        import pydsdl
+
+        my_true_constant = MagicMock()
+        my_true_constant.data_type = MagicMock(spec=pydsdl.BooleanType)
+
+    .. code-block:: python
+
+         # and
+        template = '{{ my_true_constant | constant_value }}'
+
+        # then, with stropping enabled
+        rendered = 'true'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_constant_value, template, rendered, 'c', my_true_constant=my_true_constant)
+
+    """
     if isinstance(constant.data_type, pydsdl.BooleanType):
-        if use_standard_types:
-            return ('true' if constant.value.native_value else 'false')
-        else:
-            return ('NUVT_TRUE' if constant.value.native_value else 'NUVT_FALSE')
+        return str(language.valuetoken_true if constant.value.native_value else language.valuetoken_false)
     elif isinstance(constant.data_type, pydsdl.IntegerType):
         return str(constant.value.native_value)
     elif isinstance(constant.data_type, pydsdl.FloatType):

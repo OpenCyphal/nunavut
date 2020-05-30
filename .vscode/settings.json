@@ -103,6 +103,7 @@
         "struct",
         "submodule",
         "uint",
+        "valuetoken",
         "wchar",
         "xargs",
         "yamlfy"

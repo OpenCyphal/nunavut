@@ -5,13 +5,14 @@
 #
 
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
 from pydsdl import read_namespace
 
-from nunavut import build_namespace_tree, YesNoDefault
+from nunavut import YesNoDefault, build_namespace_tree
 from nunavut.jinja import Generator
 from nunavut.lang import Language, LanguageContext
 from nunavut.lang.c import filter_id as c_filter_id
@@ -33,7 +34,7 @@ class Dummy:
 # +---------------------------------------------------------------------------+
 
 
-def ptest_lang_c(gen_paths, implicit, unique_name_evaluator):  # type: ignore
+def ptest_lang_c(gen_paths, implicit, unique_name_evaluator, use_standard_types):  # type: ignore
     """ Generates and verifies JSON with values filtered using the c language support module.
     """
 
@@ -47,7 +48,15 @@ def ptest_lang_c(gen_paths, implicit, unique_name_evaluator):  # type: ignore
 
     root_namespace = str(root_namespace_dir)
     compound_types = read_namespace(root_namespace, [], allow_unregulated_fixed_port_id=True)
-    language_context = LanguageContext('c' if implicit else None, '.h' if not implicit else None)
+
+    with NamedTemporaryFile() as config_overrides:
+        config_overrides.writelines([
+            bytearray('[nunavut.lang.c]\n', 'utf8'),
+            bytearray('use_standard_types = {}'.format(use_standard_types), 'utf8')
+        ])
+        config_overrides.flush()
+        language_context = LanguageContext('c' if implicit else None, '.h' if not implicit else None,
+                                           additional_config_files=[Path(config_overrides.name)])
     namespace = build_namespace_tree(compound_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
@@ -72,28 +81,29 @@ def ptest_lang_c(gen_paths, implicit, unique_name_evaluator):  # type: ignore
     assert lang_c_output["namespace"] == "langtest.c"
     assert lang_c_output["namespace_macrofy"] == "LANGTEST_C"
 
-    assert lang_c_output["ctype_std truncated uint8"] == "uint8_t"
-    assert lang_c_output["ctype_std saturated int8"] == "int8_t"
-    assert lang_c_output["ctype_std truncated uint9"] == "uint16_t"
-    assert lang_c_output["ctype_std saturated int9"] == "int16_t"
+    if use_standard_types:
+        assert lang_c_output["ctype truncated uint8"] == "uint8_t"
+        assert lang_c_output["ctype saturated int8"] == "int8_t"
+        assert lang_c_output["ctype truncated uint9"] == "uint16_t"
+        assert lang_c_output["ctype saturated int9"] == "int16_t"
+    else:
+        assert lang_c_output["ctype truncated uint8"] == "unsigned char"
+        assert lang_c_output["ctype saturated int8"] == "char"
+        assert lang_c_output["ctype truncated uint9"] == "unsigned int"
+        assert lang_c_output["ctype saturated int9"] == "int"
 
-    assert lang_c_output["ctype truncated uint8"] == "unsigned char"
-    assert lang_c_output["ctype saturated int8"] == "char"
-    assert lang_c_output["ctype truncated uint9"] == "unsigned int"
-    assert lang_c_output["ctype saturated int9"] == "int"
+    if use_standard_types:
+        assert lang_c_output["ctype truncated uint32"] == "uint32_t"
+        assert lang_c_output["ctype saturated int32"] == "int32_t"
+        assert lang_c_output["ctype truncated uint64"] == "uint64_t"
+        assert lang_c_output["ctype saturated int64"] == "int64_t"
+    else:
+        assert lang_c_output["ctype truncated uint32"] == "unsigned long"
+        assert lang_c_output["ctype saturated int32"] == "long"
+        assert lang_c_output["ctype truncated uint64"] == "unsigned long long"
+        assert lang_c_output["ctype saturated int64"] == "long long"
 
-    assert lang_c_output["ctype_std truncated uint32"] == "uint32_t"
-    assert lang_c_output["ctype_std saturated int32"] == "int32_t"
-    assert lang_c_output["ctype_std truncated uint64"] == "uint64_t"
-    assert lang_c_output["ctype_std saturated int64"] == "int64_t"
-
-    assert lang_c_output["ctype truncated uint32"] == "unsigned long"
-    assert lang_c_output["ctype saturated int32"] == "long"
-    assert lang_c_output["ctype truncated uint64"] == "unsigned long long"
-    assert lang_c_output["ctype saturated int64"] == "long long"
-
-    assert lang_c_output["ctype saturated bool"] == "NUVT_BOOL"
-    assert lang_c_output["ctype_std saturated bool"] == "bool"
+    assert lang_c_output["ctype saturated bool"] == "bool"
 
     unique_name_evaluator(r'_nAME\d+_', lang_c_output["unique_name_0"])
     unique_name_evaluator(r'_nAME\d+_', lang_c_output["unique_name_1"])
@@ -222,42 +232,36 @@ def ptest_lang_py(gen_paths, implicit, unique_name_evaluator):  # type: ignore
 # +---------------------------------------------------------------------------+
 
 
-def test_lang_c(gen_paths, unique_name_evaluator):  # type: ignore
+@pytest.mark.parametrize('implicit,use_standard_types', [(True, True), (True, False), (False, True), (False, False)])
+def test_lang_c(gen_paths, unique_name_evaluator, implicit, use_standard_types):  # type: ignore
     """
     Generates and verifies JSON with values filtered using the c language support module.
     """
     lctx = LanguageContext()
 
     # cspell: disable
-    generated_values = ptest_lang_c(gen_paths, True, unique_name_evaluator)
-    lang_any = generated_values["tests"]["lang_any"]
-    assert lang_any['id_0'] == '_123_class__for_u2___ZX0028ZX002Aother_stuffZX002DZX0026ZX002DsuchZX0029'
-    assert lang_any['id_1'] == '_reserved'
-    assert lang_any['id_2'] == '_ZX005Falso_reserved'
-    assert lang_any['id_3'] == '_register'
-    assert lang_any['id_4'] == 'False'
-    assert lang_any['id_5'] == '_return'
-    assert lang_any['id_7'] == 'I_ZX2764_UAVCAN'
-    assert lang_any['id_8'] == '_1_ZX2764_UAVCAN'
+    generated_values = ptest_lang_c(gen_paths, implicit, unique_name_evaluator, use_standard_types)
+    if implicit:
+        lang_any = generated_values["tests"]["lang_any"]
+        assert lang_any['id_0'] == '_123_class__for_u2___ZX0028ZX002Aother_stuffZX002DZX0026ZX002DsuchZX0029'
+        assert lang_any['id_1'] == '_reserved'
+        assert lang_any['id_2'] == '_ZX005Falso_reserved'
+        assert lang_any['id_3'] == '_register'
+        assert lang_any['id_4'] == 'False'
+        assert lang_any['id_5'] == '_return'
+        assert lang_any['id_7'] == 'I_ZX2764_UAVCAN'
+        assert lang_any['id_8'] == '_1_ZX2764_UAVCAN'
 
-    assert lang_any['id_9'] == 'str'
-    assert lang_any['id_A'] == '_strr'
-    assert lang_any['id_B'] == '_uINT_FOO_MIN'
-    assert lang_any['id_C'] == '_iNT_C'
-    assert lang_any['id_D'] == '_lC_Is_reserved'
-    assert lang_any['id_E'] == 'NOT_ATOMIC_YO'
-    assert lang_any['id_F'] == '_aTOMIC_YO'
+        assert lang_any['id_9'] == 'str'
+        assert lang_any['id_A'] == '_strr'
+        assert lang_any['id_B'] == '_uINT_FOO_MIN'
+        assert lang_any['id_C'] == '_iNT_C'
+        assert lang_any['id_D'] == '_lC_Is_reserved'
+        assert lang_any['id_E'] == 'NOT_ATOMIC_YO'
+        assert lang_any['id_F'] == '_aTOMIC_YO'
     # cspell: enable
 
     assert '_flight__time' == c_filter_id(lctx.get_language('nunavut.lang.c'), Dummy('_Flight__time'))
-
-
-def test_lang_c_explicit(gen_paths, unique_name_evaluator):  # type: ignore
-    """
-    Generates and verifies JSON with values filtered using the c language support module using
-    explicit language feature names.
-    """
-    ptest_lang_c(gen_paths, False, unique_name_evaluator)
 
 
 def test_lang_cpp(gen_paths):  # type: ignore
@@ -346,11 +350,8 @@ def test_language_object() -> None:
 
     assert 'c' == language.name
 
-    implicit_filters = language.get_filters(make_implicit=True)
-    assert 'id' in implicit_filters
-
-    explicit_filters = language.get_filters(make_implicit=False)
-    assert 'c.macrofy' in explicit_filters
+    filters = language.get_filters()
+    assert 'id' in filters
 
     assert language.omit_serialization_support
 

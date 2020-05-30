@@ -141,8 +141,8 @@ class CopyFromPackageGenerator(AbstractGenerator):
         for template in generator.get_templates():
             print('copy from fake input: ' + str(template))
 
-        for copyto in generator.generate_all(is_dryrun=True):
-            print('copy to fake output : ' + str(copyto))
+        for copy_to in generator.generate_all(is_dryrun=True):
+            print('copy to fake output : ' + str(copy_to))
 
     :param nunavut.Namespace namespace:  The top-level namespace to generates types at and from.
     :param typing.Generator[pathlib.Path] file_iterator: Provides files within the Nunavut distribution to

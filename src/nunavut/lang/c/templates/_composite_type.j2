@@ -23,9 +23,9 @@ typedef struct
 /* ArrayType macros for {{ field.name }} field of {{ composite_type | full_reference_name }}. */
 #define {{ composite_type | full_reference_name }}_{{ field.name | macrofy(partial_token=True) }}_ARRAY_CAPACITY ({{ field.data_type.capacity }}U)
 #define {{ composite_type | full_reference_name }}_{{ field.name | macrofy(partial_token=True) }}_ARRAY_IS_VARIABLE_LENGTH {% if field.data_type is VariableLengthArrayType -%}
-    (1U)
+    ({{ valuetoken_true }})
 {%- else -%}
-    (0U)
+    ({{ valuetoken_false }})
 {%- endif %}
 #define {{ composite_type | full_reference_name }}_{{ field.name | macrofy(partial_token=True) }}_ARRAY_LENGTH(PTR_TO_{{ composite_type.short_name | macrofy }}) \
 {%- if field.data_type is VariableLengthArrayType %}

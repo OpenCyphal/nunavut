@@ -540,9 +540,7 @@ def filter_definition_end(language: Language, instance: pydsdl.CompositeType) ->
 @template_language_filter(__name__)
 def filter_type_from_primitive(language: Language,
                                value: pydsdl.PrimitiveType) -> str:
-    use_standard_types = bool(language.get_config_value('use_standard_types'))
-    ctype = _CFit.get_best_fit(value.bit_length).to_c_type(value, use_standard_types)
-    return (ctype if not use_standard_types else 'std::' + ctype)
+    return _CFit.get_best_fit(value.bit_length).to_c_type(value, language)
 
 
 def filter_to_namespace_qualifier(namespace_list: typing.List[str]) -> str:
