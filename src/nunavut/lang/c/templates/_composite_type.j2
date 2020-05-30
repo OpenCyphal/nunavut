@@ -20,12 +20,18 @@ typedef struct
 {%- for field in composite_type.fields %}
 {%- if field.data_type is ArrayType %}
 
-/* ArrayType macros for {{ field.name }} field of {{ composite_type | full_reference_name }}. */
+/**
+ * The maximum capacity of {{ composite_type | full_reference_name }}.{{ field.name }}. 
+ */
 inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}_{{ field.name }}_array_capacity(void)
 {
     return ({{ field.data_type.capacity }}U);
 }
 
+/**
+ * If true then {{ composite_type | full_reference_name }}.{{ field.name }}'s length can vary otherwise it will
+ * always be the same as its capacity.
+ */
 inline {{ typename_boolean}} {{ composite_type | full_reference_name }}_{{ field.name }}_array_is_variable_length(void)
 {
     {% if field.data_type is VariableLengthArrayType -%}
@@ -35,6 +41,11 @@ inline {{ typename_boolean}} {{ composite_type | full_reference_name }}_{{ field
     {%- endif %}
 }
 
+/**
+ * If {{ composite_type | full_reference_name }}.{{ field.name }} is a variable length array then this is the current
+ * number of items populated in the array starting from index 0. If {{ field.name }} is not a variable length array
+ * then this is the same as its capacity.
+ */
 inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}_{{ field.name | to_snake_case }}_array_length(
     const {{ composite_type | declaration }}* const instance)
 {
