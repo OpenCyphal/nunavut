@@ -27,7 +27,8 @@ TEST(InitializationTests, InitWithPrimitiveArray)
     uavcan_si_unit_force_Vector3_1_0 subject;
     init_uavcan_si_unit_force_vector3_1_0(nullptr);
     init_uavcan_si_unit_force_vector3_1_0(&subject);
-    ASSERT_FALSE(uavcan_si_unit_force_Vector3_1_0_newton_ARRAY_IS_VARIABLE_LENGTH);
+    ASSERT_EQ(3U, uavcan_si_unit_force_Vector3_1_0_newton_array_capacity());
+    ASSERT_FALSE(uavcan_si_unit_force_Vector3_1_0_newton_array_is_variable_length());
     for (std::size_t i = 0; i < uavcan_si_unit_force_Vector3_1_0_newton_array_length(&subject); ++i)
     {
         ASSERT_FLOAT_EQ(0.0f, subject.newton[i]);
@@ -42,6 +43,6 @@ TEST(InitializationTests, InitWithVariableLengthArray)
     uavcan_register_Name_1_0 subject;
     init_uavcan_register_name_1_0(nullptr);
     init_uavcan_register_name_1_0(&subject);
-    ASSERT_TRUE(uavcan_register_Name_1_0_name_ARRAY_IS_VARIABLE_LENGTH);
+    ASSERT_TRUE(uavcan_register_Name_1_0_name_array_is_variable_length());
     ASSERT_EQ(0U, uavcan_register_Name_1_0_name_array_length(&subject));
 }

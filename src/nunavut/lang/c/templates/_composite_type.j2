@@ -21,12 +21,20 @@ typedef struct
 {%- if field.data_type is ArrayType %}
 
 /* ArrayType macros for {{ field.name }} field of {{ composite_type | full_reference_name }}. */
-#define {{ composite_type | full_reference_name }}_{{ field.name }}_ARRAY_CAPACITY ({{ field.data_type.capacity }}U)
-#define {{ composite_type | full_reference_name }}_{{ field.name }}_ARRAY_IS_VARIABLE_LENGTH {% if field.data_type is VariableLengthArrayType -%}
-    ({{ valuetoken_true }})
-{%- else -%}
-    ({{ valuetoken_false }})
-{%- endif %}
+inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}_{{ field.name }}_array_capacity(void)
+{
+    return ({{ field.data_type.capacity }}U);
+}
+
+inline {{ typename_boolean}} {{ composite_type | full_reference_name }}_{{ field.name }}_array_is_variable_length(void)
+{
+    {% if field.data_type is VariableLengthArrayType -%}
+        return ({{ valuetoken_true }});
+    {%- else -%}
+        return ({{ valuetoken_false }});
+    {%- endif %}
+}
+
 inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}_{{ field.name | to_snake_case }}_array_length(
     const {{ composite_type | declaration }}* const instance)
 {
