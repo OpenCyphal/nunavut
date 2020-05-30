@@ -16,7 +16,8 @@ TEST(InitializationTests, InitEmpty)
     uavcan_primitive_Empty_1_0 subject;
     // Doesn't crash == pass
     uavcan_primitive_empty_1_0_init(nullptr);
-    ASSERT_EQ(0U, subject);
+    uavcan_primitive_empty_1_0_init(&subject);
+    ASSERT_EQ(0U, subject._dummy_);
 }
 
 /**

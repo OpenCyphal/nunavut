@@ -1,3 +1,10 @@
+{%- if composite_type.fields | length == 0 %}
+{#- 
+    C++ doesn't tolerate empty types. To maintain compatibility we define any empty
+    composite type as a byte.
+#}
+    {{ typename_byte }} _dummy_;
+{%- else %}
 {%- for field in composite_type.fields %}
 {%- if field is not padding %}
     {{ field.data_type | declaration }} {{ field | id }}
@@ -9,3 +16,4 @@
 {%- endif -%}
 {%- endif -%}
 {%- endfor %}
+{%- endif %}

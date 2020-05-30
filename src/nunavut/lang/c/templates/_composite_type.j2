@@ -1,13 +1,7 @@
 {%- for constant in composite_type.constants %}
 #define {{ composite_type | c.macrofy }}_{{ constant.name | c.macrofy }} {{ constant | constant_value }}
 {%- endfor %}
-{%- if composite_type.fields | length == 0 %}
-{#- 
-    C++ doesn't tolerate empty types. To maintain compatibility we define any empty
-    composite type as a byte.
-#}
-typedef {{ typename_byte }} {{ composite_type | full_reference_name }};
-{%- else %}
+
 typedef struct
 {
 {%- if composite_type is UnionType -%}
@@ -16,7 +10,6 @@ typedef struct
 {% include '_fields.j2' %}
 {%- endif %}
 } {{ composite_type | full_reference_name }};
-{%- endif %}
 {%- for field in composite_type.fields %}
 {%- if field.data_type is ArrayType %}
 
@@ -71,7 +64,7 @@ inline void {{ composite_type | declaration | to_snake_case }}_init({{ composite
     if (out_instance != {{ valuetoken_null }})
     {
         {%- if composite_type.fields | length == 0 %}
-        (*out_instance) = 0;
+        out_instance->_dummy_ = 0U;
         {%- else %}
         {%- if composite_type is UnionType %}
         out_instance->_tag_ = 0;
