@@ -66,7 +66,7 @@ inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}
  *
  * @param out_instance A structure instance to Initialize.
  */
-inline void init_{{ composite_type | declaration | to_snake_case }}({{ composite_type | declaration }}* const out_instance)
+inline void {{ composite_type | declaration | to_snake_case }}_init({{ composite_type | declaration }}* const out_instance)
 {
     if (out_instance != {{ valuetoken_null }})
     {
