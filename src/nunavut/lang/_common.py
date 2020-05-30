@@ -48,9 +48,9 @@ class IncludeGenerator(DependencyBuilder):
             path_list_with_punctuation = ['"{}"'.format(p) for p in path_list]
 
         if sort:
-            return self._get_language_includes(dep_types) + sorted(path_list_with_punctuation)
+            return sorted(path_list_with_punctuation) + self._get_language_includes(dep_types)
         else:
-            return self._get_language_includes(dep_types) + path_list_with_punctuation
+            return path_list_with_punctuation + self._get_language_includes(dep_types)
 
     # +-----------------------------------------------------------------------+
     # | PRIVATE
@@ -80,7 +80,8 @@ class IncludeGenerator(DependencyBuilder):
         return ['<{}>'.format(include) for include in sorted(std_includes)]
 
     def _get_std_includes_for_c(self, dep_types: Dependencies) -> typing.List[str]:
-        std_includes = []  # type: typing.List[str]
+        std_includes = ['stdlib.h']  # type: typing.List[str]
+        # we always include stdlib since initializers require the use of NULL
         if self._language.get_config_value_as_bool('use_standard_types'):
             if dep_types.uses_integer:
                 std_includes.append('stdint.h')

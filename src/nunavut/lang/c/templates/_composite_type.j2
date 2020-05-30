@@ -44,7 +44,7 @@ typedef struct
  */
 inline void init_{{ composite_type | declaration | to_snake_case }}({{ composite_type | declaration }}* const out_instance)
 {
-    if (out_instance)
+    if (out_instance != {{ valuetoken_null }})
     {
         {%- if composite_type.fields | length == 0 %}
         (*out_instance) = 0;
