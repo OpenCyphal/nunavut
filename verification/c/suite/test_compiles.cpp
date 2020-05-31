@@ -34,7 +34,7 @@ TEST(GeneralTests, EmptyCompiles) {
 TEST(GeneralTests, UnionCompiles) {
     uavcan_register_Value_1_0 subject;
     subject._tag_ = 0;
-    ASSERT_TRUE(is_uavcan_register_Value_1_0_empty(&subject));
+    ASSERT_TRUE(uavcan_register_Value_1_0_is_empty(&subject));
 }
 
 /**
