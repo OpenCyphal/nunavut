@@ -4,7 +4,7 @@
 {% include '_composite_type.j2' %}
 {%- for field in composite_type.fields -%}
 {%- if field is not padding %}
-inline {{ typename_boolean }} is_{{ composite_type | full_reference_name }}_{{ field.name | to_snake_case }}(const {{ composite_type | full_reference_name }}* const tagged_union_ptr)
+inline {{ typename_boolean }} is_{{ composite_type | full_reference_name }}_{{ field.name }}(const {{ composite_type | full_reference_name }}* const tagged_union_ptr)
 {
     return ((tagged_union_ptr != {{ valuetoken_null }}) && tagged_union_ptr->_tag_ == {{ loop.index0 }});
 }

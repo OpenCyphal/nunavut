@@ -15,8 +15,8 @@ TEST(InitializationTests, InitEmpty)
 {
     uavcan_primitive_Empty_1_0 subject;
     // Doesn't crash == pass
-    uavcan_primitive_empty_1_0_init(nullptr);
-    uavcan_primitive_empty_1_0_init(&subject);
+    uavcan_primitive_Empty_1_0_init(nullptr);
+    uavcan_primitive_Empty_1_0_init(&subject);
     ASSERT_EQ(0U, subject._dummy_);
 }
 
@@ -26,8 +26,8 @@ TEST(InitializationTests, InitEmpty)
 TEST(InitializationTests, InitWithPrimitiveArray)
 {
     uavcan_si_unit_force_Vector3_1_0 subject;
-    uavcan_si_unit_force_vector3_1_0_init(nullptr);
-    uavcan_si_unit_force_vector3_1_0_init(&subject);
+    uavcan_si_unit_force_Vector3_1_0_init(nullptr);
+    uavcan_si_unit_force_Vector3_1_0_init(&subject);
     ASSERT_EQ(3U, uavcan_si_unit_force_Vector3_1_0_newton_array_capacity());
     ASSERT_FALSE(uavcan_si_unit_force_Vector3_1_0_newton_array_is_variable_length());
     for (std::size_t i = 0; i < uavcan_si_unit_force_Vector3_1_0_newton_array_length(&subject); ++i)
@@ -42,8 +42,8 @@ TEST(InitializationTests, InitWithPrimitiveArray)
 TEST(InitializationTests, InitWithVariableLengthArray)
 {
     uavcan_register_Name_1_0 subject;
-    uavcan_register_name_1_0_init(nullptr);
-    uavcan_register_name_1_0_init(&subject);
+    uavcan_register_Name_1_0_init(nullptr);
+    uavcan_register_Name_1_0_init(&subject);
     ASSERT_TRUE(uavcan_register_Name_1_0_name_array_is_variable_length());
     ASSERT_EQ(0U, uavcan_register_Name_1_0_name_array_length(&subject));
 }

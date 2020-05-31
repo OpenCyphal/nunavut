@@ -25,7 +25,7 @@ inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}
  * If true then {{ composite_type | full_reference_name }}.{{ field.name }}'s length can vary otherwise it will
  * always be the same as its capacity.
  */
-inline {{ typename_boolean}} {{ composite_type | full_reference_name }}_{{ field.name }}_array_is_variable_length(void)
+inline {{ typename_boolean }} {{ composite_type | full_reference_name }}_{{ field.name }}_array_is_variable_length(void)
 {
     {% if field.data_type is VariableLengthArrayType -%}
         return ({{ valuetoken_true }});
@@ -39,8 +39,8 @@ inline {{ typename_boolean}} {{ composite_type | full_reference_name }}_{{ field
  * number of items populated in the array starting from index 0. If {{ field.name }} is not a variable length array
  * then this is the same as its capacity.
  */
-inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}_{{ field.name | to_snake_case }}_array_length(
-    const {{ composite_type | declaration }}* const instance)
+inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}_{{ field.name }}_array_length(
+    const {{ composite_type | full_reference_name }}* const instance)
 {
 {%- if field.data_type is VariableLengthArrayType %}
     return (instance == {{ valuetoken_null }}) ? 0 : instance->{{ field | id }}_length;
@@ -54,12 +54,12 @@ inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}
 {%- endfor %}
 {% import '_init_macros.j2' as init_macros %}
 /**
- * Initialize an {{ composite_type | declaration }} instance to default values.
+ * Initialize an {{ composite_type | full_reference_name }} instance to default values.
  * No memory is allocated within this method.
  *
  * @param out_instance A structure instance to Initialize.
  */
-inline void {{ composite_type | declaration | to_snake_case }}_init({{ composite_type | declaration }}* const out_instance)
+inline void {{ composite_type | full_reference_name }}_init({{ composite_type | full_reference_name }}* const out_instance)
 {
     if (out_instance != {{ valuetoken_null }})
     {
