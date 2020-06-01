@@ -1,0 +1,9 @@
+{%- if composite_type.fixed_port_id is not None %}
+
+/**
+ * @def {{ composite_type | full_reference_name }}_FIXED_PORT_ID
+ * {{ composite_type | full_reference_name }} can only be used with the fixed port identifier defined here.
+ */
+#define {{ composite_type | full_reference_name }}_FIXED_PORT_ID ({{ composite_type.fixed_port_id }}U)
+
+{%- endif %}

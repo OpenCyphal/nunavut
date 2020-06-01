@@ -1,5 +1,5 @@
 {%- for constant in composite_type.constants %}
-#define {{ composite_type | full_reference_name }}_{{ constant.name }} {{ constant | constant_value }}
+#define {{ composite_type | full_reference_name }}_{{ constant.name }} ({{ constant | constant_value }})
 {%- endfor %}
 
 typedef struct
@@ -78,5 +78,16 @@ inline void {{ composite_type | full_reference_name }}_init({{ composite_type | 
     }
 }
 {%- if not nunavut.support.omit %}
-/* TODO: issue #112, add serialization support for C types. */
+
+/* +------------------------------------------------------------------------------------------------------------------+ */
+/* | TODO: issue #112, add serialization support for C types.                                                           */
+/* +------------------------------------------------------------------------------------------------------------------+ */
+
+/**
+ * @def {{ composite_type | full_reference_name }}_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES
+ * Contains the maximum number of bytes needed to serialize a(n) {{ composite_type | full_reference_name }}
+ * instance.
+ */
+#define {{ composite_type | full_reference_name }}_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES ({{ composite_type.bit_length_set | max }}U)
+
 {%- endif %}
