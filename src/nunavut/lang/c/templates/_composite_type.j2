@@ -1,5 +1,5 @@
 {%- for constant in composite_type.constants %}
-#define {{ composite_type | c.macrofy }}_{{ constant.name | c.macrofy }} {{ constant | constant_value }}
+#define {{ composite_type | full_reference_name }}_{{ constant.name }} {{ constant | constant_value }}
 {%- endfor %}
 
 typedef struct
