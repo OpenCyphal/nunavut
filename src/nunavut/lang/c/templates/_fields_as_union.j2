@@ -1,0 +1,8 @@
+    
+    {{ composite_type.tag_field_type | declaration }} _tag_;
+    union
+    {
+{%- for field in composite_type.fields_except_padding %}
+        {{ field.data_type | declaration }} {{ field.name | id }};
+{%- endfor %}
+    };

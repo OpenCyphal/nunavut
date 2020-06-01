@@ -453,6 +453,7 @@ class Dependencies:
         self.uses_variable_length_array = False
         self.uses_array = False
         self.uses_bool = False
+        self.uses_primitive_static_array = False
 
 
 class DependencyBuilder:
@@ -473,7 +474,7 @@ class DependencyBuilder:
         my_dependant_type_l1.parent_service = False
         my_dependant_type_l1.attributes = [MagicMock(data_type=my_dependant_type_l2)]
 
-        my_top_level_type = MagicMock(spec=pydsdl.CompositeType)
+        my_top_level_type = MagicMock(spec=pydsdl.UnionType)
         my_top_level_type.parent_service = False
         my_top_level_type.attributes = [MagicMock(data_type=my_dependant_type_l1)]
 
@@ -487,6 +488,7 @@ class DependencyBuilder:
         assert len(transitive_dependencies.composite_types) == 2
         assert my_dependant_type_l1 in transitive_dependencies.composite_types
         assert my_dependant_type_l2 in transitive_dependencies.composite_types
+        assert direct_dependencies.uses_integer
 
     :param dependant_types: A list of types to build dependencies for.
     :type dependant_types: typing.Iterable[pydsdl.Any]
@@ -518,6 +520,9 @@ class DependencyBuilder:
             -> Dependencies:
         results = Dependencies()
         for dependant in dependant_types:
+            if isinstance(dependant, pydsdl.UnionType):
+                # Unions always require integer for the tag field.
+                results.uses_integer = True
             cls._extract_dependent_types(cls._extract_data_types(dependant), transitive, results)
         return results
 
@@ -531,6 +536,18 @@ class DependencyBuilder:
             return [attr.data_type for attr in t.attributes]
 
     @classmethod
+    def _extract_dependent_types_handle_array_type(cls,
+                                                   dependant_type: pydsdl.ArrayType,
+                                                   transitive: bool,
+                                                   inout_dependencies: Dependencies) -> None:
+        if isinstance(dependant_type, pydsdl.VariableLengthArrayType):
+            inout_dependencies.uses_variable_length_array = True
+        else:
+            inout_dependencies.uses_array = True
+            if isinstance(dependant_type.element_type, pydsdl.PrimitiveType):
+                inout_dependencies.uses_primitive_static_array = True
+
+    @classmethod
     def _extract_dependent_types(cls,
                                  dependant_types: typing.Iterable[pydsdl.Any],
                                  transitive: bool,
@@ -542,11 +559,7 @@ class DependencyBuilder:
                     if transitive:
                         cls._extract_dependent_types(cls._extract_data_types(dt), transitive, inout_dependencies)
             elif isinstance(dt, pydsdl.ArrayType):
-                if isinstance(dt, pydsdl.VariableLengthArrayType):
-                    inout_dependencies.uses_variable_length_array = True
-                else:
-                    inout_dependencies.uses_array = True
-
+                cls._extract_dependent_types_handle_array_type(dt, transitive, inout_dependencies)
                 cls._extract_dependent_types([dt.element_type], transitive, inout_dependencies)
             elif isinstance(dt, pydsdl.IntegerType):
                 inout_dependencies.uses_integer = True

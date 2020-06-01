@@ -1,0 +1,21 @@
+{%- macro init_field(instance_ptr_token, field, index='') -%}
+    {%- if field is not padding -%}
+    {%- if field.data_type is CompositeType -%}
+        {{ field.data_type | declaration }}_init(&({{ instance_ptr_token }}->{{ field | id }}{{ index }}));
+    {%- elif field.data_type is FixedLengthArrayType -%}
+        {%- if field.data_type.element_type is PrimitiveType -%}
+        memset(&({{ instance_ptr_token }}->{{ field | id }}[0]), 0, sizeof({{ field.data_type | declaration }}) * {{ field.data_type.capacity }});
+        {%- else -%}
+             {%- for index in range(field.data_type.capacity) %}
+                {{ init_field(instance_ptr_token, field, '[{}]'.format(index)) }}
+             {%- endfor %}
+        {%- endif -%}
+    {%- elif field.data_type is VariableLengthArrayType -%}
+        {{ instance_ptr_token }}->{{ field | id }}_length = 0;
+    {%- else -%}
+        {{ instance_ptr_token }}->{{ field | id }}{{ index }} = 0;
+    {%- endif -%}
+    {%- else -%}
+        /* Ignoring {{ field.data_type.bit_length }} padding bit(s). */
+    {%- endif -%}
+{%- endmacro -%}

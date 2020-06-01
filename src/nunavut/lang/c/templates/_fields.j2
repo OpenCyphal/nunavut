@@ -1,0 +1,16 @@
+{%- if composite_type.fields | length == 0 %}
+{#- 
+    To maintain consistency between C and C++ we define any empty composite type with a dummy byte.
+#}
+    {{ typename_byte }} _dummy_;
+{%- else %}
+{%- for field in composite_type.fields_except_padding %}
+    {%- if field is VariableLengthArrayType %}
+    {{ typename_unsigned_length }} {{ field | id }}_length;
+    {%- endif %}
+    {{ field.data_type | declaration }} {{ field | id }}
+    {%- if field.data_type is ArrayType -%}
+        [{{ field.data_type.capacity }}]
+    {%- endif -%};
+{%- endfor %}
+{%- endif %}

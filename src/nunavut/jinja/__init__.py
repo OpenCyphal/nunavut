@@ -357,7 +357,7 @@ class Generator(nunavut.generators.AbstractGenerator):
         Example::
 
             {%- if attribute is constant %}
-                const {{ attribute.data_type | c.type_from_primitive(use_standard_types=True) }} {{ attribute.name }} = {{ attribute.initialization_expression }};
+                const {{ attribute.data_type | c.type_from_primitive }} {{ attribute.name }} = {{ attribute.initialization_expression }};
             {% endif %}
 
         :param value: The instance to test.
@@ -603,14 +603,14 @@ class Generator(nunavut.generators.AbstractGenerator):
     def _add_language_support(self) -> None:
         target_language = self.language_context.get_target_language()
         if target_language is not None:
-            for key, value in target_language.get_filters(make_implicit=True).items():
+            for key, value in target_language.get_filters().items():
                 self._add_filter_to_environment(key, value)
-            self._env.globals.update(target_language.get_globals(True))
+            self._env.globals.update(target_language.get_globals())
 
         for supported_language in self.language_context.get_supported_languages().values():
-            for key, value in supported_language.get_filters(make_implicit=False).items():
-                self._add_filter_to_environment(key, value)
-            self._env.globals.update(supported_language.get_globals(False))
+            for key, value in supported_language.get_filters().items():
+                self._add_filter_to_environment(key, value, supported_language.name)
+            self._env.globals[supported_language.name] = supported_language
 
     def _add_filters_and_tests(self,
                                additional_filters: typing.Optional[typing.Dict[str, typing.Callable]],
@@ -658,14 +658,19 @@ class Generator(nunavut.generators.AbstractGenerator):
                                      )
         return output_path
 
-    def _add_filter_to_environment(self, filter_name: str, filter: typing.Callable[..., str]) -> None:
+    def _add_filter_to_environment(self, filter_name: str,
+                                   filter: typing.Callable[..., str],
+                                   filter_namespace: typing.Optional[str] = None) -> None:
         if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
             language_name_or_module_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
             filter_language = self.language_context.get_language(language_name_or_module_name)
             resolved_filter = functools.partial(filter, filter_language)  # type: typing.Callable[..., str]
         else:
             resolved_filter = filter
-        self._env.filters[filter_name] = resolved_filter
+        if filter_namespace is None:
+            self._env.filters[filter_name] = resolved_filter
+        else:
+            self._env.filters['{}.{}'.format(filter_namespace, filter_name)] = resolved_filter
 
     @staticmethod
     def _filter_and_write_line(line_and_lineend: typing.Tuple[str, str],

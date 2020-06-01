@@ -207,29 +207,29 @@ def test_python_filter_includes(gen_paths, stropping, sort):  # type: ignore
 
     if stropping:
         if sort:
-            assert ['<array>',
-                    '<cstdint>',
-                    '"_new/malloc_1_0.h"',
+            assert ['"_new/malloc_1_0.h"',
                     '"uavcan/str/bar_1_0.h"',
-                    '"uavcan/time/SynchronizedTimestamp_1_0.h"'
+                    '"uavcan/time/SynchronizedTimestamp_1_0.h"',
+                    '<array>',
+                    '<cstdint>'
                     ] == imports
         else:
 
-            map(assert_path_in_imports, ('<array>',
-                                         '<cstdint>',
-                                         '"uavcan/time/SynchronizedTimestamp_1_0.h"',
+            map(assert_path_in_imports, ('"uavcan/time/SynchronizedTimestamp_1_0.h"',
                                          '"_new/malloc_1_0.h"',
-                                         '"uavcan/str/bar_1_0.h"'))
+                                         '"uavcan/str/bar_1_0.h"',
+                                         '<array>',
+                                         '<cstdint>'))
     elif sort:
-        assert ['<array>',
-                '<cstdint>',
-                '"new/malloc_1_0.h"',
+        assert ['"new/malloc_1_0.h"',
                 '"uavcan/str/bar_1_0.h"',
-                '"uavcan/time/SynchronizedTimestamp_1_0.h"'
+                '"uavcan/time/SynchronizedTimestamp_1_0.h"',
+                '<array>',
+                '<cstdint>'
                 ] == imports
     else:
-        map(assert_path_in_imports, ('<array>',
-                                     '<cstdint>',
-                                     '"uavcan/time/SynchronizedTimestamp_1_0.h"',
+        map(assert_path_in_imports, ('"uavcan/time/SynchronizedTimestamp_1_0.h"',
                                      '"new/malloc_1_0.h"',
-                                     '"uavcan/str/bar_1_0.h"'))
+                                     '"uavcan/str/bar_1_0.h"',
+                                     '<array>',
+                                     '<cstdint>'))

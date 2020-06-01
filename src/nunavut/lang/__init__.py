@@ -1,6 +1,6 @@
 #
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright (C) 2018-2020  UAVCAN Development Team  <uavcan.org>
 # This software is distributed under the terms of the MIT License.
 #
 """Language-specific support in nunavut.
@@ -46,12 +46,24 @@ class Language:
                  language_name: str,
                  config: configparser.ConfigParser,
                  omit_serialization_support: bool):
+        self._globals = None  # type: typing.Optional[typing.Mapping[str, typing.Any]]
         self._language_name = language_name
         self._section = 'nunavut.lang.{}'.format(language_name)
         self._filters = self._find_filters_for_language(language_name)
         self._config = config
         self._omit_serialization_support = omit_serialization_support
-        self._module = None  # type: typing.Optional[typing.Any]
+
+    def __getattr__(self, name: str) -> typing.Any:
+        """
+        Any attribute access to a Language object will return the regular properties and
+        any globals defined for the language. Because of this do not extend properties
+        on this object in a way that will clash with the globals it defines (e.g. typename_
+        or valuetoken_ should not be used as the start of attribute names).
+        """
+        try:
+            return self.get_globals()[name]
+        except KeyError as e:
+            raise AttributeError(e)
 
     @property
     def extension(self) -> str:
@@ -149,11 +161,17 @@ class Language:
         return self._omit_serialization_support
 
     @property
-    def module(self) -> typing.Any:
-        if self._module is None:
-            import importlib
-            self._module = importlib.import_module('nunavut.lang.{}'.format(self._language_name))
-        return self._module
+    def support_files(self) -> typing.Generator[pathlib.Path, None, None]:
+        """
+        Iterates over non-templated supporting files embedded within the Nunavut distribution.
+        """
+        module = importlib.import_module('nunavut.lang.{}.support'.format(self._language_name))
+
+        # All language support modules must provide a list_support_files method
+        # to allow the copy generator access to the packaged support files.
+        list_support_files = getattr(module, 'list_support_files')  \
+            # type: typing.Callable[[], typing.Generator[pathlib.Path, None, None]]
+        return list_support_files()
 
     def get_config_value(self,
                          key: str,
@@ -251,44 +269,42 @@ class Language:
         """
         return self._config.getdict(self._section, 'named_types', fallback={})  # type: ignore
 
+    def get_named_values(self) -> typing.Mapping[str, str]:
+        """
+        Get a map of named values to the token to emit for this language.
+        """
+        return self._config.getdict(self._section, 'named_values', fallback={})  # type: ignore
+
     def get_reserved_identifiers(self) -> typing.List[str]:
         """
         Get a list of identifiers that are reserved keywords for this language.
         """
         return self._config.getlist(self._section, 'reserved_identifiers', fallback=[])  # type: ignore
 
-    def get_filters(self, make_implicit: bool = True) -> typing.Mapping[str, typing.Callable]:
+    def get_filters(self) -> typing.Mapping[str, typing.Callable]:
         """
         Inspect the language module for functions with a name starting with "filter\\_" and return
         a map of filter names to the filter callable.
 
-        :param bool make_implicit: If True then the function name will not contain a language prefix
-            otherwise a prefix will be provided for this langauge separated by a '.'.
         :returns: A mapping of filter names to filter functions.
         """
-        if make_implicit:
-            return self._filters
-        else:
-            explicit_filters = dict()
-            for key, value in self._filters.items():
-                explicit_filters['{}.{}'.format(self.name, key)] = value
-            return typing.cast(typing.Mapping[str, typing.Callable], explicit_filters)
+        return self._filters
 
-    def get_globals(self, make_implicit: bool = True) -> typing.Mapping[str, typing.Any]:
+    def get_globals(self) -> typing.Mapping[str, typing.Any]:
         """
         Get all values for this language that should be available in a global context.
 
-        :param bool make_implicit: If True then the global name will not contain a language prefix
-            otherwise a prefix will be provided for this langauge separated by a '.'.
         :returns: A mapping of global names to global values.
         """
-        globals_map = dict()
-        for key, value in self.get_named_types().items():
-            if make_implicit:
+        if self._globals is None:
+            globals_map = dict()  # type: typing.Dict[str, typing.Any]
+
+            for key, value in self.get_named_types().items():
                 globals_map['typename_{}'.format(key)] = value
-            else:
-                globals_map['{}.typename_{}'.format(self._language_name, key)] = value
-        return typing.cast(typing.Mapping[str, typing.Callable], globals_map)
+            for key, value in self.get_named_values().items():
+                globals_map['valuetoken_{}'.format(key)] = value
+            self._globals = globals_map
+        return self._globals
 
 
 class LanguageContext:

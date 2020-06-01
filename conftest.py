@@ -185,11 +185,67 @@ def assert_language_config_value(request):  # type: ignore
 
 
 @pytest.fixture
+def configurable_language_context_factory(request):  # type: ignore
+    """
+    Use to create a LanguageContext that the test can write configuration overrides for.
+
+    Example:
+
+        .. code-block:: python
+
+            def test_my_test(configurable_language_context_factory):
+                lctx = configurable_language_context_factory({'nunavut.lang.c': {'foo': 'bar'}},
+                                                             'c')
+                assert lctx.get_target_language().get_config_value('foo') == 'bar'
+
+        .. invisible-code-block: python
+
+            test_my_test(configurable_language_context_factory)
+
+    """
+    def _make_configurable_language_context(config_overrides: typing.Mapping[str, typing.Mapping[str, typing.Any]],
+                                            target_language: typing.Optional[str] = None,
+                                            extension: typing.Optional[str] = None,
+                                            namespace_output_stem: typing.Optional[str] = None,
+                                            omit_serialization_support_for_target: bool = True) \
+            -> LanguageContext:
+        from tempfile import NamedTemporaryFile
+        config_bytes = []  # type: typing.List[bytearray]
+
+        def _config_gen(indent: int,
+                        key: str,
+                        value: typing.Union[typing.Dict, typing.Any],
+                        out_config_bytes: typing.List[bytearray]) \
+                -> None:
+            line = bytearray('{}{} = '.format('    ' * indent, key), 'utf8')
+            if isinstance(value, dict):
+                line += bytearray('\n', 'utf8')
+                out_config_bytes.append(line)
+                for subkey, subvalue in value.items():
+                    _config_gen(indent + 1, subkey, subvalue, out_config_bytes)
+            else:
+                line += bytearray('{}\n'.format(str(value)), 'utf8')
+                out_config_bytes.append(line)
+
+        for section, config in config_overrides.items():
+            config_bytes.append(bytearray('[{}]\n'.format(section), 'utf8'))
+            for key, value in config.items():
+                _config_gen(0, key, value, config_bytes)
+
+        with NamedTemporaryFile() as config_override_file:
+            config_override_file.writelines(config_bytes)
+            config_override_file.flush()
+            return LanguageContext(target_language, extension,
+                                   additional_config_files=[pathlib.Path(config_override_file.name)])
+    return _make_configurable_language_context
+
+
+@pytest.fixture
 def jinja_filter_tester(request):  # type: ignore
     """
     Use to create fluent but testable documentation for Jinja filters.
 
-    Example::
+    Example:
 
         .. invisible-code-block: python
 
@@ -216,23 +272,12 @@ def jinja_filter_tester(request):  # type: ignore
             jinja_filter_tester(filter_dummy, template, rendered, 'c', I=I)
 
     """
-    def _make_filter_test_template(filter: typing.Callable,
+    def _make_filter_test_template(filter_or_list: typing.Union[typing.Callable, typing.List[typing.Callable]],
                                    body: str,
                                    expected: str,
                                    target_language: typing.Union[typing.Optional[str], LanguageContext],
                                    **globals: typing.Optional[typing.Dict[str, typing.Any]]) -> str:
         e = Environment(loader=DictLoader({'test': body}))
-        filter_name = filter.__name__[7:]
-        if hasattr(filter, ENVIRONMENT_FILTER_ATTRIBUTE_NAME) and getattr(filter, ENVIRONMENT_FILTER_ATTRIBUTE_NAME):
-            e.filters[filter_name] = functools.partial(filter, e)
-        else:
-            e.filters[filter_name] = filter
-
-        if hasattr(filter, CONTEXT_FILTER_ATTRIBUTE_NAME) and getattr(filter, CONTEXT_FILTER_ATTRIBUTE_NAME):
-            context = MagicMock()
-            e.filters[filter_name] = functools.partial(filter, context)
-        else:
-            e.filters[filter_name] = filter
 
         if globals is not None:
             e.globals.update(globals)
@@ -242,15 +287,31 @@ def jinja_filter_tester(request):  # type: ignore
         else:
             lctx = LanguageContext(target_language)
 
-        if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
-            language_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
-            e.filters[filter_name] = functools.partial(filter, lctx.get_language(language_name))
-        else:
-            e.filters[filter_name] = filter
+        filters = (filter_or_list if isinstance(filter_or_list, list) else [filter_or_list])
+        for filter in filters:
+            filter_name = filter.__name__[7:]
+            if hasattr(filter, ENVIRONMENT_FILTER_ATTRIBUTE_NAME) and \
+                    getattr(filter, ENVIRONMENT_FILTER_ATTRIBUTE_NAME):
+                e.filters[filter_name] = functools.partial(filter, e)
+            else:
+                e.filters[filter_name] = filter
+
+            if hasattr(filter, CONTEXT_FILTER_ATTRIBUTE_NAME) and getattr(filter, CONTEXT_FILTER_ATTRIBUTE_NAME):
+                context = MagicMock()
+                e.filters[filter_name] = functools.partial(filter, context)
+            else:
+                e.filters[filter_name] = filter
+
+            if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
+                language_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
+                e.filters[filter_name] = functools.partial(filter, lctx.get_language(language_name))
+            else:
+                e.filters[filter_name] = filter
 
         rendered = str(e.get_template('test').render())
         if expected != rendered:
-            msg = 'Unexpected template output\n\texpected : {}\n\twas      : {}'.format(expected, rendered)
+            msg = 'Unexpected template output\n\texpected : {}\n\twas      : {}'.format(
+                expected.replace('\n', '\\n'), rendered.replace('\n', '\\n'))
             raise AssertionError(msg)
         return rendered
 
@@ -261,6 +322,7 @@ class NewSybilFile(SybilFile):
     """
     Adapt Sybil to newer pytest versions.
     """
+
     def __init__(self, fspath, parent, sybil):  # type: ignore
         super().__init__(path=fspath, parent=parent, sybil=sybil)
 
@@ -287,7 +349,10 @@ def _pytest_integration_that_actually_works() -> typing.Callable:
             '**/markupsafe/*',
             '**/jinja2/*',
         ],
-        fixtures=['jinja_filter_tester', 'gen_paths', 'assert_language_config_value']
+        fixtures=['jinja_filter_tester',
+                  'gen_paths',
+                  'assert_language_config_value',
+                  'configurable_language_context_factory']
     )
 
     def pytest_collect_file(parent: typing.Any, path: typing.Any) -> typing.Optional[typing.Any]:

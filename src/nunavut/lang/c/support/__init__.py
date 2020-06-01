@@ -6,22 +6,21 @@
 """
 Contains supporting C++ headers to distribute with generated types.
 """
-
 import pathlib
 import typing
 import pkg_resources
 
 __version__ = "1.0.0"
-"""Version of the c++ support headers."""
+"""Version of the c support headers."""
 
 
 def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
     """
-    Get a list of C++ support headers embedded in this package.
+    Get a list of C support headers embedded in this package.
 
     .. invisible-code-block: python
 
-        from nunavut.lang.cpp.support import list_support_files
+        from nunavut.lang.c.support import list_support_files
         import pathlib
         support_file_count = 0
 
@@ -30,14 +29,14 @@ def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
         for path in list_support_files():
             support_file_count += 1
             assert path.parent.stem == 'support'
-            assert path.suffix == '.hpp'
+            assert path.suffix == '.h'
 
     .. invisible-code-block: python
 
         assert support_file_count > 0
 
-    :return: A list of C++ support header resources.
+    :return: A list of C support header resources.
     """
     for resource in pkg_resources.resource_listdir(__name__, '.'):
-        if resource.endswith('.hpp'):
+        if resource.endswith('.h'):
             yield pathlib.Path(pkg_resources.resource_filename(__name__, str(resource)))

@@ -31,6 +31,22 @@ version
 A `pep 440 <https://www.python.org/dev/peps/pep-0440/>`_ compatible version number for the
 version of Nunavut that the template is running within.
 
+support
+-------------------------------------------------
+
+Meta-data about built-in support for serialization.
+
+omit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``bool`` that is True if serialization support was switched off for this template.
+
+namespace
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An array of identifiers under which Nunavut support files and types are namespaced.
+The use of this value by built-in templates and generators is language dependant.
+
 T
 =================================================
 
@@ -67,6 +83,57 @@ means you can do::
         // stuff for integer fields
     {% endif %}
 
+Named Types
+=================================================
+
+Some language provide named types to allow templates to use a type without making concrete decisions
+about the headers and conventions in use. For example, when using C it is common to use size_t as
+an unsigned, integer length type. To avoid hard-coding this type a C template can use the named type::
+
+   {{ typename_unsigned_length }} array_len;
+
+Named Types by Language
+--------------------------------------------------
+
++--------------------------+-------------+---------------------------------------------------+
+| Type name                | Language(s) | Use                                               |
++==========================+=============+===================================================+
+| typename_unsigned_length | C, C++      | An unsigned integer type suitable for expressing  |
+|                          |             | the length of any valid type on the local system. |
++--------------------------+-------------+---------------------------------------------------+
+| typename_byte            | C, C++      | An unsigned integer type used to represent a      |
+|                          |             | single byte (8-bits).                             |
++--------------------------+-------------+---------------------------------------------------+
+| typename_byte_ptr        | C++         | A pointer to one or more bytes.                   |
++--------------------------+-------------+---------------------------------------------------+
+
+
+Named Values
+=================================================
+
+Some languages can use different values to represent certain data like null references or
+boolean values. Named values allow templates to insert a token appropriate for the language and
+configurable by the generator in use. For example::
+
+   MyType* p = {{ valuetoken_null }};
+
+Named Values by Language
+--------------------------------------------------
+
++--------------------+--------------------------------+
+| Type name          | Language(s)                    |
++====================+================================+
+| valuetoken_true    | C, C++, Python, JavaScript     |
++--------------------+--------------------------------+
+| valuetoken_false   | C, C++, Python, JavaScript     |
++--------------------+--------------------------------+
+| valuetoken_null    | C, C++, Python, JavaScript     |
++--------------------+--------------------------------+
+
+
+Filters
+=================================================
+
 Common Filters
 -------------------------------------------------
 
@@ -96,6 +163,16 @@ C Filters
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_to_template_unique_name
    :noindex:
+.. autofunction:: nunavut.lang.c.filter_short_reference_name
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_includes
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_declaration
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_constant_value
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_full_reference_name
+   :noindex:
 
 C++ Filters
 -------------------------------------------------
@@ -118,6 +195,8 @@ C++ Filters
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_definition_end
    :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_to_namespace_qualifier
+   :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_type_from_primitive
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_to_template_unique_name
@@ -125,6 +204,8 @@ C++ Filters
 .. autofunction:: nunavut.lang.cpp.filter_as_boolean_value
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_indent
+   :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_minimum_required_capacity_bits
    :noindex:
 
 Python Filters

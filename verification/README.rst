@@ -16,4 +16,10 @@ C++
 
     C++ support is a work-in-progress
 
+************************************************
+C
+************************************************
 
+.. warning::
+
+    C support is a work-in-progress
