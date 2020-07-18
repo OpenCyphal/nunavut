@@ -1,0 +1,163 @@
+{#
+    Handy macro to populate common first three fields in base serilization functions.
+#}
+{%- macro nunavut_set(field_name, ref) -%}
+{%- if field_name == "" -%}
+out_buffer, offset + length, {{ ref }}
+{%- else -%}
+out_buffer, offset + length, {{ ref }}{{ field_name | id }}
+{%- endif -%}
+{%- endmacro %}
+
+{#-
+    Entry macro, call this from main templates
+    Differs from _serialize_composite because we need to handle top-level type case
+#}
+{%- macro serialize(type) -%}
+    {{ _serialize_composite(type, 'in_instance->', 0) }}
+{%- endmacro %}
+
+{%- macro _serialize_any(type, name, ref, offset) -%}
+    {%- if type is PrimitiveType -%}
+    {{ _serialize_primitive(type, name, ref) }}
+    {%- elif type is VoidType -%}
+    {#- just deal with it here #}
+    length += {{ type.bit_length }};
+    {%- elif type is ArrayType -%}
+    {{ _serialize_array(type, name, ref, offset) }}
+    {%- elif type is CompositeType -%}
+    {%- if offset.is_aligned_at_byte() -%}
+    {#- Data is byte aligned: use generated function #}
+    rc = {{ type | full_reference_name }}_serialize(&({{ ref + (name | id) }}), offset + length, out_buffer);
+    if (rc < 0)
+    {
+        return rc;
+    }
+    length += rc;
+    {%- else -%}
+    {#- Not byte-aligned: inline serialization #}
+    {{ _serialize_composite(type, ref + (name | id) + '.', offset) }}
+    {%- endif -%}
+    {%- endif -%}
+{%- endmacro %}
+
+{#
+    Composite type serialization.
+    Handles inline serialization of composite types other than ServiceType.
+    (ServiceType is handled further up, as seperate Request/Response instances)
+#}
+{%- macro _serialize_composite(type, ref, base_offset) -%}
+    {%- if type is StructureType %}
+    {%- for f, offset in type.iterate_fields_with_offsets(base_offset) -%}
+    // Begin Structure: {{ f.data_type }}
+    {{ _serialize_any(f.data_type, f.name, ref, offset) | indent(width=4) }}
+    // End Structure: {{ f.data_type }}
+    {%- endfor %}
+    {%- elif type is UnionType %}
+    // Begin Union: {{ type | full_reference_name }}
+    {{ _serialize_int(type.tag_field_type, '_tag_', ref) }}
+    length += {{ type.tag_field_type.bit_length }};
+    {%- for f, offset in type.iterate_fields_with_offsets(base_offset) %}
+    {%- if loop.first %}
+    if (
+    {%- else %}
+    else if (
+    {%- endif -%}
+    {%- if ref.endswith('.') -%}
+        {{ type | full_reference_name }}_is_{{ f.name }}(&({{ ref[:-1] }})))
+    {%- elif ref.endswith('->') -%}
+        {{ type | full_reference_name }}_is_{{ f.name }}({{ ref[:-2] }}))
+    {%- endif %}
+    {
+        {{ _serialize_any(f.data_type, f.name, ref, offset) | indent(width=4) }}
+    }
+    {%- endfor %}
+    else
+    {
+        return -NUNAVUT_ERR_INVALID_TAG;
+    }
+    // End Union: {{ type | full_reference_name }}
+    {%- endif %}
+{%- endmacro %}
+
+{#
+    Array serialization, handles fixed or variable length
+#}
+{%- macro _serialize_array(type, name, ref, base_offset) %}
+    {#- wrangle length value if variable length array #}
+    {%- if type is VariableLengthArrayType %}
+    if ({{ ref }}{{ name | id }}_length > {{ type.capacity }})
+    {
+        return -NUNAVUT_ERR_INVALID_LEN;
+    }
+    nunavutSetUxx(out_buffer, offset + length, {{ ref }}{{ name | id }}_length, {{ type.length_field_type.bit_length }});
+    length += {{ type.length_field_type.bit_length }};
+    {%- endif %}
+    {%- set loop_type = type.element_type %}
+    {%- set loop_ref = ref + (name | id) + "[i]" %}
+    {%- if loop_type is ArithmeticType and loop_type.standard_bit_length %}
+    {#- There are some options for memcpy if it's a standard data type #}
+    {%- if base_offset.is_aligned_at_byte() and option_target_endianness == "little" %}
+    {#- Data is byte-aligned, so we can use memcpy #}
+    memcpy((void*) out_buffer + ((offset + length) >> 3), (void*){{ ref }}{{ name | id }}, {{ ref }}{{ name | id }}_length * {{ (loop_type.bit_length / 8) | int }});
+    length += {{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }};
+    {%- else %}
+    {#- Data is not byte-aligned and/or not LE, so we need to use more intensive functions #}
+    {{ _serialize_array_loop(type, name, ref) }}
+    {
+        {#- other serialize_anys are caught, but this does get broken... #}
+        {{ _serialize_primitive(loop_type, '', loop_ref) | indent(width=4) }}
+    }
+    {%- endif %}
+    {%- elif loop_type is PrimitiveType %}
+    {#- should catch uint, int, float, and bool #}
+    {{ _serialize_array_loop(type, name, ref) }}
+    {
+        {#- potential issue here, need to do more thinking on how/if the offset gets translated #}
+        {{ _serialize_any(loop_type, '', loop_ref, base_offset) | indent(width=4) }}
+    }
+    {%- endif %}
+{%- endmacro %}
+
+{%- macro _serialize_array_loop(field_type, field_name, ref) -%}
+    {%- if field_type is FixedLengthArrayType -%}
+    for (size_t i = 0; i < {{ field_type.capacity }}; ++i)
+    {%- elif field_type is VariableLengthArrayType -%}
+    for (size_t i = 0; i < {{ ref }}{{ field_name | id }}_length; ++i)
+    {%- endif %}
+{%- endmacro %}
+
+{#
+    Primitive serialization dispatch
+#}
+{%- macro _serialize_primitive(type, name, ref) -%}
+    {%- if type is IntegerType %}
+    {{ _serialize_int(type, name, ref) }}
+    {%- elif type is FloatType %}
+    {{ _serialize_float(type, name, ref) }}
+    {%- elif type is BooleanType %}
+    {{ _serialize_boolean(type, name, ref) }}
+    {%- endif %}
+    length += {{ type.bit_length }};
+{%- endmacro %}
+
+{#
+    Primitive serialization macros.
+#}
+{# Signed and unsigned integers #}
+{%- macro _serialize_int(type, name, ref) -%}
+    {%- if type is UnsignedIntegerType -%}
+    nunavutSetUxx({{ nunavut_set(name, ref) }}, {{ type.bit_length }});
+    {%- elif type is SignedIntegerType -%}
+    nunavutSetIxx({{ nunavut_set(name, ref) }}, {{ type.bit_length }});
+    {%- endif %}
+{%- endmacro %}
+
+{# Floats don't have bit lengths other than 16, 32, or 64 #}
+{%- macro _serialize_float(type, name, ref) -%}
+    nunavutSetF{{ type.bit_length }}({{nunavut_set(name, ref)}});
+{%- endmacro %}
+
+{%- macro _serialize_boolean(type, name, ref) -%}
+    nunavutSetBit({{ nunavut_set(name, ref) }});
+{%- endmacro %}

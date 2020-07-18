@@ -1,0 +1,27 @@
+/// Serialization of {{ composite_type | full_reference_name }} instance into a byte array.
+///
+/// @param in_instance   A structure instance to serialize.
+/// @param offset        Offset (in bits) of data type in message.
+/// @param out_buffer    Output message buffer.
+///
+/// @returns             Size of encoded data (in bits)
+static inline NunavutSignedBitLength {{ composite_type | full_reference_name }}_serialize(const {{ composite_type | full_reference_name }}* in_instance, const NunavutSignedBitLength offset, uint8_t* const out_buffer)
+{
+    NunavutSignedBitLength length = 0;
+    NunavutSignedBitLength rc = 0;
+
+    if (out_buffer == NULL)
+    {
+        return -NUNAVUT_ERR_INVALID_BUF;
+    }
+    if (offset < 0)
+    {
+        return -NUNAVUT_ERR_INVALID_OFFSET;
+    }
+
+    {# TODO fix formatting here #}
+    {%- from '_serialize.j2' import serialize %}
+    {{ serialize(composite_type) }}
+
+    return length;
+}
