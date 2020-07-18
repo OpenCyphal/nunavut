@@ -12,6 +12,12 @@
 {% set composite_type = T -%}
 {% include '_metadata.j2' %}
 
+{% set composite_type = T.request_type -%}
+{% include '_serde_functions.j2' %}
+
+{% set composite_type = T.response_type -%}
+{% include '_serde_functions.j2' %}
+
 // +------------------------------------------------------------------------------------------------------------------+
 // | End service definitions for {{ T | full_reference_name }}
 // +------------------------------------------------------------------------------------------------------------------+
