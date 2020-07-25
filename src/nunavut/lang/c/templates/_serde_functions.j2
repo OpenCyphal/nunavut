@@ -25,3 +25,30 @@ static inline NunavutSignedBitLength {{ composite_type | full_reference_name }}_
 
     return length;
 }
+
+/// Deserialization of byte-array encoding into {{ composite_type | full_reference_name }} instance.
+///
+/// @param out_instance      Structure instance to write data to.
+/// @param offset            Bit offset of structure in data buffer.
+/// @param in_buffer         Message buffer to deserialize.
+/// @param buf_size_bytes    Length of input buffer (in bytes) to avoid overflow.
+///
+/// @returns                 Size of decoded data (in bits)
+static inline NunavutSignedBitLength {{ composite_type | full_reference_name }}_deserialize({{ composite_type | full_reference_name }}* const out_instance, NunavutSignedBitLength offset, uint8_t* const in_buffer, const size_t buf_size_bytes)
+{
+    NunavutSignedBitLength rc = 0;
+
+    if (in_buffer == NULL)
+    {
+        return -NUNAVUT_ERR_INVALID_BUF;
+    }
+    if (offset < 0)
+    {
+        return -NUNAVUT_ERR_INVALID_OFFSET;
+    }
+
+    {%- from '_deserialize.j2' import deserialize %}
+    {{ deserialize(composite_type) }}
+
+    return offset;
+}
