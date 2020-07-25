@@ -1,0 +1,160 @@
+{%- macro nunavut_get(bit_length=None) -%}
+{%- if bit_length is None -%}
+in_buffer, buf_size_bytes, offset
+{%- else -%}
+in_buffer, buf_size_bytes, offset, {{ bit_length }}
+{%- endif -%}
+{%- endmacro %}
+
+{%- macro nunavut_assign(ref, name) -%}
+{%- if name == '' -%}
+{{ ref }}
+{%- else -%}
+{{ ref }}{{ name | id }}
+{%- endif -%}
+{%- endmacro %}
+
+
+{%- macro deserialize(type) -%}
+    {{ _deserialize_composite(type, 'out_instance->', 0) }}
+{%- endmacro %}
+
+{%- macro _deserialize_any(type, name, ref, offset) -%}
+    {%- if type is PrimitiveType -%}
+    {{ _deserialize_primitive(type, name, ref) }}
+    {%- elif type is VoidType -%}
+    {#- just deal with it here #}
+    offset += {{ type.bit_length }};
+    {%- elif type is ArrayType -%}
+    {{ _deserialize_array(type, name, ref, offset) }}
+    {%- elif type is CompositeType -%}
+    {%- if offset.is_aligned_at_byte() -%}
+    {#- Data is byte aligned: use generated function #}
+    rc = {{ type | full_reference_name }}_deserialize(&({{ ref + (name | id) }}), offset, in_buffer, buf_size_bytes);
+    if (rc < 0)
+    {
+        return rc;
+    }
+    offset += rc;
+    {%- else -%}
+    {#- Not byte-aligned: inline serialization #}
+    {{ _deserialize_composite(type, ref + (name | id) + '.', offset) }}
+    {%- endif -%}
+    {%- endif -%}
+{%- endmacro %}
+
+{%- macro _deserialize_composite(type, ref, offset) -%}
+    {%- if type is StructureType -%}
+    {%- for f, offset in type.iterate_fields_with_offsets(offset) -%}
+    // Begin Structure: {{ f.data_type }}
+    {{ _deserialize_any(f.data_type, f.name, ref, offset) }}
+    // End Structure: {{ f.data_type }}
+    {%- endfor %}
+    {%- elif type is UnionType %}
+    // Begin Union: {{ type }}
+    {{ _deserialize_int(type.tag_field_type, '_tag_', ref) }}
+    offset += {{ type.tag_field_type.bit_length }};
+    {%- for f, offset in type.iterate_fields_with_offsets(offset) -%}
+    {%- if loop.first %}
+    if (
+    {%- else %}
+    else if (
+    {%- endif -%}
+    {%- if ref.endswith('.') -%}
+        {{ type | full_reference_name }}_is_{{ f.name }}(&({{ ref[:-1] }})))
+    {%- elif ref.endswith('->') -%}
+        {{ type | full_reference_name }}_is_{{ f.name }}({{ ref[:-2] }}))
+    {%- endif %}
+    {
+        {{ _deserialize_any(f.data_type, f.name, ref, offset) | indent(width=4) }}
+    }
+    {%- endfor -%}
+    else
+    {
+        return -NUNAVUT_ERR_INVALID_TAG;
+    }
+    // End Union: {{ type }}
+    {%- endif %}
+{%- endmacro %}
+
+{#
+    Array serialization, handles fixed or variable length
+#}
+{%- macro _deserialize_array(type, name, ref, base_offset) %}
+    {#- wrangle length value if variable length array #}
+    {%- if type is VariableLengthArrayType %}
+    {{ _deserialize_int(type.length_field_type, name + "_length", ref) }};
+    offset += {{ type.length_field_type.bit_length }};
+    if ({{ ref }}{{ name | id }}_length > {{ type.capacity }})
+    {
+        return -NUNAVUT_ERR_INVALID_LEN;
+    }
+    {%- endif %}
+    {%- set loop_type = type.element_type %}
+    {%- set loop_ref = ref + (name | id) + "[i]" %}
+    {%- if loop_type is ArithmeticType and loop_type.standard_bit_length %}
+    {#- There are some options for memcpy if it's a standard data type #}
+    {%- if base_offset.is_aligned_at_byte() and option_target_endianness == "little" %}
+    {#- Data is byte-aligned, so we can use memcpy #}
+    memcpy((void*)out_instance->{{ name }}, (void*) in_buffer + (offset >> 3), out_instance->{{ name }}_length * {{ (loop_type.bit_length / 8) | int }});
+    offset += {{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }};
+    {%- else %}
+    {#- Data is not byte-aligned and/or not LE, so we need to use more intensive functions #}
+    {{ _deserialize_array_loop(type, name, ref) }}
+    {
+        {#- other serialize_anys are caught, but this does get broken... #}
+        {{ _deserialize_primitive(loop_type, '', loop_ref) | indent(width=4) }}
+    }
+    {%- endif %}
+    {%- elif loop_type is PrimitiveType %}
+    {#- should catch uint, int, float, and bool #}
+    {{ _deserialize_array_loop(type, name, ref) }}
+    {
+        {#- potential issue here, need to do more thinking on how/if the offset gets translated #}
+        {{ _deserialize_any(loop_type, '', loop_ref, base_offset) | indent(width=4) }}
+    }
+    {%- endif %}
+{%- endmacro %}
+
+{%- macro _deserialize_array_loop(field_type, field_name, ref) -%}
+    {%- if field_type is FixedLengthArrayType -%}
+    for (size_t i = 0; i < {{ field_type.capacity }}; ++i)
+    {%- elif field_type is VariableLengthArrayType -%}
+    for (size_t i = 0; i < {{ ref }}{{ field_name | id }}_length; ++i)
+    {%- endif %}
+{%- endmacro %}
+
+{#
+    Primitive serialization dispatch
+#}
+{%- macro _deserialize_primitive(type, name, ref) -%}
+    {%- if type is IntegerType %}
+    {{ _deserialize_int(type, name, ref) }}
+    {%- elif type is FloatType %}
+    {{ _deserialize_float(type, name, ref) }}
+    {%- elif type is BooleanType %}
+    {{ _deserialize_boolean(type, name, ref) }}
+    {%- endif %}
+    offset += {{ type.bit_length }};
+{%- endmacro %}
+
+{#
+    Primitive serialization macros.
+#}
+{# Signed and unsigned integers #}
+{%- macro _deserialize_int(type, name, ref) -%}
+    {%- if type is UnsignedIntegerType -%}
+    {{ nunavut_assign(ref, name) }} = nunavutGetU{{ type | to_standard_bit_length }}({{ nunavut_get(type.bit_length) }});
+    {%- elif type is SignedIntegerType -%}
+    {{ nunavut_assign(ref, name) }} = nunavutGetI{{ type | to_standard_bit_length }}({{ nunavut_get(type.bit_length) }});
+    {%- endif %}
+{%- endmacro %}
+
+{# Floats don't have bit lengths other than 16, 32, or 64 #}
+{%- macro _deserialize_float(type, name, ref) -%}
+    {{ nunavut_assign(ref, name) }} = nunavutGetF{{ type.bit_length }}({{ nunavut_get() }});
+{%- endmacro %}
+
+{%- macro _deserialize_boolean(type, name, ref) -%}
+    {{ nunavut_assign(ref, name) }} = nunavutGetBit({{ nunavut_get() }});
+{%- endmacro %}
