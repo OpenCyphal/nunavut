@@ -62,7 +62,7 @@ Partial example: generating a C struct
             {%- endfor %}
     ...
 
-        } {{ composite_type | full_reference_name }};
+        } {{ T | full_reference_name }};
 
         #endif // {{T.full_name | c.macrofy}}
 
