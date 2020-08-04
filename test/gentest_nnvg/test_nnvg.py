@@ -157,3 +157,41 @@ def test_issue_73(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+
+
+def test_issue_116(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+    Verify nnvg will infer target language when given only a file extension.
+    See https://github.com/UAVCAN/nunavut/issues/116 for issue that this is a fix
+    for.
+    """
+    expected_output = sorted([
+        str(gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType_0_8.h')),
+    ])
+
+    # Happy path
+    nnvg_args = ['-O', str(gen_paths.out_dir),
+                 '-e', '.h',
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 '--list-outputs',
+                 '--omit-serialization-support',
+                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    completed_wo_empty = sorted([i for i in completed if len(i) > 0])
+    assert expected_output == sorted(completed_wo_empty)
+
+    # Warning path
+    nnvg_args = ['-O', str(gen_paths.out_dir),
+                 '-e', '.blarg',
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 '--list-outputs',
+                 '--omit-serialization-support',
+                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    try:
+        run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+        pytest.fail('nnvg completed normally when it should have failed to find a template.')
+    except subprocess.CalledProcessError as e:
+        error_output = e.stderr.decode('UTF-8')
+        assert 'No target language was given' in error_output

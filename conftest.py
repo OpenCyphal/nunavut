@@ -47,6 +47,7 @@ def run_nnvg(request):  # type: ignore
         return subprocess.run(coverage_args + args,
                               check=check_result,
                               stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,
                               env=this_env)
     return _run_nnvg
 
