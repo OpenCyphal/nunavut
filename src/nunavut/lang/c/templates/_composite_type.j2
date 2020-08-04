@@ -13,18 +13,14 @@ typedef struct
 {%- for field in composite_type.fields %}
 {%- if field.data_type is ArrayType %}
 
-/**
- * The maximum capacity of {{ composite_type | full_reference_name }}.{{ field.name }}. 
- */
+/// The maximum capacity of {{ composite_type | full_reference_name }}.{{ field.name }}.
 inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}_{{ field.name }}_array_capacity(void)
 {
     return ({{ field.data_type.capacity }}U);
 }
 
-/**
- * If true then {{ composite_type | full_reference_name }}.{{ field.name }}'s length can vary otherwise it will
- * always be the same as its capacity.
- */
+/// If true then {{ composite_type | full_reference_name }}.{{ field.name }}'s length can vary otherwise it will
+/// always be the same as its capacity.
 inline {{ typename_boolean }} {{ composite_type | full_reference_name }}_{{ field.name }}_array_is_variable_length(void)
 {
     {% if field.data_type is VariableLengthArrayType -%}
@@ -34,11 +30,9 @@ inline {{ typename_boolean }} {{ composite_type | full_reference_name }}_{{ fiel
     {%- endif %}
 }
 
-/**
- * If {{ composite_type | full_reference_name }}.{{ field.name }} is a variable length array then this is the current
- * number of items populated in the array starting from index 0. If {{ field.name }} is not a variable length array
- * then this is the same as its capacity.
- */
+/// If {{ composite_type | full_reference_name }}.{{ field.name }} is a variable length array then this is the current
+/// number of items populated in the array starting from index 0. If {{ field.name }} is not a variable length array
+/// then this is the same as its capacity.
 inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}_{{ field.name }}_array_length(
     const {{ composite_type | full_reference_name }}* const instance)
 {
@@ -53,12 +47,11 @@ inline {{ typename_unsigned_length }} {{ composite_type | full_reference_name }}
 {%- endif %}
 {%- endfor %}
 {% import '_init_macros.j2' as init_macros %}
-/**
- * Initialize an {{ composite_type | full_reference_name }} instance to default values.
- * No memory is allocated within this method.
- *
- * @param out_instance A structure instance to Initialize.
- */
+/// Initialize an {{ composite_type | full_reference_name }} instance to default values.
+/// No memory is allocated within this method.
+/// Does nothing if @ref out_instance is NULL.
+///
+/// @param out_instance A structure instance to Initialize.
 inline void {{ composite_type | full_reference_name }}_init({{ composite_type | full_reference_name }}* const out_instance)
 {
     if (out_instance != {{ valuetoken_null }})
@@ -77,15 +70,9 @@ inline void {{ composite_type | full_reference_name }}_init({{ composite_type | 
 }
 {%- if not nunavut.support.omit %}
 
-/* +------------------------------------------------------------------------------------------------------------------+ */
-/* | TODO: issue #112, add serialization support for C types.                                                           */
-/* +------------------------------------------------------------------------------------------------------------------+ */
-
-/**
- * @def {{ composite_type | full_reference_name }}_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES
- * Contains the maximum number of bytes needed to serialize a(n) {{ composite_type | full_reference_name }}
- * instance.
- */
-#define {{ composite_type | full_reference_name }}_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES ({{ composite_type.bit_length_set | max }}U)
+/// Contains the maximum number of bytes needed to serialize a(n) {{ composite_type | full_reference_name }}
+/// instance.
+#define {{ composite_type | full_reference_name }}_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES \
+        ({{ (((composite_type.bit_length_set | max) / 8) | round(method='ceil')) | int }}U)
 
 {%- endif %}
