@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from sybil import Sybil
-from sybil.integration.pytest import SybilFile, SybilItem
+from sybil.integration.pytest import SybilFile
 from sybil.parsers.codeblock import CodeBlockParser
 from sybil.parsers.doctest import DocTestParser
 
@@ -318,25 +318,13 @@ def jinja_filter_tester(request):  # type: ignore
     return _make_filter_test_template
 
 
-class NewSybilFile(SybilFile):
-    """
-    Adapt Sybil to newer pytest versions.
-    """
-
-    def __init__(self, fspath, parent, sybil):  # type: ignore
-        super().__init__(path=fspath, parent=parent, sybil=sybil)
-
-    def collect(self):  # type: ignore
-        self.document = self.sybil.parse(self.fspath.strpath)
-        for example in self.document:
-            yield SybilItem.from_parent(self, sybil=self.sybil, example=example)
-
-
 def _pytest_integration_that_actually_works() -> typing.Callable:
     """
     Sybil matching is pretty broken. We'll have to help it out here. The problem is that
     exclude patterns passed into the Sybil object are matched against file name stems such that
     files cannot be excluded by path.
+
+    Note that I have a PR open to fix this upstream: https://github.com/cjw296/sybil/pull/22
     """
 
     _sy = Sybil(
@@ -356,8 +344,10 @@ def _pytest_integration_that_actually_works() -> typing.Callable:
     )
 
     def pytest_collect_file(parent: typing.Any, path: typing.Any) -> typing.Optional[typing.Any]:
+        # Upstream Sybil does `sybil.should_test_filename(path.basename)` while erases the path
+        # part of the pattern. We simply take the pattern as-is to preserve full path matches.
         if _sy.should_test_filename(str(path)):
-            return NewSybilFile.from_parent(parent, fspath=path, sybil=_sy)
+            return SybilFile.from_parent(parent, fspath=path, sybil=_sy)
         else:
             return None
 
