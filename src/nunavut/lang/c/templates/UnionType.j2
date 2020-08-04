@@ -5,11 +5,9 @@
 {%- for field in composite_type.fields -%}
 {%- if field is not padding %}
 
-/**
- * Determine if a given {{ composite_type | full_reference_name }} tagged union is currently tagged as
- * a(n) {{ field.name }} type. If so then {{ composite_type | full_reference_name }}->{{ field.name }}
- * can be accessed safely.
- */
+/// Determine if a given {{ composite_type | full_reference_name }} tagged union is currently tagged as
+/// {{ field.name }}. If so, then {{ composite_type | full_reference_name }}->{{ field.name }}
+/// can be accessed safely.
 inline {{ typename_boolean }} {{ composite_type | full_reference_name }}_is_{{ field.name }}(const {{ composite_type | full_reference_name }}* const tagged_union_ptr)
 {
     return ((tagged_union_ptr != {{ valuetoken_null }}) && tagged_union_ptr->_tag_ == {{ loop.index0 }});
