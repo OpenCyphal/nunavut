@@ -239,8 +239,9 @@ def create_generators(namespace: nunavut.Namespace, **kwargs: typing.Any) -> \
         typing.Tuple['AbstractGenerator', 'AbstractGenerator']:
     """
     Create the two generators used by Nunavut; a code-generator and a support-library generator.
-    :param  nunavut.Namespace namespace:  The namespace to generate code within.
-    :param  kwargs: A list of arguments that are forwarded to the generator constructors.
+
+    :param nunavut.Namespace namespace: The namespace to generate code within.
+    :param kwargs: A list of arguments that are forwarded to the generator constructors.
     :return: Tuple with the first item being the code-generator and the second the support-library
         generator.
     """

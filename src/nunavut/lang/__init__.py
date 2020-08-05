@@ -27,6 +27,8 @@ class Language:
     :param configparser.ConfigParser config: The parser to load language properties from.
     :param bool omit_serialization_support:  The value to set for the :func:`omit_serialization_support` property
                                              for this language.
+    :param typing.Optional[typing.Mapping[str, typing.Any]] language_arguments: Opaque arguments passed through to the
+                target :class:`nunavut.lang.Language` object.
     """
 
     @classmethod
@@ -45,13 +47,16 @@ class Language:
     def __init__(self,
                  language_name: str,
                  config: configparser.ConfigParser,
-                 omit_serialization_support: bool):
+                 omit_serialization_support: bool,
+                 language_arguments: typing.Optional[typing.Mapping[str, typing.Any]] = None):
         self._globals = None  # type: typing.Optional[typing.Mapping[str, typing.Any]]
         self._language_name = language_name
         self._section = 'nunavut.lang.{}'.format(language_name)
         self._filters = self._find_filters_for_language(language_name)
         self._config = config
         self._omit_serialization_support = omit_serialization_support
+        # TODO: get langauge_features from config and override any values from 
+        # language_features provided in the language_arguments.
 
     def __getattr__(self, name: str) -> typing.Any:
         """
@@ -325,6 +330,8 @@ class LanguageContext:
     :type additional_config_files: typing.List[pathlib.Path]
     :param bool omit_serialization_support_for_target: If True then generators should not include
         serialization routines, types, or support libraries for the target language.
+    :param typing.Optional[typing.Mapping[str, typing.Any]] language_arguments: Opaque arguments passed through to the
+                target :class:`nunavut.lang.Language` object.
     :raises ValueError: If extension is None and no target language was provided.
     :raises KeyError: If the target language is not known.
     """
@@ -363,7 +370,8 @@ class LanguageContext:
                  extension: typing.Optional[str] = None,
                  namespace_output_stem: typing.Optional[str] = None,
                  additional_config_files: typing.List[pathlib.Path] = [],
-                 omit_serialization_support_for_target: bool = True):
+                 omit_serialization_support_for_target: bool = True,
+                 language_arguments: typing.Optional[typing.Mapping[str, typing.Any]] = None):
         self._extension = extension
         self._namespace_output_stem = namespace_output_stem
         self._config = self._load_config(*additional_config_files)
@@ -374,7 +382,8 @@ class LanguageContext:
         else:
             try:
                 self._target_language = Language(target_language, self._config,
-                                                 omit_serialization_support_for_target)
+                                                 omit_serialization_support_for_target,
+                                                 language_arguments=language_arguments)
             except ImportError:
                 raise KeyError('{} is not a supported language'.format(target_language))
             if namespace_output_stem is not None:
