@@ -72,6 +72,38 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
         omit_serialization_support_for_target=args.omit_serialization_support)
 
     #
+    # nunavut: inferred target language from extension
+    #
+    if args.output_extension is not None and language_context.get_target_language() is None:
+
+        inferred_target_language_name = None  # type: typing.Optional[str]
+        for name, lang in language_context.get_supported_languages().items():
+            extension = lang.get_config_value('extension', None)
+            if extension is not None and extension == args.output_extension:
+                inferred_target_language_name = name
+                break
+
+        if inferred_target_language_name is not None:
+            logging.info('Inferring target language %s based on extension "%s".',
+                         inferred_target_language_name, args.output_extension)
+            language_context = nunavut.lang.LanguageContext(
+                inferred_target_language_name,
+                args.output_extension,
+                args.namespace_output_stem,
+                omit_serialization_support_for_target=args.omit_serialization_support)
+        elif args.templates is None:
+            logging.warn(
+                textwrap.dedent('''
+                ***********************************************************************
+                    No target language was given, none could be inferred from the output extension (-e) argument "%s",
+                    and no user templates were specified. You will fail to find templates if you have provided any
+                    DSDL types to generate.
+                ***********************************************************************
+                ''').lstrip(),
+                args.output_extension
+            )
+
+    #
     # nunavut : parse
     #
     type_map = pydsdl.read_namespace(args.root_namespace, extra_includes)
