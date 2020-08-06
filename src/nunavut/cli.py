@@ -417,9 +417,7 @@ def _make_parser() -> argparse.ArgumentParser:
 
     ln_opt_group = parser.add_argument_group('language options', description=textwrap.dedent('''
 
-        Options passed through to templates as `language_options` on the target language. For example::
-
-            {% if language_options.target_endianness == 'little' %}
+        Options passed through to templates as `language_options` on the target language.
 
         Note that these arguments are passed though without validation, have no effect on the Nunavut
         library, and may or may not be appropriate based on the target language and generator templates
