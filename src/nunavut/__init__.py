@@ -581,7 +581,7 @@ def generate_types(language_key: str,
                    allow_overwrite: bool = True,
                    lookup_directories: typing.Optional[typing.Iterable[str]] = None,
                    allow_unregulated_fixed_port_id: bool = False,
-                   language_arguments: typing.Optional[typing.Mapping[str, typing.Any]] = None) -> None:
+                   language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None) -> None:
     """
     Helper method that uses default settings and built-in templates to generate types for a given
     language. This method is the most direct way to generate code using Nunavut.
@@ -599,17 +599,17 @@ def generate_types(language_key: str,
     :param typing.Optional[typing.Iterable[str]] lookup_directories: Additional directories to search for dependent
                 types referenced by the types provided under the `root_namespace_dir`. Types will not be generated
                 for these unless they are used by a type in the root namespace.
-    :param bool allow_unregulated_fixed_port_id: If True then errors will become warning when using fixed port identifiers
-                for unregulated datatypes.
-    :param typing.Optional[typing.Mapping[str, typing.Any]] language_arguments: Opaque arguments passed through to the
-                language objects. The supported arguments and valid values are different depending on the language specified
-                by the `language_key` parameter.
+    :param bool allow_unregulated_fixed_port_id: If True then errors will become warning when using fixed port
+                identifiers for unregulated datatypes.
+    :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
+                language objects. The supported arguments and valid values are different depending on the language
+                specified by the `language_key` parameter.
     """
     from nunavut.generators import create_generators
 
     language_context = lang.LanguageContext(language_key,
                                             omit_serialization_support_for_target=omit_serialization_support,
-                                            language_arguments=language_arguments)
+                                            language_options=language_options)
 
     if lookup_directories is None:
         lookup_directories = []

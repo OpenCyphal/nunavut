@@ -65,11 +65,17 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
         # a valid target language.
         setattr(args, 'output_extension', '.tmp')
 
+    language_options = None
+
+    if args.target_language is not None:
+        language_options = {'target_endianess': args.target_endianess}
+
     language_context = nunavut.lang.LanguageContext(
         args.target_language,
         args.output_extension,
         args.namespace_output_stem,
-        omit_serialization_support_for_target=args.omit_serialization_support)
+        omit_serialization_support_for_target=args.omit_serialization_support,
+        language_options=language_options)
 
     #
     # nunavut: inferred target language from extension
@@ -90,7 +96,8 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
                 inferred_target_language_name,
                 args.output_extension,
                 args.namespace_output_stem,
-                omit_serialization_support_for_target=args.omit_serialization_support)
+                omit_serialization_support_for_target=args.omit_serialization_support,
+                language_options=language_options)
         elif args.templates is None:
             logging.warn(
                 textwrap.dedent('''
@@ -403,6 +410,26 @@ def _make_parser() -> argparse.ArgumentParser:
 
         Additional arguments to provide to the program specified by --pp-run-program.
         The last argument will always be the path to the generated file.
+
+    ''').lstrip())
+
+    ln_opt_group = parser.add_argument_group('language options', description=textwrap.dedent('''
+
+        Options passed through to templates as `language_options` on the target language. For example::
+
+            {% if language_options.target_endianess == 'little' %}
+
+        Note that these arguments are passed though without validation, have no effect on the Nunavut
+        library, and may or may not be appropriate based on the target language and generator templates
+        in use.
+    ''').lstrip())
+
+    ln_opt_group.add_argument('--target-endianess',
+                              choices=['big', 'little'],
+                              help=textwrap.dedent('''
+
+        Specify the endianess of the target hardware. This allows serialization
+        logic to be optimized for different CPU architectures.
 
     ''').lstrip())
 

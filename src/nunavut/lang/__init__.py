@@ -8,6 +8,7 @@
 This package contains modules that provide specific support for generating
 source for various languages using templates.
 """
+import collections
 import configparser
 import functools
 import importlib
@@ -27,7 +28,7 @@ class Language:
     :param configparser.ConfigParser config: The parser to load language properties from.
     :param bool omit_serialization_support:  The value to set for the :func:`omit_serialization_support` property
                                              for this language.
-    :param typing.Optional[typing.Mapping[str, typing.Any]] language_arguments: Opaque arguments passed through to the
+    :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
                 target :class:`nunavut.lang.Language` object.
     """
 
@@ -48,15 +49,23 @@ class Language:
                  language_name: str,
                  config: configparser.ConfigParser,
                  omit_serialization_support: bool,
-                 language_arguments: typing.Optional[typing.Mapping[str, typing.Any]] = None):
+                 language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None):
         self._globals = None  # type: typing.Optional[typing.Mapping[str, typing.Any]]
         self._language_name = language_name
         self._section = 'nunavut.lang.{}'.format(language_name)
         self._filters = self._find_filters_for_language(language_name)
         self._config = config
         self._omit_serialization_support = omit_serialization_support
-        # TODO: get langauge_features from config and override any values from 
-        # language_features provided in the language_arguments.
+        option_config = self._config.get(self._section, 'options', fallback=None)
+        if option_config is None:
+            self._language_options = dict()  # type: typing.Mapping[str, typing.Any]
+        elif not isinstance(option_config, collections.Mapping):
+            raise ValueError('Language configuration contained an illegal option mapping.')
+        else:
+            self._language_options = option_config
+
+        if language_options is not None:
+            self._language_options.update(language_options)
 
     def __getattr__(self, name: str) -> typing.Any:
         """
@@ -308,6 +317,7 @@ class Language:
                 globals_map['typename_{}'.format(key)] = value
             for key, value in self.get_named_values().items():
                 globals_map['valuetoken_{}'.format(key)] = value
+            globals_map['language_options'] = self._language_options
             self._globals = globals_map
         return self._globals
 
@@ -330,7 +340,7 @@ class LanguageContext:
     :type additional_config_files: typing.List[pathlib.Path]
     :param bool omit_serialization_support_for_target: If True then generators should not include
         serialization routines, types, or support libraries for the target language.
-    :param typing.Optional[typing.Mapping[str, typing.Any]] language_arguments: Opaque arguments passed through to the
+    :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
                 target :class:`nunavut.lang.Language` object.
     :raises ValueError: If extension is None and no target language was provided.
     :raises KeyError: If the target language is not known.
@@ -371,7 +381,7 @@ class LanguageContext:
                  namespace_output_stem: typing.Optional[str] = None,
                  additional_config_files: typing.List[pathlib.Path] = [],
                  omit_serialization_support_for_target: bool = True,
-                 language_arguments: typing.Optional[typing.Mapping[str, typing.Any]] = None):
+                 language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None):
         self._extension = extension
         self._namespace_output_stem = namespace_output_stem
         self._config = self._load_config(*additional_config_files)
@@ -383,7 +393,7 @@ class LanguageContext:
             try:
                 self._target_language = Language(target_language, self._config,
                                                  omit_serialization_support_for_target,
-                                                 language_arguments=language_arguments)
+                                                 language_options=language_options)
             except ImportError:
                 raise KeyError('{} is not a supported language'.format(target_language))
             if namespace_output_stem is not None:
