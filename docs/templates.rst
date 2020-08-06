@@ -133,6 +133,34 @@ Named Values by Language
 +--------------------+--------------------------------+
 
 
+Language Options
+=================================================
+
+Testing 1, 2, 3
+
+.. invisible-code-block: python
+
+   from nunavut.templates import template_environment_filter
+
+   @template_environment_filter
+   def filter_dummy(env, input):
+         return input
+
+.. code-block:: python
+
+   # Given
+   I = 'foo'
+
+   # and
+   template = '{{ I | dummy }}'
+
+   # then
+   rendered = I
+
+.. invisible-code-block: python
+
+   jinja_filter_tester(filter_dummy, template, rendered, 'c', I=I)
+
 Filters
 =================================================
 
