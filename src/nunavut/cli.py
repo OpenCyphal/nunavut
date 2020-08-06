@@ -68,7 +68,9 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
     language_options = None
 
     if args.target_language is not None:
-        language_options = {'target_endianess': args.target_endianess}
+        language_options = dict()
+        if args.target_endianness is not None:
+            language_options['target_endianness'] = args.target_endianness
 
     language_context = nunavut.lang.LanguageContext(
         args.target_language,
@@ -417,18 +419,18 @@ def _make_parser() -> argparse.ArgumentParser:
 
         Options passed through to templates as `language_options` on the target language. For example::
 
-            {% if language_options.target_endianess == 'little' %}
+            {% if language_options.target_endianness == 'little' %}
 
         Note that these arguments are passed though without validation, have no effect on the Nunavut
         library, and may or may not be appropriate based on the target language and generator templates
         in use.
     ''').lstrip())
 
-    ln_opt_group.add_argument('--target-endianess',
+    ln_opt_group.add_argument('--target-endianness',
                               choices=['big', 'little'],
                               help=textwrap.dedent('''
 
-        Specify the endianess of the target hardware. This allows serialization
+        Specify the endianness of the target hardware. This allows serialization
         logic to be optimized for different CPU architectures.
 
     ''').lstrip())

@@ -58,6 +58,7 @@
         "doctests",
         "dsdl",
         "endblock",
+        "endianness",
         "esmeinc",
         "fnmatch",
         "fspath",

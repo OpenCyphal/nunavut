@@ -1,5 +1,3 @@
-  .. _template-language-guide:
-
 ################################################
 Template Language Guide
 ################################################
@@ -136,30 +134,33 @@ Named Values by Language
 Language Options
 =================================================
 
-Testing 1, 2, 3
+The target language for a template contributes options to the template globals. These options
+can be invented by users of the Nunavut library but a built-in set of defaults exists.
 
-.. invisible-code-block: python
+All language options are made available as globals with the `option_` prefix. For example,
+a language option "target_arch" would be available as the "option_target_arch" global in
+templates.
 
-   from nunavut.templates import template_environment_filter
 
-   @template_environment_filter
-   def filter_dummy(env, input):
-         return input
+Language Options with Built-in Defaults
+--------------------------------------------------
+
++-----------------------------+--------------------------------+
+| Type name                   | Language(s)                    |
++=============================+================================+
+| option_target_endianness    | C, C++                         |
++-----------------------------+--------------------------------+
 
 .. code-block:: python
 
-   # Given
-   I = 'foo'
-
-   # and
-   template = '{{ I | dummy }}'
+   template = '{{ option_target_endianness }}'
 
    # then
-   rendered = I
+   rendered = 'little'
 
 .. invisible-code-block: python
 
-   jinja_filter_tester(filter_dummy, template, rendered, 'c', I=I)
+   jinja_filter_tester([], template, rendered, 'c')
 
 Filters
 =================================================

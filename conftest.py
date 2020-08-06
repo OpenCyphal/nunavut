@@ -309,6 +309,10 @@ def jinja_filter_tester(request):  # type: ignore
             else:
                 e.filters[filter_name] = filter
 
+        target_language_resolved = lctx.get_target_language()
+        if target_language_resolved is not None:
+            e.globals.update(target_language_resolved.get_globals())
+
         rendered = str(e.get_template('test').render())
         if expected != rendered:
             msg = 'Unexpected template output\n\texpected : {}\n\twas      : {}'.format(
@@ -319,48 +323,22 @@ def jinja_filter_tester(request):  # type: ignore
     return _make_filter_test_template
 
 
-def _pytest_integration_including_deeper_directory_structures() -> typing.Callable:
-    """
-    My understanding of Sybil matching is pretty broken. As far as I can tell, the exclude patterns
-    passed into the Sybil object are matched against file name stems such that files cannot be excluded by path.
-    I wasn't able to find any other way to do what this hack does.
-
-    Note that there is a PR open to change this upstream: https://github.com/cjw296/sybil/pull/23/files
-
-    Also note that this is the only real difficulty I've had with Sybil which is, IMHO, a foundational
-    technology that should be used by all Python projects following best practices. I suspect I will
-    be using it for almost every Python project I take on going forward. Particularly excellent is the
-    availability of pytest fixtues in sybil code blocks. This has enabled Nunavut to use our `jinja_filter_tester`
-    fixture to write Jinja template examples in documentation that are validated by pytest.
-    """
-
-    _sy = Sybil(
-        parsers=[
-            DocTestParser(optionflags=ELLIPSIS),
-            CodeBlockParser(),
-        ],
-        pattern='**/nunavut/**/*.py',
-        excludes=[
-            '**/markupsafe/*',
-            '**/jinja2/*',
-        ],
-        fixtures=['jinja_filter_tester',
-                  'gen_paths',
-                  'assert_language_config_value',
-                  'configurable_language_context_factory']
-    )
-
-    def pytest_collect_file(parent: typing.Any, path: typing.Any) -> typing.Optional[typing.Any]:
-        # Upstream Sybil does `sybil.should_test_filename(path.basename)` which erases the path
-        # part of the pattern. We simply take the pattern as-is to preserve full path matches.
-        # Not sure if this is because I don't know what I'm doing or if this is an issue with
-        # Sybil.
-        if _sy.should_test_filename(str(path)):
-            return SybilFile.from_parent(parent, fspath=path, sybil=_sy)
-        else:
-            return None
-
-    return pytest_collect_file
+_sy = Sybil(
+    parsers=[
+        DocTestParser(optionflags=ELLIPSIS),
+        CodeBlockParser(),
+    ],
+    pattern='**/*',
+    excludes=[
+        '**/markupsafe/*',
+        '**/jinja2/*',
+        '**/static/*'
+    ],
+    fixtures=['jinja_filter_tester',
+                'gen_paths',
+                'assert_language_config_value',
+                'configurable_language_context_factory']
+)
 
 
-pytest_collect_file = _pytest_integration_including_deeper_directory_structures()
+pytest_collect_file = _sy.pytest()

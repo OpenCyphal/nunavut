@@ -587,7 +587,7 @@ def generate_types(language_key: str,
     language. This method is the most direct way to generate code using Nunavut.
 
     :param str language_key: The name of the language to generate source for.
-                See the :ref:`template-language-guide` for details on available language support.
+                See the :doc:`../../docs/templates` for details on available language support.
     :param pathlib.Path root_namespace_dir: The path to the root of the DSDL types to generate
                 code for.
     :param pathlib.Path out_dir: The path to generate code at and under.

@@ -1,3 +1,6 @@
 {
      "name": "{{ T }}"
+{%- if option_target_endianness is defined %},
+     "target_endianness": "{{ option_target_endianness }}"
+{% endif %}
 }
