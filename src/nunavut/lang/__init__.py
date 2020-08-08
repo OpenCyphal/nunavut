@@ -27,7 +27,22 @@ class Language:
     :param configparser.ConfigParser config: The parser to load language properties from.
     :param bool omit_serialization_support:  The value to set for the :func:`omit_serialization_support` property
                                              for this language.
+    :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
+                target :class:`nunavut.lang.Language` object.
     """
+
+    @classmethod
+    def _as_dict(cls, value: str) -> typing.Dict[str, typing.Any]:
+        value_as_dict = dict()
+        value_pairs = value.strip().split('\n')
+        for pair in value_pairs:
+            kv = pair.strip().split('=')
+            value_as_dict[kv[0].strip()] = kv[1].strip()
+        return value_as_dict
+
+    @classmethod
+    def _as_list(cls, value: str) -> typing.List[str]:
+        return [r.strip() for r in value.split('\n')]
 
     @classmethod
     def _find_filters_for_language(cls, language_name: str) -> typing.Mapping[str, typing.Callable]:
@@ -42,16 +57,35 @@ class Language:
                                                                         language_name))
         return filter_map
 
+    @classmethod
+    def get_language_config_parser(cls) -> configparser.ConfigParser:
+        """
+        Create a :class:`configparser.ConfigParser` instance configured for reading
+        language properties.ini.
+        """
+        return configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation(),
+                                         converters={'dict': cls._as_dict,
+                                                     'list': cls._as_list})
+
     def __init__(self,
                  language_name: str,
                  config: configparser.ConfigParser,
-                 omit_serialization_support: bool):
+                 omit_serialization_support: bool,
+                 language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None):
         self._globals = None  # type: typing.Optional[typing.Mapping[str, typing.Any]]
         self._language_name = language_name
         self._section = 'nunavut.lang.{}'.format(language_name)
         self._filters = self._find_filters_for_language(language_name)
         self._config = config
         self._omit_serialization_support = omit_serialization_support
+        option_config = self._config.getdict(self._section, 'options', fallback=None)  # type: ignore
+        if option_config is None:
+            self._language_options = dict()  # type: typing.Mapping[str, typing.Any]
+        else:
+            self._language_options = typing.cast(dict, option_config)
+
+        if language_options is not None:
+            self._language_options.update(language_options)
 
     def __getattr__(self, name: str) -> typing.Any:
         """
@@ -111,11 +145,9 @@ class Language:
         .. invisible-code-block: python
 
             from nunavut.lang import Language
-            import configparser
 
-            config = configparser.ConfigParser()
+            config = Language.get_language_config_parser()
             config.add_section('nunavut.lang.cpp')
-
 
             lang_cpp = Language('cpp', config, True)
 
@@ -173,6 +205,44 @@ class Language:
             # type: typing.Callable[[], typing.Generator[pathlib.Path, None, None]]
         return list_support_files()
 
+    def get_option(self,
+                   option_key: str,
+                   default_value: typing.Union[typing.Mapping[str, typing.Any], str, None] = None)\
+            -> typing.Union[typing.Mapping[str, typing.Any], str, None]:
+        """
+        Get a language option for this language.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import Language
+
+            config = Language.get_language_config_parser()
+            config.add_section('nunavut.lang.cpp')
+            config['nunavut.lang.cpp']['options'] = 'target_endianness = little'
+
+            lang_cpp = Language('cpp', config, True)
+
+        .. code-block:: python
+
+            # Values can come from defaults...
+            assert lang_cpp.get_option('target_endianness') == 'little'
+
+            # ... or can be provided to a language instance.
+            my_lang = Language('cpp', config, True, language_options={'target_endianness': 'big'})
+            assert my_lang.get_option('target_endianness') == 'big'
+
+            # Also, this method can provide a sane default.
+            assert lang_cpp.get_option('foobar', 'sane_default') == 'sane_default'
+
+        :return: Either the value provided to the :class:`Language` instance, the value from properties.ini,
+            or the :code:`default_value`.
+
+        """
+        try:
+            return self._language_options[option_key]  # type: ignore
+        except KeyError:
+            return default_value
+
     def get_config_value(self,
                          key: str,
                          default_value: typing.Union[typing.Mapping[str, typing.Any], str, None] = None)\
@@ -198,9 +268,8 @@ class Language:
         .. invisible-code-block: python
 
             from nunavut.lang import Language
-            import configparser
 
-            config = configparser.ConfigParser()
+            config = Language.get_language_config_parser()
             config.add_section('nunavut.lang.cpp')
 
             lang_cpp = Language('cpp', config, True)
@@ -303,6 +372,8 @@ class Language:
                 globals_map['typename_{}'.format(key)] = value
             for key, value in self.get_named_values().items():
                 globals_map['valuetoken_{}'.format(key)] = value
+            for key, value in self._language_options.items():
+                globals_map['option_{}'.format(key)] = value
             self._globals = globals_map
         return self._globals
 
@@ -325,29 +396,16 @@ class LanguageContext:
     :type additional_config_files: typing.List[pathlib.Path]
     :param bool omit_serialization_support_for_target: If True then generators should not include
         serialization routines, types, or support libraries for the target language.
+    :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
+                target :class:`nunavut.lang.Language` object.
     :raises ValueError: If extension is None and no target language was provided.
     :raises KeyError: If the target language is not known.
     """
 
     @classmethod
-    def _as_dict(cls, value: str) -> typing.Dict[str, typing.Any]:
-        value_as_dict = dict()
-        value_pairs = value.strip().split('\n')
-        for pair in value_pairs:
-            kv = pair.strip().split('=')
-            value_as_dict[kv[0].strip()] = kv[1].strip()
-        return value_as_dict
-
-    @classmethod
-    def _as_list(cls, value: str) -> typing.List[str]:
-        return [r.strip() for r in value.split('\n')]
-
-    @classmethod
     def _load_config(cls, *additional_config_files: pathlib.Path) -> configparser.ConfigParser:
         import pkg_resources
-        parser = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation(),
-                                           converters={'dict': cls._as_dict,
-                                                       'list': cls._as_list})
+        parser = Language.get_language_config_parser()
         resources = [r for r in pkg_resources.resource_listdir(__name__, '.') if r.endswith('.ini')]
         for resource in resources:
             with pkg_resources.resource_stream(__name__, resource) as resource_stream:
@@ -363,7 +421,8 @@ class LanguageContext:
                  extension: typing.Optional[str] = None,
                  namespace_output_stem: typing.Optional[str] = None,
                  additional_config_files: typing.List[pathlib.Path] = [],
-                 omit_serialization_support_for_target: bool = True):
+                 omit_serialization_support_for_target: bool = True,
+                 language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None):
         self._extension = extension
         self._namespace_output_stem = namespace_output_stem
         self._config = self._load_config(*additional_config_files)
@@ -374,7 +433,8 @@ class LanguageContext:
         else:
             try:
                 self._target_language = Language(target_language, self._config,
-                                                 omit_serialization_support_for_target)
+                                                 omit_serialization_support_for_target,
+                                                 language_options=language_options)
             except ImportError:
                 raise KeyError('{} is not a supported language'.format(target_language))
             if namespace_output_stem is not None:

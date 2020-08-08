@@ -3,6 +3,7 @@
 # Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
 # This software is distributed under the terms of the MIT License.
 #
+import json
 import pathlib
 import subprocess
 import typing
@@ -144,6 +145,45 @@ def test_target_language(gen_paths: typing.Any, run_nnvg: typing.Callable) -> No
     completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
     completed_wo_empty = sorted([i for i in completed if len(i) > 0])
     assert expected_output == sorted(completed_wo_empty)
+
+
+def test_language_option_defaults(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+        Verifies expected language option defaults are available.
+    """
+
+    expected_output = str(gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp'))
+
+    nnvg_args = ['--templates', str(gen_paths.templates_dir),
+                 '-O', str(gen_paths.out_dir),
+                 '--target-language', 'cpp',
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    with open(expected_output, 'r') as generated:
+        generated_results = json.load(generated)
+        assert generated_results['target_endianness'] == 'little'
+
+
+def test_language_option_overrides(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+        Verifies expected language option defaults can be overridden.
+    """
+
+    expected_output = str(gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp'))
+
+    nnvg_args = ['--templates', str(gen_paths.templates_dir),
+                 '-O', str(gen_paths.out_dir),
+                 '--target-language', 'cpp',
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 '--target-endianness', 'big',
+                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    with open(expected_output, 'r') as generated:
+        generated_results = json.load(generated)
+        assert generated_results['target_endianness'] == 'big'
 
 
 def test_issue_73(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:

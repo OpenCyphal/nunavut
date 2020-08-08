@@ -580,15 +580,36 @@ def generate_types(language_key: str,
                    is_dryrun: bool = False,
                    allow_overwrite: bool = True,
                    lookup_directories: typing.Optional[typing.Iterable[str]] = None,
-                   allow_unregulated_fixed_port_id: bool = False) -> None:
+                   allow_unregulated_fixed_port_id: bool = False,
+                   language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None) -> None:
     """
     Helper method that uses default settings and built-in templates to generate types for a given
     language. This method is the most direct way to generate code using Nunavut.
+
+    :param str language_key: The name of the language to generate source for.
+                See the :doc:`../../docs/templates` for details on available language support.
+    :param pathlib.Path root_namespace_dir: The path to the root of the DSDL types to generate
+                code for.
+    :param pathlib.Path out_dir: The path to generate code at and under.
+    :param bool omit_serialization_support: If True then logic used to serialize and deserialize data is omitted.
+    :param bool is_dryrun: If True then nothing is generated but all other activity is performed and any errors
+                that would have occurred are reported.
+    :param bool allow_overwrite: If True then generated files are allowed to overwrite existing files under the
+                `out_dir` path.
+    :param typing.Optional[typing.Iterable[str]] lookup_directories: Additional directories to search for dependent
+                types referenced by the types provided under the `root_namespace_dir`. Types will not be generated
+                for these unless they are used by a type in the root namespace.
+    :param bool allow_unregulated_fixed_port_id: If True then errors will become warning when using fixed port
+                identifiers for unregulated datatypes.
+    :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
+                language objects. The supported arguments and valid values are different depending on the language
+                specified by the `language_key` parameter.
     """
     from nunavut.generators import create_generators
 
     language_context = lang.LanguageContext(language_key,
-                                            omit_serialization_support_for_target=omit_serialization_support)
+                                            omit_serialization_support_for_target=omit_serialization_support,
+                                            language_options=language_options)
 
     if lookup_directories is None:
         lookup_directories = []
