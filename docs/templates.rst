@@ -141,9 +141,41 @@ All language options are made available as globals with the `option_` prefix. Fo
 a language option "target_arch" would be available as the "option_target_arch" global in
 templates.
 
+For options that do not come with built-in defaults you'll need to test if the option is
+available before you use it. For example:
+
+.. code-block:: python
+
+   # This will throw an exception
+   template = '{% if option_foo %}bar{% endif %}'
+
+.. invisible-code-block: python
+
+   import pytest
+   from nunavut.jinja.jinja2.exceptions import UndefinedError
+
+   with pytest.raises(UndefinedError):
+      jinja_filter_tester([], template, '', 'c')
+
+Use the built-in test |jinja2_builtin_test_defined|_ to avoid these exceptions:
+
+.. |jinja2_builtin_test_defined| replace:: ``defined``
+.. _jinja2_builtin_test_defined: https://jinja.palletsprojects.com/en/2.11.x/templates/#defined
+
+.. code-block:: python
+
+   # Avoid the exception
+   template = '{% if option_foo is defined and option_foo %}bar{% endif %}'
+
+.. invisible-code-block: python
+
+   jinja_filter_tester([], template, '', 'c')
 
 Language Options with Built-in Defaults
 --------------------------------------------------
+
+The following options have built-in defaults for certain languages. These options will
+always be defined in templates targeting their languages.
 
 +-----------------------------+--------------------------------+
 | Type name                   | Language(s)                    |

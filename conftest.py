@@ -24,7 +24,7 @@ from sybil.parsers.codeblock import CodeBlockParser
 from sybil.parsers.doctest import DocTestParser
 
 from nunavut import Namespace
-from nunavut.jinja.jinja2 import DictLoader, Environment
+from nunavut.jinja.jinja2 import DictLoader, Environment, StrictUndefined
 from nunavut.lang import LanguageContext
 from nunavut.templates import (CONTEXT_FILTER_ATTRIBUTE_NAME,
                                ENVIRONMENT_FILTER_ATTRIBUTE_NAME,
@@ -278,7 +278,8 @@ def jinja_filter_tester(request):  # type: ignore
                                    expected: str,
                                    target_language: typing.Union[typing.Optional[str], LanguageContext],
                                    **globals: typing.Optional[typing.Dict[str, typing.Any]]) -> str:
-        e = Environment(loader=DictLoader({'test': body}))
+        e = Environment(loader=DictLoader({'test': body},),
+                        undefined=StrictUndefined)
 
         if globals is not None:
             e.globals.update(globals)
@@ -335,9 +336,9 @@ _sy = Sybil(
         '**/static/*'
     ],
     fixtures=['jinja_filter_tester',
-                'gen_paths',
-                'assert_language_config_value',
-                'configurable_language_context_factory']
+              'gen_paths',
+              'assert_language_config_value',
+              'configurable_language_context_factory']
 )
 
 

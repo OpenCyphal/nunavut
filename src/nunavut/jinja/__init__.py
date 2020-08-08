@@ -216,7 +216,7 @@ class Generator(nunavut.generators.AbstractGenerator):
 
     def filter_type_to_include_path(self, value: typing.Any, resolve: bool = False) -> str:
         """
-        Emits and include path to the output target for a given type.
+        Emits an include path to the output target for a given type.
 
         Example::
 
