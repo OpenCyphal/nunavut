@@ -25,7 +25,7 @@ import nunavut.postprocessors
 from nunavut.jinja.jinja2 import (ChoiceLoader, Environment, FileSystemLoader,
                                   PackageLoader, StrictUndefined, Template,
                                   TemplateAssertionError, nodes,
-                                  select_autoescape)
+                                  select_autoescape, BaseLoader)
 from nunavut.jinja.jinja2.ext import Extension
 from nunavut.jinja.jinja2.parser import Parser
 from nunavut.templates import LANGUAGE_FILTER_ATTRIBUTE_NAME
@@ -85,6 +85,39 @@ class JinjaAssert(Extension):
             raise TemplateAssertionError(message, lineno, name, filename)
         return caller()
 
+
+# +---------------------------------------------------------------------------+
+# | JINJA : CodeGenEnvironment
+# +---------------------------------------------------------------------------+
+
+class CodeGenEnvironment(Environment):
+    """
+    Jinja Environment optimized for compile-time generation of source code
+    (i.e. as opposed to dynamically generating webpages).
+    """
+
+    def __init__(self,
+                 loader: BaseLoader,
+                 trim_blocks: bool = False,
+                 lstrip_blocks: bool = False):
+        super().__init__(loader=loader,  # nosec
+                         extensions=[nunavut.jinja.jinja2.ext.do,
+                                     nunavut.jinja.jinja2.ext.loopcontrols,
+                                     JinjaAssert],
+                         autoescape=select_autoescape(enabled_extensions=('htm', 'html', 'xml', 'json'),
+                                                      default_for_string=False,
+                                                      default=False),
+                         undefined=StrictUndefined,
+                         keep_trailing_newline=True,
+                         lstrip_blocks=lstrip_blocks,
+                         trim_blocks=trim_blocks,
+                         auto_reload=False,
+                         cache_size=0)
+
+
+# +---------------------------------------------------------------------------+
+# | JINJA : Generator
+# +---------------------------------------------------------------------------+
 
 class Generator(nunavut.generators.AbstractGenerator):
     """ :class:`~nunavut.generators.AbstractGenerator` implementation that uses
@@ -501,21 +534,9 @@ class Generator(nunavut.generators.AbstractGenerator):
         else:
             template_loader = fs_loader
 
-        autoesc = select_autoescape(enabled_extensions=('htm', 'html', 'xml', 'json'),
-                                    default_for_string=False,
-                                    default=False)
-
-        self._env = Environment(loader=template_loader,  # nosec
-                                extensions=[nunavut.jinja.jinja2.ext.do,
-                                            nunavut.jinja.jinja2.ext.loopcontrols,
-                                            JinjaAssert],
-                                autoescape=autoesc,
-                                undefined=StrictUndefined,
-                                keep_trailing_newline=True,
-                                lstrip_blocks=lstrip_blocks,
-                                trim_blocks=trim_blocks,
-                                auto_reload=False,
-                                cache_size=0)
+        self._env = CodeGenEnvironment(loader=template_loader,
+                                       lstrip_blocks=lstrip_blocks,
+                                       trim_blocks=trim_blocks)
 
         self._add_language_support()
 

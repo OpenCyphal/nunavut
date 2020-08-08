@@ -222,7 +222,8 @@ def filter_macrofy(language: Language, value: str) -> str:
 
         # ...but it will not be stropped within the macro.
         rendered = '''#ifndef NAMESPACED_TYPE_REGISTER
-        _register'''
+        _register
+        '''
 
     .. invisible-code-block: python
 

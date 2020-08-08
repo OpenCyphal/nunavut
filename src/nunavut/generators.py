@@ -201,7 +201,7 @@ class CopyFromPackageGenerator(AbstractGenerator):
         return self._support_resources
 
 
-def create_support_generator(namespace: nunavut.Namespace) -> 'AbstractGenerator':
+def create_support_generator(namespace: nunavut.Namespace, **kwargs: typing.Any) -> 'AbstractGenerator':
     """
     Create a new :class:`Generator <nunavut.generators.AbstractGenerator>` that uses embedded support
     headers, libraries, and other types needed to use generated serialization code for the

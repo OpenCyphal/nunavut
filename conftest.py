@@ -278,8 +278,8 @@ def jinja_filter_tester(request):  # type: ignore
                                    expected: str,
                                    target_language: typing.Union[typing.Optional[str], LanguageContext],
                                    **globals: typing.Optional[typing.Dict[str, typing.Any]]) -> str:
-        e = Environment(loader=DictLoader({'test': body},),
-                        undefined=StrictUndefined)
+        from nunavut.jinja import CodeGenEnvironment
+        e = CodeGenEnvironment(loader=DictLoader({'test': body}))
 
         if globals is not None:
             e.globals.update(globals)
