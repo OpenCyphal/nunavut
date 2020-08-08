@@ -9,7 +9,7 @@ from pathlib import Path
 from pydsdl import read_namespace
 from nunavut import build_namespace_tree
 from nunavut.lang import LanguageContext
-from nunavut.jinja import Generator
+from nunavut.jinja import DSDLCodeGenerator
 
 
 def test_TestType_0_1(gen_paths):  # type: ignore
@@ -26,7 +26,7 @@ def test_TestType_0_1(gen_paths):  # type: ignore
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      language_context)
-    generator = Generator(namespace, templates_dir=gen_paths.templates_dir)
+    generator = DSDLCodeGenerator(namespace, templates_dir=gen_paths.templates_dir)
     generator.generate_all(False)
 
     # Now read back in and verify

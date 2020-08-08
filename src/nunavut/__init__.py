@@ -41,7 +41,7 @@ Putting this all together, the typical use of this library looks something like 
     from pydsdl import read_namespace
     from nunavut import build_namespace_tree
     from nunavut.lang import LanguageContext
-    from nunavut.jinja import Generator
+    from nunavut.jinja import DSDLCodeGenerator
 
     # parse the dsdl
     compound_types = read_namespace(root_namespace, include_paths)
@@ -56,7 +56,7 @@ Putting this all together, the typical use of this library looks something like 
                                           language_context)
 
     # give the root namespace to the generator and...
-    generator = Generator(root_namespace)
+    generator = DSDLCodeGeneratorroot_namespace)
 
     # generate all the code!
     generator.generate_all()

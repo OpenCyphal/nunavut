@@ -116,10 +116,70 @@ class CodeGenEnvironment(Environment):
 
 
 # +---------------------------------------------------------------------------+
-# | JINJA : Generator
+# | JINJA : CodeGenerator
 # +---------------------------------------------------------------------------+
 
-class Generator(nunavut.generators.AbstractGenerator):
+class CodeGenerator(nunavut.generators.AbstractGenerator):
+    def __init__(self,
+                 namespace: nunavut.Namespace,
+                 generate_namespace_types: nunavut.YesNoDefault = nunavut.YesNoDefault.DEFAULT,
+                 templates_dir: typing.Optional[typing.Union[pathlib.Path, typing.List[pathlib.Path]]] = None,
+                 followlinks: bool = False,
+                 trim_blocks: bool = False,
+                 lstrip_blocks: bool = False,
+                 additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
+                 additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None,
+                 additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
+                 post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']] = None):
+
+        super().__init__(namespace,
+                         generate_namespace_types)
+
+        self._post_processors = post_processors
+
+        if templates_dir is None:
+            templates_dirs = []  # type: typing.List[pathlib.Path]
+        else:
+            if not isinstance(templates_dir, list):
+                templates_dirs = [templates_dir]
+            else:
+                templates_dirs = templates_dir
+
+            for templates_dir_item in templates_dirs:
+                if templates_dir_item is None:
+                    raise ValueError("Templates directory argument was None")
+                if not pathlib.Path(templates_dir_item).exists:
+                    raise ValueError(
+                        "Templates directory {} did not exist?".format(templates_dir_item))
+
+        self._templates_dirs = templates_dirs
+
+        self._templates_list = None  # type: typing.Optional[typing.List[pathlib.Path]]
+
+        logger.info("Loading templates from {}".format(templates_dirs))
+
+        fs_loader = FileSystemLoader((str(d) for d in self._templates_dirs), followlinks=followlinks)
+
+        target_language = self._namespace.get_language_context().get_target_language()
+
+        if target_language is not None:
+            template_loader = ChoiceLoader([
+                fs_loader,
+                PackageLoader(target_language.get_templates_package_name())
+            ])  # type: 'nunavut.jinja.jinja2.loaders.BaseLoader'
+        else:
+            template_loader = fs_loader
+
+        self._env = CodeGenEnvironment(loader=template_loader,
+                                       lstrip_blocks=lstrip_blocks,
+                                       trim_blocks=trim_blocks)
+
+
+# +---------------------------------------------------------------------------+
+# | JINJA : DSDLCodeGenerator
+# +---------------------------------------------------------------------------+
+
+class DSDLCodeGenerator(CodeGenerator):
     """ :class:`~nunavut.generators.AbstractGenerator` implementation that uses
     Jinja2 templates to generate source code.
 
@@ -211,7 +271,7 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         :param value: The input value to change into a template include path.
 
-        :returns: A path to a template named for the type with :any:`Generator.TEMPLATE_SUFFIX`
+        :returns: A path to a template named for the type with :any:`DSDLCodeGenerator.TEMPLATE_SUFFIX`
         """
         search_queue = collections.deque()  # type: typing.Deque[typing.Any]
         discovered = set()  # type: typing.Set[typing.Any]
@@ -300,7 +360,7 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         .. invisible-code-block: python
 
-            from nunavut.jinja import Generator
+            from nunavut.jinja import DSDLCodeGenerator
             import pydsdl
 
         .. code-block:: python
@@ -316,7 +376,7 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         .. invisible-code-block: python
 
-            jinja_filter_tester(Generator.filter_alignment_prefix, template, rendered, 'py', B=B)
+            jinja_filter_tester(DSDLCodeGenerator.filter_alignment_prefix, template, rendered, 'py', B=B)
 
 
         .. code-block:: python
@@ -333,7 +393,7 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         .. invisible-code-block: python
 
-            jinja_filter_tester(Generator.filter_alignment_prefix, template, rendered, 'py', B=B)
+            jinja_filter_tester(DSDLCodeGenerator.filter_alignment_prefix, template, rendered, 'py', B=B)
 
 
         :param pydsdl.BitLengthSet offset: A bit length set to test for alignment.
@@ -351,10 +411,10 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         .. invisible-code-block: python
 
-            from nunavut.jinja import Generator
+            from nunavut.jinja import DSDLCodeGenerator
             import pydsdl
 
-            assert type(Generator.filter_bit_length_set(23)) == pydsdl.BitLengthSet
+            assert type(DSDLCodeGenerator.filter_bit_length_set(23)) == pydsdl.BitLengthSet
 
         """
         return pydsdl.BitLengthSet(values)
@@ -424,9 +484,9 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         .. invisible-code-block: python
 
-            from nunavut.jinja import Generator
-            assert Generator.is_None(None) is True
-            assert Generator.is_None(1) is False
+            from nunavut.jinja import DSDLCodeGenerator
+            assert DSDLCodeGenerator.is_None(None) is True
+            assert DSDLCodeGenerator.is_None(1) is False
 
         """
         return (value is None)
@@ -438,12 +498,12 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         .. invisible-code-block: python
 
-            from nunavut.jinja import Generator
+            from nunavut.jinja import DSDLCodeGenerator
             from unittest.mock import MagicMock
             import pydsdl
 
-            assert Generator.is_padding(MagicMock(spec=pydsdl.PaddingField)) is True
-            assert Generator.is_padding(MagicMock(spec=pydsdl.Field)) is False
+            assert DSDLCodeGenerator.is_padding(MagicMock(spec=pydsdl.PaddingField)) is True
+            assert DSDLCodeGenerator.is_padding(MagicMock(spec=pydsdl.Field)) is False
 
         """
         return isinstance(value, pydsdl.PaddingField)
@@ -455,21 +515,21 @@ class Generator(nunavut.generators.AbstractGenerator):
 
         .. invisible-code-block: python
 
-            from nunavut.jinja import Generator
+            from nunavut.jinja import DSDLCodeGenerator
             from unittest.mock import MagicMock
             import pydsdl
             import pytest
 
             saturated_mock = MagicMock(spec=pydsdl.PrimitiveType)
             saturated_mock.cast_mode = pydsdl.PrimitiveType.CastMode.SATURATED
-            assert Generator.is_saturated(saturated_mock) is True
+            assert DSDLCodeGenerator.is_saturated(saturated_mock) is True
 
             truncated_mock = MagicMock(spec=pydsdl.PrimitiveType)
             truncated_mock.cast_mode = pydsdl.PrimitiveType.CastMode.TRUNCATED
-            assert Generator.is_saturated(truncated_mock) is False
+            assert DSDLCodeGenerator.is_saturated(truncated_mock) is False
 
             with pytest.raises(TypeError):
-                 Generator.is_saturated(MagicMock(spec=pydsdl.SerializableType))
+                 DSDLCodeGenerator.is_saturated(MagicMock(spec=pydsdl.SerializableType))
 
         """
         if isinstance(t, pydsdl.PrimitiveType):
@@ -495,55 +555,24 @@ class Generator(nunavut.generators.AbstractGenerator):
                  post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']] = None):
 
         super().__init__(namespace,
-                         generate_namespace_types)
-
-        self._post_processors = post_processors
-
-        if templates_dir is None:
-            templates_dirs = []  # type: typing.List[pathlib.Path]
-        else:
-            if not isinstance(templates_dir, list):
-                templates_dirs = [templates_dir]
-            else:
-                templates_dirs = templates_dir
-
-            for templates_dir_item in templates_dirs:
-                if templates_dir_item is None:
-                    raise ValueError("Templates directory argument was None")
-                if not pathlib.Path(templates_dir_item).exists:
-                    raise ValueError(
-                        "Templates directory {} did not exist?".format(templates_dir_item))
-
-        self._templates_dirs = templates_dirs
+                         generate_namespace_types,
+                         templates_dir,
+                         followlinks,
+                         trim_blocks,
+                         lstrip_blocks,
+                         additional_filters,
+                         additional_tests,
+                         additional_globals,
+                         post_processors)
 
         self._type_to_template_lookup_cache = dict()  # type: typing.Dict[pydsdl.Any, pathlib.Path]
-
-        self._templates_list = None  # type: typing.Optional[typing.List[pathlib.Path]]
-
-        logger.info("Loading templates from {}".format(templates_dirs))
-
-        fs_loader = FileSystemLoader((str(d) for d in self._templates_dirs), followlinks=followlinks)
-
-        target_language = self._namespace.get_language_context().get_target_language()
-
-        if target_language is not None:
-            template_loader = ChoiceLoader([
-                fs_loader,
-                PackageLoader(target_language.get_templates_package_name())
-            ])  # type: 'nunavut.jinja.jinja2.loaders.BaseLoader'
-        else:
-            template_loader = fs_loader
-
-        self._env = CodeGenEnvironment(loader=template_loader,
-                                       lstrip_blocks=lstrip_blocks,
-                                       trim_blocks=trim_blocks)
 
         self._add_language_support()
 
         if additional_globals is not None:
             self._env.globals.update(additional_globals)
 
-        self._add_nunavut_globals(target_language)
+        self._add_nunavut_globals()
         self._add_instance_tests_from_root(pydsdl.SerializableType)
         self._add_filters_and_tests(additional_filters, additional_tests)
 
@@ -585,11 +614,13 @@ class Generator(nunavut.generators.AbstractGenerator):
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
-    def _add_nunavut_globals(self, target_language: typing.Optional[nunavut.lang.Language]) -> None:
+    def _add_nunavut_globals(self) -> None:
         """
         Add globals namespaced as 'nunavut'.
         """
         import nunavut.version
+
+        target_language = self.language_context.get_target_language()
 
         # Helper global so we don't have to futz around with the "omit_serialization_support"
         # logic in the templates. The omit_serialization_support property of the Language

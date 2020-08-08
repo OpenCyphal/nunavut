@@ -65,7 +65,7 @@ def test_unknown_intermediate(gen_paths):  # type: ignore
             return generated
 
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[InvalidType()])
     with pytest.raises(ValueError):
@@ -76,7 +76,7 @@ def test_empty_pp_array(gen_paths):  # type: ignore
     """ Verifies the behavior of a zero length post_processors argument.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[])
     generator.generate_all(False, True)
@@ -88,7 +88,7 @@ def test_chmod(gen_paths):  # type: ignore
     """ Generates a file using a SetFileMode post-processor.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[nunavut.postprocessors.SetFileMode(0o444)])
     generator.generate_all(False, True)
@@ -102,7 +102,7 @@ def test_overwrite(gen_paths):  # type: ignore
     """ Verifies the allow_overwrite flag contracts.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[nunavut.postprocessors.SetFileMode(0o444)])
     generator.generate_all(False, True)
@@ -119,7 +119,7 @@ def test_overwrite_dryrun(gen_paths):  # type: ignore
     """ Verifies the allow_overwrite flag contracts.
     """
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[nunavut.postprocessors.SetFileMode(0o444)])
     generator.generate_all(False, True)
@@ -196,7 +196,7 @@ def test_move_file(gen_paths):  # type: ignore
     verifier = Verifier()
 
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[mover, verifier])
     generator.generate_all(False, True)
@@ -230,7 +230,7 @@ def test_line_pp(gen_paths):  # type: ignore
     line_pp0 = TestLinePostProcessor0()
     line_pp1 = TestLinePostProcessor1()
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[line_pp0, line_pp1])
     generator.generate_all(False, True)
@@ -245,7 +245,7 @@ def test_line_pp_returns_none(gen_paths):  # type: ignore
             return None  # type: ignore
 
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[TestBadLinePostProcessor()])
     with pytest.raises(ValueError):
@@ -254,7 +254,7 @@ def test_line_pp_returns_none(gen_paths):  # type: ignore
 
 def test_trim_trailing_ws(gen_paths):  # type: ignore
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[nunavut.postprocessors.TrimTrailingWhitespace()])
     generator.generate_all(False, True)
@@ -267,7 +267,7 @@ def test_trim_trailing_ws(gen_paths):  # type: ignore
 
 def test_limit_empty_lines(gen_paths):  # type: ignore
     namespace = _test_common_namespace(gen_paths)
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[nunavut.postprocessors.LimitEmptyLines(0)])
     generator.generate_all(False, True)
@@ -371,7 +371,7 @@ def test_external_edit_in_place(gen_paths):  # type: ignore
     namespace = _test_common_namespace(gen_paths)
     ext_program = gen_paths.test_dir / pathlib.Path('ext_program.py')
     edit_in_place = nunavut.postprocessors.ExternalProgramEditInPlace([str(ext_program)])
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[edit_in_place])
     generator.generate_all(False, True)
@@ -394,13 +394,13 @@ def test_external_edit_in_place_fail(gen_paths):  # type: ignore
     ext_program = gen_paths.test_dir / pathlib.Path('ext_program.py')
     simulated_error_args = [str(ext_program), '--simulate-error']
     edit_in_place_checking = nunavut.postprocessors.ExternalProgramEditInPlace(simulated_error_args)
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[edit_in_place_checking])
     with pytest.raises(subprocess.CalledProcessError):
         generator.generate_all(False, True)
     edit_in_place_not_checking = nunavut.postprocessors.ExternalProgramEditInPlace(simulated_error_args, check=False)
-    generator = nunavut.jinja.Generator(namespace,
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
                                         templates_dir=gen_paths.templates_dir,
                                         post_processors=[edit_in_place_not_checking])
     generator.generate_all(False, True)

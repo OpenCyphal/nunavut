@@ -24,7 +24,7 @@ from sybil.parsers.codeblock import CodeBlockParser
 from sybil.parsers.doctest import DocTestParser
 
 from nunavut import Namespace
-from nunavut.jinja.jinja2 import DictLoader, Environment, StrictUndefined
+from nunavut.jinja.jinja2 import DictLoader
 from nunavut.lang import LanguageContext
 from nunavut.templates import (CONTEXT_FILTER_ATTRIBUTE_NAME,
                                ENVIRONMENT_FILTER_ATTRIBUTE_NAME,

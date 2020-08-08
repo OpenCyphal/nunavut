@@ -245,5 +245,5 @@ def create_generators(namespace: nunavut.Namespace, **kwargs: typing.Any) -> \
     :return: Tuple with the first item being the code-generator and the second the support-library
         generator.
     """
-    from nunavut.jinja import Generator
-    return (Generator(namespace, **kwargs), create_support_generator(namespace))
+    from nunavut.jinja import DSDLCodeGenerator
+    return (DSDLCodeGenerator(namespace, **kwargs), create_support_generator(namespace))

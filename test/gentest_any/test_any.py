@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pydsdl import read_namespace
 from nunavut import build_namespace_tree
-from nunavut.jinja import Generator
+from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import LanguageContext
 
 import pytest
@@ -26,7 +26,7 @@ def test_anygen(gen_paths, lang_key):  # type: ignore
                                      root_namespace_dir,
                                      str(gen_paths.out_dir),
                                      language_context)
-    generator = Generator(namespace, templates_dir=gen_paths.templates_dir)
+    generator = DSDLCodeGenerator(namespace, templates_dir=gen_paths.templates_dir)
     generator.generate_all(False)
 
     outfile = gen_paths.find_outfile_in_namespace("uavcan.time.SynchronizedTimestamp", namespace)
