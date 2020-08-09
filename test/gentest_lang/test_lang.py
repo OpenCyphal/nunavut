@@ -61,7 +61,7 @@ def ptest_lang_c(gen_paths: Any,
                                      gen_paths.out_dir,
                                      language_context)
     generator = DSDLCodeGenerator(namespace,
-                          templates_dir=templates_dirs)
+                                  templates_dir=templates_dirs)
     generator.generate_all(False)
 
     # Now read back in and verify
@@ -135,7 +135,7 @@ def ptest_lang_cpp(gen_paths, implicit):  # type: ignore
                                      language_context)
 
     generator = DSDLCodeGenerator(namespace,
-                          templates_dir=templates_dirs)
+                                  templates_dir=templates_dirs)
 
     generator.generate_all(False)
 
@@ -196,8 +196,8 @@ def ptest_lang_py(gen_paths, implicit, unique_name_evaluator):  # type: ignore
                                      gen_paths.out_dir,
                                      language_context)
     generator = DSDLCodeGenerator(namespace,
-                          generate_namespace_types=YesNoDefault.NO,
-                          templates_dir=templates_dirs)
+                                  generate_namespace_types=YesNoDefault.NO,
+                                  templates_dir=templates_dirs)
 
     generator.generate_all(False)
 

@@ -15,6 +15,7 @@ import io
 import logging
 import pathlib
 import re
+import shutil
 import typing
 
 import pydsdl
@@ -22,10 +23,11 @@ import pydsdl
 import nunavut.generators
 import nunavut.lang
 import nunavut.postprocessors
-from nunavut.jinja.jinja2 import (ChoiceLoader, Environment, FileSystemLoader,
-                                  PackageLoader, StrictUndefined, Template,
+from nunavut.jinja.jinja2 import (BaseLoader, ChoiceLoader, Environment,
+                                  FileSystemLoader, PackageLoader,
+                                  StrictUndefined, Template,
                                   TemplateAssertionError, nodes,
-                                  select_autoescape, BaseLoader)
+                                  select_autoescape)
 from nunavut.jinja.jinja2.ext import Extension
 from nunavut.jinja.jinja2.parser import Parser
 from nunavut.templates import LANGUAGE_FILTER_ATTRIBUTE_NAME
@@ -120,6 +122,43 @@ class CodeGenEnvironment(Environment):
 # +---------------------------------------------------------------------------+
 
 class CodeGenerator(nunavut.generators.AbstractGenerator):
+    """
+    Abstract base class for all Generators that build source code using Jinja templates.
+
+    :param nunavut.Namespace namespace:    The top-level namespace to generates code
+                                           at and from.
+    :param nunavut.YesNoDefault generate_namespace_types:  Set to YES to emit files for namespaces.
+                                           NO will suppress namespace file generation and DEFAULT will
+                                           use the language's preference.
+    :param templates_dir:                  Directories containing jinja templates. These will be available along
+                                           with any built-in templates provided by the target language. The templates
+                                           at these paths will take precedence masking any built-in templates
+                                           where the names are the same. See :class:`jinja2.ChoiceLoader` for rules
+                                           on the lookup hierarchy.
+    :type templates_dir: typing.Optional[typing.Union[pathlib.Path,typing.List[pathlib.Path]]]
+    :param bool followlinks:               If True then symbolic links will be followed when
+                                           searching for templates.
+    :param bool trim_blocks:               If this is set to True the first newline after a
+                                           block is removed (block, not variable tag!).
+    :param bool lstrip_blocks:             If this is set to True leading spaces and tabs
+                                           are stripped from the start of a line to a block.
+                                           Defaults to False.
+    :param typing.Dict[str, typing.Callable] additional_filters: typing.Optional jinja filters to add to the
+                                           global environment using the key as the filter name
+                                           and the callable as the filter.
+    :param typing.Dict[str, typing.Callable] additional_tests: typing.Optional jinja tests to add to the
+                                           global environment using the key as the test name
+                                           and the callable as the test.
+    :param typing.Dict[str, typing.Any] additional_globals: typing.Optional objects to add to the template
+                                            environment globals collection.
+    :param post_processors: A list of :class:`nunavut.postprocessors.PostProcessor`
+    :type post_processors: typing.Optional[typing.List[nunavut.postprocessors.PostProcessor]]
+    :raises RuntimeError: If any additional filter or test attempts to replace a built-in
+                          or otherwise already defined filter or test.
+    """
+
+    TEMPLATE_SUFFIX = ".j2"  #: The suffix expected for Jinja templates.
+
     def __init__(self,
                  namespace: nunavut.Namespace,
                  generate_namespace_types: nunavut.YesNoDefault = nunavut.YesNoDefault.DEFAULT,
@@ -174,48 +213,215 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
                                        lstrip_blocks=lstrip_blocks,
                                        trim_blocks=trim_blocks)
 
+        if additional_globals is not None:
+            self._env.globals.update(additional_globals)
+
+        self._add_language_support()
+        self._add_nunavut_globals()
+        self._add_filters_and_tests(additional_filters, additional_tests)
+
+    @property
+    def language_context(self) -> nunavut.lang.LanguageContext:
+        return self._namespace.get_language_context()
+
+    def add_filter_to_environment(self, filter_name: str,
+                                  filter: typing.Callable[..., str],
+                                  filter_namespace: typing.Optional[str] = None) -> None:
+        if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
+            language_name_or_module_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
+            filter_language = self.language_context.get_language(language_name_or_module_name)
+            resolved_filter = functools.partial(filter, filter_language)  # type: typing.Callable[..., str]
+        else:
+            resolved_filter = filter
+        if filter_namespace is None:
+            self._env.filters[filter_name] = resolved_filter
+        else:
+            self._env.filters['{}.{}'.format(filter_namespace, filter_name)] = resolved_filter
+
+    # +-----------------------------------------------------------------------+
+    # | AbstractGenerator
+    # +-----------------------------------------------------------------------+
+
+    def get_templates(self) -> typing.Iterable[pathlib.Path]:
+        """
+        Enumerate all templates found in the templates path.
+        :data:`~TEMPLATE_SUFFIX` as the suffix for the filename.
+
+        :returns: A list of paths to all templates found by this Generator object.
+        """
+        if self._templates_list is None:
+            self._templates_list = []
+            for template_dir in self._templates_dirs:
+                for template in template_dir.glob("**/*{}".format(self.TEMPLATE_SUFFIX)):
+                    self._templates_list.append(template)
+        return self._templates_list
+
+    # +-----------------------------------------------------------------------+
+    # | PRIVATE
+    # +-----------------------------------------------------------------------+
+
+    def _add_filters_and_tests(self,
+                               additional_filters: typing.Optional[typing.Dict[str, typing.Callable]],
+                               additional_tests: typing.Optional[typing.Dict[str, typing.Callable]]) -> None:
+        # Automatically find the locally defined filters and
+        # tests and add them to the jinja environment.
+        member_functions = inspect.getmembers(self, inspect.isroutine)
+        for function_tuple in member_functions:
+            function_name = function_tuple[0]
+            function_ref = function_tuple[1]
+            if len(function_name) > 3 and function_name[0:3] == "is_":
+                self._env.tests[function_name[3:]] = function_ref
+            if len(function_name) > 7 and function_name[0:7] == "filter_":
+                self.add_filter_to_environment(function_name[7:], function_ref)
+
+        if additional_filters is not None:
+            for name, additional_filter in additional_filters.items():
+                if name in self._env.filters:
+                    raise RuntimeError('filter {} was already defined.'.format(name))
+                self.add_filter_to_environment(name, additional_filter)
+
+        if additional_tests is not None:
+            for name, additional_test in additional_tests.items():
+                if name in self._env.tests:
+                    raise RuntimeError('test {} was already defined.'.format(name))
+                self._env.tests[name] = additional_test
+
+    def _add_nunavut_globals(self) -> None:
+        """
+        Add globals namespaced as 'nunavut'.
+        """
+        import nunavut.version
+
+        target_language = self.language_context.get_target_language()
+
+        # Helper global so we don't have to futz around with the "omit_serialization_support"
+        # logic in the templates. The omit_serialization_support property of the Language
+        # object is read-only so this boolean will remain consistent for the Environment.
+        if target_language is not None:
+            omit_serialization_support = target_language.omit_serialization_support
+            support_namespace = target_language.support_namespace
+        else:
+            # If there is no target language then we cannot generate serialization support.
+            omit_serialization_support = True
+            support_namespace = []
+
+        self._env.globals['nunavut'] = {
+            'version': nunavut.version.__version__,
+            'support': {
+                'omit': omit_serialization_support,
+                'namespace': support_namespace
+            }
+        }
+
+    def _add_language_support(self) -> None:
+        target_language = self.language_context.get_target_language()
+        if target_language is not None:
+            for key, value in target_language.get_filters().items():
+                self.add_filter_to_environment(key, value)
+            self._env.globals.update(target_language.get_globals())
+
+        for supported_language in self.language_context.get_supported_languages().values():
+            for key, value in supported_language.get_filters().items():
+                self.add_filter_to_environment(key, value, supported_language.name)
+            self._env.globals[supported_language.name] = supported_language
+
+    @staticmethod
+    def _filter_and_write_line(line_and_lineend: typing.Tuple[str, str],
+                               output_file: typing.TextIO,
+                               line_pps: typing.List['nunavut.postprocessors.LinePostProcessor']) -> None:
+        for line_pp in line_pps:
+            line_and_lineend = line_pp(line_and_lineend)
+            if line_and_lineend is None:
+                raise ValueError('line post processor must return a 2-tuple. To elide a line return a tuple of empty'
+                                 'strings. None is not a valid value.')
+
+        output_file.write(line_and_lineend[0])
+        output_file.write(line_and_lineend[1])
+
+    @classmethod
+    def _generate_with_line_buffer(cls,
+                                   output_file: typing.TextIO,
+                                   template_gen: typing.Generator[str, None, None],
+                                   line_pps: typing.List['nunavut.postprocessors.LinePostProcessor']) -> None:
+        newline_pattern = re.compile(r'\n|\r\n', flags=re.MULTILINE)
+        line_buffer = io.StringIO()
+        for part in template_gen:
+            search_pos = 0  # type: int
+            match_obj = newline_pattern.search(part, search_pos)
+            while True:
+                if search_pos < 0 or search_pos >= len(part):
+                    break
+                if match_obj is None:
+                    line_buffer.write(part[search_pos:])
+                    break
+
+                # We have a newline
+                line_buffer.write(part[search_pos:match_obj.start()])
+                newline_chars = part[match_obj.start():match_obj.end()]
+                line = line_buffer.getvalue()  # type: str
+                line_buffer = io.StringIO()
+                cls._filter_and_write_line((line, newline_chars), output_file, line_pps)
+                search_pos = match_obj.end()
+                match_obj = newline_pattern.search(part, search_pos)
+        remainder = line_buffer.getvalue()
+        if len(remainder) > 0:
+            cls._filter_and_write_line((remainder, ""), output_file, line_pps)
+
+    def _generate_code(self,
+                       output_path: pathlib.Path,
+                       template: Template,
+                       template_gen: typing.Generator[str, None, None],
+                       allow_overwrite: bool) \
+            -> None:
+        """
+        Logic that should run from _generate_type iff is_dryrun is False.
+        """
+
+        self._env.globals["now_utc"] = datetime.datetime.utcnow()
+
+        from ..lang import _UniqueNameGenerator
+
+        # reset the name generator state for this type
+        _UniqueNameGenerator.reset()
+
+        # Predetermine the post processor types.
+        line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']
+        file_pps = []  # type: typing.List['nunavut.postprocessors.FilePostProcessor']
+        if self._post_processors is not None:
+            for pp in self._post_processors:
+                if isinstance(pp, nunavut.postprocessors.LinePostProcessor):
+                    line_pps.append(pp)
+                elif isinstance(pp, nunavut.postprocessors.FilePostProcessor):
+                    file_pps.append(pp)
+                else:
+                    raise ValueError('PostProcessor type {} is unknown.'.format(type(pp)))
+
+        if output_path.exists():
+            if allow_overwrite:
+                output_path.chmod(output_path.stat().st_mode | 0o220)
+            else:
+                raise PermissionError('{} exists and allow_overwrite is False.'.format(output_path))
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(str(output_path), "w") as output_file:
+            if len(line_pps) > 0:
+                # The logic gets much more complex when doing line post-processing.
+                self._generate_with_line_buffer(output_file, template_gen, line_pps)
+            else:
+                for part in template_gen:
+                    output_file.write(part)
+        for file_pp in file_pps:
+            output_path = file_pp(output_path)
 
 # +---------------------------------------------------------------------------+
 # | JINJA : DSDLCodeGenerator
 # +---------------------------------------------------------------------------+
 
+
 class DSDLCodeGenerator(CodeGenerator):
-    """ :class:`~nunavut.generators.AbstractGenerator` implementation that uses
-    Jinja2 templates to generate source code.
-
-    :param nunavut.Namespace namespace:    The top-level namespace to generates types
-                                           at and from.
-    :param nunavut.YesNoDefault generate_namespace_types:  Set to YES to emit files for namespaces.
-                                           NO will suppress namespace file generation and DEFAULT will
-                                           use the language's preference.
-    :param templates_dir:                  Directories containing jinja templates. These will be available along
-                                           with any built-in templates provided by the target language. The templates
-                                           at these paths will take precedence masking any built-in templates
-                                           where the names are the same. See :class:`jinja2.ChoiceLoader` for rules
-                                           on the lookup hierarchy.
-    :type templates_dir: typing.Optional[typing.Union[pathlib.Path,typing.List[pathlib.Path]]]
-    :param bool followlinks:               If True then symbolic links will be followed when
-                                           searching for templates.
-    :param bool trim_blocks:               If this is set to True the first newline after a
-                                           block is removed (block, not variable tag!).
-    :param bool lstrip_blocks:             If this is set to True leading spaces and tabs
-                                           are stripped from the start of a line to a block.
-                                           Defaults to False.
-    :param typing.Dict[str, typing.Callable] additional_filters: typing.Optional jinja filters to add to the
-                                           global environment using the key as the filter name
-                                           and the callable as the filter.
-    :param typing.Dict[str, typing.Callable] additional_tests: typing.Optional jinja tests to add to the
-                                           global environment using the key as the test name
-                                           and the callable as the test.
-    :param typing.Dict[str, typing.Any] additional_globals: typing.Optional objects to add to the template
-                                            environment globals collection.
-    :param post_processors: A list of :class:`nunavut.postprocessors.PostProcessor`
-    :type post_processors: typing.Optional[typing.List[nunavut.postprocessors.PostProcessor]]
-    :raises RuntimeError: If any additional filter or test attempts to replace a built-in
-                          or otherwise already defined filter or test.
     """
-
-    TEMPLATE_SUFFIX = ".j2"  #: The suffix expected for Jinja templates.
+    :class:`~CodeGenerator` implementation that generates code for a given set
+    of DSDL types.
+    """
 
     # +-----------------------------------------------------------------------+
     # | JINJA : filters
@@ -544,51 +750,15 @@ class DSDLCodeGenerator(CodeGenerator):
 
     def __init__(self,
                  namespace: nunavut.Namespace,
-                 generate_namespace_types: nunavut.YesNoDefault = nunavut.YesNoDefault.DEFAULT,
-                 templates_dir: typing.Optional[typing.Union[pathlib.Path, typing.List[pathlib.Path]]] = None,
-                 followlinks: bool = False,
-                 trim_blocks: bool = False,
-                 lstrip_blocks: bool = False,
-                 additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
-                 additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None,
-                 additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
-                 post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']] = None):
+                 **kwargs: typing.Any):
 
-        super().__init__(namespace,
-                         generate_namespace_types,
-                         templates_dir,
-                         followlinks,
-                         trim_blocks,
-                         lstrip_blocks,
-                         additional_filters,
-                         additional_tests,
-                         additional_globals,
-                         post_processors)
-
+        super().__init__(namespace, **kwargs)
         self._type_to_template_lookup_cache = dict()  # type: typing.Dict[pydsdl.Any, pathlib.Path]
-
-        self._add_language_support()
-
-        if additional_globals is not None:
-            self._env.globals.update(additional_globals)
-
-        self._add_nunavut_globals()
         self._add_instance_tests_from_root(pydsdl.SerializableType)
-        self._add_filters_and_tests(additional_filters, additional_tests)
 
-    def get_templates(self) -> typing.Iterable[pathlib.Path]:
-        """
-        Enumerate all templates found in the templates path.
-        :data:`~TEMPLATE_SUFFIX` as the suffix for the filename.
-
-        :returns: A list of paths to all templates found by this Generator object.
-        """
-        if self._templates_list is None:
-            self._templates_list = []
-            for template_dir in self._templates_dirs:
-                for template in template_dir.glob("**/*{}".format(self.TEMPLATE_SUFFIX)):
-                    self._templates_list.append(template)
-        return self._templates_list
+    # +-----------------------------------------------------------------------+
+    # | AbstractGenerator
+    # +-----------------------------------------------------------------------+
 
     def generate_all(self,
                      is_dryrun: bool = False,
@@ -598,48 +768,18 @@ class DSDLCodeGenerator(CodeGenerator):
         if self.generate_namespace_types:
             for (parsed_type, output_path) in self.namespace.get_all_types():
                 generated.append(
-                    self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, self._post_processors)
+                    self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite)
                 )
         else:
             for (parsed_type, output_path) in self.namespace.get_all_datatypes():
                 generated.append(
-                    self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite, self._post_processors)
+                    self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite)
                 )
         return generated
-
-    @property
-    def language_context(self) -> nunavut.lang.LanguageContext:
-        return self._namespace.get_language_context()
 
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
-    def _add_nunavut_globals(self) -> None:
-        """
-        Add globals namespaced as 'nunavut'.
-        """
-        import nunavut.version
-
-        target_language = self.language_context.get_target_language()
-
-        # Helper global so we don't have to futz around with the "omit_serialization_support"
-        # logic in the templates. The omit_serialization_support property of the Language
-        # object is read-only so this boolean will remain consistent for the Environment.
-        if target_language is not None:
-            omit_serialization_support = target_language.omit_serialization_support
-            support_namespace = target_language.support_namespace
-        else:
-            # If there is no target language then we cannot generate serialization support.
-            omit_serialization_support = True
-            support_namespace = []
-
-        self._env.globals['nunavut'] = {
-            'version': nunavut.version.__version__,
-            'support': {
-                'omit': omit_serialization_support,
-                'namespace': support_namespace
-            }
-        }
 
     def _add_instance_tests_from_root(self, root: typing.Type[object]) -> None:
         def _field_is_instance(field_or_datatype: typing.Any) -> bool:
@@ -652,160 +792,187 @@ class DSDLCodeGenerator(CodeGenerator):
         for derived in root.__subclasses__():
             self._add_instance_tests_from_root(derived)
 
-    def _add_language_support(self) -> None:
-        target_language = self.language_context.get_target_language()
-        if target_language is not None:
-            for key, value in target_language.get_filters().items():
-                self._add_filter_to_environment(key, value)
-            self._env.globals.update(target_language.get_globals())
-
-        for supported_language in self.language_context.get_supported_languages().values():
-            for key, value in supported_language.get_filters().items():
-                self._add_filter_to_environment(key, value, supported_language.name)
-            self._env.globals[supported_language.name] = supported_language
-
-    def _add_filters_and_tests(self,
-                               additional_filters: typing.Optional[typing.Dict[str, typing.Callable]],
-                               additional_tests: typing.Optional[typing.Dict[str, typing.Callable]]) -> None:
-        # Automatically find the locally defined filters and
-        # tests and add them to the jinja environment.
-        member_functions = inspect.getmembers(self, inspect.isroutine)
-        for function_tuple in member_functions:
-            function_name = function_tuple[0]
-            function_ref = function_tuple[1]
-            if len(function_name) > 3 and function_name[0:3] == "is_":
-                self._env.tests[function_name[3:]] = function_ref
-            if len(function_name) > 7 and function_name[0:7] == "filter_":
-                self._add_filter_to_environment(function_name[7:], function_ref)
-
-        if additional_filters is not None:
-            for name, additional_filter in additional_filters.items():
-                if name in self._env.filters:
-                    raise RuntimeError('filter {} was already defined.'.format(name))
-                self._add_filter_to_environment(name, additional_filter)
-
-        if additional_tests is not None:
-            for name, additional_test in additional_tests.items():
-                if name in self._env.tests:
-                    raise RuntimeError('test {} was already defined.'.format(name))
-                self._env.tests[name] = additional_test
-
     def _generate_type(self,
                        input_type: pydsdl.CompositeType,
                        output_path: pathlib.Path,
                        is_dryrun: bool,
-                       allow_overwrite: bool,
-                       post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']]) \
+                       allow_overwrite: bool) \
             -> pathlib.Path:
         template_name = self.filter_type_to_template(input_type)
-        self._env.globals["now_utc"] = datetime.datetime.utcnow()
         template = self._env.get_template(template_name)
         template_gen = template.generate(T=input_type)
         if not is_dryrun:
-            self._generate_type_real(output_path,
-                                     template,
-                                     template_gen,
-                                     allow_overwrite,
-                                     post_processors
-                                     )
+            self._generate_code(output_path,
+                                template,
+                                template_gen,
+                                allow_overwrite
+                                )
         return output_path
 
-    def _add_filter_to_environment(self, filter_name: str,
-                                   filter: typing.Callable[..., str],
-                                   filter_namespace: typing.Optional[str] = None) -> None:
-        if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
-            language_name_or_module_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
-            filter_language = self.language_context.get_language(language_name_or_module_name)
-            resolved_filter = functools.partial(filter, filter_language)  # type: typing.Callable[..., str]
+
+# +---------------------------------------------------------------------------+
+# | JINJA : SupportGenerator
+# +---------------------------------------------------------------------------+
+
+
+class SupportGenerator(CodeGenerator):
+    """
+    Generates output files by copying them from within the Nunavut package itself
+    for non templates but uses jinja to generate headers from templates with the
+    language environment provided but no ``T`` (DSDL type) global set.
+    This generator always copies files from those returned by the ``file_iterator``
+    to locations under :func:`nunavut.Namespace.get_support_output_folder()`
+
+    .. invisible-code-block: python
+
+        import pathlib
+        import pytest
+        from unittest.mock import NonCallableMagicMock, MagicMock
+        from nunavut.jinja import SupportGenerator
+
+        fake_support_output_folder = pathlib.PurePath('tmp')
+
+        namespace = NonCallableMagicMock()
+        namespace.get_support_output_folder = MagicMock(return_value=fake_support_output_folder)
+
+        fake_source_files = [
+            pathlib.Path("foo/bar.a"),
+            pathlib.Path("foo/bar.b")
+        ]
+
+    .. code-block:: python
+
+        def source_file_iterator():
+            # we generate from a list of two fake paths to
+            # demonstrate how the CopyFromPackageGenerator
+            # uses its file_iterator parameter.
+            for source_file in fake_source_files:
+                yield source_file
+
+        generator = SupportGenerator(namespace, source_file_iterator(), pathlib.Path('my_subfolder'))
+        assert len(generator.get_templates()) == 2
+        assert len(generator.generate_all(is_dryrun=True)) == 2
+
+        # The generator will copy from the "templates" (i.e. the files within this package to copy) to a
+        # folder under the subfolder provided to its constructor.
+        assert 'my_subfolder' == generator.generate_all(is_dryrun=True)[0].parent.name
+
+        # Note that the sub-folder must be a relative path since the generator will place it under
+        # the path returned by Namespace.get_support_output_folder()
+
+        with pytest.raises(ValueError):
+            _ = CopyFromPackageGenerator(namespace, source_file_iterator(), pathlib.Path('/').resolve())
+
+    .. invisible-code-block: python
+
+        for template in generator.get_templates():
+            print('copy from fake input: ' + str(template))
+
+        for copy_to in generator.generate_all(is_dryrun=True):
+            print('copy to fake output : ' + str(copy_to))
+
+    :param nunavut.Namespace namespace:  The top-level namespace to generates types at and from.
+    :param typing.Generator[pathlib.Path] file_iterator: Provides files within the Nunavut distribution to
+        copy from. All files returned by this iterator will be copied.
+    :param pathlib.Path sub_folders: Folders to create under :func:`nunavut.Namespace.get_support_output_folder()`
+        within which all of the package files will be copied to.
+    """
+
+    def __init__(self,
+                 namespace: nunavut.Namespace,
+                 **kwargs: typing.Any):
+
+        super().__init__(namespace, **kwargs)
+
+        target_language = self.language_context.get_target_language()
+
+        self._sub_folders = None  # type: typing.Optional[pathlib.Path]
+        self._support_enabled = False  # If not enabled then we remove any support files found
+        if target_language is not None:
+            self._support_enabled = not target_language.omit_serialization_support
+
+            #  Create the sub-folder to copy-to based on the support namespace.
+            self._sub_folders = pathlib.Path('')
+
+            for namespace_part in target_language.support_namespace:
+                self._sub_folders = self._sub_folders / pathlib.Path(namespace_part)
+
+    # +-----------------------------------------------------------------------+
+    # | AbstractGenerator
+    # +-----------------------------------------------------------------------+
+    def get_templates(self) -> typing.Iterable[pathlib.Path]:
+        files = []
+        target_language = self.language_context.get_target_language()
+
+        if target_language is not None:
+            for resource in target_language.support_files:
+                files.append(resource)
+        return files
+
+    def generate_all(self,
+                     is_dryrun: bool = False,
+                     allow_overwrite: bool = True) \
+            -> typing.Iterable[pathlib.Path]:
+        if self._sub_folders is None:
+            # No target language, therefore, no support headers.
+            return []
         else:
-            resolved_filter = filter
-        if filter_namespace is None:
-            self._env.filters[filter_name] = resolved_filter
-        else:
-            self._env.filters['{}.{}'.format(filter_namespace, filter_name)] = resolved_filter
+            target_path = pathlib.Path(self.namespace.get_support_output_folder()) / self._sub_folders
 
-    @staticmethod
-    def _filter_and_write_line(line_and_lineend: typing.Tuple[str, str],
-                               output_file: typing.TextIO,
-                               line_pps: typing.List['nunavut.postprocessors.LinePostProcessor']) -> None:
-        for line_pp in line_pps:
-            line_and_lineend = line_pp(line_and_lineend)
-            if line_and_lineend is None:
-                raise ValueError('line post processor must return a 2-tuple. To elide a line return a tuple of empty'
-                                 'strings. None is not a valid value.')
-
-        output_file.write(line_and_lineend[0])
-        output_file.write(line_and_lineend[1])
-
-    @classmethod
-    def _generate_with_line_buffer(cls,
-                                   output_file: typing.TextIO,
-                                   template_gen: typing.Generator[str, None, None],
-                                   line_pps: typing.List['nunavut.postprocessors.LinePostProcessor']) -> None:
-        newline_pattern = re.compile(r'\n|\r\n', flags=re.MULTILINE)
-        line_buffer = io.StringIO()
-        for part in template_gen:
-            search_pos = 0  # type: int
-            match_obj = newline_pattern.search(part, search_pos)
-            while True:
-                if search_pos < 0 or search_pos >= len(part):
-                    break
-                if match_obj is None:
-                    line_buffer.write(part[search_pos:])
-                    break
-
-                # We have a newline
-                line_buffer.write(part[search_pos:match_obj.start()])
-                newline_chars = part[match_obj.start():match_obj.end()]
-                line = line_buffer.getvalue()  # type: str
-                line_buffer = io.StringIO()
-                cls._filter_and_write_line((line, newline_chars), output_file, line_pps)
-                search_pos = match_obj.end()
-                match_obj = newline_pattern.search(part, search_pos)
-        remainder = line_buffer.getvalue()
-        if len(remainder) > 0:
-            cls._filter_and_write_line((remainder, ""), output_file, line_pps)
-
-    def _generate_type_real(self,
-                            output_path: pathlib.Path,
-                            template: Template,
-                            template_gen: typing.Generator[str, None, None],
-                            allow_overwrite: bool,
-                            post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']]) \
-            -> None:
-        """
-        Logic that should run from _generate_type iff is_dryrun is False.
-        """
-
-        from ..lang import _UniqueNameGenerator
-
-        # reset the name generator state for this type
-        _UniqueNameGenerator.reset()
-
-        # Predetermine the post processor types.
-        line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']
-        file_pps = []  # type: typing.List['nunavut.postprocessors.FilePostProcessor']
-        if post_processors is not None:
-            for pp in post_processors:
-                if isinstance(pp, nunavut.postprocessors.LinePostProcessor):
-                    line_pps.append(pp)
-                elif isinstance(pp, nunavut.postprocessors.FilePostProcessor):
-                    file_pps.append(pp)
+            generated = []  # type: typing.List[pathlib.Path]
+            for resource in self.get_templates():
+                target = target_path / resource.name
+                if not self._support_enabled:
+                    self._remove_header(target, is_dryrun, allow_overwrite)
+                elif target.suffix == self.TEMPLATE_SUFFIX:
+                    self._generate_header(resource, target, is_dryrun, allow_overwrite)
+                    generated.append(target)
                 else:
-                    raise ValueError('PostProcessor type {} is unknown.'.format(type(pp)))
+                    self._copy_header(resource, target, is_dryrun, allow_overwrite)
+                    generated.append(target)
+            return generated
 
-        if output_path.exists():
-            if allow_overwrite:
-                output_path.chmod(output_path.stat().st_mode | 0o220)
-            else:
-                raise PermissionError('{} exists and allow_overwrite is False.'.format(output_path))
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(str(output_path), "w") as output_file:
-            if len(line_pps) > 0:
-                # The logic gets much more complex when doing line post-processing.
-                self._generate_with_line_buffer(output_file, template_gen, line_pps)
-            else:
-                for part in template_gen:
-                    output_file.write(part)
-        for file_pp in file_pps:
-            output_path = file_pp(output_path)
+    # +-----------------------------------------------------------------------+
+    # | Private
+    # +-----------------------------------------------------------------------+
+    def _remove_header(self,
+                       target: pathlib.Path,
+                       is_dryrun: bool,
+                       allow_overwrite: bool) -> None:
+        if not is_dryrun:
+            if not allow_overwrite and target.exists():
+                raise PermissionError('{} exists. Refusing to remove.'.format(str(target)))
+            try:
+                target.unlink()
+            except FileNotFoundError:
+                # missing_ok was added in python 3.8 so this try/except statement will
+                # go away someday when python 3.7 support is dropped.
+                pass
+
+    def _generate_header(self,
+                         template_path: pathlib.Path,
+                         output_path: pathlib.Path,
+                         is_dryrun: bool,
+                         allow_overwrite: bool) -> pathlib.Path:
+        template = self._env.get_template(template_path)
+        template_gen = template.generate()
+        if not is_dryrun:
+            self._generate_code(output_path,
+                                template,
+                                template_gen,
+                                allow_overwrite
+                                )
+        return output_path
+
+    def _copy_header(self,
+                     resource: pathlib.Path,
+                     target: pathlib.Path,
+                     is_dryrun: bool,
+                     allow_overwrite: bool) -> pathlib.Path:
+
+        if not is_dryrun:
+            if not allow_overwrite and target.exists():
+                raise PermissionError('{} exists. Refusing to overwrite.'.format(str(target)))
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(str(resource), str(target))
+        return target
