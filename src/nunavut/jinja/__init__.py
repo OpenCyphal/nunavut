@@ -153,6 +153,11 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
                                             environment globals collection.
     :param post_processors: A list of :class:`nunavut.postprocessors.PostProcessor`
     :type post_processors: typing.Optional[typing.List[nunavut.postprocessors.PostProcessor]]
+    :param builtin_template_path: If provided overrides the folder name under which built-in templates are loaded from
+                                            within a target language's package (i.e. ignored if no target language is
+                                            specified). For example, if the target language is ``c`` and this parameter
+                                            was set to ``foo`` then built-in templates would be loaded from
+                                            ``nunavut.lang.c.foo``.
     :raises RuntimeError: If any additional filter or test attempts to replace a built-in
                           or otherwise already defined filter or test.
     """
@@ -169,7 +174,8 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
                  additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
                  additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None,
                  additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
-                 post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']] = None):
+                 post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']] = None,
+                 builtin_template_path: str = 'templates'):
 
         super().__init__(namespace,
                          generate_namespace_types)
@@ -204,7 +210,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
         if target_language is not None:
             template_loader = ChoiceLoader([
                 fs_loader,
-                PackageLoader(target_language.get_templates_package_name())
+                PackageLoader(target_language.get_templates_package_name(), package_path=builtin_template_path)
             ])  # type: 'nunavut.jinja.jinja2.loaders.BaseLoader'
         else:
             template_loader = fs_loader
@@ -822,67 +828,13 @@ class SupportGenerator(CodeGenerator):
     language environment provided but no ``T`` (DSDL type) global set.
     This generator always copies files from those returned by the ``file_iterator``
     to locations under :func:`nunavut.Namespace.get_support_output_folder()`
-
-    .. invisible-code-block: python
-
-        import pathlib
-        import pytest
-        from unittest.mock import NonCallableMagicMock, MagicMock
-        from nunavut.jinja import SupportGenerator
-
-        fake_support_output_folder = pathlib.PurePath('tmp')
-
-        namespace = NonCallableMagicMock()
-        namespace.get_support_output_folder = MagicMock(return_value=fake_support_output_folder)
-
-        fake_source_files = [
-            pathlib.Path("foo/bar.a"),
-            pathlib.Path("foo/bar.b")
-        ]
-
-    .. code-block:: python
-
-        def source_file_iterator():
-            # we generate from a list of two fake paths to
-            # demonstrate how the CopyFromPackageGenerator
-            # uses its file_iterator parameter.
-            for source_file in fake_source_files:
-                yield source_file
-
-        generator = SupportGenerator(namespace, source_file_iterator(), pathlib.Path('my_subfolder'))
-        assert len(generator.get_templates()) == 2
-        assert len(generator.generate_all(is_dryrun=True)) == 2
-
-        # The generator will copy from the "templates" (i.e. the files within this package to copy) to a
-        # folder under the subfolder provided to its constructor.
-        assert 'my_subfolder' == generator.generate_all(is_dryrun=True)[0].parent.name
-
-        # Note that the sub-folder must be a relative path since the generator will place it under
-        # the path returned by Namespace.get_support_output_folder()
-
-        with pytest.raises(ValueError):
-            _ = CopyFromPackageGenerator(namespace, source_file_iterator(), pathlib.Path('/').resolve())
-
-    .. invisible-code-block: python
-
-        for template in generator.get_templates():
-            print('copy from fake input: ' + str(template))
-
-        for copy_to in generator.generate_all(is_dryrun=True):
-            print('copy to fake output : ' + str(copy_to))
-
-    :param nunavut.Namespace namespace:  The top-level namespace to generates types at and from.
-    :param typing.Generator[pathlib.Path] file_iterator: Provides files within the Nunavut distribution to
-        copy from. All files returned by this iterator will be copied.
-    :param pathlib.Path sub_folders: Folders to create under :func:`nunavut.Namespace.get_support_output_folder()`
-        within which all of the package files will be copied to.
     """
 
     def __init__(self,
                  namespace: nunavut.Namespace,
                  **kwargs: typing.Any):
 
-        super().__init__(namespace, **kwargs)
+        super().__init__(namespace, builtin_template_path='support', **kwargs)
 
         target_language = self.language_context.get_target_language()
 
@@ -913,7 +865,8 @@ class SupportGenerator(CodeGenerator):
                      is_dryrun: bool = False,
                      allow_overwrite: bool = True) \
             -> typing.Iterable[pathlib.Path]:
-        if self._sub_folders is None:
+        target_language = self.language_context.get_target_language()
+        if self._sub_folders is None or target_language is None:
             # No target language, therefore, no support headers.
             return []
         else:
@@ -921,10 +874,10 @@ class SupportGenerator(CodeGenerator):
 
             generated = []  # type: typing.List[pathlib.Path]
             for resource in self.get_templates():
-                target = target_path / resource.name
+                target = (target_path / resource.name).with_suffix(target_language.extension)
                 if not self._support_enabled:
                     self._remove_header(target, is_dryrun, allow_overwrite)
-                elif target.suffix == self.TEMPLATE_SUFFIX:
+                elif resource.suffix == self.TEMPLATE_SUFFIX:
                     self._generate_header(resource, target, is_dryrun, allow_overwrite)
                     generated.append(target)
                 else:
@@ -954,7 +907,7 @@ class SupportGenerator(CodeGenerator):
                          output_path: pathlib.Path,
                          is_dryrun: bool,
                          allow_overwrite: bool) -> pathlib.Path:
-        template = self._env.get_template(template_path)
+        template = self._env.get_template(template_path.name)
         template_gen = template.generate()
         if not is_dryrun:
             self._generate_code(output_path,
