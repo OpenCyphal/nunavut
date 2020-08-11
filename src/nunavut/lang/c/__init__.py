@@ -309,7 +309,7 @@ class _CFit(enum.Enum):
                   language: Language,
                   inttype_prefix: typing.Optional[str] = None) -> str:
         use_standard_types = language.get_config_value_as_bool('use_standard_types')
-        safe_prefix = '' if inttype_prefix is None else inttype_prefix
+        safe_prefix = '' if not use_standard_types or inttype_prefix is None else inttype_prefix
         if isinstance(value, pydsdl.UnsignedIntegerType):
             return safe_prefix + (self.to_c_int(False) if not use_standard_types else self.to_std_int(False))
         elif isinstance(value, pydsdl.SignedIntegerType):

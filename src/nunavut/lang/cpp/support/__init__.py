@@ -30,7 +30,7 @@ def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
         for path in list_support_files():
             support_file_count += 1
             assert path.parent.stem == 'support'
-            assert path.suffix == '.hpp'
+            assert (path.suffix == '.hpp' or path.suffix == '.j2')
 
     .. invisible-code-block: python
 

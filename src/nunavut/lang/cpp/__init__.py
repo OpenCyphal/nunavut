@@ -138,7 +138,13 @@ def filter_open_namespace(language: Language,
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_open_namespace, template, rendered, 'cpp', T=T)
+        # stropping doesn't change our example here.
+
+        lctx = configurable_language_context_factory({'nunavut.lang.cpp': {'enable_stropping': False}}, 'cpp')
+        jinja_filter_tester(filter_open_namespace, template, rendered, lctx, T=T)
+
+        lctx = configurable_language_context_factory({'nunavut.lang.cpp': {'enable_stropping': True}}, 'cpp')
+        jinja_filter_tester(filter_open_namespace, template, rendered, lctx, T=T)
 
     :param str full_namespace: A dot-seperated namespace string.
     :param bool bracket_on_next_line: If True (the default) then the opening
@@ -540,7 +546,56 @@ def filter_definition_end(language: Language, instance: pydsdl.CompositeType) ->
 @template_language_filter(__name__)
 def filter_type_from_primitive(language: Language,
                                value: pydsdl.PrimitiveType) -> str:
-    return _CFit.get_best_fit(value.bit_length).to_c_type(value, language)
+    """
+    Filter to transform a pydsdl :class:`~pydsdl.PrimitiveType` into
+    a valid C++ type.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_type_from_primitive
+        import pydsdl
+
+
+    .. code-block:: python
+
+        # Given
+        template = '{{ unsigned_int_32_type | type_from_primitive }}'
+
+        # then
+        rendered = 'std::uint32_t'
+
+    .. invisible-code-block: python
+
+        test_type = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+        jinja_filter_tester(filter_type_from_primitive,
+                            template,
+                            rendered,
+                            'cpp',
+                            unsigned_int_32_type=test_type)
+
+    Also note that this is sensitive to the ``use_standard_types`` configuration in the language properties:
+
+    .. code-block:: python
+
+        # rendered will be different if use_standard_types is False
+        rendered = 'unsigned long'
+
+    .. invisible-code-block: python
+
+        lctx = configurable_language_context_factory({'nunavut.lang.cpp': {'use_standard_types': False}}, 'cpp')
+        jinja_filter_tester(filter_type_from_primitive,
+                            template,
+                            rendered,
+                            lctx,
+                            unsigned_int_32_type=test_type)
+
+    :param str value: The dsdl primitive to transform.
+
+    :returns: A valid C++ type name.
+
+    :raises TemplateRuntimeError: If the primitive cannot be represented as a standard C++ type.
+    """
+    return _CFit.get_best_fit(value.bit_length).to_c_type(value, language, 'std::')
 
 
 def filter_to_namespace_qualifier(namespace_list: typing.List[str]) -> str:
@@ -736,32 +791,67 @@ def filter_indent(language: Language,
     return result
 
 
-def _minimum_required_capacity_bits_for_composite(t: pydsdl.CompositeType) -> int:
-    required_bits = 0
-    if isinstance(t, pydsdl.StructureType):
-        for field in t.fields:
-            required_bits += _minimum_required_capacity_bits(field.data_type)
-    elif isinstance(t, pydsdl.UnionType):
-        required_bits = t.tag_field_type.bit_length
-    else:
-        raise TypeError('Unknown CompositeType passed into filter')
-    return required_bits
-
-
-def _minimum_required_capacity_bits(t: pydsdl.SerializableType) -> int:
-    if isinstance(t, pydsdl.VoidType) or isinstance(t, pydsdl.PrimitiveType):
-        return typing.cast(int, t.bit_length)
-    elif isinstance(t, pydsdl.FixedLengthArrayType):
-        return typing.cast(int, t.capacity) * \
-            _minimum_required_capacity_bits(t.element_type)
-    elif isinstance(t, pydsdl.VariableLengthArrayType):
-        # at minimum a variable length array requires 0 bits.
-        return math.ceil(math.log2(t.capacity + 1))
-    elif isinstance(t, pydsdl.CompositeType):
-        return _minimum_required_capacity_bits_for_composite(t)
-    else:
-        raise TypeError('Unknown SerializableType passed into filter')
-
-
 def filter_minimum_required_capacity_bits(t: pydsdl.SerializableType) -> int:
-    return _minimum_required_capacity_bits(t)
+    """
+    Returns the minimum number of bits required to store the deserialized value of a
+    pydsdl :class:`~pydsdl.SerializableType`. This capacity may be too small for some
+    instances of the value (e.g. variable length arrays).
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_minimum_required_capacity_bits
+        import pydsdl
+        import pytest
+
+    .. code-block:: python
+
+        # Given
+        template = '{{ unsigned_int_32_type | minimum_required_capacity_bits }}'
+
+        # then
+        rendered = '32'
+
+    .. invisible-code-block: python
+
+        uint32_truncated_type = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+        jinja_filter_tester(filter_minimum_required_capacity_bits,
+                            template,
+                            rendered,
+                            'cpp',
+                            unsigned_int_32_type=uint32_truncated_type)
+
+        # Cover the other cases here. We don't need to pain the user with these gory
+        # details so we'll keep them in the hidden block.
+        assert filter_minimum_required_capacity_bits(pydsdl.VoidType(1)) == 1
+        assert filter_minimum_required_capacity_bits(pydsdl.FixedLengthArrayType(uint32_truncated_type, 2)) == 64
+        assert filter_minimum_required_capacity_bits(pydsdl.VariableLengthArrayType(uint32_truncated_type, 2)) == 8
+
+        field_one = pydsdl.Field(pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED), 'one')
+        field_two = pydsdl.Field(pydsdl.UnsignedIntegerType(64, pydsdl.PrimitiveType.CastMode.TRUNCATED), 'two')
+
+        test_struct = pydsdl.StructureType(
+            name='uavcan.foo',
+            version=pydsdl.Version(0, 1),
+            attributes=[field_one, field_two],
+            deprecated=False,
+            fixed_port_id=None,
+            source_file_path=''
+        )
+
+        test_union = pydsdl.UnionType(
+            name='uavcan.foo',
+            version=pydsdl.Version(0, 1),
+            attributes=[field_one, field_two],
+            deprecated=False,
+            fixed_port_id=None,
+            source_file_path=''
+        )
+
+        assert filter_minimum_required_capacity_bits(test_struct) == 96
+        assert filter_minimum_required_capacity_bits(test_union) == 32 + 8
+
+    :param pydsdl.SerializableType t: The dsdl type.
+
+    :returns: The minimum, required bits needed to store some values of the given type.
+    """
+    return typing.cast(int, min(t.bit_length_set))
