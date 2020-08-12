@@ -12,7 +12,7 @@ import pytest
 from pydsdl import read_namespace
 
 from nunavut import Namespace, build_namespace_tree
-from nunavut.jinja import Generator
+from nunavut.jinja import DSDLCodeGenerator
 from nunavut.jinja.jinja2.exceptions import TemplateAssertionError
 from nunavut.lang import LanguageContext
 
@@ -30,7 +30,7 @@ def test_template_assert(gen_paths):  # type: ignore
                                      output_path,
                                      language_context)
     template_path = gen_paths.templates_dir / Path('assert')
-    generator = Generator(namespace, templates_dir=template_path)
+    generator = DSDLCodeGenerator(namespace, templates_dir=template_path)
     try:
         generator.generate_all()
         assert False
@@ -51,7 +51,7 @@ def test_type_to_include(gen_paths):  # type: ignore
                                      output_path,
                                      language_context)
     template_path = gen_paths.templates_dir / Path('type_to_include')
-    generator = Generator(namespace, templates_dir=template_path)
+    generator = DSDLCodeGenerator(namespace, templates_dir=template_path)
     generator.generate_all()
     outfile = gen_paths.find_outfile_in_namespace("uavcan.time.SynchronizedTimestamp", namespace)
 
@@ -74,10 +74,10 @@ def test_custom_filter_and_test(gen_paths):  # type: ignore
                                      output_path,
                                      language_context)
     template_path = gen_paths.templates_dir / Path('custom_filter_and_test')
-    generator = Generator(namespace,
-                          templates_dir=template_path,
-                          additional_filters={'custom_filter': lambda T: 'hi mum'},
-                          additional_tests={'custom_test': lambda T: True})
+    generator = DSDLCodeGenerator(namespace,
+                                  templates_dir=template_path,
+                                  additional_filters={'custom_filter': lambda T: 'hi mum'},
+                                  additional_tests={'custom_test': lambda T: True})
 
     generator.generate_all()
     outfile = gen_paths.find_outfile_in_namespace("uavcan.time.SynchronizedTimestamp", namespace)
@@ -97,14 +97,14 @@ def test_custom_filter_and_test_redefinition(gen_paths):  # type: ignore
     namespace = Namespace('', Path(), PurePath(), language_context)
 
     with pytest.raises(RuntimeError):
-        Generator(namespace,
-                  additional_filters={'type_to_include_path': lambda T: ''},
-                  additional_tests={'custom_test': lambda T: False})
+        DSDLCodeGenerator(namespace,
+                          additional_filters={'type_to_include_path': lambda T: ''},
+                          additional_tests={'custom_test': lambda T: False})
 
     with pytest.raises(RuntimeError):
-        Generator(namespace,
-                  additional_filters={'custom_filter': lambda T: ''},
-                  additional_tests={'primitive': lambda T: False})
+        DSDLCodeGenerator(namespace,
+                          additional_filters={'custom_filter': lambda T: ''},
+                          additional_tests={'primitive': lambda T: False})
 
 
 def test_python_filter_full_reference_name(gen_paths):  # type: ignore

@@ -30,7 +30,7 @@ def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
         for path in list_support_files():
             support_file_count += 1
             assert path.parent.stem == 'support'
-            assert path.suffix == '.hpp'
+            assert (path.suffix == '.hpp' or path.suffix == '.j2')
 
     .. invisible-code-block: python
 
@@ -39,5 +39,5 @@ def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
     :return: A list of C++ support header resources.
     """
     for resource in pkg_resources.resource_listdir(__name__, '.'):
-        if resource.endswith('.hpp'):
+        if resource.endswith('.hpp') or resource.endswith('.j2'):
             yield pathlib.Path(pkg_resources.resource_filename(__name__, str(resource)))

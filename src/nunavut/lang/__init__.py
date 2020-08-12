@@ -228,8 +228,8 @@ class Language:
             assert lang_cpp.get_option('target_endianness') == 'little'
 
             # ... or can be provided to a language instance.
-            my_lang = Language('cpp', config, True, language_options={'target_endianness': 'big'})
-            assert my_lang.get_option('target_endianness') == 'big'
+            my_lang = Language('cpp', config, True, language_options={'target_endianness': 'any'})
+            assert my_lang.get_option('target_endianness') == 'any'
 
             # Also, this method can provide a sane default.
             assert lang_cpp.get_option('foobar', 'sane_default') == 'sane_default'

@@ -24,7 +24,7 @@ from sybil.parsers.codeblock import CodeBlockParser
 from sybil.parsers.doctest import DocTestParser
 
 from nunavut import Namespace
-from nunavut.jinja.jinja2 import DictLoader, Environment, StrictUndefined
+from nunavut.jinja.jinja2 import DictLoader
 from nunavut.lang import LanguageContext
 from nunavut.templates import (CONTEXT_FILTER_ATTRIBUTE_NAME,
                                ENVIRONMENT_FILTER_ATTRIBUTE_NAME,
@@ -248,7 +248,7 @@ def jinja_filter_tester(request):  # type: ignore
 
     Example:
 
-        .. invisible-code-block: python
+        .. code-block: python
 
             from nunavut.templates import template_environment_filter
 
@@ -256,7 +256,6 @@ def jinja_filter_tester(request):  # type: ignore
             def filter_dummy(env, input):
                 return input
 
-        .. code-block:: python
 
             # Given
             I = 'foo'
@@ -267,27 +266,30 @@ def jinja_filter_tester(request):  # type: ignore
             # then
             rendered = I
 
-
-        .. invisible-code-block: python
-
             jinja_filter_tester(filter_dummy, template, rendered, 'c', I=I)
 
+    You can also control the language context:
+
+        .. code-block: python
+            lctx = configurable_language_context_factory({'nunavut.lang.c': {'enable_stropping': False}}, 'c')
+
+            jinja_filter_tester(filter_dummy, template, rendered, lctx, I=I)
     """
     def _make_filter_test_template(filter_or_list: typing.Union[typing.Callable, typing.List[typing.Callable]],
                                    body: str,
                                    expected: str,
-                                   target_language: typing.Union[typing.Optional[str], LanguageContext],
+                                   target_language_or_language_context: typing.Union[typing.Optional[str], LanguageContext],
                                    **globals: typing.Optional[typing.Dict[str, typing.Any]]) -> str:
-        e = Environment(loader=DictLoader({'test': body},),
-                        undefined=StrictUndefined)
+        from nunavut.jinja import CodeGenEnvironment
+        e = CodeGenEnvironment(loader=DictLoader({'test': body}))
 
         if globals is not None:
             e.globals.update(globals)
 
-        if isinstance(target_language, LanguageContext):
-            lctx = target_language
+        if isinstance(target_language_or_language_context, LanguageContext):
+            lctx = target_language_or_language_context
         else:
-            lctx = LanguageContext(target_language)
+            lctx = LanguageContext(target_language_or_language_context)
 
         filters = (filter_or_list if isinstance(filter_or_list, list) else [filter_or_list])
         for filter in filters:

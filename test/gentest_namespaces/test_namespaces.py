@@ -12,7 +12,7 @@ import pytest
 from pydsdl import Any, CompositeType, read_namespace
 
 from nunavut import Namespace, build_namespace_tree, YesNoDefault
-from nunavut.jinja import Generator
+from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import LanguageContext
 
 
@@ -106,8 +106,9 @@ def test_empty_namespace(gen_paths):  # type: ignore
 def parameterized_test_namespace_(gen_paths, templates_subdir):  # type: ignore
     language_context = LanguageContext(extension='.json')
     namespace, root_namespace_path, _ = gen_test_namespace(gen_paths, language_context)
-    generator = Generator(namespace, YesNoDefault.NO,
-                          templates_dir=gen_paths.templates_dir / Path(templates_subdir))
+    generator = DSDLCodeGenerator(namespace,
+                                  generate_namespace_types=YesNoDefault.NO,
+                                  templates_dir=gen_paths.templates_dir / Path(templates_subdir))
     generator.generate_all()
     assert namespace.source_file_path == root_namespace_path
     assert namespace.full_name == 'scotec'
@@ -131,8 +132,9 @@ def test_namespace_generation(gen_paths):  # type: ignore
     language_context = LanguageContext(extension='.json', namespace_output_stem='__module__')
     namespace, root_namespace_path, compound_types = gen_test_namespace(gen_paths, language_context)
     assert len(compound_types) == 2
-    generator = Generator(namespace, YesNoDefault.YES,
-                          templates_dir=gen_paths.templates_dir / Path('default'))
+    generator = DSDLCodeGenerator(namespace,
+                                  generate_namespace_types=YesNoDefault.YES,
+                                  templates_dir=gen_paths.templates_dir / Path('default'))
     generator.generate_all()
     for nested_namespace in namespace.get_nested_namespaces():
         nested_namespace_path = Path(root_namespace_path) / Path(*nested_namespace.full_name.split('.')[1:])
@@ -169,8 +171,9 @@ def test_namespace_stropping(gen_paths,
     language_context = LanguageContext(language_key)
     namespace, root_namespace_path, compound_types = gen_test_namespace(gen_paths, language_context)
     assert len(compound_types) == 2
-    generator = Generator(namespace, YesNoDefault.YES,
-                          templates_dir=gen_paths.templates_dir / Path('default'))
+    generator = DSDLCodeGenerator(namespace,
+                                  generate_namespace_types=YesNoDefault.YES,
+                                  templates_dir=gen_paths.templates_dir / Path('default'))
     generator.generate_all()
 
     expected_stropped_ns = 'scotec.{}.{}'.format(expected_stropp_part_0, expected_stropp_part_1)

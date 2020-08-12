@@ -12,7 +12,7 @@ import pytest
 from pydsdl import read_namespace
 
 from nunavut import YesNoDefault, build_namespace_tree
-from nunavut.jinja import Generator
+from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import Language, LanguageContext
 from nunavut.lang.c import filter_id as c_filter_id
 from nunavut.lang.cpp import filter_id as cpp_filter_id
@@ -60,8 +60,8 @@ def ptest_lang_c(gen_paths: Any,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      language_context)
-    generator = Generator(namespace,
-                          templates_dir=templates_dirs)
+    generator = DSDLCodeGenerator(namespace,
+                                  templates_dir=templates_dirs)
     generator.generate_all(False)
 
     # Now read back in and verify
@@ -134,8 +134,8 @@ def ptest_lang_cpp(gen_paths, implicit):  # type: ignore
                                      gen_paths.out_dir,
                                      language_context)
 
-    generator = Generator(namespace,
-                          templates_dir=templates_dirs)
+    generator = DSDLCodeGenerator(namespace,
+                                  templates_dir=templates_dirs)
 
     generator.generate_all(False)
 
@@ -195,9 +195,9 @@ def ptest_lang_py(gen_paths, implicit, unique_name_evaluator):  # type: ignore
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      language_context)
-    generator = Generator(namespace,
-                          generate_namespace_types=YesNoDefault.NO,
-                          templates_dir=templates_dirs)
+    generator = DSDLCodeGenerator(namespace,
+                                  generate_namespace_types=YesNoDefault.NO,
+                                  templates_dir=templates_dirs)
 
     generator.generate_all(False)
 

@@ -11,7 +11,7 @@ import json
 from pydsdl import read_namespace
 from nunavut import build_namespace_tree, Namespace
 from nunavut.lang import LanguageContext
-from nunavut.jinja import Generator
+from nunavut.jinja import DSDLCodeGenerator
 
 
 class a:
@@ -39,10 +39,10 @@ def test_bfs_of_type_for_template(gen_paths):  # type: ignore
                                 gen_paths.dsdl_dir,
                                 gen_paths.out_dir,
                                 language_context)
-    generator = Generator(empty_namespace, templates_dir=gen_paths.templates_dir)
+    generator = DSDLCodeGenerator(empty_namespace, templates_dir=gen_paths.templates_dir)
     subject = d()
     template_file = generator.filter_type_to_template(subject)
-    assert str(Path('c').with_suffix(Generator.TEMPLATE_SUFFIX)) == template_file
+    assert str(Path('c').with_suffix(DSDLCodeGenerator.TEMPLATE_SUFFIX)) == template_file
     assert generator.filter_type_to_template(subject) == template_file
 
 
@@ -58,7 +58,7 @@ def test_one_template(gen_paths):  # type: ignore
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      language_context)
-    generator = Generator(namespace, templates_dir=gen_paths.templates_dir)
+    generator = DSDLCodeGenerator(namespace, templates_dir=gen_paths.templates_dir)
     generator.generate_all(False)
 
     outfile = gen_paths.find_outfile_in_namespace("uavcan.time.TimeSystem", namespace)
@@ -73,7 +73,7 @@ def test_one_template(gen_paths):  # type: ignore
 
 def test_get_templates(gen_paths):  # type: ignore
     """
-    Verifies the nunavut.jinja.Generator.get_templates() method.
+    Verifies the nunavut.jinja.DSDLCodeGenerator.get_templates() method.
     """
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     root_namespace = str(root_namespace_dir)
@@ -83,7 +83,7 @@ def test_get_templates(gen_paths):  # type: ignore
                                      root_namespace_dir,
                                      gen_paths.out_dir,
                                      language_context)
-    generator = Generator(namespace, templates_dir=gen_paths.templates_dir)
+    generator = DSDLCodeGenerator(namespace, templates_dir=gen_paths.templates_dir)
 
     templates = generator.get_templates()
 

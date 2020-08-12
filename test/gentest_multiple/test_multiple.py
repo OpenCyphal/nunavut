@@ -11,7 +11,7 @@ import pytest
 from pydsdl import FrontendError, read_namespace
 
 from nunavut import build_namespace_tree
-from nunavut.jinja import Generator
+from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import LanguageContext
 
 
@@ -36,7 +36,7 @@ def test_three_roots(gen_paths):  # type: ignore
                                      root_namespace,
                                      gen_paths.out_dir,
                                      language_context)
-    generator = Generator(namespace, templates_dir=gen_paths.templates_dir)
+    generator = DSDLCodeGenerator(namespace, templates_dir=gen_paths.templates_dir)
     generator.generate_all(False)
 
     # Now read back in and verify
