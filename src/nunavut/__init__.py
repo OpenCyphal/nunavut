@@ -56,7 +56,7 @@ Putting this all together, the typical use of this library looks something like 
                                           language_context)
 
     # give the root namespace to the generator and...
-    generator = DSDLCodeGeneratorroot_namespace)
+    generator = DSDLCodeGenerator(root_namespace)
 
     # generate all the code!
     generator.generate_all()
