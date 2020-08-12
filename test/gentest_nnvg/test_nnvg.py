@@ -166,7 +166,8 @@ def test_language_option_defaults(gen_paths: typing.Any, run_nnvg: typing.Callab
         assert generated_results['target_endianness'] == 'little'
 
 
-def test_language_option_overrides(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+@pytest.mark.parametrize('target_endianness_override', ['any', 'big', 'little'])
+def test_language_option_overrides(target_endianness_override: str, gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """
         Verifies expected language option defaults can be overridden.
     """
@@ -177,13 +178,29 @@ def test_language_option_overrides(gen_paths: typing.Any, run_nnvg: typing.Calla
                  '-O', str(gen_paths.out_dir),
                  '--target-language', 'cpp',
                  '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
-                 '--target-endianness', 'big',
+                 '--target-endianness', target_endianness_override,
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
     with open(expected_output, 'r') as generated:
         generated_results = json.load(generated)
-        assert generated_results['target_endianness'] == 'big'
+        assert generated_results['target_endianness'] == target_endianness_override
+
+
+def test_language_option_target_endianness_illegal_option(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+        Verifies an illegal --target-endianness option is rejected.
+    """
+
+    nnvg_args = ['--templates', str(gen_paths.templates_dir),
+                 '-O', str(gen_paths.out_dir),
+                 '--target-language', 'cpp',
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 '--target-endianness', 'mixed',
+                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    with pytest.raises(subprocess.CalledProcessError):
+        run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
 
 
 def test_issue_73(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:

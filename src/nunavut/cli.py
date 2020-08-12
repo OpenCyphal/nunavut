@@ -425,7 +425,7 @@ def _make_parser() -> argparse.ArgumentParser:
     ''').lstrip())
 
     ln_opt_group.add_argument('--target-endianness',
-                              choices=['big', 'little'],
+                              choices=['any', 'big', 'little'],
                               help=textwrap.dedent('''
 
         Specify the endianness of the target hardware. This allows serialization
