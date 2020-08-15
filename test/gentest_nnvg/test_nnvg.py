@@ -252,3 +252,25 @@ def test_issue_116(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     except subprocess.CalledProcessError as e:
         error_output = e.stderr.decode('UTF-8')
         assert 'No target language was given' in error_output
+
+
+def test_language_allow_unregulated_fixed_portid(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+        Covers nnvg --allow-unregulated-fixed-port-id switch
+    """
+    expected_output = sorted([
+        str(gen_paths.out_dir / pathlib.Path('fixedid') / pathlib.Path('Timer_1_0.hpp')),
+    ])
+
+    nnvg_args = ['--templates', str(gen_paths.templates_dir),
+                 '-O', str(gen_paths.out_dir),
+                 '--target-language', 'cpp',
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 '--list-outputs',
+                 '--allow-unregulated-fixed-port-id',
+                 '--omit-serialization-support',
+                 str(gen_paths.dsdl_dir / pathlib.Path("fixedid"))]
+
+    completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    completed_wo_empty = sorted([i for i in completed if len(i) > 0])
+    assert expected_output == sorted(completed_wo_empty)
