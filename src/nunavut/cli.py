@@ -367,7 +367,7 @@ def _make_parser() -> argparse.ArgumentParser:
 
     ''').lstrip())
 
-    parser.add_argument('-upid', '--allow-unregulated-fixed-port-id',
+    parser.add_argument('--allow-unregulated-fixed-port-id',
                         action='store_true',
                         help=textwrap.dedent('''
 
