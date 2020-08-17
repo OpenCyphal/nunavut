@@ -104,6 +104,7 @@
         "struct",
         "submodule",
         "uint",
+        "upid",
         "valuetoken",
         "wchar",
         "xargs",
