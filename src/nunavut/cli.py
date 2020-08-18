@@ -115,7 +115,9 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
     #
     # nunavut : parse
     #
-    type_map = pydsdl.read_namespace(args.root_namespace, extra_includes)
+    type_map = pydsdl.read_namespace(args.root_namespace,
+                                     extra_includes,
+                                     allow_unregulated_fixed_port_id=args.allow_unregulated_fixed_port_id)
 
     root_namespace = nunavut.build_namespace_tree(
         type_map,
@@ -362,6 +364,16 @@ def _make_parser() -> argparse.ArgumentParser:
 
         If this is set to True leading spaces and tabs are stripped from the
         start of a line to a block in templates.
+
+    ''').lstrip())
+
+    parser.add_argument('--allow-unregulated-fixed-port-id',
+                        action='store_true',
+                        help=textwrap.dedent('''
+
+        Do not reject unregulated fixed port identifiers.
+        This is a dangerous feature that must not be used unless you understand the
+        risks. The background information is provided in the UAVCAN specification.
 
     ''').lstrip())
 
