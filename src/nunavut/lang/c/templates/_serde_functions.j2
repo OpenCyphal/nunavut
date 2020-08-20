@@ -5,25 +5,19 @@
 /// @param out_buffer    Output message buffer.
 ///
 /// @returns             Size of encoded data (in bits)
-static inline NunavutSignedBitLength {{ composite_type | full_reference_name }}_serialize(const {{ composite_type | full_reference_name }}* in_instance, const NunavutSignedBitLength offset, uint8_t* const out_buffer)
+static inline NunavutSignedBitLength {{ composite_type | full_reference_name }}_serialize(const {{ composite_type | full_reference_name }}* in_instance, NunavutUnsignedBitLength offset, uint8_t* const out_buffer)
 {
-    NunavutSignedBitLength length = 0;
     NunavutSignedBitLength rc = 0;
 
     if (out_buffer == NULL)
     {
         return -NUNAVUT_ERR_INVALID_BUF;
     }
-    if (offset < 0)
-    {
-        return -NUNAVUT_ERR_INVALID_OFFSET;
-    }
 
-    {# TODO fix formatting here #}
     {%- from '_serialize.j2' import serialize %}
     {{ serialize(composite_type) }}
 
-    return length;
+    return offset;
 }
 
 /// Deserialization of byte-array encoding into {{ composite_type | full_reference_name }} instance.
@@ -34,17 +28,13 @@ static inline NunavutSignedBitLength {{ composite_type | full_reference_name }}_
 /// @param buf_size_bytes    Length of input buffer (in bytes) to avoid overflow.
 ///
 /// @returns                 Size of decoded data (in bits)
-static inline NunavutSignedBitLength {{ composite_type | full_reference_name }}_deserialize({{ composite_type | full_reference_name }}* const out_instance, NunavutSignedBitLength offset, uint8_t* const in_buffer, const size_t buf_size_bytes)
+static inline NunavutSignedBitLength {{ composite_type | full_reference_name }}_deserialize({{ composite_type | full_reference_name }}* const out_instance, NunavutUnsignedBitLength offset, uint8_t* const in_buffer, const size_t buf_size_bytes)
 {
     NunavutSignedBitLength rc = 0;
 
     if (in_buffer == NULL)
     {
         return -NUNAVUT_ERR_INVALID_BUF;
-    }
-    if (offset < 0)
-    {
-        return -NUNAVUT_ERR_INVALID_OFFSET;
     }
 
     {%- from '_deserialize.j2' import deserialize %}
