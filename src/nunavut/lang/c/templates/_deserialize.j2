@@ -23,7 +23,7 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {%- if type is PrimitiveType -%}
     {{ _deserialize_primitive(type, name, ref) }}
     {%- elif type is VoidType -%}
-    {#- just deal with it here #}
+    {#- just deal with it here -#}
     offset += {{ type.bit_length }};
     {%- elif type is ArrayType -%}
     {{ _deserialize_array(type, name, ref, offset) }}
@@ -45,11 +45,11 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
 
 {%- macro _deserialize_composite(type, ref, offset) -%}
     {%- if type is StructureType -%}
-    {%- for f, offset in type.iterate_fields_with_offsets(offset) -%}
+    {%- for f, offset in type.iterate_fields_with_offsets(offset) %}
     // Begin Structure: {{ f.data_type }}
     {{ _deserialize_any(f.data_type, f.name, ref, offset) }}
     // End Structure: {{ f.data_type }}
-    {%- endfor %}
+    {%- endfor -%}
     {%- elif type is UnionType %}
     // Begin Union: {{ type }}
     {{ _deserialize_int(type.tag_field_type, '_tag_', ref) }}
@@ -68,7 +68,7 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {
         {{ _deserialize_any(f.data_type, f.name, ref, offset) | indent(width=4) }}
     }
-    {%- endfor -%}
+    {%- endfor %}
     else
     {
         return -NUNAVUT_ERR_INVALID_TAG;
@@ -128,11 +128,11 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     Primitive serialization dispatch
 #}
 {%- macro _deserialize_primitive(type, name, ref) -%}
-    {%- if type is IntegerType %}
+    {%- if type is IntegerType -%}
     {{ _deserialize_int(type, name, ref) }}
-    {%- elif type is FloatType %}
+    {%- elif type is FloatType -%}
     {{ _deserialize_float(type, name, ref) }}
-    {%- elif type is BooleanType %}
+    {%- elif type is BooleanType -%}
     {{ _deserialize_boolean(type, name, ref) }}
     {%- endif %}
     offset += {{ type.bit_length }};
