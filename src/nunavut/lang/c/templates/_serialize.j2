@@ -47,8 +47,8 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     (ServiceType is handled further up, as seperate Request/Response instances)
 #}
 {%- macro _serialize_composite(type, ref, base_offset) -%}
-    {%- if type is StructureType %}
-    {%- for f, offset in type.iterate_fields_with_offsets(base_offset) -%}
+    {%- if type is StructureType -%}
+    {%- for f, offset in type.iterate_fields_with_offsets(base_offset) %}
     // Begin Structure: {{ f.data_type }}
     {{ _serialize_any(f.data_type, f.name, ref, offset) | indent(width=4) }}
     // End Structure: {{ f.data_type }}

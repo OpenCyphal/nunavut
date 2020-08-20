@@ -14,7 +14,7 @@ static inline {{ typename_boolean }} {{ composite_type | full_reference_name }}_
 }
 {%- endif -%}
 {%- endfor %}
-{#- must be included after member checking functions are declared #}
+{# must be included after member checking functions are declared #}
 {% include '_serde_functions.j2' %}
 {% include '_metadata.j2' %}
 {% endblock -%}
