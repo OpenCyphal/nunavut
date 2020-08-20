@@ -29,15 +29,15 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {{ _deserialize_array(type, name, ref, offset) }}
     {%- elif type is CompositeType -%}
     {%- if offset.is_aligned_at_byte() -%}
-    {#- Data is byte aligned: use generated function #}
+    {#- Data is byte aligned: use generated function -#}
     rc = {{ type | full_reference_name }}_deserialize(&({{ ref + (name | id) }}), offset, in_buffer, buf_size_bytes);
     if (rc < 0)
     {
         return rc;
     }
-    offset += rc;
+    offset = rc;
     {%- else -%}
-    {#- Not byte-aligned: inline serialization #}
+    {#- Not byte-aligned: inline serialization -#}
     {{ _deserialize_composite(type, ref + (name | id) + '.', offset) }}
     {%- endif -%}
     {%- endif -%}
