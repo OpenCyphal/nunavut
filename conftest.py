@@ -339,7 +339,8 @@ _sy = Sybil(
         '**/.*/*',
         '**/.*',
         '**/CONTRIBUTING.rst',
-        '**/verification/*'
+        '**/verification/*',
+        '**/prof/*'
     ],
     fixtures=['jinja_filter_tester',
               'gen_paths',

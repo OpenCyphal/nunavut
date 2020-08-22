@@ -65,15 +65,13 @@ inline void {{ composite_type | full_reference_name }}_init({{ composite_type | 
     {
         {%- if composite_type.fields | length == 0 %}
         out_instance->_dummy_ = 0U;
-        {%- else %}
-        {%- if composite_type is UnionType %}
+        {%- elif composite_type is UnionType %}
         out_instance->_tag_ = 0;
         {{ init_macros.init_field("out_instance", composite_type.fields[0]) }}
         {%- else -%}
-        {%- for field in composite_type.fields %}
+        {%- for field in composite_type.fields -%}
         {{ init_macros.init_field("out_instance", field) }}
-        {%- endfor %}
-        {%- endif -%}
+        {%- endfor -%}
         {%- endif %}
     }
 }
