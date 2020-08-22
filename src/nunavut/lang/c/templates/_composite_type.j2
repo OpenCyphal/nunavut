@@ -68,10 +68,10 @@ inline void {{ composite_type | full_reference_name }}_init({{ composite_type | 
         {%- else %}
         {%- if composite_type is UnionType %}
         out_instance->_tag_ = 0;
-        {{ init_macros.init_field("out_instance", composite_type.fields[0]) }}
+        {{ init_macros.init_field(composite_type.fields[0]) }}
         {%- else -%}
         {%- for field in composite_type.fields %}
-        {{ init_macros.init_field("out_instance", field) }}
+        {{ init_macros.init_field(field) }}
         {%- endfor %}
         {%- endif -%}
         {%- endif %}
