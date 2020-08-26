@@ -2,3 +2,6 @@ p.first {
     white-space: normal;
     width: 30em;
 }
+.wy-nav-content {
+    max-width: unset;
+}
