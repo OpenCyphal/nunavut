@@ -50,7 +50,7 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     {%- if type is StructureType -%}
     {%- for f, offset in type.iterate_fields_with_offsets(base_offset) %}
     // Begin Structure: {{ f.data_type }}
-    {{ _serialize_any(f.data_type, f.name, ref, offset) | indent(width=4) }}
+    {{ _serialize_any(f.data_type, f.name, ref, offset) }}
     // End Structure: {{ f.data_type }}
     {%- endfor %}
     {%- elif type is UnionType %}
@@ -69,7 +69,7 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
         {{ type | full_reference_name }}_is_{{ f.name }}({{ ref[:-2] }}))
     {%- endif %}
     {
-        {{ _serialize_any(f.data_type, f.name, ref, offset) | indent(width=4) }}
+        {{ _serialize_any(f.data_type, f.name, ref, offset) }}
     }
     {%- endfor %}
     else
@@ -85,7 +85,7 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
 #}
 {%- macro _serialize_array(type, name, ref, base_offset) %}
     {#- wrangle length value if variable length array #}
-    {%- if type is VariableLengthArrayType %}
+    {%- if type is VariableLengthArrayType -%}
     if ({{ ref }}{{ name | id }}_length > {{ type.capacity }})
     {
         return -NUNAVUT_ERR_INVALID_LEN;
@@ -114,7 +114,7 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
         {{ _serialize_primitive(loop_type, '', loop_ref) | indent(width=4) }}
     }
     {%- endif %}
-    {%- elif loop_type is PrimitiveType %}
+    {%- elif loop_type is PrimitiveType or loop_type is CompositeType %}
     {#- should catch uint, int, float, and bool #}
     {{ _serialize_array_loop(type, name, ref) }}
     {
@@ -136,11 +136,11 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     Primitive serialization dispatch
 #}
 {%- macro _serialize_primitive(type, name, ref) -%}
-    {%- if type is IntegerType %}
+    {%- if type is IntegerType -%}
     {{ _serialize_int(type, name, ref) }}
-    {%- elif type is FloatType %}
+    {%- elif type is FloatType -%}
     {{ _serialize_float(type, name, ref) }}
-    {%- elif type is BooleanType %}
+    {%- elif type is BooleanType -%}
     {{ _serialize_boolean(type, name, ref) }}
     {%- endif %}
     offset += {{ type.bit_length }};

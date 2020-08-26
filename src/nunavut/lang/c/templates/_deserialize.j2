@@ -82,7 +82,7 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
 #}
 {%- macro _deserialize_array(type, name, ref, base_offset) %}
     {#- wrangle length value if variable length array #}
-    {%- if type is VariableLengthArrayType %}
+    {%- if type is VariableLengthArrayType -%}
     {{ _deserialize_int(type.length_field_type, name + "_length", ref) }};
     offset += {{ type.length_field_type.bit_length }};
     if ({{ ref }}{{ name | id }}_length > {{ type.capacity }})
@@ -96,10 +96,10 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {#- There are some options for memcpy if it's a standard data type #}
     {%- if base_offset.is_aligned_at_byte() and option_target_endianness == "little" %}
     {#- Data is byte-aligned, so we can use memcpy #}
-    {%- if type is VariableLengthArrayType %}
+    {%- if type is VariableLengthArrayType -%}
     memcpy((void*)out_instance->{{ name }}, (void*) in_buffer + (offset >> 3), out_instance->{{ name }}_length * {{ (loop_type.bit_length / 8) | int }});
     offset += {{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }};
-    {%- else %}
+    {%- else -%}
     memcpy((void*)out_instance->{{ name }}, (void*) in_buffer + (offset >> 3), {{ type.capacity }} * {{ (loop_type.bit_length / 8) | int }});
     offset += {{ type.capacity }} * {{ loop_type.bit_length }};
     {%- endif -%}
@@ -111,7 +111,7 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
         {{ _deserialize_primitive(loop_type, '', loop_ref) | indent(width=4) }}
     }
     {%- endif %}
-    {%- elif loop_type is PrimitiveType %}
+    {%- elif loop_type is PrimitiveType or loop_type is CompositeType %}
     {#- should catch uint, int, float, and bool #}
     {{ _deserialize_array_loop(type, name, ref) }}
     {
