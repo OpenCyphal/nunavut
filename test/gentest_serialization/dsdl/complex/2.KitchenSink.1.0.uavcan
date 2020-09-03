@@ -8,8 +8,9 @@ float64 six
 uint8[12] seven
 uint8[<=64] eight
 float16 nine
-basic.Nested.1.0 ten
-basic.NestedUnion.1.0 eleven
+complex.Nested.1.0 ten
+complex.NestedUnion.1.0 eleven
 void1
 int64 twelve
-basic.Nested.1.0[4] thirteen
+complex.Nested.1.0[4] thirteen
+basic.Basic.1.0[3] fourteen

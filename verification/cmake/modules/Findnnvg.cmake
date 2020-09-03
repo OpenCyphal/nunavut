@@ -22,20 +22,23 @@
 #
 function (create_dsdl_target ARG_TARGET_NAME ARG_OUTPUT_LANGUAGE ARG_OUTPUT_FOLDER ARG_DSDL_ROOT_DIR ARG_ENABLE_CLANG_FORMAT)
 
-    set(LOOKUP_DIR_CMD_ARGS "")
+    set(NNVG_CMD_ARGS "")
 
     if (${ARGC} GREATER 5)
-        foreach(ARG_N RANGE 5 ${ARGC}-1)
-            list(APPEND LOOKUP_DIR_CMD_ARGS " -I ${ARGV${ARG_N}}")
+        MATH(EXPR ARG_N_LAST "${ARGC}-1")
+        foreach(ARG_N RANGE 5 ${ARG_N_LAST})
+            list(APPEND NNVG_CMD_ARGS "-I")
+            list(APPEND NNVG_CMD_ARGS "${ARGV${ARG_N}}")
         endforeach(ARG_N)
     endif()
 
-    execute_process(COMMAND ${NNVG}
-                                --list-outputs
-                                --target-language ${ARG_OUTPUT_LANGUAGE}
-                                -O ${ARG_OUTPUT_FOLDER}
-                                ${LOOKUP_DIR_CMD_ARGS}
-                                ${ARG_DSDL_ROOT_DIR}
+    list(APPEND NNVG_CMD_ARGS --target-language)
+    list(APPEND NNVG_CMD_ARGS ${ARG_OUTPUT_LANGUAGE})
+    list(APPEND NNVG_CMD_ARGS  -O)
+    list(APPEND NNVG_CMD_ARGS ${ARG_OUTPUT_FOLDER})
+    list(APPEND NNVG_CMD_ARGS ${ARG_DSDL_ROOT_DIR})
+    
+    execute_process(COMMAND ${NNVG} --list-outputs ${NNVG_CMD_ARGS}
                     OUTPUT_VARIABLE OUTPUT_FILES
                     RESULT_VARIABLE LIST_OUTPUTS_RESULT)
 
@@ -45,12 +48,7 @@ function (create_dsdl_target ARG_TARGET_NAME ARG_OUTPUT_LANGUAGE ARG_OUTPUT_FOLD
                             " (${NNVG})")
     endif()
 
-    execute_process(COMMAND ${NNVG}
-                                --list-inputs
-                                --target-language ${ARG_OUTPUT_LANGUAGE}
-                                -O ${ARG_OUTPUT_FOLDER}
-                                ${LOOKUP_DIR_CMD_ARGS}
-                                ${ARG_DSDL_ROOT_DIR}
+    execute_process(COMMAND ${NNVG} --list-inputs ${NNVG_CMD_ARGS}
                     OUTPUT_VARIABLE INPUT_FILES
                     RESULT_VARIABLE LIST_INPUTS_RESULT)
 
@@ -67,12 +65,7 @@ function (create_dsdl_target ARG_TARGET_NAME ARG_OUTPUT_LANGUAGE ARG_OUTPUT_FOLD
     endif()
 
     add_custom_command(OUTPUT ${OUTPUT_FILES}
-                       COMMAND ${NNVG}
-                                    --target-language ${ARG_OUTPUT_LANGUAGE}
-                                    -O ${ARG_OUTPUT_FOLDER}
-                                    ${LOOKUP_DIR_CMD_ARGS}
-                                    ${CLANG_FORMAT_ARGS}
-                                    ${ARG_DSDL_ROOT_DIR}
+                       COMMAND ${NNVG} ${CLANG_FORMAT_ARGS} ${NNVG_CMD_ARGS}
                        DEPENDS ${INPUT_FILES}
                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                        COMMENT "Running nnvg")

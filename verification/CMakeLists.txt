@@ -98,11 +98,15 @@ create_dsdl_target(dsdl-regulated
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
                    ON)
 
-
-# Bring this back if we end up with test-specific headers.
-# target_include_directories(dsdl-regulated INTERFACE
-#                    ${CMAKE_CURRENT_SOURCE_DIR}/include
-# )
+#
+# Generate additional types for verification
+#
+create_dsdl_target(dsdl-test
+                   ${NUNAVUT_VERIFICATION_LANG}
+                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
+                   ${CMAKE_SOURCE_DIR}/nunavut_test_types/test0/regulated
+                   ON
+                   ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
 
 # +---------------------------------------------------------------------------+
 # | FLAG SETS
@@ -140,7 +144,7 @@ set(ALL_TEST_COVERAGE "")
 
 foreach(NATIVE_TEST ${NATIVE_TESTS})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
-    define_native_unit_test(${NATIVE_TEST_NAME} ${NATIVE_TEST} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} dsdl-regulated)
+    define_native_unit_test(${NATIVE_TEST_NAME} ${NATIVE_TEST} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} dsdl-regulated dsdl-test)
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
     define_natve_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
