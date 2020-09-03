@@ -335,7 +335,10 @@ _sy = Sybil(
     excludes=[
         '**/markupsafe/*',
         '**/jinja2/*',
-        '**/static/*'
+        '**/static/*',
+        '**/.*/*',
+        '**/.*',
+        '**/CONTRIBUTING.rst'
     ],
     fixtures=['jinja_filter_tester',
               'gen_paths',
