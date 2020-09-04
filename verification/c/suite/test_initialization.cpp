@@ -7,6 +7,7 @@
 #include "uavcan/primitive/Empty_1_0.h"
 #include "uavcan/si/unit/force/Vector3_1_0.h"
 #include "uavcan/_register/Name_1_0.h"
+#include "regulated/zubax/sensor/bms/BatteryPackParams_0_1.h"
 
 /**
  * Verify an empty, complex type compiles and initializes.
@@ -46,4 +47,16 @@ TEST(InitializationTests, InitWithVariableLengthArray)
     uavcan_register_Name_1_0_init(&subject);
     ASSERT_TRUE(uavcan_register_Name_1_0_name_array_is_variable_length());
     ASSERT_EQ(0U, uavcan_register_Name_1_0_name_array_length(&subject));
+}
+
+/**
+ * Verify fix of issue #130 where C initialization generated incorrect code for arrays of compound types.
+ */
+TEST(InitializationTests, InitZubaxBMSParams)
+{
+    regulated_zubax_sensor_bms_BatteryPackParams_0_1 subject;
+    subject.design_cell_voltage_min_typ_max[0].volt = 99.0f;
+    regulated_zubax_sensor_bms_BatteryPackParams_0_1_init(&subject);
+    ASSERT_EQ(3U, regulated_zubax_sensor_bms_BatteryPackParams_0_1_design_cell_voltage_min_typ_max_array_length(&subject));
+    ASSERT_FLOAT_EQ(0.0f, subject.design_cell_voltage_min_typ_max[0].volt);
 }

@@ -78,12 +78,19 @@ endfunction()
 # param: ARG_TEST_SOURCE List[path] - A list of source files to compile into
 #                               the test binary.
 # param: ARG_OUTDIR path - A path to output test binaries and coverage data under.
-# param: ARG_TYPE_GEN_TARGET str - The target that generates the types under test.
+# param: ... List[str] - Zero to many targets that generate types under test.
 #
-function(define_native_unit_test ARG_TEST_NAME ARG_TEST_SOURCE ARG_OUTDIR ARG_TYPE_GEN_TARGET)
+function(define_native_unit_test ARG_TEST_NAME ARG_TEST_SOURCE ARG_OUTDIR)
 
-     add_executable(${ARG_TEST_NAME} ${ARG_TEST_SOURCE})
-     target_link_libraries(${ARG_TEST_NAME} ${ARG_TYPE_GEN_TARGET})
+    add_executable(${ARG_TEST_NAME} ${ARG_TEST_SOURCE})
+
+    if (${ARGC} GREATER 3)
+        MATH(EXPR ARG_N_LAST "${ARGC}-1")
+        foreach(ARG_N RANGE 3 ${ARG_N_LAST})
+            target_link_libraries(${ARG_TEST_NAME} ${ARGV${ARG_N}})
+        endforeach(ARG_N)
+    endif()
+     
      target_link_libraries(${ARG_TEST_NAME} gmock_main)
 
      set_target_properties(${ARG_TEST_NAME}

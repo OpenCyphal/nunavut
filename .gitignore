@@ -24,6 +24,7 @@ _build
 dist
 .clear*
 .DS_Store
+prof
 
 # Eclipse
 .metadata
