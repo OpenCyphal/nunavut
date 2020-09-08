@@ -6,12 +6,19 @@
  *                                                                                                               o
  * +------------------------------------------------------------------------------------------------------------------+
  */
-#ifndef NUNAVUT_SUPPORT_NUNAVUT_H_INCLUDED
-#define NUNAVUT_SUPPORT_NUNAVUT_H_INCLUDED
+#ifndef NUNAVUT_SUPPORT_SERIALIZATION_H_INCLUDED
+#define NUNAVUT_SUPPORT_SERIALIZATION_H_INCLUDED
 
 #ifdef __cplusplus
+#   if (__cplusplus < 201100L)
+#       error "Unsupported language: ISO C11, C++11, or a newer version of either is required."
+#   endif
 extern "C"
 {
+#else
+#   if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
+#       error "Unsupported language: ISO C11 or a newer version is required."
+#   endif
 #endif
 
 #include <string.h>
@@ -37,12 +44,6 @@ typedef double   NunavutFloat64;
 #ifndef NUNAVUT_ASSERT
 // Intentional violation of MISRA: assertion macro cannot be replaced with a function definition.
 #    define NUNAVUT_ASSERT(x) assert(x)  // NOSONAR
-#endif
-
-#ifndef __cplusplus
-#    if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
-#        error "Unsupported language: ISO C11 or a newer version is required."
-#    endif
 #endif
 
 /// Detect whether the target platform is compatible with IEEE 754.
@@ -159,12 +160,12 @@ static inline void nunavutSetUxx(uint8_t* const                 buf,
                                  const uint8_t                  len_bit)
 {
 {%- if option_target_endianness == "little" %}
-    _Static_assert(NUNAVUT_WIDTH64 == (sizeof(uint64_t) * NUNAVUT_BYTE_WIDTH), "Unexpected size of uint64_t");
+    static_assert(NUNAVUT_WIDTH64 == (sizeof(uint64_t) * NUNAVUT_BYTE_WIDTH), "Unexpected size of uint64_t");
     NUNAVUT_ASSERT(buf != NULL);
     const NunavutUnsignedBitLength saturated_len_bit = nunavutInternalChooseMin(len_bit, NUNAVUT_WIDTH64);
     nunavutCopyBits(saturated_len_bit, 0U, off_bit, (const uint8_t*) &value, buf);
 {%- else %}
-    _Static_assert(NUNAVUT_WIDTH64 == (sizeof(uint64_t) * NUNAVUT_BYTE_WIDTH), "Unexpected size of uint64_t");
+    static_assert(NUNAVUT_WIDTH64 == (sizeof(uint64_t) * NUNAVUT_BYTE_WIDTH), "Unexpected size of uint64_t");
     NUNAVUT_ASSERT(buf != NULL);
     const NunavutUnsignedBitLength saturated_len_bit     = nunavutInternalChooseMin(len_bit, NUNAVUT_WIDTH64);
     const uint8_t                  tmp[sizeof(uint64_t)] = {
@@ -352,7 +353,7 @@ static inline int64_t nunavutGetI64(const uint8_t* const           buf,
 
 #if NUNAVUT_PLATFORM_IEEE754_FLOAT
 
-_Static_assert(NUNAVUT_WIDTH32 == (sizeof(NunavutFloat32) * NUNAVUT_BYTE_WIDTH), "Unsupported floating point model");
+static_assert(NUNAVUT_WIDTH32 == (sizeof(NunavutFloat32) * NUNAVUT_BYTE_WIDTH), "Unsupported floating point model");
 
 // Intentional violation of MISRA: we need this union because the alternative is far more error prone.
 // We have to rely on low-level data representation details to do the conversion; unions are helpful.
@@ -427,7 +428,7 @@ static inline NunavutFloat32 nunavutGetF16(const uint8_t* const           buf,
 
 #if NUNAVUT_PLATFORM_IEEE754_FLOAT
 
-_Static_assert(NUNAVUT_WIDTH32 == (sizeof(NunavutFloat32) * NUNAVUT_BYTE_WIDTH), "Unsupported floating point model");
+static_assert(NUNAVUT_WIDTH32 == (sizeof(NunavutFloat32) * NUNAVUT_BYTE_WIDTH), "Unsupported floating point model");
 
 static inline void nunavutSetF32(uint8_t* const buf, const NunavutUnsignedBitLength off_bit, const NunavutFloat32 value)
 {
@@ -463,7 +464,7 @@ static inline NunavutFloat32 nunavutGetF32(const uint8_t* const           buf,
 
 #if NUNAVUT_PLATFORM_IEEE754_DOUBLE
 
-_Static_assert(NUNAVUT_WIDTH64 == (sizeof(NunavutFloat64) * NUNAVUT_BYTE_WIDTH), "Unsupported floating point model");
+static_assert(NUNAVUT_WIDTH64 == (sizeof(NunavutFloat64) * NUNAVUT_BYTE_WIDTH), "Unsupported floating point model");
 
 static inline void nunavutSetF64(uint8_t* const buf, const NunavutUnsignedBitLength off_bit, const NunavutFloat64 value)
 {
@@ -499,4 +500,4 @@ static inline NunavutFloat64 nunavutGetF64(const uint8_t* const           buf,
 }
 #endif
 
-#endif /* NUNAVUT_SUPPORT_NUNAVUT_H_INCLUDED */
+#endif /* NUNAVUT_SUPPORT_SERIALIZATION_H_INCLUDED */
