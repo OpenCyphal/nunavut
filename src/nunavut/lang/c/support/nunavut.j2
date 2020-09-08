@@ -1,17 +1,13 @@
 /*
- *
- * UAVCAN common serialization support routines.                                                                +-+ +-+
- *
- * Not meant to be included directly by a user. Please include nunavut.h
- * or nunavut_le.h instead, depending on your platform architecture.
- *
+ *                                                                                                            +-+ +-+
+ *  UAVCAN common serialization support routines.                                                             | | | |
  *                                                                                                            \  -  /
  *  This software is distributed under the terms of the MIT License.                                            ---
  *                                                                                                               o
  * +------------------------------------------------------------------------------------------------------------------+
  */
-#ifndef NUNAVUT_SUPPORT_NUNAVUT_COMMON_H_INCLUDED
-#define NUNAVUT_SUPPORT_NUNAVUT_COMMON_H_INCLUDED
+#ifndef NUNAVUT_SUPPORT_NUNAVUT_H_INCLUDED
+#define NUNAVUT_SUPPORT_NUNAVUT_H_INCLUDED
 
 #ifdef __cplusplus
 extern "C"
@@ -76,7 +72,7 @@ static inline NunavutUnsignedBitLength nunavutInternalGetBitCopySize(
     const NunavutUnsignedBitLength requested_length_bit,
     const uint8_t                  value_length_bit)
 {
-    const NunavutUnsignedBitLength buf_size_bit  = buf_size_bytes * NUNAVUT_BYTE_WIDTH;
+    const NunavutUnsignedBitLength buf_size_bit  = (NunavutUnsignedBitLength)buf_size_bytes * NUNAVUT_BYTE_WIDTH;
     const NunavutUnsignedBitLength remaining_bit = buf_size_bit - nunavutInternalChooseMin(buf_size_bit, offset_bit);
     return nunavutInternalChooseMin(remaining_bit, nunavutInternalChooseMin(requested_length_bit, value_length_bit));
 }
@@ -501,4 +497,4 @@ static inline NunavutFloat64 nunavutGetF64(const uint8_t* const           buf,
 }
 #endif
 
-#endif /* NUNAVUT_SUPPORT_NUNAVUT_COMMON_H_INCLUDED */
+#endif /* NUNAVUT_SUPPORT_NUNAVUT_H_INCLUDED */
