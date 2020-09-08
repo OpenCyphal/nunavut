@@ -18,8 +18,8 @@ from doctest import ELLIPSIS
 from unittest.mock import MagicMock
 
 import pytest
+import pydsdl
 from sybil import Sybil
-from sybil.integration.pytest import SybilFile
 from sybil.parsers.codeblock import CodeBlockParser
 from sybil.parsers.doctest import DocTestParser
 
@@ -94,11 +94,26 @@ class GenTestPaths:
         return self._build_dir
 
     @staticmethod
-    def find_outfile_in_namespace(typename: str, namespace: Namespace) -> typing.Optional[str]:
+    def find_outfile_in_namespace(typename: str,
+                                  namespace: Namespace,
+                                  type_version: pydsdl.Version = None) \
+            -> typing.Optional[str]:
+        found_outfile = None  # type: typing.Optional[str]
         for dsdl_type, outfile in namespace.get_all_types():
             if dsdl_type.full_name == typename:
-                return str(outfile)
-        return None
+                if type_version is not None:
+                    if isinstance(dsdl_type, pydsdl.CompositeType) and type_version == dsdl_type.version:
+                        found_outfile = str(outfile)
+                        break
+                    # else ignore this since it's either a namespace or it's not the version
+                    # of the type we're looking for.
+                elif found_outfile is not None:
+                    raise RuntimeError('Type {} had more than one version for this test but no type version argument was'
+                                   ' provided.'.format(typename))
+                else:
+                    found_outfile = str(outfile)
+
+        return found_outfile
 
     @staticmethod
     def _ensure_dir(path_dir: pathlib.Path) -> pathlib.Path:

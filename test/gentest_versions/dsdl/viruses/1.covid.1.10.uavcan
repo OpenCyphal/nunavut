@@ -1,0 +1,4 @@
+uint16[2] country_code
+saturated uint64 total_infected
+saturated uint64 total_deaths
+saturated uint64 total_asymptomatic

@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef {{T.full_name | c.macrofy}}_INCLUDED
-#define {{T.full_name | c.macrofy}}_INCLUDED
+#ifndef {{T.full_name | c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED
+#define {{T.full_name | c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED
 
 {% for n in T | includes -%}
 #include {{ n }}
@@ -38,4 +38,4 @@ extern "C" {
 #ifdef __cplusplus
 } /* End extern "C" */
 #endif /* __cplusplus */
-#endif /* {{T.full_name | c.macrofy}} */
+#endif /* {{T.full_name | c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED */
