@@ -26,9 +26,14 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     {%- elif type is ArrayType -%}
     {{ _serialize_array(type, name, ref, offset) }}
     {%- elif type is CompositeType -%}
+    {%- if name == '' -%}
+        {%- set ref_name = ref -%}
+    {%- else -%}
+        {%- set ref_name = ref + (name | id) -%}
+    {%- endif -%}
     {%- if offset.is_aligned_at_byte() -%}
     {#- Data is byte aligned: use generated function -#}
-    rc = {{ type | full_reference_name }}_serialize(&({{ ref + (name | id) }}), offset, out_buffer);
+    rc = {{ type | full_reference_name }}_serialize(&({{ ref_name }}), offset, out_buffer);
     if (rc < 0)
     {
         return rc;
@@ -36,7 +41,7 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     offset = rc;
     {%- else -%}
     {#- Not byte-aligned: inline serialization #}
-    {{ _serialize_composite(type, ref + (name | id) + '.', offset) }}
+    {{ _serialize_composite(type, ref_name + '.', offset) }}
     {%- endif -%}
     {%- endif -%}
 {%- endmacro %}
