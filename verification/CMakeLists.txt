@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.6.0)
 
-project(nunavut_verification CXX)
+project(nunavut_verification C CXX)
 
 include(${CMAKE_SOURCE_DIR}/cmake/utils.cmake)
 
@@ -85,6 +85,11 @@ find_package(tox REQUIRED)
 find_package(gtest REQUIRED)
 
 #
+# We also require unity to run c-specific tests as part of the verification suite.
+#
+find_package(unity REQUIRED)
+
+#
 # Make sure nnvg was installed correctly.
 #
 find_package(nnvg REQUIRED)
@@ -123,10 +128,16 @@ apply_flag_set("${CMAKE_SOURCE_DIR}/cmake/compiler_flag_sets/${NUNAVUT_FLAG_SET}
 #   We generate individual test binaires so we can record which test generated
 #   what coverage. We also allow test authors to generate coverage reports for
 #   just one test allowing for faster iteration.
-file(GLOB NATIVE_TESTS
+file(GLOB NATIVE_TESTS_CPP
      LIST_DIRECTORIES false
      RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
      ${NUNAVUT_VERIFICATION_ROOT}/suite/test_*.cpp
+)
+
+file(GLOB NATIVE_TESTS_C
+     LIST_DIRECTORIES false
+     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+     ${NUNAVUT_VERIFICATION_ROOT}/suite/test_*.c
 )
 
 add_custom_target(
@@ -142,9 +153,21 @@ set(ALL_TESTS "")
 set(ALL_TESTS_WITH_LCOV "")
 set(ALL_TEST_COVERAGE "")
 
-foreach(NATIVE_TEST ${NATIVE_TESTS})
+foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
-    define_native_unit_test(${NATIVE_TEST_NAME} ${NATIVE_TEST} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} dsdl-regulated dsdl-test)
+    define_native_unit_test("gtest" ${NATIVE_TEST_NAME} ${NATIVE_TEST} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} dsdl-regulated dsdl-test)
+    define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
+    define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
+    define_natve_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
+    list(APPEND ALL_TESTS "run_${NATIVE_TEST_NAME}")
+    list(APPEND ALL_TESTS_WITH_LCOV "run_${NATIVE_TEST_NAME}_with_lcov")
+    list(APPEND ALL_TEST_COVERAGE "--add-tracefile")
+    list(APPEND ALL_TEST_COVERAGE "${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.${NATIVE_TEST_NAME}.filtered.info")
+endforeach()
+
+foreach(NATIVE_TEST ${NATIVE_TESTS_C})
+    get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
+    define_native_unit_test("unity" ${NATIVE_TEST_NAME} ${NATIVE_TEST} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} dsdl-regulated dsdl-test)
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
     define_natve_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
