@@ -812,19 +812,19 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
     else:
         return not_stropped
 
-@template_language_filter(__name__)
-def filter_to_standard_bit_length(language: Language, t: pydsdl.PrimitiveType):
+
+def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
     """
     Returns the nearest standard bit length of a type as an int.
 
     .. invisible-code-block: python
 
         from nunavut.lang.c import filter_to_standard_bit_length
-        from pydsdl import UnsignedIntegerType
+        import pydsdl
 
     .. code-block: python
         # Given
-        I = UnsignedIntegerType(7, UnsignedIntegerType.TRUNCATED)
+        I = pydsdl.UnsignedIntegerType(7, pydsdl.PrimitiveType.CastMode.TRUNCATED)
 
         # and
         template = '{{ I | to_standard_bit_length }}'
@@ -837,6 +837,4 @@ def filter_to_standard_bit_length(language: Language, t: pydsdl.PrimitiveType):
         jinja_filter_tester(filter_to_standard_bit_length, template, rendered, 'c', I=I)
 
     """
-    del language
-
     return int(_CFit.get_best_fit(t.bit_length).value)
