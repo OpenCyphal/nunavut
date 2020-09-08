@@ -39,8 +39,10 @@ typedef double   NunavutFloat64;
 #    define NUNAVUT_ASSERT(x) assert(x)  // NOSONAR
 #endif
 
-#if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
-#    error "Unsupported language: ISO C11 or a newer version is required."
+#ifndef __cplusplus
+#    if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
+#        error "Unsupported language: ISO C11 or a newer version is required."
+#    endif
 #endif
 
 /// Detect whether the target platform is compatible with IEEE 754.
