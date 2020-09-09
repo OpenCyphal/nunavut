@@ -7,7 +7,9 @@
 /// @returns             Size of encoded data (in bits)
 static inline NunavutSignedBitLength {{ composite_type | full_reference_name }}_serialize(const {{ composite_type | full_reference_name }}* in_instance, NunavutUnsignedBitLength offset, uint8_t* const out_buffer)
 {
-    NunavutSignedBitLength rc = 0;
+    {#- Do not declare rc if we do not use it. Avoids compiler warnings -#}
+    {%- from '_utils.j2' import gen_rc -%}
+    {{ gen_rc(composite_type) }}
 
     if (out_buffer == NULL)
     {
@@ -30,7 +32,9 @@ static inline NunavutSignedBitLength {{ composite_type | full_reference_name }}_
 /// @returns                 Size of decoded data (in bits)
 static inline NunavutSignedBitLength {{ composite_type | full_reference_name }}_deserialize({{ composite_type | full_reference_name }}* const out_instance, NunavutUnsignedBitLength offset, uint8_t* const in_buffer, const size_t buf_size_bytes)
 {
-    NunavutSignedBitLength rc = 0;
+    {#- Do not declare rc if we do not use it. Avoids compiler warnings -#}
+    {%- from '_utils.j2' import gen_rc -%}
+    {{ gen_rc(composite_type) }}
 
     if (in_buffer == NULL)
     {
