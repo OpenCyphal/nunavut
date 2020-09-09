@@ -101,7 +101,9 @@ create_dsdl_target(dsdl-regulated
                    ${NUNAVUT_VERIFICATION_LANG}
                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
-                   ON)
+                   ON
+                   ON
+                   OFF)
 
 #
 # Generate additional types for verification
@@ -111,6 +113,8 @@ create_dsdl_target(dsdl-test
                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
                    ${CMAKE_SOURCE_DIR}/nunavut_test_types/test0/regulated
                    ON
+                   ON
+                   OFF
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
 
 # +---------------------------------------------------------------------------+

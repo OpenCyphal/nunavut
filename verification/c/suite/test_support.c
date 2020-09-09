@@ -4,6 +4,7 @@
  * Tests the common functionality provided by the Nunavut support headers.
  */
 #include "unity.h"
+#include <assert.h>
 #include "nunavut/support/serialization.h"
 
 static void test_foo(void)

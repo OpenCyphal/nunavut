@@ -22,8 +22,9 @@ extern "C"
 #endif
 
 #include <string.h>
+{%- if not option_omit_float_serialization_support %}
 #include <float.h>
-#include <assert.h>
+{% endif -%}
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -39,18 +40,24 @@ typedef double   NunavutFloat64;
 #define NUNAVUT_ERR_INVALID_OFFSET 3
 #define NUNAVUT_ERR_INVALID_TAG 4
 
-/// By default, this macro resolves to the standard assert(). The user can redefine this if necessary.
-/// To disable assertion checks completely, make it expand into `(void)(0)`.
-#ifndef NUNAVUT_ASSERT
-// Intentional violation of MISRA: assertion macro cannot be replaced with a function definition.
-#    define NUNAVUT_ASSERT(x) assert(x)  // NOSONAR
-#endif
-
+{%- if not option_omit_float_serialization_support %}
 /// Detect whether the target platform is compatible with IEEE 754.
 #define NUNAVUT_PLATFORM_IEEE754_FLOAT \
     ((FLT_RADIX == 2) && (FLT_MANT_DIG == 24) && (FLT_MIN_EXP == -125) && (FLT_MAX_EXP == 128))
 #define NUNAVUT_PLATFORM_IEEE754_DOUBLE \
     ((FLT_RADIX == 2) && (DBL_MANT_DIG == 53) && (DBL_MIN_EXP == -1021) && (DBL_MAX_EXP == 1024))
+{% endif -%}
+
+{%- if option_enable_serialization_asserts %}
+#ifndef NUNAVUT_ASSERT
+// By default Nunavut does not generate assert statements since the logic to halt a program is platform
+// dependent and because this header requires an absolute minimum from a platform and from the C standard
+// library.
+// Most platforms can simply define NUNAVUT_ASSERT as assert from assert.h
+#   error "You must either define NUNAVUT_ASSERT or you need to disable assertions"
+          " in the serializer using language options"
+#endif
+{% endif -%}
 
 // --------------------------------------------- COMMON ITEMS ---------------------------------------------
 
@@ -91,10 +98,12 @@ static inline void nunavutCopyBits(const NunavutUnsignedBitLength length_bit,
     // The algorithm was originally designed by Ben Dyer for Libuavcan v0:
     // https://github.com/UAVCAN/libuavcan/blob/ba6929f9625d7ea3eb00/libuavcan/src/marshal/uc_bit_array_copy.cpp#L12-L58
     // This version is modified for v1 where the bit order is the opposite.
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT((src != NULL) && (dst != NULL) && (src != dst));
     NUNAVUT_ASSERT((src < dst)
                        ? ((src + ((src_offset_bit + length_bit + NUNAVUT_BYTE_WIDTH) / NUNAVUT_BYTE_WIDTH)) <= dst)
                        : ((dst + ((dst_offset_bit + length_bit + NUNAVUT_BYTE_WIDTH) / NUNAVUT_BYTE_WIDTH)) <= src));
+{%- endif %}
     if ((0U == (length_bit % NUNAVUT_BYTE_WIDTH)) &&      //
         (0U == (src_offset_bit % NUNAVUT_BYTE_WIDTH)) &&  //
         (0U == (dst_offset_bit % NUNAVUT_BYTE_WIDTH)))
@@ -118,11 +127,15 @@ static inline void nunavutCopyBits(const NunavutUnsignedBitLength length_bit,
             const uint8_t max_mod = (src_mod > dst_mod) ? src_mod : dst_mod;
 
             const uint8_t size = (uint8_t) nunavutInternalChooseMin(NUNAVUT_BYTE_WIDTH - max_mod, last_bit - src_off);
+{%- if option_enable_serialization_asserts %}
             NUNAVUT_ASSERT((size > 0U) && (size <= NUNAVUT_BYTE_WIDTH));
+{%- endif %}
 
             // Suppress a false warning from Clang-Tidy & Sonar that size is being over-shifted. It's not.
             const uint8_t mask = (uint8_t)((((1U << size) - 1U) << dst_mod) & NUNAVUT_BYTE_MAX);  // NOLINT NOSONAR
+{%- if option_enable_serialization_asserts %}
             NUNAVUT_ASSERT(mask > 0U);
+{%- endif %}
 
             // Intentional violation of MISRA: indexing on a pointer.
             // This simplifies the implementation greatly and avoids pointer arithmetics.
@@ -141,7 +154,9 @@ static inline void nunavutCopyBits(const NunavutUnsignedBitLength length_bit,
             src_off += size;
             dst_off += size;
         }
+{%- if option_enable_serialization_asserts %}
         NUNAVUT_ASSERT(last_bit == src_off);
+{%- endif %}
     }
 }
 
@@ -149,7 +164,9 @@ static inline void nunavutCopyBits(const NunavutUnsignedBitLength length_bit,
 
 static inline void nunavutSetBit(uint8_t* const buf, const NunavutUnsignedBitLength off_bit, const bool value)
 {
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
+{%- endif %}
     const uint8_t val = value ? 1U : 0U;
     nunavutCopyBits(1U, 0U, off_bit, &val, buf);
 }
@@ -161,12 +178,16 @@ static inline void nunavutSetUxx(uint8_t* const                 buf,
 {
 {%- if option_target_endianness == "little" %}
     static_assert(NUNAVUT_WIDTH64 == (sizeof(uint64_t) * NUNAVUT_BYTE_WIDTH), "Unexpected size of uint64_t");
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
+{%- endif %}
     const NunavutUnsignedBitLength saturated_len_bit = nunavutInternalChooseMin(len_bit, NUNAVUT_WIDTH64);
     nunavutCopyBits(saturated_len_bit, 0U, off_bit, (const uint8_t*) &value, buf);
 {%- else %}
     static_assert(NUNAVUT_WIDTH64 == (sizeof(uint64_t) * NUNAVUT_BYTE_WIDTH), "Unexpected size of uint64_t");
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
+{%- endif %}
     const NunavutUnsignedBitLength saturated_len_bit     = nunavutInternalChooseMin(len_bit, NUNAVUT_WIDTH64);
     const uint8_t                  tmp[sizeof(uint64_t)] = {
         (uint8_t)((value >> 0U) & BYTE_MAX),  // Suppress warnings about the magic numbers. Their purpose is clear.
@@ -210,10 +231,14 @@ static inline uint8_t nunavutGetU8(const uint8_t* const           buf,
                                    const NunavutUnsignedBitLength off_bit,
                                    const uint8_t                  len_bit)
 {
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
+{%- endif %}
     const NunavutUnsignedBitLength copy_size =
         nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_BYTE_WIDTH);
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(copy_size <= (sizeof(uint8_t) * NUNAVUT_BYTE_WIDTH));
+{%- endif %}
     uint8_t val = 0;
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &val);
     return val;
@@ -225,18 +250,26 @@ static inline uint16_t nunavutGetU16(const uint8_t* const           buf,
                                      const uint8_t                  len_bit)
 {
 {%- if option_target_endianness == "little" %}
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
+{%- endif %}
     const NunavutUnsignedBitLength copy_size =
         nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_WIDTH16);
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(copy_size <= (sizeof(uint16_t) * NUNAVUT_BYTE_WIDTH));
+{%- endif %}
     uint16_t val = 0U;
     nunavutCopyBits(copy_size, off_bit, 0U, buf, (uint8_t*) &val);
     return val;
 {%- else %}
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
+{%- endif %}
     const NunavutUnsignedBitLength copy_size =
         nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_WIDTH16);
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(copy_size <= (sizeof(uint16_t) * NUNAVUT_BYTE_WIDTH));
+{%- endif %}
     uint8_t tmp[sizeof(uint16_t)] = {0};
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
     return (uint16_t)(tmp[0] | (uint16_t)(((uint16_t) tmp[1]) << NUNAVUT_BYTE_WIDTH));
@@ -249,18 +282,26 @@ static inline uint32_t nunavutGetU32(const uint8_t* const           buf,
                                      const uint8_t                  len_bit)
 {
 {%- if option_target_endianness == "little" %}
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
+{%- endif %}
     const NunavutUnsignedBitLength copy_size =
         nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_WIDTH32);
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(copy_size <= (sizeof(uint32_t) * NUNAVUT_BYTE_WIDTH));
+{%- endif %}
     uint32_t val = 0U;
     nunavutCopyBits(copy_size, off_bit, 0U, buf, (uint8_t*) &val);
     return val;
 {%- else %}
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
+{%- endif %}
     const NunavutUnsignedBitLength copy_size =
         nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_WIDTH32);
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(copy_size <= (sizeof(uint32_t) * NUNAVUT_BYTE_WIDTH));
+{%- endif %}
     uint8_t tmp[sizeof(uint32_t)] = {0};
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
     return (uint32_t)(tmp[0] |                      // Suppress warnings about the magic numbers.
@@ -276,18 +317,26 @@ static inline uint64_t nunavutGetU64(const uint8_t* const           buf,
                                      const uint8_t                  len_bit)
 {
 {%- if option_target_endianness == "little" %}
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
+{%- endif %}
     const NunavutUnsignedBitLength copy_size =
         nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_WIDTH64);
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(copy_size <= (sizeof(uint64_t) * NUNAVUT_BYTE_WIDTH));
+{%- endif %}
     uint64_t val = 0U;
     nunavutCopyBits(copy_size, off_bit, 0U, buf, (uint8_t*) &val);
     return val;
 {%- else %}
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
+{%- endif %}
     const NunavutUnsignedBitLength copy_size =
         nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_WIDTH64);
+{%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(copy_size <= (sizeof(uint64_t) * NUNAVUT_BYTE_WIDTH));
+{%- endif %}
     uint8_t tmp[sizeof(uint64_t)] = {0};
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
     return (uint64_t)(tmp[0] |                      // Suppress warnings about the magic numbers.
@@ -351,8 +400,9 @@ static inline int64_t nunavutGetI64(const uint8_t* const           buf,
 
 // --------------------------------------------- PUBLIC API - FLOAT16 ---------------------------------------------
 
-#if NUNAVUT_PLATFORM_IEEE754_FLOAT
+{%- if not option_omit_float_serialization_support %}
 
+static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "The target platform does not support IEEE754 floating point operations.");
 static_assert(NUNAVUT_WIDTH32 == (sizeof(NunavutFloat32) * NUNAVUT_BYTE_WIDTH), "Unsupported floating point model");
 
 // Intentional violation of MISRA: we need this union because the alternative is far more error prone.
@@ -422,12 +472,13 @@ static inline NunavutFloat32 nunavutGetF16(const uint8_t* const           buf,
     return float16Unpack(nunavutGetU16(buf, buf_size, off_bit, NUNAVUT_WIDTH16));
 }
 
-#endif  // NUNAVUT_PLATFORM_IEEE754_FLOAT
+{% endif -%}
 
 // --------------------------------------------- PUBLIC API - FLOAT32 ---------------------------------------------
 
-#if NUNAVUT_PLATFORM_IEEE754_FLOAT
+{%- if not option_omit_float_serialization_support %}
 
+static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "The target platform does not support IEEE754 floating point operations.");
 static_assert(NUNAVUT_WIDTH32 == (sizeof(NunavutFloat32) * NUNAVUT_BYTE_WIDTH), "Unsupported floating point model");
 
 static inline void nunavutSetF32(uint8_t* const buf, const NunavutUnsignedBitLength off_bit, const NunavutFloat32 value)
@@ -458,12 +509,13 @@ static inline NunavutFloat32 nunavutGetF32(const uint8_t* const           buf,
     return tmp.fl;
 }
 
-#endif  // NUNAVUT_PLATFORM_IEEE754_FLOAT
+{% endif -%}
 
 // --------------------------------------------- PUBLIC API - FLOAT64 ---------------------------------------------
 
-#if NUNAVUT_PLATFORM_IEEE754_DOUBLE
+{%- if not option_omit_float_serialization_support %}
 
+static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "The target platform does not support IEEE754 double-precision floating point operations.");
 static_assert(NUNAVUT_WIDTH64 == (sizeof(NunavutFloat64) * NUNAVUT_BYTE_WIDTH), "Unsupported floating point model");
 
 static inline void nunavutSetF64(uint8_t* const buf, const NunavutUnsignedBitLength off_bit, const NunavutFloat64 value)
@@ -494,7 +546,7 @@ static inline NunavutFloat64 nunavutGetF64(const uint8_t* const           buf,
     return tmp.fl;
 }
 
-#endif  // NUNAVUT_PLATFORM_IEE754_DOUBLE
+{% endif -%}
 
 #ifdef __cplusplus
 }

@@ -15,18 +15,27 @@
 # :param Path ARG_OUTPUT_FOLDER:            The directory to generate all source under.
 # :param Path ARG_DSDL_ROOT_DIR:            A directory containing the root namespace dsdl.
 # :param bool ARG_ENABLE_CLANG_FORMAT:      If ON then clang-format will be run on each generated file.
+# :param bool ARG_ENABLE_SER_ASSERT:        Generates code with serialization asserts enabled
+# :param bool ARG_DISABLE_SER_FP:           Generates code with floating point support removed from
+#                                           serialization logic.
 # :param ...:                               A list of paths to use when looking up dependent DSDL types.
 # :returns: Sets a variable "ARG_TARGET_NAME"-OUTPUT in the parent scope to the list of files the target
 #           will generate. For example, if ARG_TARGET_NAME == 'foo-bar' then after calling this function
 #           ${foo-bar-OUTPUT} will be set to the list of output files.
 #
-function (create_dsdl_target ARG_TARGET_NAME ARG_OUTPUT_LANGUAGE ARG_OUTPUT_FOLDER ARG_DSDL_ROOT_DIR ARG_ENABLE_CLANG_FORMAT)
+function (create_dsdl_target ARG_TARGET_NAME 
+                             ARG_OUTPUT_LANGUAGE
+                             ARG_OUTPUT_FOLDER
+                             ARG_DSDL_ROOT_DIR
+                             ARG_ENABLE_CLANG_FORMAT
+                             ARG_ENABLE_SER_ASSERT
+                             ARG_DISABLE_SER_FP)
 
     set(NNVG_CMD_ARGS "")
 
-    if (${ARGC} GREATER 5)
+    if (${ARGC} GREATER 7)
         MATH(EXPR ARG_N_LAST "${ARGC}-1")
-        foreach(ARG_N RANGE 5 ${ARG_N_LAST})
+        foreach(ARG_N RANGE 7 ${ARG_N_LAST})
             list(APPEND NNVG_CMD_ARGS "-I")
             list(APPEND NNVG_CMD_ARGS "${ARGV${ARG_N}}")
         endforeach(ARG_N)
@@ -37,6 +46,10 @@ function (create_dsdl_target ARG_TARGET_NAME ARG_OUTPUT_LANGUAGE ARG_OUTPUT_FOLD
     list(APPEND NNVG_CMD_ARGS  -O)
     list(APPEND NNVG_CMD_ARGS ${ARG_OUTPUT_FOLDER})
     list(APPEND NNVG_CMD_ARGS ${ARG_DSDL_ROOT_DIR})
+
+    if (ARG_ENABLE_SER_ASSERT)
+        list(APPEND NNVG_CMD_ARGS "--enable-serialization-asserts")
+    endif()
     
     execute_process(COMMAND ${NNVG} --list-outputs ${NNVG_CMD_ARGS}
                     OUTPUT_VARIABLE OUTPUT_FILES
@@ -78,6 +91,12 @@ function (create_dsdl_target ARG_TARGET_NAME ARG_OUTPUT_LANGUAGE ARG_OUTPUT_FOLD
     add_dependencies(${ARG_TARGET_NAME} ${ARG_TARGET_NAME}-gen)
 
     target_include_directories(${ARG_TARGET_NAME} INTERFACE ${ARG_OUTPUT_FOLDER})
+
+    if (ARG_ENABLE_SER_ASSERT)
+        target_compile_options(${ARG_TARGET_NAME} INTERFACE
+            "-DNUNAVUT_ASSERT=assert"
+        )
+    endif()
 
     set(${ARG_TARGET_NAME}-OUTPUT ${OUTPUT_FILES} PARENT_SCOPE)
 
