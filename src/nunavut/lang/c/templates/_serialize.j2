@@ -105,11 +105,11 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     {%- if base_offset.is_aligned_at_byte() and option_target_endianness == "little" %}
     {#- Data is byte-aligned, so we can use memcpy #}
     {%- if type is VariableLengthArrayType %}
-    memcpy((void*) out_buffer + (offset>> 3), (void*){{ ref }}{{ name | id }}, {{ ref }}{{ name | id }}_length * {{ (loop_type.bit_length / 8) | int }});
-    offset += {{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }};
+    memcpy((void*)((uint8_t*)out_buffer + (offset>> 3)), (void*){{ ref }}{{ name | id }}, {{ ref }}{{ name | id }}_length * {{ (loop_type.bit_length / 8) | int }});
+    offset += ({{typename_unsigned_bit_length}})({{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }});
     {%- else %}
-    memcpy((void*) out_buffer + (offset>> 3), (void*){{ ref }}{{ name | id }}, {{ type.capacity }} * {{ (loop_type.bit_length / 8) | int }});
-    offset += {{ type.capacity }} * {{ loop_type.bit_length }};
+    memcpy((void*)((uint8_t*)out_buffer + (offset>> 3)), (void*){{ ref }}{{ name | id }}, {{ type.capacity }} * {{ (loop_type.bit_length / 8) | int }});
+    offset += ({{typename_unsigned_bit_length}})({{ type.capacity }} * {{ loop_type.bit_length }});
     {%- endif -%}
     {%- else %}
     {#- Data is not byte-aligned and/or not LE, so we need to use more intensive functions #}
