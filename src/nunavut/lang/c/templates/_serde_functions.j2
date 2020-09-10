@@ -7,6 +7,7 @@
 /// @returns             Size of encoded data (in bits)
 static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_name }}_serialize(const {{ composite_type | full_reference_name }}* in_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const out_buffer)
 {
+{%- if (composite_type.fields | length) > 0 %}
     {#- Do not declare rc if we do not use it. Avoids compiler warnings -#}
     {%- from '_utils.j2' import gen_rc -%}
     {{ gen_rc(composite_type) }}
@@ -18,6 +19,10 @@ static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_
 
     {%- from '_serialize.j2' import serialize %}
     {{ serialize(composite_type) }}
+{%- else %}
+    (void)in_instance;
+    (void)out_buffer;
+{%- endif %}
 
     return offset;
 }
@@ -30,8 +35,9 @@ static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_
 /// @param buf_size_bytes    Length of input buffer (in bytes) to avoid overflow.
 ///
 /// @returns                 Size of decoded data (in bits)
-static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_name }}_deserialize({{ composite_type | full_reference_name }}* const out_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const in_buffer, const size_t buf_size_bytes)
+static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_name }}_deserialize({{ composite_type | full_reference_name }}* const out_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const in_buffer, const {{typename_unsigned_length}} buf_size_bytes)
 {
+{%- if (composite_type.fields | length) > 0 %}
     {#- Do not declare rc if we do not use it. Avoids compiler warnings -#}
     {%- from '_utils.j2' import gen_rc -%}
     {{ gen_rc(composite_type) }}
@@ -43,6 +49,11 @@ static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_
 
     {%- from '_deserialize.j2' import deserialize %}
     {{ deserialize(composite_type) }}
+{%- else %}
+    (void)out_instance;
+    (void)in_buffer;
+    (void)buf_size_bytes;
+{%- endif %}
 
     return offset;
 }
