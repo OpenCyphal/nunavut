@@ -1,3 +1,6 @@
+{%- macro choose_min(a, b) -%}
+    (({{a}} < {{b}}) ? {{a}} : {{b}})
+{%- endmacro -%}
 /*
  *                                                                                                            +-+ +-+
  *  UAVCAN common serialization support routines.                                                             | | | |
@@ -28,11 +31,6 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef uint32_t NunavutUnsignedBitLength;
-typedef int32_t  NunavutSignedBitLength;
-typedef float    NunavutFloat32;
-typedef double   NunavutFloat64;
-
 /// Serialization errors
 /// Returned as negative numbers
 #define NUNAVUT_ERR_INVALID_BUF 1
@@ -59,39 +57,35 @@ typedef double   NunavutFloat64;
 #endif
 {% endif -%}
 
-// --------------------------------------------- COMMON ITEMS ---------------------------------------------
-
-/// Per the DSDL specification, 1 byte = 8 bits.
-#define NUNAVUT_BYTE_WIDTH 8U
-#define NUNAVUT_BYTE_MAX 0xFFU
-
-#define NUNAVUT_WIDTH16 16U
-#define NUNAVUT_WIDTH32 32U
-#define NUNAVUT_WIDTH64 64U
-
 // --------------------------------------------- PRIMITIVE SERIALIZATION ---------------------------------------------
 
-static inline NunavutUnsignedBitLength nunavutInternalChooseMin(NunavutUnsignedBitLength a, NunavutUnsignedBitLength b)
-{
-    return (a < b) ? a : b;
-}
-
-static inline NunavutUnsignedBitLength nunavutInternalGetBitCopySize(
+/// Calculate the number of bits to safely copy from serialized buffer.
+/// Returns the smallest bit length based on requested parameters and available space.
+///
+/// @param buf_size_bytes       Size of the input buffer in bytes.
+/// @param offset_bit           Offset (in bits) of data type in message.
+/// @param requested_length_bit Size (in bits) of the data type requested.
+/// @param value_length_bit     Size (in bits) of the data type that is being extracted into.
+///
+/// @returns                    Number of bits to safely read from buffer.
+static inline {{typename_unsigned_bit_length}} nunavutInternalGetBitCopySize(
     const size_t                   buf_size_bytes,
-    const NunavutUnsignedBitLength offset_bit,
-    const NunavutUnsignedBitLength requested_length_bit,
+    const {{typename_unsigned_bit_length}} offset_bit,
+    const {{typename_unsigned_bit_length}} requested_length_bit,
     const uint8_t                  value_length_bit)
 {
-    const NunavutUnsignedBitLength buf_size_bit  = (NunavutUnsignedBitLength)buf_size_bytes * NUNAVUT_BYTE_WIDTH;
-    const NunavutUnsignedBitLength remaining_bit = buf_size_bit - nunavutInternalChooseMin(buf_size_bit, offset_bit);
-    return nunavutInternalChooseMin(remaining_bit, nunavutInternalChooseMin(requested_length_bit, value_length_bit));
+    const {{typename_unsigned_bit_length}} buf_size_bit  = ({{typename_unsigned_bit_length}})buf_size_bytes * 8U;
+    const {{typename_unsigned_bit_length}} remaining_bit = buf_size_bit - {{ choose_min('buf_size_bit', 'offset_bit') }};
+    const {{typename_unsigned_bit_length}} min_length_bit = {{ choose_min('requested_length_bit', 'value_length_bit') }};
+    const {{typename_unsigned_bit_length}} min_remaining_length = {{ choose_min('remaining_bit', 'min_length_bit') }};
+    return min_remaining_length;
 }
 
 // --------------------------------------------- PUBLIC API - BIT ARRAY ---------------------------------------------
 
-static inline void nunavutCopyBits(const NunavutUnsignedBitLength length_bit,
-                                   const NunavutUnsignedBitLength src_offset_bit,
-                                   const NunavutUnsignedBitLength dst_offset_bit,
+static inline void nunavutCopyBits(const {{typename_unsigned_bit_length}} length_bit,
+                                   const {{typename_unsigned_bit_length}} src_offset_bit,
+                                   const {{typename_unsigned_bit_length}} dst_offset_bit,
                                    const uint8_t* const           src,
                                    uint8_t* const                 dst)
 {
@@ -101,55 +95,55 @@ static inline void nunavutCopyBits(const NunavutUnsignedBitLength length_bit,
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT((src != NULL) && (dst != NULL) && (src != dst));
     NUNAVUT_ASSERT((src < dst)
-                       ? ((src + ((src_offset_bit + length_bit + NUNAVUT_BYTE_WIDTH) / NUNAVUT_BYTE_WIDTH)) <= dst)
-                       : ((dst + ((dst_offset_bit + length_bit + NUNAVUT_BYTE_WIDTH) / NUNAVUT_BYTE_WIDTH)) <= src));
+                       ? ((src + ((src_offset_bit + length_bit + 8U) / 8U)) <= dst)
+                       : ((dst + ((dst_offset_bit + length_bit + 8U) / 8U)) <= src));
 {%- endif %}
-    if ((0U == (length_bit % NUNAVUT_BYTE_WIDTH)) &&      //
-        (0U == (src_offset_bit % NUNAVUT_BYTE_WIDTH)) &&  //
-        (0U == (dst_offset_bit % NUNAVUT_BYTE_WIDTH)))
+    if ((0U == (length_bit % 8U)) &&      //
+        (0U == (src_offset_bit % 8U)) &&  //
+        (0U == (dst_offset_bit % 8U)))
     {
         // Intentional violation of MISRA: Pointer arithmetics.
         // This is done to remove the API constraint that offsets be under 8 bits.
         // Fewer constraints reduce the chance of API misuse.
-        (void) memcpy(dst + (dst_offset_bit / NUNAVUT_BYTE_WIDTH),  // NOSONAR NOLINT
-                      src + (src_offset_bit / NUNAVUT_BYTE_WIDTH),  // NOSONAR
-                      length_bit / NUNAVUT_BYTE_WIDTH);
+        (void) memcpy(dst + (dst_offset_bit / 8U),  // NOSONAR NOLINT
+                      src + (src_offset_bit / 8U),  // NOSONAR
+                      length_bit / 8U);
     }
     else
     {
-        NunavutUnsignedBitLength       src_off  = src_offset_bit;
-        NunavutUnsignedBitLength       dst_off  = dst_offset_bit;
-        const NunavutUnsignedBitLength last_bit = src_off + length_bit;
+        {{typename_unsigned_bit_length}}       src_off  = src_offset_bit;
+        {{typename_unsigned_bit_length}}       dst_off  = dst_offset_bit;
+        const {{typename_unsigned_bit_length}} last_bit = src_off + length_bit;
         while (last_bit > src_off)
         {
-            const uint8_t src_mod = (uint8_t)(src_off % NUNAVUT_BYTE_WIDTH);
-            const uint8_t dst_mod = (uint8_t)(dst_off % NUNAVUT_BYTE_WIDTH);
+            const uint8_t src_mod = (uint8_t)(src_off % 8U);
+            const uint8_t dst_mod = (uint8_t)(dst_off % 8U);
             const uint8_t max_mod = (src_mod > dst_mod) ? src_mod : dst_mod;
 
-            const uint8_t size = (uint8_t) nunavutInternalChooseMin(NUNAVUT_BYTE_WIDTH - max_mod, last_bit - src_off);
+            const uint8_t size = (uint8_t) nunavutInternalChooseMin(8U - max_mod, last_bit - src_off);
 {%- if option_enable_serialization_asserts %}
-            NUNAVUT_ASSERT((size > 0U) && (size <= NUNAVUT_BYTE_WIDTH));
+            NUNAVUT_ASSERT((size > 0U) && (size <= 8U));
 {%- endif %}
 
             // Suppress a false warning from Clang-Tidy & Sonar that size is being over-shifted. It's not.
-            const uint8_t mask = (uint8_t)((((1U << size) - 1U) << dst_mod) & NUNAVUT_BYTE_MAX);  // NOLINT NOSONAR
+            const uint8_t mask = (uint8_t)((((1U << size) - 1U) << dst_mod) & 0xFFU);  // NOLINT NOSONAR
 {%- if option_enable_serialization_asserts %}
             NUNAVUT_ASSERT(mask > 0U);
 {%- endif %}
 
             // Intentional violation of MISRA: indexing on a pointer.
             // This simplifies the implementation greatly and avoids pointer arithmetics.
-            const uint8_t in = (uint8_t)((uint8_t)(src[src_off / NUNAVUT_BYTE_WIDTH] >> src_mod) << dst_mod) &
-                               NUNAVUT_BYTE_MAX;  // NOSONAR
+            const uint8_t in = (uint8_t)((uint8_t)(src[src_off / 8U] >> src_mod) << dst_mod) &
+                               0xFFU;  // NOSONAR
 
             // Intentional violation of MISRA: indexing on a pointer.
             // This simplifies the implementation greatly and avoids pointer arithmetics.
-            const uint8_t a = dst[dst_off / NUNAVUT_BYTE_WIDTH] & ((uint8_t) ~mask);  // NOSONAR
+            const uint8_t a = dst[dst_off / 8U] & ((uint8_t) ~mask);  // NOSONAR
             const uint8_t b = in & mask;
 
             // Intentional violation of MISRA: indexing on a pointer.
             // This simplifies the implementation greatly and avoids pointer arithmetics.
-            dst[dst_off / NUNAVUT_BYTE_WIDTH] = a | b;  // NOSONAR
+            dst[dst_off / 8U] = a | b;  // NOSONAR
 
             src_off += size;
             dst_off += size;
@@ -162,7 +156,7 @@ static inline void nunavutCopyBits(const NunavutUnsignedBitLength length_bit,
 
 // --------------------------------------------- PUBLIC API - INTEGER ---------------------------------------------
 
-static inline void nunavutSetBit(uint8_t* const buf, const NunavutUnsignedBitLength off_bit, const bool value)
+static inline void nunavutSetBit(uint8_t* const buf, const {{typename_unsigned_bit_length}} off_bit, const bool value)
 {
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
@@ -172,23 +166,23 @@ static inline void nunavutSetBit(uint8_t* const buf, const NunavutUnsignedBitLen
 }
 
 static inline void nunavutSetUxx(uint8_t* const                 buf,
-                                 const NunavutUnsignedBitLength off_bit,
+                                 const {{typename_unsigned_bit_length}} off_bit,
                                  const uint64_t                 value,
                                  const uint8_t                  len_bit)
 {
 {%- if option_target_endianness == "little" %}
-    static_assert(NUNAVUT_WIDTH64 == (sizeof(uint64_t) * NUNAVUT_BYTE_WIDTH), "Unexpected size of uint64_t");
+    static_assert(64U == (sizeof(uint64_t) * 8U), "Unexpected size of uint64_t");
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
 {%- endif %}
-    const NunavutUnsignedBitLength saturated_len_bit = nunavutInternalChooseMin(len_bit, NUNAVUT_WIDTH64);
+    const {{typename_unsigned_bit_length}} saturated_len_bit = nunavutInternalChooseMin(len_bit, 64U);
     nunavutCopyBits(saturated_len_bit, 0U, off_bit, (const uint8_t*) &value, buf);
 {%- else %}
-    static_assert(NUNAVUT_WIDTH64 == (sizeof(uint64_t) * NUNAVUT_BYTE_WIDTH), "Unexpected size of uint64_t");
+    static_assert(64U == (sizeof(uint64_t) * 8U), "Unexpected size of uint64_t");
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
 {%- endif %}
-    const NunavutUnsignedBitLength saturated_len_bit     = nunavutInternalChooseMin(len_bit, NUNAVUT_WIDTH64);
+    const {{typename_unsigned_bit_length}} saturated_len_bit     = nunavutInternalChooseMin(len_bit, 64U);
     const uint8_t                  tmp[sizeof(uint64_t)] = {
         (uint8_t)((value >> 0U) & BYTE_MAX),  // Suppress warnings about the magic numbers. Their purpose is clear.
         (uint8_t)((value >> 8U) & BYTE_MAX),   // NOLINT NOSONAR
@@ -204,7 +198,7 @@ static inline void nunavutSetUxx(uint8_t* const                 buf,
 }
 
 static inline void nunavutSetIxx(uint8_t* const                 buf,
-                                 const NunavutUnsignedBitLength off_bit,
+                                 const {{typename_unsigned_bit_length}} off_bit,
                                  const int64_t                  value,
                                  const uint8_t                  len_bit)
 {
@@ -216,28 +210,28 @@ static inline void nunavutSetIxx(uint8_t* const                 buf,
 
 static inline uint8_t nunavutGetU8(const uint8_t* const           buf,
                                    const size_t                   buf_size,
-                                   const NunavutUnsignedBitLength off_bit,
+                                   const {{typename_unsigned_bit_length}} off_bit,
                                    const uint8_t                  len_bit);
 
 static inline bool nunavutGetBit(const uint8_t* const           buf,
                                  const size_t                   buf_size,
-                                 const NunavutUnsignedBitLength off_bit)
+                                 const {{typename_unsigned_bit_length}} off_bit)
 {
     return 1U == nunavutGetU8(buf, buf_size, off_bit, 1U);
 }
 
 static inline uint8_t nunavutGetU8(const uint8_t* const           buf,
                                    const size_t                   buf_size,
-                                   const NunavutUnsignedBitLength off_bit,
+                                   const {{typename_unsigned_bit_length}} off_bit,
                                    const uint8_t                  len_bit)
 {
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
 {%- endif %}
-    const NunavutUnsignedBitLength copy_size =
-        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_BYTE_WIDTH);
+    const {{typename_unsigned_bit_length}} copy_size =
+        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, 8U);
 {%- if option_enable_serialization_asserts %}
-    NUNAVUT_ASSERT(copy_size <= (sizeof(uint8_t) * NUNAVUT_BYTE_WIDTH));
+    NUNAVUT_ASSERT(copy_size <= (sizeof(uint8_t) * 8U));
 {%- endif %}
     uint8_t val = 0;
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &val);
@@ -246,17 +240,17 @@ static inline uint8_t nunavutGetU8(const uint8_t* const           buf,
 
 static inline uint16_t nunavutGetU16(const uint8_t* const           buf,
                                      const size_t                   buf_size,
-                                     const NunavutUnsignedBitLength off_bit,
+                                     const {{typename_unsigned_bit_length}} off_bit,
                                      const uint8_t                  len_bit)
 {
 {%- if option_target_endianness == "little" %}
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
 {%- endif %}
-    const NunavutUnsignedBitLength copy_size =
-        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_WIDTH16);
+    const {{typename_unsigned_bit_length}} copy_size =
+        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, 16U);
 {%- if option_enable_serialization_asserts %}
-    NUNAVUT_ASSERT(copy_size <= (sizeof(uint16_t) * NUNAVUT_BYTE_WIDTH));
+    NUNAVUT_ASSERT(copy_size <= (sizeof(uint16_t) * 8U));
 {%- endif %}
     uint16_t val = 0U;
     nunavutCopyBits(copy_size, off_bit, 0U, buf, (uint8_t*) &val);
@@ -265,30 +259,30 @@ static inline uint16_t nunavutGetU16(const uint8_t* const           buf,
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
 {%- endif %}
-    const NunavutUnsignedBitLength copy_size =
-        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_WIDTH16);
+    const {{typename_unsigned_bit_length}} copy_size =
+        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, 16U);
 {%- if option_enable_serialization_asserts %}
-    NUNAVUT_ASSERT(copy_size <= (sizeof(uint16_t) * NUNAVUT_BYTE_WIDTH));
+    NUNAVUT_ASSERT(copy_size <= (sizeof(uint16_t) * 8U));
 {%- endif %}
     uint8_t tmp[sizeof(uint16_t)] = {0};
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
-    return (uint16_t)(tmp[0] | (uint16_t)(((uint16_t) tmp[1]) << NUNAVUT_BYTE_WIDTH));
+    return (uint16_t)(tmp[0] | (uint16_t)(((uint16_t) tmp[1]) << 8U));
 {%- endif %}
 }
 
 static inline uint32_t nunavutGetU32(const uint8_t* const           buf,
                                      const size_t                   buf_size,
-                                     const NunavutUnsignedBitLength off_bit,
+                                     const {{typename_unsigned_bit_length}} off_bit,
                                      const uint8_t                  len_bit)
 {
 {%- if option_target_endianness == "little" %}
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
 {%- endif %}
-    const NunavutUnsignedBitLength copy_size =
-        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_WIDTH32);
+    const {{typename_unsigned_bit_length}} copy_size =
+        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, 32U);
 {%- if option_enable_serialization_asserts %}
-    NUNAVUT_ASSERT(copy_size <= (sizeof(uint32_t) * NUNAVUT_BYTE_WIDTH));
+    NUNAVUT_ASSERT(copy_size <= (sizeof(uint32_t) * 8U));
 {%- endif %}
     uint32_t val = 0U;
     nunavutCopyBits(copy_size, off_bit, 0U, buf, (uint8_t*) &val);
@@ -297,10 +291,10 @@ static inline uint32_t nunavutGetU32(const uint8_t* const           buf,
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
 {%- endif %}
-    const NunavutUnsignedBitLength copy_size =
-        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_WIDTH32);
+    const {{typename_unsigned_bit_length}} copy_size =
+        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, 32U);
 {%- if option_enable_serialization_asserts %}
-    NUNAVUT_ASSERT(copy_size <= (sizeof(uint32_t) * NUNAVUT_BYTE_WIDTH));
+    NUNAVUT_ASSERT(copy_size <= (sizeof(uint32_t) * 8U));
 {%- endif %}
     uint8_t tmp[sizeof(uint32_t)] = {0};
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
@@ -313,17 +307,17 @@ static inline uint32_t nunavutGetU32(const uint8_t* const           buf,
 
 static inline uint64_t nunavutGetU64(const uint8_t* const           buf,
                                      const size_t                   buf_size,
-                                     const NunavutUnsignedBitLength off_bit,
+                                     const {{typename_unsigned_bit_length}} off_bit,
                                      const uint8_t                  len_bit)
 {
 {%- if option_target_endianness == "little" %}
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
 {%- endif %}
-    const NunavutUnsignedBitLength copy_size =
-        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_WIDTH64);
+    const {{typename_unsigned_bit_length}} copy_size =
+        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, 64U);
 {%- if option_enable_serialization_asserts %}
-    NUNAVUT_ASSERT(copy_size <= (sizeof(uint64_t) * NUNAVUT_BYTE_WIDTH));
+    NUNAVUT_ASSERT(copy_size <= (sizeof(uint64_t) * 8U));
 {%- endif %}
     uint64_t val = 0U;
     nunavutCopyBits(copy_size, off_bit, 0U, buf, (uint8_t*) &val);
@@ -332,10 +326,10 @@ static inline uint64_t nunavutGetU64(const uint8_t* const           buf,
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
 {%- endif %}
-    const NunavutUnsignedBitLength copy_size =
-        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, NUNAVUT_WIDTH64);
+    const {{typename_unsigned_bit_length}} copy_size =
+        nunavutInternalGetBitCopySize(buf_size, off_bit, len_bit, 64U);
 {%- if option_enable_serialization_asserts %}
-    NUNAVUT_ASSERT(copy_size <= (sizeof(uint64_t) * NUNAVUT_BYTE_WIDTH));
+    NUNAVUT_ASSERT(copy_size <= (sizeof(uint64_t) * 8U));
 {%- endif %}
     uint8_t tmp[sizeof(uint64_t)] = {0};
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
@@ -352,49 +346,49 @@ static inline uint64_t nunavutGetU64(const uint8_t* const           buf,
 
 static inline int8_t nunavutGetI8(const uint8_t* const           buf,
                                   const size_t                   buf_size,
-                                  const NunavutUnsignedBitLength off_bit,
+                                  const {{typename_unsigned_bit_length}} off_bit,
                                   const uint8_t                  len_bit)
 {
-    const uint8_t sat = (uint8_t) nunavutInternalChooseMin(len_bit, NUNAVUT_BYTE_WIDTH);
+    const uint8_t sat = (uint8_t) nunavutInternalChooseMin(len_bit, 8U);
     uint8_t       val = nunavutGetU8(buf, buf_size, off_bit, sat);
     const bool    neg = (sat > 0U) && ((val & (1ULL << (sat - 1U))) != 0U);
-    val = ((sat < NUNAVUT_BYTE_WIDTH) && neg) ? (uint8_t)(val | ~((1U << sat) - 1U)) : val;  // Sign extension
+    val = ((sat < 8U) && neg) ? (uint8_t)(val | ~((1U << sat) - 1U)) : val;  // Sign extension
     return neg ? (int8_t)((-(int8_t)(uint8_t) ~val) - 1) : (int8_t) val;
 }
 
 static inline int16_t nunavutGetI16(const uint8_t* const           buf,
                                     const size_t                   buf_size,
-                                    const NunavutUnsignedBitLength off_bit,
+                                    const {{typename_unsigned_bit_length}} off_bit,
                                     const uint8_t                  len_bit)
 {
-    const uint8_t sat = (uint8_t) nunavutInternalChooseMin(len_bit, NUNAVUT_WIDTH16);
+    const uint8_t sat = (uint8_t) nunavutInternalChooseMin(len_bit, 16U);
     uint16_t      val = nunavutGetU16(buf, buf_size, off_bit, sat);
     const bool    neg = (sat > 0U) && ((val & (1ULL << (sat - 1U))) != 0U);
-    val = ((sat < NUNAVUT_WIDTH16) && neg) ? (uint16_t)(val | ~((1U << sat) - 1U)) : val;  // Sign extension
+    val = ((sat < 16U) && neg) ? (uint16_t)(val | ~((1U << sat) - 1U)) : val;  // Sign extension
     return neg ? (int16_t)((-(int16_t)(uint16_t) ~val) - 1) : (int16_t) val;
 }
 
 static inline int32_t nunavutGetI32(const uint8_t* const           buf,
                                     const size_t                   buf_size,
-                                    const NunavutUnsignedBitLength off_bit,
+                                    const {{typename_unsigned_bit_length}} off_bit,
                                     const uint8_t                  len_bit)
 {
-    const uint8_t sat = (uint8_t) nunavutInternalChooseMin(len_bit, NUNAVUT_WIDTH32);
+    const uint8_t sat = (uint8_t) nunavutInternalChooseMin(len_bit, 32U);
     uint32_t      val = nunavutGetU32(buf, buf_size, off_bit, sat);
     const bool    neg = (sat > 0U) && ((val & (1ULL << (sat - 1U))) != 0U);
-    val = ((sat < NUNAVUT_WIDTH32) && neg) ? (uint32_t)(val | ~((1UL << sat) - 1U)) : val;  // Sign extension
+    val = ((sat < 32U) && neg) ? (uint32_t)(val | ~((1UL << sat) - 1U)) : val;  // Sign extension
     return neg ? (int32_t)((-(int32_t) ~val) - 1) : (int32_t) val;
 }
 
 static inline int64_t nunavutGetI64(const uint8_t* const           buf,
                                     const size_t                   buf_size,
-                                    const NunavutUnsignedBitLength off_bit,
+                                    const {{typename_unsigned_bit_length}} off_bit,
                                     const uint8_t                  len_bit)
 {
-    const uint8_t sat = (uint8_t) nunavutInternalChooseMin(len_bit, NUNAVUT_WIDTH64);
+    const uint8_t sat = (uint8_t) nunavutInternalChooseMin(len_bit, 64U);
     uint64_t      val = nunavutGetU64(buf, buf_size, off_bit, sat);
     const bool    neg = (sat > 0U) && ((val & (1ULL << (sat - 1U))) != 0U);
-    val = ((sat < NUNAVUT_WIDTH64) && neg) ? (uint64_t)(val | ~((1ULL << sat) - 1U)) : val;  // Sign extension
+    val = ((sat < 64U) && neg) ? (uint64_t)(val | ~((1ULL << sat) - 1U)) : val;  // Sign extension
     return neg ? (int64_t)((-(int64_t) ~val) - 1) : (int64_t) val;
 }
 
@@ -403,25 +397,25 @@ static inline int64_t nunavutGetI64(const uint8_t* const           buf,
 {%- if not option_omit_float_serialization_support %}
 
 static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "The target platform does not support IEEE754 floating point operations.");
-static_assert(NUNAVUT_WIDTH32 == (sizeof(NunavutFloat32) * NUNAVUT_BYTE_WIDTH), "Unsupported floating point model");
+static_assert(32U == (sizeof({{typename_float_32}}) * 8U), "Unsupported floating point model");
 
 // Intentional violation of MISRA: we need this union because the alternative is far more error prone.
 // We have to rely on low-level data representation details to do the conversion; unions are helpful.
 typedef union  // NOSONAR
 {
     uint32_t       bits;
-    NunavutFloat32 real;
-} NunavutFloat32Bits;
+    {{typename_float_32}} real;
+} {{typename_float_32}}Bits;
 
-static inline uint16_t float16Pack(const NunavutFloat32 value)
+static inline uint16_t float16Pack(const {{typename_float_32}} value)
 {
     // The no-lint statements suppress the warnings about magic numbers.
     // The no-lint statements suppress the warning about the use of union. This is required for low-level bit access.
     const uint32_t           round_mask = ~(uint32_t) 0x0FFFU;                 // NOLINT NOSONAR
-    const NunavutFloat32Bits f32inf     = {.bits = ((uint32_t) 255U) << 23U};  // NOLINT NOSONAR
-    const NunavutFloat32Bits f16inf     = {.bits = ((uint32_t) 31U) << 23U};   // NOLINT NOSONAR
-    const NunavutFloat32Bits magic      = {.bits = ((uint32_t) 15U) << 23U};   // NOLINT NOSONAR
-    NunavutFloat32Bits       in         = {.real = value};                     // NOSONAR
+    const {{typename_float_32}}Bits f32inf     = {.bits = ((uint32_t) 255U) << 23U};  // NOLINT NOSONAR
+    const {{typename_float_32}}Bits f16inf     = {.bits = ((uint32_t) 31U) << 23U};   // NOLINT NOSONAR
+    const {{typename_float_32}}Bits magic      = {.bits = ((uint32_t) 15U) << 23U};   // NOLINT NOSONAR
+    {{typename_float_32}}Bits       in         = {.real = value};                     // NOSONAR
     const uint32_t           sign       = in.bits & (((uint32_t) 1U) << 31U);  // NOLINT NOSONAR
     in.bits ^= sign;
     uint16_t out = 0;
@@ -444,13 +438,13 @@ static inline uint16_t float16Pack(const NunavutFloat32 value)
     return out;
 }
 
-static inline NunavutFloat32 float16Unpack(const uint16_t value)
+static inline {{typename_float_32}} float16Unpack(const uint16_t value)
 {
     // The no-lint statements suppress the warnings about magic numbers.
     // The no-lint statements suppress the warning about the use of union. This is required for low-level bit access.
-    const NunavutFloat32Bits magic   = {.bits = ((uint32_t) 0xEFU) << 23U};             // NOLINT NOSONAR
-    const NunavutFloat32Bits inf_nan = {.bits = ((uint32_t) 0x8FU) << 23U};             // NOLINT NOSONAR
-    NunavutFloat32Bits       out     = {.bits = ((uint32_t)(value & 0x7FFFU)) << 13U};  // NOLINT NOSONAR
+    const {{typename_float_32}}Bits magic   = {.bits = ((uint32_t) 0xEFU) << 23U};             // NOLINT NOSONAR
+    const {{typename_float_32}}Bits inf_nan = {.bits = ((uint32_t) 0x8FU) << 23U};             // NOLINT NOSONAR
+    {{typename_float_32}}Bits       out     = {.bits = ((uint32_t)(value & 0x7FFFU)) << 13U};  // NOLINT NOSONAR
     out.real *= magic.real;
     if (out.real >= inf_nan.real)
     {
@@ -460,16 +454,16 @@ static inline NunavutFloat32 float16Unpack(const uint16_t value)
     return out.real;
 }
 
-static inline void nunavutSetF16(uint8_t* const buf, const NunavutUnsignedBitLength off_bit, const NunavutFloat32 value)
+static inline void nunavutSetF16(uint8_t* const buf, const {{typename_unsigned_bit_length}} off_bit, const {{typename_float_32}} value)
 {
-    nunavutSetUxx(buf, off_bit, float16Pack(value), NUNAVUT_WIDTH16);
+    nunavutSetUxx(buf, off_bit, float16Pack(value), 16U);
 }
 
-static inline NunavutFloat32 nunavutGetF16(const uint8_t* const           buf,
+static inline {{typename_float_32}} nunavutGetF16(const uint8_t* const           buf,
                                            const size_t                   buf_size,
-                                           const NunavutUnsignedBitLength off_bit)
+                                           const {{typename_unsigned_bit_length}} off_bit)
 {
-    return float16Unpack(nunavutGetU16(buf, buf_size, off_bit, NUNAVUT_WIDTH16));
+    return float16Unpack(nunavutGetU16(buf, buf_size, off_bit, 16U));
 }
 
 {% endif -%}
@@ -479,24 +473,24 @@ static inline NunavutFloat32 nunavutGetF16(const uint8_t* const           buf,
 {%- if not option_omit_float_serialization_support %}
 
 static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "The target platform does not support IEEE754 floating point operations.");
-static_assert(NUNAVUT_WIDTH32 == (sizeof(NunavutFloat32) * NUNAVUT_BYTE_WIDTH), "Unsupported floating point model");
+static_assert(32U == (sizeof({{typename_float_32}}) * 8U), "Unsupported floating point model");
 
-static inline void nunavutSetF32(uint8_t* const buf, const NunavutUnsignedBitLength off_bit, const NunavutFloat32 value)
+static inline void nunavutSetF32(uint8_t* const buf, const {{typename_unsigned_bit_length}} off_bit, const {{typename_float_32}} value)
 {
     // Intentional violation of MISRA: use union to perform fast conversion from an IEEE 754-compatible native
     // representation into a serializable integer. The assumptions about the target platform properties are made
     // clear. In the future we may add a more generic conversion that is platform-invariant.
     union  // NOSONAR
     {
-        NunavutFloat32 fl;
+        {{typename_float_32}} fl;
         uint32_t       in;
     } const tmp = {value};  // NOSONAR
-    nunavutSetUxx(buf, off_bit, tmp.in, sizeof(tmp) * NUNAVUT_BYTE_WIDTH);
+    nunavutSetUxx(buf, off_bit, tmp.in, sizeof(tmp) * 8U);
 }
 
-static inline NunavutFloat32 nunavutGetF32(const uint8_t* const           buf,
+static inline {{typename_float_32}} nunavutGetF32(const uint8_t* const           buf,
                                            const size_t                   buf_size,
-                                           const NunavutUnsignedBitLength off_bit)
+                                           const {{typename_unsigned_bit_length}} off_bit)
 {
     // Intentional violation of MISRA: use union to perform fast conversion to an IEEE 754-compatible native
     // representation into a serializable integer. The assumptions about the target platform properties are made
@@ -504,8 +498,8 @@ static inline NunavutFloat32 nunavutGetF32(const uint8_t* const           buf,
     union  // NOSONAR
     {
         uint32_t       in;
-        NunavutFloat32 fl;
-    } const tmp = {nunavutGetU32(buf, buf_size, off_bit, NUNAVUT_WIDTH32)};  // NOSONAR
+        {{typename_float_32}} fl;
+    } const tmp = {nunavutGetU32(buf, buf_size, off_bit, 32U)};  // NOSONAR
     return tmp.fl;
 }
 
@@ -516,24 +510,24 @@ static inline NunavutFloat32 nunavutGetF32(const uint8_t* const           buf,
 {%- if not option_omit_float_serialization_support %}
 
 static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "The target platform does not support IEEE754 double-precision floating point operations.");
-static_assert(NUNAVUT_WIDTH64 == (sizeof(NunavutFloat64) * NUNAVUT_BYTE_WIDTH), "Unsupported floating point model");
+static_assert(64U == (sizeof({{typename_float_64}}) * 8U), "Unsupported floating point model");
 
-static inline void nunavutSetF64(uint8_t* const buf, const NunavutUnsignedBitLength off_bit, const NunavutFloat64 value)
+static inline void nunavutSetF64(uint8_t* const buf, const {{typename_unsigned_bit_length}} off_bit, const {{typename_float_64}} value)
 {
     // Intentional violation of MISRA: use union to perform fast conversion from an IEEE 754-compatible native
     // representation into a serializable integer. The assumptions about the target platform properties are made
     // clear. In the future we may add a more generic conversion that is platform-invariant.
     union  // NOSONAR
     {
-        NunavutFloat64 fl;
+        {{typename_float_64}} fl;
         uint64_t       in;
     } const tmp = {value};  // NOSONAR
-    nunavutSetUxx(buf, off_bit, tmp.in, sizeof(tmp) * NUNAVUT_BYTE_WIDTH);
+    nunavutSetUxx(buf, off_bit, tmp.in, sizeof(tmp) * 8U);
 }
 
-static inline NunavutFloat64 nunavutGetF64(const uint8_t* const           buf,
+static inline {{typename_float_64}} nunavutGetF64(const uint8_t* const           buf,
                                            const size_t                   buf_size,
-                                           const NunavutUnsignedBitLength off_bit)
+                                           const {{typename_unsigned_bit_length}} off_bit)
 {
     // Intentional violation of MISRA: use union to perform fast conversion to an IEEE 754-compatible native
     // representation into a serializable integer. The assumptions about the target platform properties are made
@@ -541,8 +535,8 @@ static inline NunavutFloat64 nunavutGetF64(const uint8_t* const           buf,
     union  // NOSONAR
     {
         uint64_t       in;
-        NunavutFloat64 fl;
-    } const tmp = {nunavutGetU64(buf, buf_size, off_bit, NUNAVUT_WIDTH64)};  // NOSONAR
+        {{typename_float_64}} fl;
+    } const tmp = {nunavutGetU64(buf, buf_size, off_bit, 64U)};  // NOSONAR
     return tmp.fl;
 }
 
