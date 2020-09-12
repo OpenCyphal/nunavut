@@ -470,7 +470,7 @@ def _make_parser() -> argparse.ArgumentParser:
         of serialization routines. By default the serialization logic generated may make assumptions
         based on documented requirements for calling logic that could expose a system to undefined
         behaviour. The alternative, for langauges that do not support exception handling, is to
-        use assertions design to halt a program rather than execute undefined logic.
+        use assertions designed to halt a program rather than execute undefined logic.
 
     ''').lstrip())
 

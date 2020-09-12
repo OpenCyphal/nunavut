@@ -1,6 +1,14 @@
 {%- macro choose_min(a, b) -%}
     ((({{a}}) < ({{b}})) ? ({{a}}) : ({{b}}))
 {%- endmacro -%}
+
+{%- macro float32_union() -%}
+typedef union  // NOSONAR
+{
+    uint32_t       bits;
+    {{typename_float_32}} real;
+} Float32Bits;
+{%- endmacro -%}
 /*
  *                                                                                                            +-+ +-+
  *  UAVCAN common serialization support routines.                                                             | | | |
@@ -30,13 +38,18 @@ extern "C"
 {% endif -%}
 #include <stdbool.h>
 #include <stdint.h>
+#ifndef __cplusplus
+#include <assert.h>
+#endif
 
 /// Serialization errors
 /// Returned as negative numbers
-#define NUNAVUT_ERR_INVALID_BUF 1
-#define NUNAVUT_ERR_INVALID_LEN 2
-#define NUNAVUT_ERR_INVALID_OFFSET 3
-#define NUNAVUT_ERR_INVALID_TAG 4
+#define NUNAVUT_ERR_INVALID_BUF 1   /// Indicates a NULL pointer to a data buffer was given.
+#define NUNAVUT_ERR_INVALID_LEN 2   /// Indicates a variable length array was serialized with an
+                                    /// invalid length tag.
+#define NUNAVUT_ERR_BUF_OVERFLOW 3  /// Indicates the data being deserialized overflows the given
+                                    /// buffer.
+#define NUNAVUT_ERR_INVALID_TAG 4   /// Indicates that a union field was assigned an invalid tag.
 
 {%- if not option_omit_float_serialization_support %}
 /// Detect whether the target platform is compatible with IEEE 754.
@@ -90,13 +103,16 @@ static inline void nunavutCopyBits(const {{typename_unsigned_bit_length}} length
                                    uint8_t* const                 dst)
 {
     // The algorithm was originally designed by Ben Dyer for Libuavcan v0:
-    // https://github.com/UAVCAN/libuavcan/blob/ba6929f9625d7ea3eb00/libuavcan/src/marshal/uc_bit_array_copy.cpp#L12-L58
+    // https://github.com/UAVCAN/libuavcan/blob/legacy-v0/libuavcan/src/marshal/uc_bit_array_copy.cpp
     // This version is modified for v1 where the bit order is the opposite.
 {%- if option_enable_serialization_asserts %}
-    NUNAVUT_ASSERT((src != NULL) && (dst != NULL) && (src != dst));
+    NUNAVUT_ASSERT(src != NULL);
+    NUNAVUR_ASSERT(dst != NULL);
+    NUNAVUT_ASSERT(src != dst);
     NUNAVUT_ASSERT((src < dst)
-                       ? ((src + ((src_offset_bit + length_bit + 8U) / 8U)) <= dst)
-                       : ((dst + ((dst_offset_bit + length_bit + 8U) / 8U)) <= src));
+                       ? ((src + ((src_offset_bit + length_bit + 4U) / 8U)) <= dst) : 1);
+    NUNAVUT_ASSERT((src > dst))
+                       ? ((dst + ((dst_offset_bit + length_bit + 4U) / 8U)) <= src) : 1);
 {%- endif %}
     if ((0U == (length_bit % 8U)) &&      //
         (0U == (src_offset_bit % 8U)) &&  //
@@ -122,7 +138,8 @@ static inline void nunavutCopyBits(const {{typename_unsigned_bit_length}} length
 
             const uint8_t size = (uint8_t) {{ choose_min('8U - max_mod', 'last_bit - src_off') }};
 {%- if option_enable_serialization_asserts %}
-            NUNAVUT_ASSERT((size > 0U) && (size <= 8U));
+            NUNAVUT_ASSERT(size > 0U);
+            NUNAVUT_ASSERT(size <= 8U);
 {%- endif %}
 
             // Suppress a false warning from Clang-Tidy & Sonar that size is being over-shifted. It's not.
@@ -399,16 +416,10 @@ static inline int64_t nunavutGetI64(const uint8_t* const           buf,
 static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "The target platform does not support IEEE754 floating point operations.");
 static_assert(32U == (sizeof({{typename_float_32}}) * 8U), "Unsupported floating point model");
 
-// Intentional violation of MISRA: we need this union because the alternative is far more error prone.
-// We have to rely on low-level data representation details to do the conversion; unions are helpful.
-typedef union  // NOSONAR
-{
-    uint32_t       bits;
-    {{typename_float_32}} real;
-} Float32Bits;
-
 static inline uint16_t float16Pack(const {{typename_float_32}} value)
 {
+    {{ float32_union() }}
+
     // The no-lint statements suppress the warnings about magic numbers.
     // The no-lint statements suppress the warning about the use of union. This is required for low-level bit access.
     const uint32_t    round_mask = ~(uint32_t) 0x0FFFU;                 // NOLINT NOSONAR
@@ -444,6 +455,8 @@ static inline uint16_t float16Pack(const {{typename_float_32}} value)
 
 static inline {{typename_float_32}} float16Unpack(const uint16_t value)
 {
+    {{ float32_union() }}
+
     // The no-lint statements suppress the warnings about magic numbers.
     // The no-lint statements suppress the warning about the use of union. This is required for low-level bit access.
     Float32Bits       magic;                          // NOLINT NOSONAR
