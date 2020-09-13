@@ -79,15 +79,29 @@ endfunction()
 # param: ARG_TEST_SOURCE List[path] - A list of source files to compile into
 #                               the test binary.
 # param: ARG_OUTDIR path - A path to output test binaries and coverage data under.
+# param: ARG_EXTRA_COMPILE_FLAGS string - Additional compile arguments to set for
+#                        the ARG_TEST_SOURCE files in addition to the arguments
+#                        used for the current toolchain and language.
 # param: ... List[str] - Zero to many targets that generate types under test.
 #
-function(define_native_unit_test ARG_FRAMEWORK ARG_TEST_NAME ARG_TEST_SOURCE ARG_OUTDIR)
+function(define_native_unit_test
+         ARG_FRAMEWORK
+         ARG_TEST_NAME
+         ARG_TEST_SOURCE
+         ARG_OUTDIR
+         ARG_EXTRA_COMPILE_FLAGS)
 
     add_executable(${ARG_TEST_NAME} ${ARG_TEST_SOURCE})
 
-    if (${ARGC} GREATER 4)
+    set_source_files_properties(${ARG_TEST_SOURCE}
+                                PROPERTIES
+                                COMPILE_FLAGS
+                                    "${ARG_EXTRA_COMPILE_FLAGS}"
+    )
+
+    if (${ARGC} GREATER 5)
         MATH(EXPR ARG_N_LAST "${ARGC}-1")
-        foreach(ARG_N RANGE 4 ${ARG_N_LAST})
+        foreach(ARG_N RANGE 5 ${ARG_N_LAST})
             target_link_libraries(${ARG_TEST_NAME} ${ARGV${ARG_N}})
         endforeach(ARG_N)
     endif()
