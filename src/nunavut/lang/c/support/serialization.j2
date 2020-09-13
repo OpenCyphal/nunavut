@@ -107,12 +107,12 @@ static inline void nunavutCopyBits(const {{typename_unsigned_bit_length}} length
     // This version is modified for v1 where the bit order is the opposite.
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(src != NULL);
-    NUNAVUR_ASSERT(dst != NULL);
+    NUNAVUT_ASSERT(dst != NULL);
     NUNAVUT_ASSERT(src != dst);
-    NUNAVUT_ASSERT((src < dst)
-                       ? ((src + ((src_offset_bit + length_bit + 4U) / 8U)) <= dst) : 1);
-    NUNAVUT_ASSERT((src > dst))
-                       ? ((dst + ((dst_offset_bit + length_bit + 4U) / 8U)) <= src) : 1);
+    NUNAVUT_ASSERT(((src < dst) \
+                       ? (src + ((src_offset_bit + length_bit + 4U) / 8U) <= dst) : 1));
+    NUNAVUT_ASSERT(((src > dst) \
+                       ? (dst + ((dst_offset_bit + length_bit + 4U) / 8U) <= src) : 1));
 {%- endif %}
     if ((0U == (length_bit % 8U)) &&      //
         (0U == (src_offset_bit % 8U)) &&  //

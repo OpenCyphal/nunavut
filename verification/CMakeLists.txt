@@ -159,7 +159,23 @@ set(ALL_TEST_COVERAGE "")
 
 foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
-    define_native_unit_test("gtest" ${NATIVE_TEST_NAME} ${NATIVE_TEST} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} dsdl-regulated dsdl-test)
+    if(NUNAVUT_VERIFICATION_LANG STREQUAL "c")
+          #
+          # If we are testing C headers with C++ tests we have to disable
+          # certain checks to allow the inline code to compile without
+          # warnings.
+          #
+          set("${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS" "-Wno-old-style-cast")
+    else()
+          set("${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS" "")
+    endif()
+    define_native_unit_test("gtest"
+                            ${NATIVE_TEST_NAME}
+                            ${NATIVE_TEST}
+                            ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
+                            ${${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS}
+                            dsdl-regulated
+                            dsdl-test)
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
     define_natve_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
@@ -171,7 +187,13 @@ endforeach()
 
 foreach(NATIVE_TEST ${NATIVE_TESTS_C})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
-    define_native_unit_test("unity" ${NATIVE_TEST_NAME} ${NATIVE_TEST} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} dsdl-regulated dsdl-test)
+    define_native_unit_test("unity"
+                            ${NATIVE_TEST_NAME}
+                            ${NATIVE_TEST}
+                            ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
+                            ""
+                            dsdl-regulated
+                            dsdl-test)
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
     define_natve_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
