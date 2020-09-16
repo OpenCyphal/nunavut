@@ -21,7 +21,8 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     {%- if type is PrimitiveType -%}
     {{ _serialize_primitive(type, name, ref) }}
     {%- elif type is VoidType -%}
-    {#- just deal with it here -#}
+    {#- Serialization must set all void types to 0 -#}
+    nunavutSetUxx(out_buffer, offset, 0, {{ type.bit_length }});
     offset += {{ type.bit_length }};
     {%- elif type is ArrayType -%}
     {{ _serialize_array(type, name, ref, offset) }}
