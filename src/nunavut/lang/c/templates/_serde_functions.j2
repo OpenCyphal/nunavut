@@ -24,7 +24,7 @@ static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_
     (void)out_buffer;
 {%- endif %}
 
-    return offset;
+    return ({{typename_signed_bit_length}})offset;
 }
 
 /// Deserialization of byte-array encoding into {{ composite_type | full_reference_name }} instance.
@@ -55,5 +55,5 @@ static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_
     (void)buf_size_bytes;
 {%- endif %}
 
-    return offset;
+    return ({{typename_signed_bit_length}})offset;
 }
