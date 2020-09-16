@@ -106,14 +106,14 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {
         return -NUNAVUT_ERR_BUF_OVERFLOW;
     }
-    memcpy((void*)out_instance->{{ name }}, (void*)((uint8_t*)in_buffer + (offset >> 3)), out_instance->{{ name }}_length * {{ (loop_type.bit_length / 8) | int }});
+    memcpy((void*){{ ref }}{{ name | id }}, (void*)((uint8_t*)in_buffer + (offset >> 3)), {{ ref }}{{ name | id }}_length * {{ (loop_type.bit_length / 8) | int }});
     offset += ({{typename_unsigned_bit_length}}){{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }};
     {%- else -%}
     if ((offset + ({{ type.capacity }} * {{ loop_type.bit_length }}) + 4U) / 8 > buf_size_bytes)
     {
         return -NUNAVUT_ERR_BUF_OVERFLOW;
     }
-    memcpy((void*)out_instance->{{ name }}, (void*)((uint8_t*)in_buffer + (offset >> 3)), {{ type.capacity }} * {{ (loop_type.bit_length / 8) | int }});
+    memcpy((void*){{ ref }}{{ name | id }}, (void*)((uint8_t*)in_buffer + (offset >> 3)), {{ type.capacity }} * {{ (loop_type.bit_length / 8) | int }});
     offset += ({{typename_unsigned_bit_length}}){{ type.capacity }} * {{ loop_type.bit_length }};
     {%- endif -%}
     {%- else %}
