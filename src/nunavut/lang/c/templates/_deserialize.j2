@@ -102,18 +102,30 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {%- if base_offset.is_aligned_at_byte() and option_target_endianness == "little" %}
     {#- Data is byte-aligned, so we can use memcpy #}
     {%- if type is VariableLengthArrayType -%}
+    if ((offset + ({{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }}) + 4U) / 8 > buf_size_bytes)
+    {
+        return -NUNAVUT_ERR_BUF_OVERFLOW;
+    }
     memcpy((void*)out_instance->{{ name }}, (void*)((uint8_t*)in_buffer + (offset >> 3)), out_instance->{{ name }}_length * {{ (loop_type.bit_length / 8) | int }});
     offset += ({{typename_unsigned_bit_length}}){{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }};
     {%- else -%}
+    if ((offset + ({{ type.capacity }} * {{ loop_type.bit_length }}) + 4U) / 8 > buf_size_bytes)
+    {
+        return -NUNAVUT_ERR_BUF_OVERFLOW;
+    }
     memcpy((void*)out_instance->{{ name }}, (void*)((uint8_t*)in_buffer + (offset >> 3)), {{ type.capacity }} * {{ (loop_type.bit_length / 8) | int }});
     offset += ({{typename_unsigned_bit_length}}){{ type.capacity }} * {{ loop_type.bit_length }};
     {%- endif -%}
     {%- else %}
+    if ((offset + ({{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }}) + 4U) / 8 > buf_size_bytes)
+    {
+        return -NUNAVUT_ERR_BUF_OVERFLOW;
+    }
     {#- Data is not byte-aligned and/or not LE, so we need to use more intensive functions #}
     {{ _deserialize_array_loop(type, name, ref) }}
     {
         {#- other serialize_anys are caught, but this does get broken... #}
-        {{ _deserialize_primitive(loop_type, '', loop_ref) | indent(width=4) }}
+        {{ _deserialize_primitive(loop_type, '', loop_ref, check_buf=False) | indent(width=4) }}
     }
     {%- endif %}
     {%- elif loop_type is PrimitiveType or loop_type is CompositeType %}
@@ -137,12 +149,18 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
 {#
     Primitive serialization dispatch
 #}
-{%- macro _deserialize_primitive(type, name, ref) -%}
-    {%- if type is IntegerType -%}
+{%- macro _deserialize_primitive(type, name, ref, check_buf=True) -%}
+    {%- if check_buf -%}
+    if ((offset + {{ type.bit_length }} + 4U) / 8 > buf_size_bytes)
+    {
+        return -NUNAVUT_ERR_BUF_OVERFLOW;
+    }
+    {%- endif -%}
+    {%- if type is IntegerType %}
     {{ _deserialize_int(type, name, ref) }}
-    {%- elif type is FloatType -%}
+    {%- elif type is FloatType %}
     {{ _deserialize_float(type, name, ref) }}
-    {%- elif type is BooleanType -%}
+    {%- elif type is BooleanType %}
     {{ _deserialize_boolean(type, name, ref) }}
     {%- endif %}
     offset += {{ type.bit_length }};
