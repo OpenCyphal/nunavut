@@ -40,7 +40,7 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {
         return rc;
     }
-    offset = rc;
+    offset = ({{typename_unsigned_bit_length}})rc;
     {%- else -%}
     {#- Not byte-aligned: inline serialization -#}
     {{ _deserialize_composite(type, ref_name + '.', offset) }}
