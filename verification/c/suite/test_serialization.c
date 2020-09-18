@@ -7,6 +7,7 @@
 
 #include "uavcan/primitive/scalar/Bit_1_0.h"
 #include "uavcan/_register/Name_1_0.h"
+#include "uavcan/_register/Value_1_0.h"
 
 /// Void fields must explicitely be zeroed by serialization.
 /// Ensures that uninitialized memory in buffer does not "leak".
@@ -35,6 +36,16 @@ static void testVariablePrimitiveArrayLength(void)
     TEST_ASSERT_EQUAL_STRING_LEN("foo", (char*)&buffer[1], strlen("foo"));
 }
 
+static void testInvalidTag(void)
+{
+    uavcan_register_Value_1_0 subject;
+    uint8_t buffer[uavcan_register_Value_1_0_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES];
+    uavcan_register_Value_1_0_init(&subject);
+    subject._tag_ = 20;
+    int32_t rc = uavcan_register_Value_1_0_serialize(&subject, 0, buffer);
+    TEST_ASSERT_EQUAL_INT32(-NUNAVUT_ERR_INVALID_TAG, rc);
+}
+
 void setUp(void)
 {
 
@@ -51,6 +62,7 @@ int main(void)
 
     RUN_TEST(testVoidZeroed);
     RUN_TEST(testVariablePrimitiveArrayLength);
+    RUN_TEST(testInvalidTag);
 
     return UNITY_END();
 }

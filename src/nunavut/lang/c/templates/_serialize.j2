@@ -39,7 +39,7 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     {
         return rc;
     }
-    offset = rc;
+    offset = ({{typename_unsigned_bit_length}})rc;
     {%- else -%}
     {#- Not byte-aligned: inline serialization #}
     {{ _serialize_composite(type, ref_name + '.', offset) }}
