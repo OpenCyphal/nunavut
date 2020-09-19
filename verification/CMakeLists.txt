@@ -167,15 +167,15 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
           # certain checks to allow the inline code to compile without
           # warnings.
           #
-          set("${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS" "-Wno-old-style-cast")
+          set(${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS "-Wno-old-style-cast")
     else()
-          set("${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS" "")
+          set(${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS "")
     endif()
     define_native_unit_test("gtest"
                             ${NATIVE_TEST_NAME}
                             ${NATIVE_TEST}
                             ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
-                            ${${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS}
+                            "${${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS}"
                             dsdl-regulated
                             dsdl-test)
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
