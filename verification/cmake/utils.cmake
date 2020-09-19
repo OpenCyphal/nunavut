@@ -99,12 +99,16 @@ function(define_native_unit_test
                                     "${ARG_EXTRA_COMPILE_FLAGS}"
     )
 
+    set(LOCAL_${ARG_TEST_NAME}_LINK_LIBS "")
+
     if (${ARGC} GREATER 5)
         MATH(EXPR ARG_N_LAST "${ARGC}-1")
         foreach(ARG_N RANGE 5 ${ARG_N_LAST})
-            target_link_libraries(${ARG_TEST_NAME} ${ARGV${ARG_N}})
+            list(APPEND LOCAL_${ARG_TEST_NAME}_LINK_LIBS ${ARGV${ARG_N}})
         endforeach(ARG_N)
     endif()
+
+    target_link_libraries(${ARG_TEST_NAME} ${LOCAL_${ARG_TEST_NAME}_LINK_LIBS})
 
     if (${ARG_FRAMEWORK} STREQUAL "gtest")
         target_link_libraries(${ARG_TEST_NAME} gmock_main)
