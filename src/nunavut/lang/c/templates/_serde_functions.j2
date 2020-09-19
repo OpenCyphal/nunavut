@@ -3,10 +3,12 @@
 /// @param in_instance   A structure instance to serialize.
 /// @param offset        Offset (in bits) of data type in message.
 /// @param out_buffer    Output message buffer.
+/// @param out_size_bits Size of serialized output (in bits).
 ///
 /// @returns             Size of encoded data (in bits)
-static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_name }}_serialize(const {{ composite_type | full_reference_name }}* in_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const out_buffer)
+static inline {{typename_serialize_return_type}} {{ composite_type | full_reference_name }}_serialize(const {{ composite_type | full_reference_name }}* in_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const out_buffer, {{typename_unsigned_bit_length}}* out_size_bits)
 {
+    *out_size_bits = 0;
 {%- if (composite_type.fields | length) > 0 %}
     {#- Do not declare rc if we do not use it. Avoids compiler warnings -#}
     {%- from '_utils.j2' import gen_rc -%}
@@ -22,9 +24,10 @@ static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_
 {%- else %}
     (void)in_instance;
     (void)out_buffer;
+    (void)offset;
 {%- endif %}
 
-    return ({{typename_signed_bit_length}})offset;
+    return NUNAVUT_SUCCESS;
 }
 
 /// Deserialization of byte-array encoding into {{ composite_type | full_reference_name }} instance.
@@ -33,10 +36,12 @@ static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_
 /// @param offset            Bit offset of structure in data buffer.
 /// @param in_buffer         Message buffer to deserialize.
 /// @param buf_size_bytes    Length of input buffer (in bytes) to avoid overflow.
+/// @param in_size_bits      Length of deserialized data (in bits).
 ///
 /// @returns                 Size of decoded data (in bits)
-static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_name }}_deserialize({{ composite_type | full_reference_name }}* const out_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const in_buffer, const {{typename_unsigned_length}} buf_size_bytes)
+static inline {{typename_serialize_return_type}} {{ composite_type | full_reference_name }}_deserialize({{ composite_type | full_reference_name }}* const out_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const in_buffer, const {{typename_unsigned_length}} buf_size_bytes, {{typename_unsigned_bit_length}}* in_size_bits)
 {
+    *in_size_bits = 0;
 {%- if (composite_type.fields | length) > 0 %}
     {#- Do not declare rc if we do not use it. Avoids compiler warnings -#}
     {%- from '_utils.j2' import gen_rc -%}
@@ -53,7 +58,8 @@ static inline {{typename_signed_bit_length}} {{ composite_type | full_reference_
     (void)out_instance;
     (void)in_buffer;
     (void)buf_size_bytes;
+    (void)offset;
 {%- endif %}
 
-    return ({{typename_signed_bit_length}})offset;
+    return NUNAVUT_SUCCESS;
 }

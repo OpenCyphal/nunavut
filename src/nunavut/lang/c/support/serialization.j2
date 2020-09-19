@@ -42,8 +42,13 @@ extern "C"
 #include <assert.h>
 #endif
 
-/// Serialization errors
-/// Returned as negative numbers
+/// Nunavut returns 0 for success and < 0 for any failure. It is always adequate to
+/// check that error_value != 0 to detect errors.
+///
+/// Nunavut serialization will never define more than 127 errors and the reserved
+/// error numbers are [1,127].
+///
+#define NUNAVUT_SUCCESS 0
 #define NUNAVUT_ERR_INVALID_BUF 1   /// Indicates a NULL pointer to a data buffer was given.
 #define NUNAVUT_ERR_INVALID_LEN 2   /// Indicates a variable length array was serialized with an
                                     /// invalid length tag.
@@ -51,7 +56,7 @@ extern "C"
                                     /// buffer.
 #define NUNAVUT_ERR_INVALID_TAG 4   /// Indicates that a union field was assigned an invalid tag.
 
-{%- if not option_omit_float_serialization_support %}
+{% if not option_omit_float_serialization_support -%}
 /// Detect whether the target platform is compatible with IEEE 754.
 #define NUNAVUT_PLATFORM_IEEE754_FLOAT \
     ((FLT_RADIX == 2) && (FLT_MANT_DIG == 24) && (FLT_MIN_EXP == -125) && (FLT_MAX_EXP == 128))

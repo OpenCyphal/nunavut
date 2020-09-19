@@ -1,8 +1,8 @@
 {%- macro nunavut_get(bit_length=None) -%}
 {%- if bit_length is None -%}
-in_buffer, buf_size_bytes, offset
+in_buffer, buf_size_bytes, offset + *in_size_bits
 {%- else -%}
-in_buffer, buf_size_bytes, offset, {{ bit_length }}
+in_buffer, buf_size_bytes, offset + *in_size_bits, {{ bit_length }}
 {%- endif -%}
 {%- endmacro %}
 
@@ -24,7 +24,7 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {{ _deserialize_primitive(type, name, ref) }}
     {%- elif type is VoidType -%}
     {#- just deal with it here -#}
-    offset += {{ type.bit_length }};
+    *in_size_bits += {{ type.bit_length }};
     {%- elif type is ArrayType -%}
     {{ _deserialize_array(type, name, ref, offset) }}
     {%- elif type is CompositeType -%}
@@ -35,12 +35,12 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {%- endif -%}
     {%- if offset.is_aligned_at_byte() -%}
     {#- Data is byte aligned: use generated function -#}
-    rc = {{ type | full_reference_name }}_deserialize(&({{ ref_name }}), offset, in_buffer, buf_size_bytes);
+    rc = {{ type | full_reference_name }}_deserialize(&({{ ref_name }}), offset + *in_size_bits, in_buffer, buf_size_bytes, &size_bits);
     if (rc < 0)
     {
         return rc;
     }
-    offset = ({{typename_unsigned_bit_length}})rc;
+    *in_size_bits += size_bits;
     {%- else -%}
     {#- Not byte-aligned: inline serialization -#}
     {{ _deserialize_composite(type, ref_name + '.', offset) }}
@@ -58,7 +58,7 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {%- elif type is UnionType %}
     // Begin Union: {{ type }}
     {{ _deserialize_int(type.tag_field_type, '_tag_', ref) }}
-    offset += {{ type.tag_field_type.bit_length }};
+    *in_size_bits += {{ type.tag_field_type.bit_length }};
     {%- for f, offset in type.iterate_fields_with_offsets(offset) -%}
     {%- if loop.first %}
     if (
@@ -89,7 +89,7 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {#- wrangle length value if variable length array #}
     {%- if type is VariableLengthArrayType -%}
     {{ _deserialize_int(type.length_field_type, name + "_length", ref) }};
-    offset += {{ type.length_field_type.bit_length }};
+    *in_size_bits += {{ type.length_field_type.bit_length }};
     if ({{ ref }}{{ name | id }}_length > {{ type.capacity }})
     {
         return -NUNAVUT_ERR_INVALID_LEN;
@@ -102,22 +102,22 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {%- if base_offset.is_aligned_at_byte() and option_target_endianness == "little" %}
     {#- Data is byte-aligned, so we can use memcpy #}
     {%- if type is VariableLengthArrayType -%}
-    if ((offset + ({{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }}) + 4U) / 8 > buf_size_bytes)
+    if (((offset + *in_size_bits) + ({{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }}) + 4U) / 8 > buf_size_bytes)
     {
         return -NUNAVUT_ERR_BUF_OVERFLOW;
     }
-    memcpy((void*){{ ref }}{{ name | id }}, (void*)((uint8_t*)in_buffer + (offset >> 3)), {{ ref }}{{ name | id }}_length * {{ (loop_type.bit_length / 8) | int }});
-    offset += ({{typename_unsigned_bit_length}}){{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }};
+    memcpy((void*){{ ref }}{{ name | id }}, (void*)((uint8_t*)in_buffer + ((offset + *in_size_bits) >> 3)), {{ ref }}{{ name | id }}_length * {{ (loop_type.bit_length / 8) | int }});
+    *in_size_bits += ({{typename_unsigned_bit_length}}){{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }};
     {%- else -%}
     if ((offset + ({{ type.capacity }} * {{ loop_type.bit_length }}) + 4U) / 8 > buf_size_bytes)
     {
         return -NUNAVUT_ERR_BUF_OVERFLOW;
     }
-    memcpy((void*){{ ref }}{{ name | id }}, (void*)((uint8_t*)in_buffer + (offset >> 3)), {{ type.capacity }} * {{ (loop_type.bit_length / 8) | int }});
-    offset += ({{typename_unsigned_bit_length}}){{ type.capacity }} * {{ loop_type.bit_length }};
+    memcpy((void*){{ ref }}{{ name | id }}, (void*)((uint8_t*)in_buffer + ((offset + *in_size_bits) >> 3)), {{ type.capacity }} * {{ (loop_type.bit_length / 8) | int }});
+    *in_size_bits += ({{typename_unsigned_bit_length}}){{ type.capacity }} * {{ loop_type.bit_length }};
     {%- endif -%}
     {%- else %}
-    if ((offset + ({{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }}) + 4U) / 8 > buf_size_bytes)
+    if (((offset + *in_size_bits) + ({{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }}) + 4U) / 8 > buf_size_bytes)
     {
         return -NUNAVUT_ERR_BUF_OVERFLOW;
     }
@@ -151,7 +151,7 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
 #}
 {%- macro _deserialize_primitive(type, name, ref, check_buf=True) -%}
     {%- if check_buf -%}
-    if ((offset + {{ type.bit_length }} + 4U) / 8 > buf_size_bytes)
+    if (((offset + *in_size_bits) + {{ type.bit_length }} + 4U) / 8 > buf_size_bytes)
     {
         return -NUNAVUT_ERR_BUF_OVERFLOW;
     }
@@ -163,7 +163,7 @@ in_buffer, buf_size_bytes, offset, {{ bit_length }}
     {%- elif type is BooleanType %}
     {{ _deserialize_boolean(type, name, ref) }}
     {%- endif %}
-    offset += {{ type.bit_length }};
+    *in_size_bits += {{ type.bit_length }};
 {%- endmacro %}
 
 {#
