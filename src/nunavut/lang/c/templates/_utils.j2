@@ -10,6 +10,7 @@
         {%- endif -%}
     {%- endfor -%}
     {%- if ns.rc %}
-    {{typename_signed_bit_length}} rc = 0;
+    {{typename_unsigned_bit_length}} size_bits;
+    {{typename_serialize_return_type}} rc = 0;
     {%- endif -%}
 {%- endmacro -%}

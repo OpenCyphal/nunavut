@@ -3,9 +3,9 @@
 #}
 {%- macro nunavut_set(field_name, ref) -%}
 {%- if field_name == "" -%}
-out_buffer, offset, {{ ref }}
+out_buffer, offset + *out_size_bits, {{ ref }}
 {%- else -%}
-out_buffer, offset, {{ ref }}{{ field_name | id }}
+out_buffer, offset + *out_size_bits, {{ ref }}{{ field_name | id }}
 {%- endif -%}
 {%- endmacro %}
 
@@ -22,8 +22,8 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     {{ _serialize_primitive(type, name, ref) }}
     {%- elif type is VoidType -%}
     {#- Serialization must set all void types to 0 -#}
-    nunavutSetUxx(out_buffer, offset, 0, {{ type.bit_length }});
-    offset += {{ type.bit_length }};
+    nunavutSetUxx(out_buffer, offset + *out_size_bits, 0, {{ type.bit_length }});
+    *out_size_bits += {{ type.bit_length }};
     {%- elif type is ArrayType -%}
     {{ _serialize_array(type, name, ref, offset) }}
     {%- elif type is CompositeType -%}
@@ -34,12 +34,12 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     {%- endif -%}
     {%- if offset.is_aligned_at_byte() -%}
     {#- Data is byte aligned: use generated function -#}
-    rc = {{ type | full_reference_name }}_serialize(&({{ ref_name }}), offset, out_buffer);
+    rc = {{ type | full_reference_name }}_serialize(&({{ ref_name }}), offset + *out_size_bits, out_buffer, &size_bits);
     if (rc < 0)
     {
         return rc;
     }
-    offset = ({{typename_unsigned_bit_length}})rc;
+    *out_size_bits += size_bits;
     {%- else -%}
     {#- Not byte-aligned: inline serialization #}
     {{ _serialize_composite(type, ref_name + '.', offset) }}
@@ -62,7 +62,7 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     {%- elif type is UnionType %}
     // Begin Union: {{ type | full_reference_name }}
     {{ _serialize_int(type.tag_field_type, '_tag_', ref) }}
-    offset += {{ type.tag_field_type.bit_length }};
+    *out_size_bits += {{ type.tag_field_type.bit_length }};
     {%- for f, offset in type.iterate_fields_with_offsets(base_offset) %}
     {%- if loop.first %}
     if (
@@ -96,8 +96,8 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     {
         return -NUNAVUT_ERR_INVALID_LEN;
     }
-    nunavutSetUxx(out_buffer, offset, {{ ref }}{{ name | id }}_length, {{ type.length_field_type.bit_length }});
-    offset += {{ type.length_field_type.bit_length }};
+    nunavutSetUxx(out_buffer, offset + *out_size_bits, {{ ref }}{{ name | id }}_length, {{ type.length_field_type.bit_length }});
+    *out_size_bits += {{ type.length_field_type.bit_length }};
     {%- endif %}
     {%- set loop_type = type.element_type %}
     {%- set loop_ref = ref + (name | id) + "[i]" %}
@@ -106,11 +106,11 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     {%- if base_offset.is_aligned_at_byte() and option_target_endianness == "little" %}
     {#- Data is byte-aligned, so we can use memcpy #}
     {%- if type is VariableLengthArrayType %}
-    memcpy((void*)((uint8_t*)out_buffer + (offset>> 3)), (void*){{ ref }}{{ name | id }}, {{ ref }}{{ name | id }}_length * {{ (loop_type.bit_length / 8) | int }});
-    offset += ({{typename_unsigned_bit_length}})({{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }});
+    memcpy((void*)((uint8_t*)out_buffer + ((offset + *out_size_bits)>> 3)), (void*){{ ref }}{{ name | id }}, {{ ref }}{{ name | id }}_length * {{ (loop_type.bit_length / 8) | int }});
+    *out_size_bits += ({{typename_unsigned_bit_length}})({{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }});
     {%- else %}
-    memcpy((void*)((uint8_t*)out_buffer + (offset>> 3)), (void*){{ ref }}{{ name | id }}, {{ type.capacity }} * {{ (loop_type.bit_length / 8) | int }});
-    offset += ({{typename_unsigned_bit_length}})({{ type.capacity }} * {{ loop_type.bit_length }});
+    memcpy((void*)((uint8_t*)out_buffer + ((offset + *out_size_bits)>> 3)), (void*){{ ref }}{{ name | id }}, {{ type.capacity }} * {{ (loop_type.bit_length / 8) | int }});
+    *out_size_bits += ({{typename_unsigned_bit_length}})({{ type.capacity }} * {{ loop_type.bit_length }});
     {%- endif -%}
     {%- else %}
     {#- Data is not byte-aligned and/or not LE, so we need to use more intensive functions #}
@@ -149,7 +149,7 @@ out_buffer, offset, {{ ref }}{{ field_name | id }}
     {%- elif type is BooleanType -%}
     {{ _serialize_boolean(type, name, ref) }}
     {%- endif %}
-    offset += {{ type.bit_length }};
+    *out_size_bits += {{ type.bit_length }};
 {%- endmacro %}
 
 {#
