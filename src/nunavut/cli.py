@@ -447,8 +447,6 @@ def _make_parser() -> argparse.ArgumentParser:
 
     ''').lstrip())
 
-
-
     ln_opt_group.add_argument('--omit-float-serialization-support',
                               action='store_true',
                               help=textwrap.dedent('''
@@ -460,7 +458,6 @@ def _make_parser() -> argparse.ArgumentParser:
         errors in generated serialization logic.
 
     ''').lstrip())
-
 
     ln_opt_group.add_argument('--enable-serialization-asserts',
                               action='store_true',
