@@ -40,6 +40,7 @@ static void testVariablePrimitiveArrayLength(void)
     TEST_ASSERT_EQUAL_INT32(NUNAVUT_SUCCESS, rc);
 }
 
+/// Test that an obviously invalid tag returns the correct error.
 static void testInvalidTag(void)
 {
     uavcan_register_Value_1_0 subject;
@@ -47,7 +48,7 @@ static void testInvalidTag(void)
     uint32_t bit_size;
 
     uavcan_register_Value_1_0_init(&subject);
-    subject._tag_ = 20;
+    subject._tag_ = 200;
     int32_t rc = uavcan_register_Value_1_0_serialize(&subject, 0, buffer, &bit_size);
 
     TEST_ASSERT_EQUAL_INT32(-NUNAVUT_ERR_INVALID_TAG, rc);
