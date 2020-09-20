@@ -11,6 +11,7 @@ static void testNunavutCopyBits(void)
 {
     const uint8_t src[] = { 1, 2, 3, 4, 5 };
     uint8_t dst[6];
+    assert((uintptr_t)&src[5] == (uintptr_t)&dst[0]);
     memset(dst, 0, sizeof(dst));
     nunavutCopyBits(sizeof(src) * 8, 0, 0, src, dst);
     for(size_t i = 0; i < sizeof(src); ++i)
@@ -24,7 +25,7 @@ static void testNunavutCopyBitsWithAlignedOffset(void)
     const uint8_t src[] = { 1, 2, 3, 4, 5 };
     uint8_t dst[6];
     memset(dst, 0, sizeof(dst));
-    nunavutCopyBits(sizeof(src) * 8, 8, 0, src, dst);
+    nunavutCopyBits((sizeof(src) - 1) * 8, 8, 0, src, dst);
     for(size_t i = 0; i < sizeof(src) - 1; ++i)
     {
         TEST_ASSERT_EQUAL_UINT8(src[i + 1], dst[i]);
@@ -45,15 +46,15 @@ static void testNunavutCopyBitsWithUnalignedOffset(void)
     const uint8_t src[] = { 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA };
     uint8_t dst[6];
     memset(dst, 0, sizeof(dst));
-    nunavutCopyBits(sizeof(src) * 8, 1, 0, src, dst);
+    nunavutCopyBits((sizeof(src)-1) * 8, 1, 0, src, dst);
     for(size_t i = 0; i < sizeof(src) - 1; ++i)
     {
         TEST_ASSERT_EQUAL_HEX8(0x55, dst[i]);
     }
-    TEST_ASSERT_EQUAL_HEX8(0x55, dst[sizeof(dst) - 1]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[sizeof(dst) - 1]);
 
     memset(dst, 0, sizeof(dst));
-    nunavutCopyBits(sizeof(src) * 8, 0, 1, src, dst);
+    nunavutCopyBits((sizeof(src)-1) * 8, 0, 1, src, dst);
     for(size_t i = 0; i < sizeof(src) - 1; ++i)
     {
         TEST_ASSERT_EQUAL_HEX8((i == 0) ? 0x54 : 0x55, dst[i]);

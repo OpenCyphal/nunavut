@@ -117,15 +117,17 @@ static inline void nunavutCopyBits(const {{typename_unsigned_bit_length}} length
     NUNAVUT_ASSERT(src != NULL);
     NUNAVUT_ASSERT(dst != NULL);
     NUNAVUT_ASSERT(src != dst);
-    NUNAVUT_ASSERT(((src < dst) \
-                       ? (src + ((src_offset_bit + length_bit + 4U) / 8U) <= dst) : 1));
-    NUNAVUT_ASSERT(((src > dst) \
-                       ? (dst + ((dst_offset_bit + length_bit + 4U) / 8U) <= src) : 1));
 {%- endif %}
     if ((0U == (length_bit % 8U)) &&      //
         (0U == (src_offset_bit % 8U)) &&  //
         (0U == (dst_offset_bit % 8U)))
     {
+{%- if option_enable_serialization_asserts %}
+        NUNAVUT_ASSERT(((src < dst) \
+                        ? ((uintptr_t)(src + ((src_offset_bit + length_bit) / 8U)) <= (uintptr_t)dst) : 1));
+        NUNAVUT_ASSERT(((src > dst) \
+                        ? ((uintptr_t)(dst + ((dst_offset_bit + length_bit) / 8U)) <= (uintptr_t)src) : 1));
+{%- endif %}
         // Intentional violation of MISRA: Pointer arithmetics.
         // This is done to remove the API constraint that offsets be under 8 bits.
         // Fewer constraints reduce the chance of API misuse.
@@ -138,6 +140,12 @@ static inline void nunavutCopyBits(const {{typename_unsigned_bit_length}} length
         {{typename_unsigned_bit_length}}       src_off  = src_offset_bit;
         {{typename_unsigned_bit_length}}       dst_off  = dst_offset_bit;
         const {{typename_unsigned_bit_length}} last_bit = src_off + length_bit;
+{%- if option_enable_serialization_asserts %}
+        NUNAVUT_ASSERT(((src < dst) \
+                        ? ((uintptr_t)(src + ((src_offset_bit + length_bit + 8U) / 8U)) <= (uintptr_t)dst) : 1));
+        NUNAVUT_ASSERT(((src > dst) \
+                        ? ((uintptr_t)(dst + ((dst_offset_bit + length_bit + 8U) / 8U)) <= (uintptr_t)src) : 1));
+{%- endif %}
         while (last_bit > src_off)
         {
             const uint8_t src_mod = (uint8_t)(src_off % 8U);
