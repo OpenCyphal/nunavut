@@ -6,7 +6,7 @@
 /// @param out_size_bits Size of serialized output (in bits).
 ///
 /// @returns             Size of encoded data (in bits)
-static inline {{typename_serialize_return_type}} {{ composite_type | full_reference_name }}_serialize(const {{ composite_type | full_reference_name }}* in_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const out_buffer, {{typename_unsigned_bit_length}}* out_size_bits)
+static inline {{typename_error_type}} {{ composite_type | full_reference_name }}_serialize(const {{ composite_type | full_reference_name }}* in_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const out_buffer, {{typename_unsigned_bit_length}}* out_size_bits)
 {
     *out_size_bits = 0;
 {%- if (composite_type.fields | length) > 0 %}
@@ -39,7 +39,7 @@ static inline {{typename_serialize_return_type}} {{ composite_type | full_refere
 /// @param in_size_bits      Length of deserialized data (in bits).
 ///
 /// @returns                 Size of decoded data (in bits)
-static inline {{typename_serialize_return_type}} {{ composite_type | full_reference_name }}_deserialize({{ composite_type | full_reference_name }}* const out_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const in_buffer, const {{typename_unsigned_length}} buf_size_bytes, {{typename_unsigned_bit_length}}* in_size_bits)
+static inline {{typename_error_type}} {{ composite_type | full_reference_name }}_deserialize({{ composite_type | full_reference_name }}* const out_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const in_buffer, const {{typename_unsigned_length}} buf_size_bytes, {{typename_unsigned_bit_length}}* in_size_bits)
 {
     *in_size_bits = 0;
 {%- if (composite_type.fields | length) > 0 %}

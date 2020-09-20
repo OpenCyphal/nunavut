@@ -11,6 +11,6 @@
     {%- endfor -%}
     {%- if ns.rc %}
     {{typename_unsigned_bit_length}} size_bits;
-    {{typename_serialize_return_type}} rc = 0;
+    {{typename_error_type}} rc = 0;
     {%- endif -%}
 {%- endmacro -%}
