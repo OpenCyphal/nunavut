@@ -9,7 +9,10 @@
 /// Provides an encapsulated interface to set union tags prior to serialization.
 static inline void {{ composite_type | full_reference_name }}_set_{{ field.name }}({{ composite_type | full_reference_name }}* const untagged_union_ptr)
 {
-    untagged_union_ptr->_tag_ = {{ loop.index0 }};
+    if (untagged_union_ptr != {{valuetoken_null}})
+    {
+        untagged_union_ptr->_tag_ = {{ loop.index0 }};
+    }
 }
 
 /// Determine if a given {{ composite_type | full_reference_name }} tagged union is currently tagged as

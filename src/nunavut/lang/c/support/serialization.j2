@@ -43,10 +43,13 @@ extern "C"
 #endif
 
 /// Nunavut returns 0 for success and < 0 for any failure. It is always adequate to
-/// check that error_value != 0 to detect errors.
+/// check that error_value != 0 to detect errors or error_value == 0 for success.
 ///
 /// Nunavut serialization will never define more than 127 errors and the reserved
-/// error numbers are [1,127].
+/// error numbers are [-1,-127] (-128 is not used).
+///
+/// Nunavut serialization does not define positive error values but may do so in the
+/// future. Reserved positive error values are [1,127].
 ///
 #define NUNAVUT_SUCCESS 0
 #define NUNAVUT_ERR_INVALID_BUF 1   /// Indicates a NULL pointer to a data buffer was given.
