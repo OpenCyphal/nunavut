@@ -28,7 +28,8 @@ steps:
     command: "./.buildkite/verify.sh"
     skip: true
     artifact_paths: 
-      - "verification/cpp/build/suite/coverage/all/*"
+      - "verification/build_c/suite/coverage/all/*"
+      - "verification/build_cpp/suite/coverage/all/*"
     plugins:
       - docker#v3.3.0:
           workdir: /repo

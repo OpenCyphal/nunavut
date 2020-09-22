@@ -93,9 +93,19 @@ function (create_dsdl_target ARG_TARGET_NAME
     target_include_directories(${ARG_TARGET_NAME} INTERFACE ${ARG_OUTPUT_FOLDER})
 
     if (ARG_ENABLE_SER_ASSERT)
-        target_compile_options(${ARG_TARGET_NAME} INTERFACE
-            "-DNUNAVUT_ASSERT=assert"
-        )
+        if(${ARG_TARGET_NAME} STREQUAL "unity")
+            target_compile_options(${ARG_TARGET_NAME} INTERFACE
+                "-DNUNAVUT_ASSERT=TEST_ASSERT"
+            )
+        elseif(${ARG_TARGET_NAME} STREQUAL "gtest")
+            target_compile_options(${ARG_TARGET_NAME} INTERFACE
+                "-DNUNAVUT_ASSERT=ASSERT_TRUE"
+            )
+        else()
+            target_compile_options(${ARG_TARGET_NAME} INTERFACE
+                "-DNUNAVUT_ASSERT=assert"
+            )
+        endif()
     endif()
 
     set(${ARG_TARGET_NAME}-OUTPUT ${OUTPUT_FILES} PARENT_SCOPE)

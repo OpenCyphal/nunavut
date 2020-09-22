@@ -3,11 +3,15 @@
 /// Tests different cases in serialization code.
 ///
 #include "unity.h"
-#include <assert.h>
 
 #include "uavcan/primitive/scalar/Bit_1_0.h"
 #include "uavcan/_register/Name_1_0.h"
 #include "uavcan/_register/Access_1_0.h"
+
+/// These unit tests assume that the headers under test were generated with
+/// typename_unsigned_bit_length set to the value provided here.
+typedef size_t typename_unsigned_bit_length;
+
 
 /// Void fields must explicitely be zeroed by serialization.
 /// Ensures that uninitialized memory in buffer does not "leak".
@@ -15,7 +19,7 @@ static void testVoidZeroed(void)
 {
     uavcan_primitive_scalar_Bit_1_0 subject;
     uint8_t buffer[1] = {0xFF};
-    uint32_t bit_size;
+    typename_unsigned_bit_length bit_size;
 
     uavcan_primitive_scalar_Bit_1_0_init(&subject);
     int32_t rc = uavcan_primitive_scalar_Bit_1_0_serialize(&subject, 0, buffer, &bit_size);
@@ -29,7 +33,7 @@ static void testVariablePrimitiveArrayLength(void)
 {
     uavcan_register_Name_1_0 subject;
     uint8_t buffer[uavcan_register_Name_1_0_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES];
-    uint32_t bit_size;
+    typename_unsigned_bit_length bit_size;
 
     uavcan_register_Name_1_0_init(&subject);
     subject.name_length = strlen("foo");
@@ -45,7 +49,7 @@ static void testInvalidTag(void)
 {
     uavcan_register_Value_1_0 subject;
     uint8_t buffer[uavcan_register_Value_1_0_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES];
-    uint32_t bit_size;
+    typename_unsigned_bit_length bit_size;
 
     uavcan_register_Value_1_0_init(&subject);
     subject._tag_ = 200;
@@ -58,7 +62,7 @@ static void testCompositeLength(void)
 {
     uavcan_register_Access_1_0_Request subject;
     uint8_t buffer[uavcan_register_Access_1_0_Request_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES];
-    uint32_t bit_size;
+    typename_unsigned_bit_length bit_size;
 
     uavcan_register_Access_1_0_Request_init(&subject);
     subject.name.name_length = strlen("foo");
