@@ -4,14 +4,16 @@
  * Tests the common functionality provided by the Nunavut support headers.
  */
 #include "unity.h"
-#include <assert.h>
 #include "nunavut/support/serialization.h"
+
+// +--------------------------------------------------------------------------+
+// | nunavutCopyBits
+// +--------------------------------------------------------------------------+
 
 static void testNunavutCopyBits(void)
 {
     const uint8_t src[] = { 1, 2, 3, 4, 5 };
     uint8_t dst[6];
-    assert((uintptr_t)&src[5] == (uintptr_t)&dst[0]);
     memset(dst, 0, sizeof(dst));
     nunavutCopyBits(sizeof(src) * 8, 0, 0, src, dst);
     for(size_t i = 0; i < sizeof(src); ++i)
@@ -61,7 +63,19 @@ static void testNunavutCopyBitsWithUnalignedOffset(void)
     }
     TEST_ASSERT_EQUAL_HEX8(0x54, dst[0]);
 }
- 
+
+// +--------------------------------------------------------------------------+
+// | nunavutInternalGetBitCopySize
+// +--------------------------------------------------------------------------+
+
+static void testNunavutInternalGetBitCopySize(void)
+{
+    TEST_ASSERT_EQUAL_UINT32(4 * 8, nunavutInternalGetBitCopySize(4, 0, 4 * 8, 24 * 8));
+    TEST_ASSERT_EQUAL_UINT32((4 * 8) - 1, nunavutInternalGetBitCopySize(4, 1, 4 * 8, 24 * 8));
+    TEST_ASSERT_EQUAL_UINT32(2 * 8, nunavutInternalGetBitCopySize(4, 0, 4 * 8, 2 * 8));
+    TEST_ASSERT_EQUAL_UINT32((2 * 8) - 1, nunavutInternalGetBitCopySize(4, (2 * 8) + 1, 4 * 8, 2 * 8));
+}
+
 void setUp(void)
 {
 
@@ -79,6 +93,7 @@ int main(void)
     RUN_TEST(testNunavutCopyBits);
     RUN_TEST(testNunavutCopyBitsWithAlignedOffset);
     RUN_TEST(testNunavutCopyBitsWithUnalignedOffset);
+    RUN_TEST(testNunavutInternalGetBitCopySize);
  
     return UNITY_END();
 }
