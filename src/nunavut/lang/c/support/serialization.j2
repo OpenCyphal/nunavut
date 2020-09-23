@@ -39,7 +39,7 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 #ifndef __cplusplus
-#include <assert.h>
+#include <assert.h> // For static_assert macro (C11)
 #endif
 
 static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_unsigned_length }}), "The bit-length type used by Nunavut, {{ typename_unsigned_bit_length }}, "
@@ -77,7 +77,7 @@ static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_u
 // library.
 // Most platforms can simply define NUNAVUT_ASSERT as assert from assert.h
 #   error "You must either define NUNAVUT_ASSERT or you need to disable assertions"
-          " in the serializer using language options"
+          " when generating serialziation support code using Nunavut language options"
 #endif
 {% endif -%}
 
