@@ -78,6 +78,56 @@ static void testNunavutInternalGetBitCopySize(void)
     TEST_ASSERT_EQUAL_UINT32(0, nunavutInternalGetBitCopySize(2, (3 * 8), 3 * 8, 4 * 8));
 }
 
+// +--------------------------------------------------------------------------+
+// | nunavutSetIxx
+// +--------------------------------------------------------------------------+
+
+static void testNunavutSetIxx_neg1(void)
+{
+    uint8_t data[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    nunavutSetIxx(data, 0, -1, sizeof(data) * 8);
+    for (size_t i = 0; i < sizeof(data); ++i)
+    {
+        TEST_ASSERT_EQUAL_HEX8(0xFF, data[i]);
+    }
+}
+
+static void testNunavutSetIxx_neg255(void)
+{
+    uint8_t data[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    nunavutSetIxx(data, 0, -255, sizeof(data) * 8);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, data[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x01, data[0]);
+}
+
+static void testNunavutSetIxx_neg255_tooSmall(void)
+{
+    uint8_t data[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    nunavutSetIxx(data, 0, -255, sizeof(data) * 1);
+    TEST_ASSERT_EQUAL_HEX8(0x00, data[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x01, data[0]);
+}
+
+// +--------------------------------------------------------------------------+
+// | nunavutGetU8
+// +--------------------------------------------------------------------------+
+
+static void testnunavutGetU8(void)
+{
+    const uint8_t data[] = {0xFE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    TEST_ASSERT_EQUAL_HEX8(0xFE, nunavutGetU8(data, sizeof(data), 0, 8U));
+}
+
+static void testnunavutGetU8_tooSmall(void)
+{
+    const uint8_t data[] = {0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    TEST_ASSERT_EQUAL_HEX8(0x7F, nunavutGetU8(data, sizeof(data), 0, 7U));
+}
+
+// +--------------------------------------------------------------------------+
+// | TEST CASE
+// +--------------------------------------------------------------------------+
+
 void setUp(void)
 {
 
@@ -96,6 +146,11 @@ int main(void)
     RUN_TEST(testNunavutCopyBitsWithAlignedOffset);
     RUN_TEST(testNunavutCopyBitsWithUnalignedOffset);
     RUN_TEST(testNunavutInternalGetBitCopySize);
- 
+    RUN_TEST(testNunavutSetIxx_neg1);
+    RUN_TEST(testNunavutSetIxx_neg255);
+    RUN_TEST(testNunavutSetIxx_neg255_tooSmall);
+    RUN_TEST(testnunavutGetU8);
+    RUN_TEST(testnunavutGetU8_tooSmall);
+
     return UNITY_END();
 }
