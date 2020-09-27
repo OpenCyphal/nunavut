@@ -27,8 +27,8 @@ steps:
     id: cpp-docker-verify
     command: "./.buildkite/verify.sh"
     artifact_paths: 
-      - "verification/build_c/suite/coverage/all/*"
-      - "verification/build_cpp/suite/coverage/all/*"
+      - "verification/build_c/coverage_all.zip"
+      - "verification/build_cpp/coverage_all.zip"
     plugins:
       - docker#v3.3.0:
           workdir: /repo

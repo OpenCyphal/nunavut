@@ -259,3 +259,20 @@ add_custom_target(
      DEPENDS
           ${ALL_TESTS}
 )
+
+add_custom_target(
+     cov_all_archive
+     COMMAND
+     ${CMAKE_COMMAND}
+          -E tar
+          "cfv"
+          "coverage_all.zip"
+          --format=zip
+          "${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage/all"
+     DEPENDS
+          cov_all
+     BYPRODUCTS
+          "${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage_all.zip"
+     COMMENT
+          "Build and run all tests and generate an overall html coverage report as a zip archive."
+)
