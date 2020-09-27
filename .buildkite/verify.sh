@@ -31,7 +31,7 @@ fi
 pushd build_cpp
 cmake -DNUNAVUT_FLAG_SET=linux -DNUNAVUT_VERIFICATION_LANG=cpp ..
 cmake --build . --target all -- -j4
-cmake --build . --target cov_all
+cmake --build . --target cov_all_archive
 popd
 if [ ! -d build_c ]; then
     mkdir build_c
@@ -39,4 +39,4 @@ fi
 pushd build_c
 cmake -DNUNAVUT_FLAG_SET=linux -DNUNAVUT_VERIFICATION_LANG=c ..
 cmake --build . --target all -- -j4
-cmake --build . --target cov_all
+cmake --build . --target cov_all_archive
