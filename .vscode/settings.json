@@ -207,7 +207,8 @@
         "unordered_set": "cpp",
         "utility": "cpp",
         "valarray": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "serialization.h": "c"
     },
     "python.linting.mypyArgs": [
         "--config-file=${workspaceFolder}/tox.ini"
