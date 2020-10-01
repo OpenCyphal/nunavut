@@ -200,17 +200,17 @@ Filters
 Common Filters
 -------------------------------------------------
 
-.. autofunction:: nunavut.jinja.Generator.filter_yamlfy
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_yamlfy
    :noindex:
-.. autofunction:: nunavut.jinja.Generator.filter_type_to_template
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_type_to_template
    :noindex:
-.. autofunction:: nunavut.jinja.Generator.filter_type_to_include_path
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_type_to_include_path
    :noindex:
-.. autofunction:: nunavut.jinja.Generator.filter_typename
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_typename
    :noindex:
-.. autofunction:: nunavut.jinja.Generator.filter_alignment_prefix
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_alignment_prefix
    :noindex:
-.. autofunction:: nunavut.jinja.Generator.filter_bit_length_set
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_bit_length_set
    :noindex:
 
 C Filters
