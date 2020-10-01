@@ -1,13 +1,12 @@
 {%- macro choose_min(a, b) -%}
     ((({{a}}) < ({{b}})) ? ({{a}}) : ({{b}}))
 {%- endmacro -%}
-
 {%- macro float32_union() -%}
-typedef union  // NOSONAR
-{
-    uint32_t       bits;
-    {{typename_float_32}} real;
-} Float32Bits;
+    typedef union  // NOSONAR
+    {
+        uint32_t bits;
+        {{typename_float_32}} real;
+    } Float32Bits;
 {%- endmacro -%}
 /*
  *                                                                                                            +-+ +-+
@@ -435,7 +434,7 @@ static inline int64_t nunavutGetI64(const uint8_t* const buf,
 static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "The target platform does not support IEEE754 floating point operations.");
 static_assert(32U == (sizeof({{typename_float_32}}) * 8U), "Unsupported floating point model");
 
-static inline uint16_t float16Pack(const {{typename_float_32}} value)
+static inline uint16_t nunavutFloat16Pack(const {{typename_float_32}} value)
 {
     {{ float32_union() }}
 
@@ -446,11 +445,11 @@ static inline uint16_t float16Pack(const {{typename_float_32}} value)
     Float32Bits       f16inf;                                     // NOLINT NOSONAR
     Float32Bits       magic;                                      // NOLINT NOSONAR
     Float32Bits       in;                                         // NOSONAR
-    const uint32_t    sign = in.bits & (((uint32_t) 1U) << 31U);  // NOLINT NOSONAR
     f32inf.bits = ((uint32_t) 255U) << 23U;                       // NOLINT NOSONAR
     f16inf.bits = ((uint32_t) 31U) << 23U;                        // NOLINT NOSONAR
     magic.bits = ((uint32_t) 15U) << 23U;                         // NOLINT NOSONAR
-    in.bits = (uint32_t)value ^ sign;
+    in.real = value;
+    const uint32_t    sign = in.bits & (((uint32_t) 1U) << 31U);  // NOLINT NOSONAR
     in.bits ^= sign;
     uint16_t out = 0;
     if (in.bits >= f32inf.bits)
@@ -472,7 +471,7 @@ static inline uint16_t float16Pack(const {{typename_float_32}} value)
     return out;
 }
 
-static inline {{typename_float_32}} float16Unpack(const uint16_t value)
+static inline {{typename_float_32}} nunavutFloat16Unpack(const uint16_t value)
 {
     {{ float32_union() }}
 
@@ -495,14 +494,14 @@ static inline {{typename_float_32}} float16Unpack(const uint16_t value)
 
 static inline void nunavutSetF16(uint8_t* const buf, const {{ typename_unsigned_bit_length }} off_bit, const {{typename_float_32}} value)
 {
-    nunavutSetUxx(buf, off_bit, float16Pack(value), 16U);
+    nunavutSetUxx(buf, off_bit, nunavutFloat16Pack(value), 16U);
 }
 
 static inline {{typename_float_32}} nunavutGetF16(const uint8_t* const buf,
                                            const {{ typename_unsigned_length }} buf_size,
                                            const {{ typename_unsigned_bit_length }} off_bit)
 {
-    return float16Unpack(nunavutGetU16(buf, buf_size, off_bit, 16U));
+    return nunavutFloat16Unpack(nunavutGetU16(buf, buf_size, off_bit, 16U));
 }
 
 {% endif -%}
