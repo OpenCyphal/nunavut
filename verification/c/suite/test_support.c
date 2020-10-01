@@ -325,162 +325,53 @@ static void testNunavutFloat16PackUnpack(void)
 // | nunavutFloat16Pack
 // +--------------------------------------------------------------------------+
 
-/**
- * This method adapted from work by James Tursa published on mathworks.com
- * (https://www.mathworks.com/matlabcentral/fileexchange/23173-ieee-754r-half-precision-floating-point-converter)
- * under a BSD license.
- *
- * Copyright:   (c) 2009, 2020 by James Tursa, All Rights Reserved
- *
- *  This code uses the BSD License:
- *
- *  Redistribution and use in source and binary forms, with or without 
- *  modification, are permitted provided that the following conditions are 
- *  met:
- *
- *     * Redistributions of source code must retain the above copyright 
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright 
- *       notice, this list of conditions and the following disclaimer in 
- *       the documentation and/or other materials provided with the distribution
- *      
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
- *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
- *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
- *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
- *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
- *  POSSIBILITY OF SUCH DAMAGE.
- * 
- * We use this as an independent implementation to verify our own float16 serialization logic.
- * Note that in adapting James' work we hard-coded the rounding mode to be TONEAREST.
- */
-static void single2halfp(const float source, uint16_t* hp)
-{
-    // Convert to uint32 without conversion (type punning).
-    uint32_t x = *((uint32_t*)&source);
-    uint16_t hs, he, hm, hr;
-    uint32_t xs, xe, xm, xt, zm, zt, z1;
-    int hes, N;
-    
-    if( hp == NULL ) // Nothing to convert (e.g., imag part of pure real)
-    {
-        return;
-    }
-    
-    if( (x & 0x7FFFFFFFu) == 0 ) // Signed zero
-    {
-        *hp = (uint16_t) (x >> 16);  // Return the signed zero
-    }
-    else // Not zero
-    {
-        xs = x & 0x80000000u;  // Pick off sign bit
-        xe = x & 0x7F800000u;  // Pick off exponent bits
-        xm = x & 0x007FFFFFu;  // Pick off mantissa bits
-        xt = x & 0x00001FFFu;  // Pick off trailing 13 mantissa bits beyond the shift (used for rounding normalized determination)
-        if( xe == 0 ) // Denormal will underflow, return a signed zero or smallest denormal depending on rounding_mode
-        {
-            *hp = (uint16_t) (xs >> 16);  // Signed zero
-        }
-        else if( xe == 0x7F800000u ) // Inf or NaN (all the exponent bits are set)
-        {
-            if( xm == 0 ) // If mantissa is zero ...
-            {
-                *hp = (uint16_t) ((xs >> 16) | 0x7C00u); // Signed Inf
-            }
-            else
-            {
-                hm = (uint16_t) (xm >> 13); // Shift mantissa over
-                if( hm ) // If we still have some non-zero bits (payload) after the shift ...
-                {
-                    *hp = (uint16_t) ((xs >> 16) | 0x7C00u | 0x200u | hm); // Signed NaN, shifted mantissa bits set
-                    printf("HERE0 %d %d\n", hm, *hp);
-                }
-                else
-                {
-                    *hp = (uint16_t) ((xs >> 16) | 0x7E00u); // Signed NaN, only 1st mantissa bit set (quiet)
-                }
-            }
-        } 
-        else // Normalized number
-        {
-            hs = (uint16_t) (xs >> 16); // Sign bit
-            hes = ((int)(xe >> 23)) - 127 + 15; // Exponent unbias the single, then bias the halfp
-            if( hes >= 0x1F ) // Overflow
-            {
-                *hp = (uint16_t) ((xs >> 16) | 0x7C00u); // Signed Inf
-            }
-            else if( hes <= 0 ) // Underflow exponent, so halfp will be denormal
-            {
-                xm |= 0x00800000u;  // Add the hidden leading bit
-                N = (14 - hes);  // Number of bits to shift mantissa to get it into halfp word
-                hm = (N < 32) ? (uint16_t) (xm >> N) : (uint16_t) 0u; // Halfp mantissa
-                hr = (uint16_t) 0u; // Rounding bit, default to 0 for now (this will catch FE_TOWARDZERO and other cases)
-                if( N <= 24 ) // Mantissa bits have not shifted away from the end
-                { 
-                    zm = (0x00FFFFFFu >> N) << N;  // Halfp denormal mantissa bit mask
-                    zt = 0x00FFFFFFu & ~zm;  // Halfp denormal trailing mantissa bits mask
-                    z1 = (zt >> (N-1)) << (N-1);  // First bit of trailing bit mask
-                    xt = xm & zt;  // Trailing mantissa bits
-                    if( xt > z1 || xt == ( z1 && (hm & 1u) ) ) // Trailing bits are more than tie, or tie and mantissa is currently odd
-                    {
-                        hr = (uint16_t) 1u; // Rounding bit set to 1
-                    }
-                } // else Mantissa bits have shifted at least one bit beyond the end (ties not possible)
-                *hp = (uint16_t)((hs | hm) + hr); // Combine sign bit and mantissa bits and rounding bit, biased exponent is zero
-            }
-            else
-            {
-                he = (uint16_t) (hes << 10); // Exponent
-                hm = (uint16_t) (xm >> 13); // Mantissa
-                hr = (uint16_t) 0u; // Rounding bit, default to 0 for now
-                if( xt > 0x00001000u || xt == ( 0x00001000u && (hm & 1u) ) ) // Trailing bits are more than tie, or tie and mantissa is currently odd
-                {
-                    hr = (uint16_t) 1u; // Rounding bit set to 1
-                }
-                *hp = (uint16_t)((hs | he | hm) + hr);  // Adding rounding bit might overflow into exp bits, but that is OK
-            }
-        }
-    }
-}
-
-
-static void helperAssertSerFloat16SameAsIEEE(const float original_value, const uint16_t serialized_result)
-{
-    uint16_t expected_value;
-    
-    single2halfp(original_value, &expected_value);
-
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(expected_value & 0x3FF, serialized_result & 0x3FF, "Mantessa did not match.");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE((expected_value >> 10U) & 0x1F, (serialized_result >> 10U) & 0x1F, "Exponents did not match.");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE((expected_value >> 15U) & 0x1, (serialized_result >> 15U) & 0x1, "Sign-bit did not match.");
-}
-
-
 static void testNunavutFloat16Pack(void)
 {
+    // Comparing to Numpy calculated values
+
     uint16_t packed_float = nunavutFloat16Pack(3.14f);
-    helperAssertSerFloat16SameAsIEEE(3.14f, packed_float);
+    // hex(int.from_bytes(np.array([np.float16('3.14')]).tobytes(), 'little'))
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x4248, packed_float, "Failed to serialize 3.14f");
 
     packed_float = nunavutFloat16Pack(-3.14f);
-    helperAssertSerFloat16SameAsIEEE(-3.14f, packed_float);
+    // hex(int.from_bytes(np.array([-np.float16('3.14')]).tobytes(), 'little'))
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0xC248, packed_float, "Failed to serialize -3.14f");
 
-    packed_float = nunavutFloat16Pack(3.141592653589793238462643383279f);
-    helperAssertSerFloat16SameAsIEEE(3.141592653589793238462643383279f, packed_float);
+    packed_float = nunavutFloat16Pack(65536.141592653589793238462643383279f);
+    // hex(int.from_bytes(np.array([np.float16('65536.141592653589793238462643383279')]).tobytes(), 'little'))
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, packed_float, "Failed to serialize 65536.141592653589793238462643383279f");
 
-    packed_float = nunavutFloat16Pack(-3.141592653589793238462643383279f);
-    helperAssertSerFloat16SameAsIEEE(-3.141592653589793238462643383279f, packed_float);
-
-    // packed_float = nunavutFloat16Pack(NAN);
-    // helperAssertSerFloat16SameAsIEEE(NAN, packed_float);
-
-    // packed_float = nunavutFloat16Pack(-NAN);
-    // helperAssertSerFloat16SameAsIEEE(-NAN, packed_float);
+    packed_float = nunavutFloat16Pack(-65536.141592653589793238462643383279f);
+    // hex(int.from_bytes(np.array([np.float16('65536.141592653589793238462643383279')]).tobytes(), 'little'))
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0xFC00, packed_float, "Failed to serialize -65536.141592653589793238462643383279f");
 }
+
+static void testNunavutFloat16Pack_NAN_quiet(void)
+{
+    uint16_t packed_float = nunavutFloat16Pack(NAN);
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x200, (0x200 & packed_float), "NAN was not silent.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "Exponent bits were not all set for NAN.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x80000 & packed_float), "NAN sign bit was negative.");
+
+    packed_float = nunavutFloat16Pack(-NAN);
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x200, (0x200 & packed_float), "-NAN was not silent.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "Exponent bits were not all set for -NAN.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x80000, (0x80000 & packed_float), "-NAN sign bit was positive.");
+}
+
+static void testNunavutFloat16Pack_infinity(void)
+{
+    uint16_t packed_float = nunavutFloat16Pack(INFINITY);
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x3FF & packed_float), "Mantessa bits were not 0 for INFINITY.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "INFINITY did not set bits G5 - G4+w");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x80000 & packed_float), "INFINITY sign bit was negative.");
+
+    packed_float = nunavutFloat16Pack(-INFINITY);
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x3FF & packed_float), "Mantessa bits were not 0 for -INFINITY.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "-INFINITY did not set bits G5 - G4+w");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x80000, (0x80000 & packed_float), "-INFINITY sign bit was positive.");
+}
+
 
 // +--------------------------------------------------------------------------+
 // | testNunavutSet32
@@ -582,6 +473,8 @@ int main(void)
     RUN_TEST(testNunavutGetI64_zeroDataLen);
     RUN_TEST(testNunavutFloat16PackUnpack);
     RUN_TEST(testNunavutFloat16Pack);
+    RUN_TEST(testNunavutFloat16Pack_NAN_quiet);
+    RUN_TEST(testNunavutFloat16Pack_infinity);
     RUN_TEST(testNunavutSet32);
 
     return UNITY_END();
