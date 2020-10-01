@@ -161,6 +161,24 @@ Alternatively just nuke everything temporary using git clean::
     git clean -X -d -f
 
 
+VSCode Remote Container Development of Verification Tests
+====================================================================================
+
+To write and debug verification tests using `VSCode Remote Containers`_ you'll need to use the
+"Open Folder in Container..." option:
+
+.. image:: /docs/static/images/vscode_open_in_container.png
+
+Open the "verification" folder:
+
+.. image:: /docs/static/images/vscode_folder_verification.png
+
+We play a little trick here where we dump you back into the Nunvut repo root when you reopen in
+the container. This lets you also work with the Python source. If you "reopen locally" while in
+this state, however, you'll find yourself back in the verification folder which can be a little
+disorienting. Write to Microsoft asking them to allow multiple images in the .devcontainer
+json and we can get rid of this ugly hack. Sorry.
+
 ************************************************
 Building The Docs
 ************************************************
@@ -236,3 +254,4 @@ our Buildkite `AWS CloudFormation`_ stack and of our PyPI UAVCAN organization.
 .. _`UAVCAN forum`: https://forum.uavcan.org
 .. _`nunavut on read the docs`: https://nunavut.readthedocs.io/en/latest/index.html
 .. _`AWS CloudFormation`: https://aws.amazon.com/cloudformation/
+.. _`VSCode Remote Containers`: https://code.visualstudio.com/docs/remote/containers

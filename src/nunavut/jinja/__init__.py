@@ -483,7 +483,7 @@ class DSDLCodeGenerator(CodeGenerator):
 
         :param value: The input value to change into a template include path.
 
-        :returns: A path to a template named for the type with :any:`DSDLCodeGenerator.TEMPLATE_SUFFIX`
+        :returns: A path to a template named for the type with :any:`CodeGenerator.TEMPLATE_SUFFIX`
         """
         search_queue = collections.deque()  # type: typing.Deque[typing.Any]
         discovered = set()  # type: typing.Set[typing.Any]
