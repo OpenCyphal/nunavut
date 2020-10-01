@@ -434,6 +434,10 @@ static inline int64_t nunavutGetI64(const uint8_t* const buf,
 static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "The target platform does not support IEEE754 floating point operations.");
 static_assert(32U == (sizeof({{typename_float_32}}) * 8U), "Unsupported floating point model");
 
+
+/// Converts a single-precision float into the binary representation of the value as a half-precision IEEE754 value.
+/// Currently this method always encodes non-signaling NAN.
+///
 static inline uint16_t nunavutFloat16Pack(const {{typename_float_32}} value)
 {
     {{ float32_union() }}
