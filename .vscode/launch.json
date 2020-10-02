@@ -33,6 +33,27 @@
             "module": "pytest",
             "console": "internalConsole",
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Verification: test_support",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_support",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Verification: test_serialization",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_serialization",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Verification: test_initialization",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_initialization",
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
