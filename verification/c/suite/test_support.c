@@ -359,6 +359,25 @@ static void testNunavutFloat16Pack_NAN_quiet(void)
     TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x80000, (0x80000 & packed_float), "-NAN sign bit was positive.");
 }
 
+static void testNunavutFloat16Pack_NAN_signalling(void)
+{
+    const uint32_t signalling_nan_bits = 0x7FE00000 | 0x1;
+    const float signalling_nan = *((float*)&signalling_nan_bits);
+    // The specification requires at least one non-zero bit is set in the trailing significant
+    // to distinguish from INFINITY.
+    uint16_t packed_float = nunavutFloat16Pack(signalling_nan);
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x200 & packed_float), "NAN was silent.");
+    TEST_ASSERT_MESSAGE(0 != (0x3FF & packed_float), "Mantessa bits were all zero. At least one bit must be non-zero.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "Exponent bits were not all set for signalling NAN.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x80000 & packed_float), "Signalling NAN sign bit was negative.");
+
+    packed_float = nunavutFloat16Pack(signalling_nan);
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x200 & packed_float), "-NAN was silent.");
+    TEST_ASSERT_MESSAGE(0 != (0x3FF & packed_float), "Mantessa bits were all zero. At least one bit must be non-zero.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "Exponent bits were not all set for -NAN (signalling).");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x80000, (0x80000 & packed_float), "-NAN (signalling) sign bit was positive.");
+}
+
 static void testNunavutFloat16Pack_infinity(void)
 {
     uint16_t packed_float = nunavutFloat16Pack(INFINITY);
@@ -372,6 +391,18 @@ static void testNunavutFloat16Pack_infinity(void)
     TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x80000, (0x80000 & packed_float), "-INFINITY sign bit was positive.");
 }
 
+static void testNunavutFloat16Pack_zero(void)
+{
+    uint16_t packed_float = nunavutFloat16Pack(0.0f);
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x3FF & packed_float), "0.0f had bits in significand.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x7C00 & packed_float), "0.0f had bits in exponent.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x80000 & packed_float), "0.0f sign bit was negative.");
+
+    packed_float = nunavutFloat16Pack(-0.0f);
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x3FF & packed_float), "-0.0f had bits in significand.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x7C00 & packed_float), "-0.0f had bits in exponent.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x80000, (0x80000 & packed_float), "-0.0f sign bit was not negative.");
+}
 
 // +--------------------------------------------------------------------------+
 // | testNunavutSet32
@@ -474,7 +505,9 @@ int main(void)
     RUN_TEST(testNunavutFloat16PackUnpack);
     RUN_TEST(testNunavutFloat16Pack);
     RUN_TEST(testNunavutFloat16Pack_NAN_quiet);
+    RUN_TEST(testNunavutFloat16Pack_NAN_signalling);
     RUN_TEST(testNunavutFloat16Pack_infinity);
+    RUN_TEST(testNunavutFloat16Pack_zero);
     RUN_TEST(testNunavutSet32);
 
     return UNITY_END();

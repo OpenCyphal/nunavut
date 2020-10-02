@@ -436,7 +436,6 @@ static_assert(32U == (sizeof({{typename_float_32}}) * 8U), "Unsupported floating
 
 
 /// Converts a single-precision float into the binary representation of the value as a half-precision IEEE754 value.
-/// Currently this method always encodes non-signaling NAN.
 ///
 static inline uint16_t nunavutFloat16Pack(const {{typename_float_32}} value)
 {
@@ -458,7 +457,26 @@ static inline uint16_t nunavutFloat16Pack(const {{typename_float_32}} value)
     uint16_t out = 0;
     if (in.bits >= f32inf.bits)
     {
-        out = (in.bits > f32inf.bits) ? (uint16_t) 0x7FFFU : (uint16_t) 0x7C00U;  // NOLINT NOSONAR
+        if ( (in.bits & 0x1FFFFFU) != 0x0)
+        {
+            // this is a NAN, not infinity.
+            if (0x100000U & in.bits)
+            {
+                // quiet
+                out = 0x7E00U;
+            }
+            else
+            {
+                // signalling. We're allowed to discard any diagnostic data in the
+                // mantessa but at least one bit must be set to distinguish from
+                // INFINITY.
+                out = 0x7C01U;
+            }
+        }
+        else
+        {
+            out = (in.bits > f32inf.bits) ? (uint16_t) 0x7FFFU : (uint16_t) 0x7C00U;  // NOLINT NOSONAR
+        }
     }
     else
     {
