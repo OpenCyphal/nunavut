@@ -51,6 +51,7 @@
             "intelliSenseMode": "gcc-x64",
             "includePath": [
                 "${workspaceFolder}/submodules/googletest/googlemock/include",
+                "${workspaceFolder}/submodules/unity/src",
                 "${workspaceFolder}/verification/build_vscode/native-gcc-c/generated"
             ],
             "browse": {
@@ -70,6 +71,7 @@
             "intelliSenseMode": "gcc-x64",
             "includePath": [
                 "${workspaceFolder}/submodules/googletest/googlemock/include",
+                "${workspaceFolder}/submodules/unity/src",
                 "${workspaceFolder}/verification/build_vscode/native-gcc-cpp/generated"
             ],
             "browse": {
