@@ -72,6 +72,7 @@ file(WRITE ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/README.txt
 # We generate coverage reports. Please look at them (It wasn't easy to get this to work).
 #
 find_package(lcov REQUIRED)
+find_package(genhtml REQUIRED)
 
 #
 # We need tox to enable a reproducable python environment.

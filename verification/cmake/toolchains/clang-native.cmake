@@ -12,4 +12,4 @@ set(CMAKE_ASM_COMPILER clang CACHE FILEPATH "assembler")
 # clang so they should try to use llvm-cov if it's available.
 # Things are weird between gcov and llvm-cov right now but this
 # seems to work in our Ubuntu 18 Docker container, so...?
-set(NUNAVUT_CPP_USE_LLVM_COV ON CACHE BOOL "Enable gcov compatibility with lcov coverage tools.")
+set(NUNAVUT_USE_LLVM_COV ON CACHE BOOL "Enable gcov compatibility with lcov coverage tools.")
