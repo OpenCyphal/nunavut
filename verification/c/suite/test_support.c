@@ -308,19 +308,6 @@ static void testNunavutGetI64_zeroDataLen(void)
     TEST_ASSERT_EQUAL_INT64(0, nunavutGetI64(data, sizeof(data), 0, 0U));
 }
 
-
-// +--------------------------------------------------------------------------+
-// | nunavutFloat16Pack/Unpack
-// +--------------------------------------------------------------------------+
-
-/**
- * Ensure the methods are symmetrical.
- */
-static void testNunavutFloat16PackUnpack(void)
-{
-    TEST_ASSERT_FLOAT_WITHIN(0.001f, 3.14f, nunavutFloat16Unpack(nunavutFloat16Pack(3.14f)));
-}
-
 // +--------------------------------------------------------------------------+
 // | nunavutFloat16Pack
 // +--------------------------------------------------------------------------+
@@ -422,6 +409,98 @@ static void testNunavutFloat16Pack_zero(void)
 }
 
 // +--------------------------------------------------------------------------+
+// | nunavutFloat16Unpack
+// +--------------------------------------------------------------------------+
+
+static void testNunavutFloat16Unpack(void)
+{
+    // >>> hex(int.from_bytes(np.array([-np.float16('3.14')]).tobytes(), 'little'))
+    // '0xc248'
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, -3.14f, nunavutFloat16Unpack(0xC248));
+    // >>> hex(int.from_bytes(np.array([np.float16('3.14')]).tobytes(), 'little'))
+    // '0x4248'
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 3.14f, nunavutFloat16Unpack(0x4248));
+    // >>> hex(int.from_bytes(np.array([np.float16('nan')]).tobytes(), 'little'))
+    // '0x7e00'
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, NAN, nunavutFloat16Unpack(0x7e00));
+    // >>> hex(int.from_bytes(np.array([-np.float16('nan')]).tobytes(), 'little'))
+    // '0xfe00'
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, -NAN, nunavutFloat16Unpack(0xfe00));
+    // >>> hex(int.from_bytes(np.array([np.float16('infinity')]).tobytes(), 'little'))
+    // '0x7c00'
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, INFINITY, nunavutFloat16Unpack(0x7c00));
+    // >>> hex(int.from_bytes(np.array([-np.float16('infinity')]).tobytes(), 'little'))
+    // '0xfc00'
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, -INFINITY, nunavutFloat16Unpack(0xfc00));
+}
+
+// +--------------------------------------------------------------------------+
+// | nunavutFloat16Pack/Unpack
+// +--------------------------------------------------------------------------+
+
+static void helperPackUnpack(float source_value, uint16_t compare_mask, size_t iterations)
+{
+    const uint16_t packed = nunavutFloat16Pack(source_value);
+    uint16_t repacked = packed;
+    char message_buffer[128];
+
+    for(size_t i = 0; i < iterations; ++i)
+    {
+        repacked = nunavutFloat16Pack(nunavutFloat16Unpack(repacked));
+        snprintf(message_buffer, 128, "source_value=%f, compare_mask=%X, i=%zu", source_value, compare_mask, i);
+        TEST_ASSERT_EQUAL_HEX16_MESSAGE(packed & compare_mask, repacked & compare_mask, message_buffer);
+    }
+}
+
+/**
+ * Test pack/unpack stability.
+ */
+static void testNunavutFloat16PackUnpack(void)
+{
+    const uint32_t signalling_nan_bits = 0x7F800000U | 0x200000U;
+    const uint32_t signalling_negative_nan_bits = 0xFF800000U | 0x200000U;
+
+    helperPackUnpack(3.14f, 0xFFFF, 10);
+    helperPackUnpack(-3.14f, 0xFFFF, 10);
+    helperPackUnpack(65536.141592653589793238462643383279f, 0xFFFF, 100);
+    helperPackUnpack(-65536.141592653589793238462643383279f, 0xFFFF, 100);
+
+    helperPackUnpack(NAN, 0xFE00, 10);
+    helperPackUnpack(-NAN, 0xFE00, 10);
+    helperPackUnpack(*((float*)&signalling_nan_bits), 0xFF00, 10);
+    helperPackUnpack(*((float*)&signalling_negative_nan_bits), 0xFF00, 10);
+    helperPackUnpack(INFINITY, 0xFF00, 10);
+    helperPackUnpack(-INFINITY, 0xFF00, 10);
+}
+
+// +--------------------------------------------------------------------------+
+// | testNunavutSetF16
+// +--------------------------------------------------------------------------+
+
+static void testNunavutSet16(void)
+{
+    uint8_t buf[3];
+    buf[2] = 0x00;
+    nunavutSetF16(buf, 0, 3.14f);
+    TEST_ASSERT_EQUAL_HEX8(0x48, buf[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x42, buf[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]);
+}
+
+
+
+// +--------------------------------------------------------------------------+
+// | testNunavutGetF16
+// +--------------------------------------------------------------------------+
+
+static void testNunavutGet16(void)
+{
+    const uint8_t buf[3] = {0x48, 0x42, 0x00};
+    const float result = nunavutGetF16(buf, 3, 0);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 3.14f, result);
+}
+
+// +--------------------------------------------------------------------------+
 // | testNunavutSet32
 // +--------------------------------------------------------------------------+
 /**
@@ -519,13 +598,16 @@ int main(void)
     RUN_TEST(testNunavutGetI64_tooSmall);
     RUN_TEST(testNunavutGetI64_tooSmallAndNegative);
     RUN_TEST(testNunavutGetI64_zeroDataLen);
-    RUN_TEST(testNunavutFloat16PackUnpack);
     RUN_TEST(testNunavutFloat16Pack);
     RUN_TEST(testNunavutFloat16Pack_NAN_cmath);
     RUN_TEST(testNunavutFloat16Pack_NAN_quiet);
     RUN_TEST(testNunavutFloat16Pack_NAN_signalling);
     RUN_TEST(testNunavutFloat16Pack_infinity);
     RUN_TEST(testNunavutFloat16Pack_zero);
+    RUN_TEST(testNunavutFloat16Unpack);
+    RUN_TEST(testNunavutFloat16PackUnpack);
+    RUN_TEST(testNunavutSet16);
+    RUN_TEST(testNunavutGet16);
     RUN_TEST(testNunavutSet32);
 
     return UNITY_END();
