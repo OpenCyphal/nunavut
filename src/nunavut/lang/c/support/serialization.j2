@@ -457,10 +457,10 @@ static inline uint16_t nunavutFloat16Pack(const {{typename_float_32}} value)
     uint16_t out = 0;
     if (in.bits >= f32inf.bits)
     {
-        if ( (in.bits & 0x1FFFFFU) != 0x0)
+        if ( (in.bits & 0x3FFFFFU) != 0x0)
         {
             // this is a NAN, not infinity.
-            if (0x100000U & in.bits)
+            if (0x400000U & in.bits)
             {
                 // quiet
                 out = 0x7E00U;
@@ -468,9 +468,9 @@ static inline uint16_t nunavutFloat16Pack(const {{typename_float_32}} value)
             else
             {
                 // signalling. We're allowed to discard any diagnostic data in the
-                // mantessa but at least one bit must be set to distinguish from
-                // INFINITY.
-                out = 0x7C01U;
+                // mantessa but at least one bit, other than the signalling bit,
+                // must be set to distinguish from INFINITY.
+                out = 0x7D00U;
             }
         }
         else

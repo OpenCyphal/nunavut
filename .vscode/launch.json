@@ -49,8 +49,29 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "Verification: test_initialization",
-            "type": "cppdbg",
+            "name": "Verification (lldb): test_initialization",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_initialization",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Verification(lldb): test_support",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceRoot}/verification/build_vscode/native-clang-c/suite/test_support",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Verification (lldb): test_serialization",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_serialization",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Verification (lldb): test_initialization",
+            "type": "lldb",
             "request": "launch",
             "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_initialization",
             "cwd": "${workspaceFolder}"
