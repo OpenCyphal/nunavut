@@ -422,16 +422,16 @@ static void testNunavutFloat16Unpack(void)
     TEST_ASSERT_FLOAT_WITHIN(0.001f, 3.14f, nunavutFloat16Unpack(0x4248));
     // >>> hex(int.from_bytes(np.array([np.float16('nan')]).tobytes(), 'little'))
     // '0x7e00'
-    TEST_ASSERT_FLOAT_WITHIN(0.001f, NAN, nunavutFloat16Unpack(0x7e00));
+    TEST_ASSERT_FLOAT_IS_NAN(nunavutFloat16Unpack(0x7e00));
     // >>> hex(int.from_bytes(np.array([-np.float16('nan')]).tobytes(), 'little'))
     // '0xfe00'
-    TEST_ASSERT_FLOAT_WITHIN(0.001f, -NAN, nunavutFloat16Unpack(0xfe00));
+    TEST_ASSERT_FLOAT_IS_NAN(nunavutFloat16Unpack(0xfe00));
     // >>> hex(int.from_bytes(np.array([np.float16('infinity')]).tobytes(), 'little'))
     // '0x7c00'
-    TEST_ASSERT_FLOAT_WITHIN(0.001f, INFINITY, nunavutFloat16Unpack(0x7c00));
+    TEST_ASSERT_FLOAT_IS_INF(nunavutFloat16Unpack(0x7c00));
     // >>> hex(int.from_bytes(np.array([-np.float16('infinity')]).tobytes(), 'little'))
     // '0xfc00'
-    TEST_ASSERT_FLOAT_WITHIN(0.001f, -INFINITY, nunavutFloat16Unpack(0xfc00));
+    TEST_ASSERT_FLOAT_IS_NEG_INF(nunavutFloat16Unpack(0xfc00));
 }
 
 // +--------------------------------------------------------------------------+
@@ -495,13 +495,15 @@ static void testNunavutSet16(void)
 
 static void testNunavutGet16(void)
 {
+    // >>> hex(int.from_bytes(np.array([np.float16('3.14')]).tobytes(), 'little'))
+    // '0x4248'
     const uint8_t buf[3] = {0x48, 0x42, 0x00};
     const float result = nunavutGetF16(buf, 3, 0);
     TEST_ASSERT_FLOAT_WITHIN(0.001f, 3.14f, result);
 }
 
 // +--------------------------------------------------------------------------+
-// | testNunavutSet32
+// | testNunavutSetF32
 // +--------------------------------------------------------------------------+
 /**
  * Compare the results of Nunavut serialization to the IEEE definition. These must match.
@@ -528,7 +530,7 @@ static void helperAssertSerFloat32SameAsIEEE(const float original_value, const u
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(as_int.ieee.negative & 0x1, (serialized_result[3] >> 7U) & 0x01, "Negative bit did not match.");
 }
 
-static void testNunavutSet32(void)
+static void testNunavutSetF32(void)
 {
     uint8_t buffer[] = {0x00, 0x00, 0x00, 0x00};
     nunavutSetF32(buffer, 0, 3.14f);
@@ -545,6 +547,137 @@ static void testNunavutSet32(void)
     memset(buffer, 0, sizeof(buffer));
     nunavutSetF32(buffer, 0, NAN);
     helperAssertSerFloat32SameAsIEEE(NAN, buffer);
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavutSetF32(buffer, 0, INFINITY);
+    helperAssertSerFloat32SameAsIEEE(INFINITY, buffer);
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavutSetF32(buffer, 0, -INFINITY);
+    helperAssertSerFloat32SameAsIEEE(-INFINITY, buffer);
+}
+
+// +--------------------------------------------------------------------------+
+// | testNunavutGetF32
+// +--------------------------------------------------------------------------+
+
+static void testNunavutGetF32(void)
+{
+    // >>> hex(int.from_bytes(np.array([-np.float32('infinity')]).tobytes(), 'little'))
+    // '0xff800000'
+    const uint8_t buffer_neg_inf[] = {0x00, 0x00, 0x80, 0xFF};
+    float result = nunavutGetF32(buffer_neg_inf, 4, 0);
+    TEST_ASSERT_FLOAT_IS_NEG_INF(result);
+
+    // >>> hex(int.from_bytes(np.array([np.float32('infinity')]).tobytes(), 'little'))
+    // '0x7f800000'
+    const uint8_t buffer_inf[] = {0x00, 0x00, 0x80, 0x7F};
+    result = nunavutGetF32(buffer_inf, 4, 0);
+    TEST_ASSERT_FLOAT_IS_INF(result);
+
+    // >>> hex(int.from_bytes(np.array([np.float32('nan')]).tobytes(), 'little'))
+    // '0x7fc00000'
+    const uint8_t buffer_nan[] = {0x00, 0x00, 0xC0, 0x7F};
+    result = nunavutGetF32(buffer_nan, 4, 0);
+    TEST_ASSERT_FLOAT_IS_NAN(result);
+
+    // >>> hex(int.from_bytes(np.array([np.float32('3.14')]).tobytes(), 'little'))
+    // '0x4048f5c3'
+    const uint8_t buffer_pi[] = {0xC3, 0xF5, 0x48, 0x40};
+    result = nunavutGetF32(buffer_pi, 4, 0);
+    TEST_ASSERT_EQUAL_FLOAT(3.14f, result);
+}
+
+
+// +--------------------------------------------------------------------------+
+// | testNunavutGetF64
+// +--------------------------------------------------------------------------+
+
+static void testNunavutGetF64(void)
+{
+    // >>> hex(int.from_bytes(np.array([np.float64('3.141592653589793')]).tobytes(), 'little'))
+    // '0x400921fb54442d18'
+    const uint8_t buffer_pi[] = {0x18, 0x2D, 0x44, 0x54, 0xFB, 0x21, 0x09, 0x40};
+    double result = nunavutGetF64(buffer_pi, 8, 0);
+    TEST_ASSERT_EQUAL_DOUBLE(3.141592653589793, result);
+
+    // >>> hex(int.from_bytes(np.array([np.float64('infinity')]).tobytes(), 'little'))
+    // '0x7ff0000000000000'
+    const uint8_t buffer_inf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x7F};
+    result = nunavutGetF64(buffer_inf, 8, 0);
+    TEST_ASSERT_DOUBLE_IS_INF(result);
+
+    // >>> hex(int.from_bytes(np.array([-np.float64('infinity')]).tobytes(), 'little'))
+    // '0xfff0000000000000'
+    const uint8_t buffer_neg_inf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xFF};
+    result = nunavutGetF64(buffer_neg_inf, 8, 0);
+    TEST_ASSERT_DOUBLE_IS_NEG_INF(result);
+
+    // >>> hex(int.from_bytes(np.array([np.float64('nan')]).tobytes(), 'little'))
+    // '0x7ff8000000000000'
+    const uint8_t buffer_nan[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x7F};
+    result = nunavutGetF64(buffer_nan, 8, 0);
+    TEST_ASSERT_DOUBLE_IS_NAN(result);
+
+}
+
+// +--------------------------------------------------------------------------+
+// | testNunavutSetF64
+// +--------------------------------------------------------------------------+
+/**
+ * Compare the results of Nunavut serialization to the IEEE definition. These must match.
+ */
+static void helperAssertSerFloat64SameAsIEEE(const double original_value, const uint8_t* serialized_result)
+{
+    union
+    {
+        double f;
+        struct
+        {
+            uint64_t mantissa : 52;
+            uint64_t exponent : 11;
+            uint64_t negative : 1;
+        } ieee;
+    } as_int = {original_value};
+
+    union
+    {
+        uint64_t as_int;
+        uint8_t as_bytes[8];
+    } result_bytes;
+    memcpy(result_bytes.as_bytes, serialized_result, 8);
+
+    TEST_ASSERT_EQUAL_HEX64_MESSAGE(as_int.ieee.mantissa & 0xFFFFFFFFFFFFF, result_bytes.as_int & 0xFFFFFFFFFFFFF, "Mantessa did not match.");
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(as_int.ieee.exponent & 0xF, (serialized_result[6] >> 4U) & 0xF, "First four bits of exponent did not match.");
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE((as_int.ieee.exponent >> 4U) & 0x7F, serialized_result[7] & 0x7F, "Last 7 bits of exponent did not match.");
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(as_int.ieee.negative & 0x1, (serialized_result[7] >> 7U) & 0x01, "Negative bit did not match.");
+}
+
+static void testNunavutSetF64(void)
+{
+    uint8_t buffer[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    nunavutSetF64(buffer, 0, 3.141592653589793);
+    helperAssertSerFloat64SameAsIEEE(3.141592653589793, buffer);
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavutSetF64(buffer, 0, -3.141592653589793);
+    helperAssertSerFloat64SameAsIEEE(-3.141592653589793, buffer);
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavutSetF64(buffer, 0, -NAN);
+    helperAssertSerFloat64SameAsIEEE(-NAN, buffer);
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavutSetF64(buffer, 0, NAN);
+    helperAssertSerFloat64SameAsIEEE(NAN, buffer);
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavutSetF64(buffer, 0, INFINITY);
+    helperAssertSerFloat64SameAsIEEE(INFINITY, buffer);
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavutSetF64(buffer, 0, -INFINITY);
+    helperAssertSerFloat64SameAsIEEE(-INFINITY, buffer);
 }
 
 // +--------------------------------------------------------------------------+
@@ -608,7 +741,10 @@ int main(void)
     RUN_TEST(testNunavutFloat16PackUnpack);
     RUN_TEST(testNunavutSet16);
     RUN_TEST(testNunavutGet16);
-    RUN_TEST(testNunavutSet32);
+    RUN_TEST(testNunavutSetF32);
+    RUN_TEST(testNunavutGetF32);
+    RUN_TEST(testNunavutGetF64);
+    RUN_TEST(testNunavutSetF64);
 
     return UNITY_END();
 }

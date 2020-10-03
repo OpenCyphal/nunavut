@@ -26,6 +26,8 @@ target_include_directories(unity_core PRIVATE
 
 target_compile_options(unity_core PUBLIC
                         "-Wno-float-equal"
+                        "-Wno-double-promotion"
+                        "-DUNITY_INCLUDE_DOUBLE"
                        )
 
 include(FindPackageHandleStandardArgs)
