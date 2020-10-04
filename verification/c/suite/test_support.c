@@ -434,6 +434,64 @@ static void testNunavutFloat16Unpack(void)
     TEST_ASSERT_FLOAT_IS_NEG_INF(nunavutFloat16Unpack(0xfc00));
 }
 
+static void testNunavutFloat16Unpack_signallingNan(void)
+{
+    const uint16_t signalling_nan_bits = 0x7D00;
+    const float signalling_nan = nunavutFloat16Unpack(signalling_nan_bits);
+    TEST_ASSERT_FLOAT_IS_NAN(signalling_nan);
+    union
+    {
+        float fp;
+        struct
+        {
+            union
+            {
+                uint32_t as_number : 23;
+                struct
+                {
+                    uint32_t diagnostic : 22;
+                    uint32_t nsignalling : 1;
+                } as_nan;
+            } mantessa;
+            uint32_t exponent : 8;
+            uint32_t sign : 1;
+        } ieee;
+    } as_bits = {signalling_nan};
+    TEST_ASSERT_EQUAL_MESSAGE(0, as_bits.ieee.mantessa.as_nan.nsignalling, "Signalling NAN was quieted!");
+}
+
+static void testNunavutFloat16Unpack_quietNan(void)
+{
+    const uint16_t signalling_nan_bits = 0x7E00;
+    const float signalling_nan = nunavutFloat16Unpack(signalling_nan_bits);
+    TEST_ASSERT_FLOAT_IS_NAN(signalling_nan);
+    union
+    {
+        float fp;
+        struct
+        {
+            union
+            {
+                uint32_t as_number : 23;
+                struct
+                {
+                    uint32_t diagnostic : 22;
+                    uint32_t nsignalling : 1;
+                } as_nan;
+            } mantessa;
+            uint32_t exponent : 8;
+            uint32_t sign : 1;
+        } ieee;
+    } as_bits = {signalling_nan};
+    TEST_ASSERT_EQUAL_MESSAGE(1, as_bits.ieee.mantessa.as_nan.nsignalling, "Quiet NAN was converted to signalling!");
+}
+
+void testNunavutFloat16Unpack_INFINITY(void)
+{
+    TEST_ASSERT_FLOAT_IS_INF(nunavutFloat16Unpack(0x7C00));
+    TEST_ASSERT_FLOAT_IS_NEG_INF(nunavutFloat16Unpack(0xFC00));
+}
+
 // +--------------------------------------------------------------------------+
 // | nunavutFloat16Pack/Unpack
 // +--------------------------------------------------------------------------+
@@ -471,6 +529,11 @@ static void testNunavutFloat16PackUnpack(void)
     helperPackUnpack(*((float*)&signalling_negative_nan_bits), 0xFF00, 10);
     helperPackUnpack(INFINITY, 0xFF00, 10);
     helperPackUnpack(-INFINITY, 0xFF00, 10);
+}
+
+static void testNunavutFloat16PackUnpack_NAN(void)
+{
+    TEST_ASSERT_FLOAT_IS_NAN(nunavutFloat16Unpack(nunavutFloat16Pack(NAN)));
 }
 
 // +--------------------------------------------------------------------------+
@@ -738,7 +801,11 @@ int main(void)
     RUN_TEST(testNunavutFloat16Pack_infinity);
     RUN_TEST(testNunavutFloat16Pack_zero);
     RUN_TEST(testNunavutFloat16Unpack);
+    RUN_TEST(testNunavutFloat16Unpack_signallingNan);
+    RUN_TEST(testNunavutFloat16Unpack_quietNan);
     RUN_TEST(testNunavutFloat16PackUnpack);
+    RUN_TEST(testNunavutFloat16PackUnpack_NAN);
+    RUN_TEST(testNunavutFloat16Unpack_INFINITY);
     RUN_TEST(testNunavutSet16);
     RUN_TEST(testNunavutGet16);
     RUN_TEST(testNunavutSetF32);
