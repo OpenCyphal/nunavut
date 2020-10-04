@@ -457,7 +457,7 @@ static inline uint16_t nunavutFloat16Pack(const {{typename_float_32}} value)
     uint16_t out = 0;
     if (in.bits >= f32inf.bits)
     {
-        if ( (in.bits & 0x3FFFFFU) != 0x0)
+        if ( (in.bits & 0x7FFFFFU) != 0x0)
         {
             // this is a NAN, not infinity.
             if (0x400000U & in.bits)
