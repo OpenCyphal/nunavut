@@ -47,7 +47,7 @@ set(ASM_FLAG_SET ${C_AND_CXX_FLAG_SET})
 # General C++ only flags
 #
 list(APPEND CXX_FLAG_SET
-                "-std=c++11"
+                "-std=c++14"
                 "-fno-rtti"
 )
 
