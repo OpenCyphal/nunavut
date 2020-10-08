@@ -109,6 +109,18 @@ static void testNunavutSetIxx_neg255_tooSmall(void)
     TEST_ASSERT_EQUAL_HEX8(0x01, data[0]);
 }
 
+static void testNunavutSetIxx_bufferOverflow(void)
+{
+    uint8_t buffer[] = {0x00, 0x00, 0x00};
+    int8_t rc;
+    rc = nunavutSetIxx(buffer, 3, 16, 0xAA, 8);
+    TEST_ASSERT_EQUAL_INT8(NUNAVUT_SUCCESS, rc);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, buffer[2]);
+    rc = nunavutSetIxx(buffer, 2, 16, 0x00, 8);
+    TEST_ASSERT_EQUAL_INT8(-NUNAVUT_ERR_BUF_OVERFLOW, rc);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, buffer[2]);
+}
+
 // +--------------------------------------------------------------------------+
 // | nunavut[Get|Set]Bit
 // +--------------------------------------------------------------------------+
@@ -123,6 +135,14 @@ static void testNunavutSetBit(void)
     nunavutSetBit(buffer, sizeof(buffer), 0, true);
     nunavutSetBit(buffer, sizeof(buffer), 1, true);
     TEST_ASSERT_EQUAL_HEX8(0x03, buffer[0]);
+}
+
+static void testNunavutSetBit_bufferOverflow(void)
+{
+    uint8_t buffer[] = {0x00, 0x00};
+    int8_t rc = nunavutSetBit(buffer, 1, 8, true);
+    TEST_ASSERT_EQUAL_INT8(-NUNAVUT_ERR_BUF_OVERFLOW, rc);
+    TEST_ASSERT_EQUAL_HEX8(0x00, buffer[1]);
 }
 
 static void testNunavutGetBit(void)
@@ -768,7 +788,9 @@ int main(void)
     RUN_TEST(testNunavutSetIxx_neg1);
     RUN_TEST(testNunavutSetIxx_neg255);
     RUN_TEST(testNunavutSetIxx_neg255_tooSmall);
+    RUN_TEST(testNunavutSetIxx_bufferOverflow);
     RUN_TEST(testNunavutSetBit);
+    RUN_TEST(testNunavutSetBit_bufferOverflow);
     RUN_TEST(testNunavutGetBit);
     RUN_TEST(testNunavutGetU8);
     RUN_TEST(testNunavutGetU8_tooSmall);
