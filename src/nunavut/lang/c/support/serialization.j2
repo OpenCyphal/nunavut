@@ -191,16 +191,25 @@ static inline void nunavutCopyBits(const {{ typename_unsigned_bit_length }} leng
 
 // --------------------------------------------- PUBLIC API - INTEGER ---------------------------------------------
 
-static inline void nunavutSetBit(uint8_t* const buf, const {{ typename_unsigned_bit_length }} off_bit, const bool value)
+static inline {{typename_error_type}} nunavutSetBit(uint8_t* const buf,
+                                 const {{ typename_unsigned_length }} buf_size,
+                                 const {{ typename_unsigned_bit_length }} off_bit,
+                                 const bool value)
 {
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
 {%- endif %}
+    if ((buf_size * 8) <= off_bit)
+    {
+        return -NUNAVUT_ERR_BUF_OVERFLOW;
+    }
     const uint8_t val = value ? 1U : 0U;
     nunavutCopyBits(1U, 0U, off_bit, &val, buf);
+    return NUNAVUT_SUCCESS;
 }
 
-static inline void nunavutSetUxx(uint8_t* const buf,
+static inline {{typename_error_type}} nunavutSetUxx(uint8_t* const buf,
+                                 const {{ typename_unsigned_length }} buf_size,
                                  const {{ typename_unsigned_bit_length }} off_bit,
                                  const uint64_t value,
                                  const uint8_t len_bit)
@@ -210,6 +219,10 @@ static inline void nunavutSetUxx(uint8_t* const buf,
 {%- if option_enable_serialization_asserts %}
     NUNAVUT_ASSERT(buf != NULL);
 {%- endif %}
+    if ((buf_size * 8) <= off_bit)
+    {
+        return -NUNAVUT_ERR_BUF_OVERFLOW;
+    }
     const {{ typename_unsigned_bit_length }} saturated_len_bit = {{ choose_min('len_bit', '64U') }};
     nunavutCopyBits(saturated_len_bit, 0U, off_bit, (const uint8_t*) &value, buf);
 {%- else %}
@@ -230,9 +243,11 @@ static inline void nunavutSetUxx(uint8_t* const buf,
     };
     nunavutCopyBits(saturated_len_bit, 0U, off_bit, &tmp[0], buf);
 {%- endif %}
+    return NUNAVUT_SUCCESS;
 }
 
-static inline void nunavutSetIxx(uint8_t* const buf,
+static inline {{typename_error_type}} nunavutSetIxx(uint8_t* const buf,
+                                 const {{ typename_unsigned_length }} buf_size,
                                  const {{ typename_unsigned_bit_length }} off_bit,
                                  const int64_t value,
                                  const uint8_t len_bit)
@@ -240,7 +255,7 @@ static inline void nunavutSetIxx(uint8_t* const buf,
     // The naive sign conversion is safe and portable according to the C standard:
     // 6.3.1.3.3: if the new type is unsigned, the value is converted by repeatedly adding or subtracting one more
     // than the maximum value that can be represented in the new type until the value is in the range of the new type.
-    nunavutSetUxx(buf, off_bit, (uint64_t) value, len_bit);
+    return nunavutSetUxx(buf, buf_size, off_bit, (uint64_t) value, len_bit);
 }
 
 static inline uint8_t nunavutGetU8(const uint8_t* const buf,
@@ -514,9 +529,12 @@ static inline {{typename_float_32}} nunavutFloat16Unpack(const uint16_t value)
     return out.real;
 }
 
-static inline void nunavutSetF16(uint8_t* const buf, const {{ typename_unsigned_bit_length }} off_bit, const {{typename_float_32}} value)
+static inline {{typename_error_type}} nunavutSetF16(uint8_t* const buf,
+                                                    const {{ typename_unsigned_length }} buf_size,
+                                                    const {{ typename_unsigned_bit_length }} off_bit,
+                                                    const {{ typename_float_32 }} value)
 {
-    nunavutSetUxx(buf, off_bit, nunavutFloat16Pack(value), 16U);
+    return nunavutSetUxx(buf, buf_size, off_bit, nunavutFloat16Pack(value), 16U);
 }
 
 static inline {{typename_float_32}} nunavutGetF16(const uint8_t* const buf,
@@ -535,7 +553,10 @@ static inline {{typename_float_32}} nunavutGetF16(const uint8_t* const buf,
 static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "The target platform does not support IEEE754 floating point operations.");
 static_assert(32U == (sizeof({{typename_float_32}}) * 8U), "Unsupported floating point model");
 
-static inline void nunavutSetF32(uint8_t* const buf, const {{ typename_unsigned_bit_length }} off_bit, const {{typename_float_32}} value)
+static inline {{typename_error_type}} nunavutSetF32(uint8_t* const buf,
+                                                    const {{ typename_unsigned_length }} buf_size,
+                                                    const {{ typename_unsigned_bit_length }} off_bit,
+                                                    const {{ typename_float_32 }} value)
 {
     // Intentional violation of MISRA: use union to perform fast conversion from an IEEE 754-compatible native
     // representation into a serializable integer. The assumptions about the target platform properties are made
@@ -545,7 +566,7 @@ static inline void nunavutSetF32(uint8_t* const buf, const {{ typename_unsigned_
         {{typename_float_32}} fl;
         uint32_t       in;
     } const tmp = {value};  // NOSONAR
-    nunavutSetUxx(buf, off_bit, tmp.in, sizeof(tmp) * 8U);
+    return nunavutSetUxx(buf, buf_size, off_bit, tmp.in, sizeof(tmp) * 8U);
 }
 
 static inline {{typename_float_32}} nunavutGetF32(const uint8_t* const buf,
@@ -572,7 +593,10 @@ static inline {{typename_float_32}} nunavutGetF32(const uint8_t* const buf,
 static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "The target platform does not support IEEE754 double-precision floating point operations.");
 static_assert(64U == (sizeof({{typename_float_64}}) * 8U), "Unsupported floating point model");
 
-static inline void nunavutSetF64(uint8_t* const buf, const {{ typename_unsigned_bit_length }} off_bit, const {{typename_float_64}} value)
+static inline {{typename_error_type}} nunavutSetF64(uint8_t* const buf,
+                                                    const {{ typename_unsigned_length }} buf_size,
+                                                    const {{ typename_unsigned_bit_length }} off_bit,
+                                                    const {{typename_float_64 }} value)
 {
     // Intentional violation of MISRA: use union to perform fast conversion from an IEEE 754-compatible native
     // representation into a serializable integer. The assumptions about the target platform properties are made
@@ -582,7 +606,7 @@ static inline void nunavutSetF64(uint8_t* const buf, const {{ typename_unsigned_
         {{typename_float_64}} fl;
         uint64_t       in;
     } const tmp = {value};  // NOSONAR
-    nunavutSetUxx(buf, off_bit, tmp.in, sizeof(tmp) * 8U);
+    return nunavutSetUxx(buf, buf_size, off_bit, tmp.in, sizeof(tmp) * 8U);
 }
 
 static inline {{typename_float_64}} nunavutGetF64(const uint8_t* const buf,

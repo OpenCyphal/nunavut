@@ -3,9 +3,9 @@
 #}
 {%- macro nunavut_set(field_name, ref) -%}
 {%- if field_name == "" -%}
-out_buffer, offset + *out_size_bits, {{ ref }}
+out_buffer, buf_size_bytes, offset + *out_size_bits, {{ ref }}
 {%- else -%}
-out_buffer, offset + *out_size_bits, {{ ref }}{{ field_name | id }}
+out_buffer, buf_size_bytes, offset + *out_size_bits, {{ ref }}{{ field_name | id }}
 {%- endif -%}
 {%- endmacro %}
 
@@ -22,7 +22,11 @@ out_buffer, offset + *out_size_bits, {{ ref }}{{ field_name | id }}
     {{ _serialize_primitive(type, name, ref) }}
     {%- elif type is VoidType -%}
     {#- Serialization must set all void types to 0 -#}
-    nunavutSetUxx(out_buffer, offset + *out_size_bits, 0, {{ type.bit_length }});
+    rc = nunavutSetUxx(out_buffer, buf_size_bytes, offset + *out_size_bits, 0, {{ type.bit_length }});
+    if (rc < 0)
+    {
+        return rc;
+    }
     *out_size_bits += {{ type.bit_length }};
     {%- elif type is ArrayType -%}
     {{ _serialize_array(type, name, ref, offset) }}
@@ -34,7 +38,7 @@ out_buffer, offset + *out_size_bits, {{ ref }}{{ field_name | id }}
     {%- endif -%}
     {%- if offset.is_aligned_at_byte() -%}
     {#- Data is byte aligned: use generated function -#}
-    rc = {{ type | full_reference_name }}_serialize(&({{ ref_name }}), offset + *out_size_bits, out_buffer, &size_bits);
+    rc = {{ type | full_reference_name }}_serialize(&({{ ref_name }}), offset + *out_size_bits, out_buffer, buf_size_bytes, &size_bits);
     if (rc < 0)
     {
         return rc;
@@ -96,7 +100,11 @@ out_buffer, offset + *out_size_bits, {{ ref }}{{ field_name | id }}
     {
         return -NUNAVUT_ERR_INVALID_LEN;
     }
-    nunavutSetUxx(out_buffer, offset + *out_size_bits, {{ ref }}{{ name | id }}_length, {{ type.length_field_type.bit_length }});
+    rc = nunavutSetUxx(out_buffer, buf_size_bytes, offset + *out_size_bits, {{ ref }}{{ name | id }}_length, {{ type.length_field_type.bit_length }});
+    if (rc < 0)
+    {
+        return rc;
+    }
     *out_size_bits += {{ type.length_field_type.bit_length }};
     {%- endif %}
     {%- set loop_type = type.element_type %}
@@ -149,6 +157,10 @@ out_buffer, offset + *out_size_bits, {{ ref }}{{ field_name | id }}
     {%- elif type is BooleanType -%}
     {{ _serialize_boolean(type, name, ref) }}
     {%- endif %}
+    if (rc < 0)
+    {
+        return rc;
+    }
     *out_size_bits += {{ type.bit_length }};
 {%- endmacro %}
 
@@ -158,17 +170,17 @@ out_buffer, offset + *out_size_bits, {{ ref }}{{ field_name | id }}
 {# Signed and unsigned integers #}
 {%- macro _serialize_int(type, name, ref) -%}
     {%- if type is UnsignedIntegerType -%}
-    nunavutSetUxx({{ nunavut_set(name, ref) }}, {{ type.bit_length }});
+    rc = nunavutSetUxx({{ nunavut_set(name, ref) }}, {{ type.bit_length }});
     {%- elif type is SignedIntegerType -%}
-    nunavutSetIxx({{ nunavut_set(name, ref) }}, {{ type.bit_length }});
+    rc = nunavutSetIxx({{ nunavut_set(name, ref) }}, {{ type.bit_length }});
     {%- endif %}
 {%- endmacro %}
 
 {# Floats don't have bit lengths other than 16, 32, or 64 #}
 {%- macro _serialize_float(type, name, ref) -%}
-    nunavutSetF{{ type.bit_length }}({{nunavut_set(name, ref)}});
+    rc = nunavutSetF{{ type.bit_length }}({{nunavut_set(name, ref)}});
 {%- endmacro %}
 
 {%- macro _serialize_boolean(type, name, ref) -%}
-    nunavutSetBit({{ nunavut_set(name, ref) }});
+    rc = nunavutSetBit({{ nunavut_set(name, ref) }});
 {%- endmacro %}

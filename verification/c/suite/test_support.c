@@ -86,7 +86,7 @@ static void testNunavutInternalGetBitCopySize(void)
 static void testNunavutSetIxx_neg1(void)
 {
     uint8_t data[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    nunavutSetIxx(data, 0, -1, sizeof(data) * 8);
+    nunavutSetIxx(data, sizeof(data), 0, -1, sizeof(data) * 8);
     for (size_t i = 0; i < sizeof(data); ++i)
     {
         TEST_ASSERT_EQUAL_HEX8(0xFF, data[i]);
@@ -96,7 +96,7 @@ static void testNunavutSetIxx_neg1(void)
 static void testNunavutSetIxx_neg255(void)
 {
     uint8_t data[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    nunavutSetIxx(data, 0, -255, sizeof(data) * 8);
+    nunavutSetIxx(data, sizeof(data), 0, -255, sizeof(data) * 8);
     TEST_ASSERT_EQUAL_HEX8(0xFF, data[1]);
     TEST_ASSERT_EQUAL_HEX8(0x01, data[0]);
 }
@@ -104,7 +104,7 @@ static void testNunavutSetIxx_neg255(void)
 static void testNunavutSetIxx_neg255_tooSmall(void)
 {
     uint8_t data[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    nunavutSetIxx(data, 0, -255, sizeof(data) * 1);
+    nunavutSetIxx(data, sizeof(data), 0, -255, sizeof(data) * 1);
     TEST_ASSERT_EQUAL_HEX8(0x00, data[1]);
     TEST_ASSERT_EQUAL_HEX8(0x01, data[0]);
 }
@@ -116,12 +116,12 @@ static void testNunavutSetIxx_neg255_tooSmall(void)
 static void testNunavutSetBit(void)
 {
     uint8_t buffer[] = {0x00};
-    nunavutSetBit(buffer, 0, true);
+    nunavutSetBit(buffer, sizeof(buffer), 0, true);
     TEST_ASSERT_EQUAL_HEX8(0x01, buffer[0]);
-    nunavutSetBit(buffer, 0, false);
+    nunavutSetBit(buffer, sizeof(buffer), 0, false);
     TEST_ASSERT_EQUAL_HEX8(0x00, buffer[0]);
-    nunavutSetBit(buffer, 0, true);
-    nunavutSetBit(buffer, 1, true);
+    nunavutSetBit(buffer, sizeof(buffer), 0, true);
+    nunavutSetBit(buffer, sizeof(buffer), 1, true);
     TEST_ASSERT_EQUAL_HEX8(0x03, buffer[0]);
 }
 
@@ -544,7 +544,7 @@ static void testNunavutSet16(void)
 {
     uint8_t buf[3];
     buf[2] = 0x00;
-    nunavutSetF16(buf, 0, 3.14f);
+    nunavutSetF16(buf, sizeof(buf), 0, 3.14f);
     TEST_ASSERT_EQUAL_HEX8(0x48, buf[0]);
     TEST_ASSERT_EQUAL_HEX8(0x42, buf[1]);
     TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]);
@@ -596,27 +596,27 @@ static void helperAssertSerFloat32SameAsIEEE(const float original_value, const u
 static void testNunavutSetF32(void)
 {
     uint8_t buffer[] = {0x00, 0x00, 0x00, 0x00};
-    nunavutSetF32(buffer, 0, 3.14f);
+    nunavutSetF32(buffer, sizeof(buffer), 0, 3.14f);
     helperAssertSerFloat32SameAsIEEE(3.14f, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF32(buffer, 0, -3.14f);
+    nunavutSetF32(buffer, sizeof(buffer), 0, -3.14f);
     helperAssertSerFloat32SameAsIEEE(-3.14f, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF32(buffer, 0, -NAN);
+    nunavutSetF32(buffer, sizeof(buffer), 0, -NAN);
     helperAssertSerFloat32SameAsIEEE(-NAN, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF32(buffer, 0, NAN);
+    nunavutSetF32(buffer, sizeof(buffer), 0, NAN);
     helperAssertSerFloat32SameAsIEEE(NAN, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF32(buffer, 0, INFINITY);
+    nunavutSetF32(buffer, sizeof(buffer), 0, INFINITY);
     helperAssertSerFloat32SameAsIEEE(INFINITY, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF32(buffer, 0, -INFINITY);
+    nunavutSetF32(buffer, sizeof(buffer), 0, -INFINITY);
     helperAssertSerFloat32SameAsIEEE(-INFINITY, buffer);
 }
 
@@ -719,27 +719,27 @@ static void helperAssertSerFloat64SameAsIEEE(const double original_value, const 
 static void testNunavutSetF64(void)
 {
     uint8_t buffer[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    nunavutSetF64(buffer, 0, 3.141592653589793);
+    nunavutSetF64(buffer, sizeof(buffer), 0, 3.141592653589793);
     helperAssertSerFloat64SameAsIEEE(3.141592653589793, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF64(buffer, 0, -3.141592653589793);
+    nunavutSetF64(buffer, sizeof(buffer), 0, -3.141592653589793);
     helperAssertSerFloat64SameAsIEEE(-3.141592653589793, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF64(buffer, 0, -NAN);
+    nunavutSetF64(buffer, sizeof(buffer), 0, -NAN);
     helperAssertSerFloat64SameAsIEEE(-NAN, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF64(buffer, 0, NAN);
+    nunavutSetF64(buffer, sizeof(buffer), 0, NAN);
     helperAssertSerFloat64SameAsIEEE(NAN, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF64(buffer, 0, INFINITY);
+    nunavutSetF64(buffer, sizeof(buffer), 0, INFINITY);
     helperAssertSerFloat64SameAsIEEE(INFINITY, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF64(buffer, 0, -INFINITY);
+    nunavutSetF64(buffer, sizeof(buffer), 0, -INFINITY);
     helperAssertSerFloat64SameAsIEEE(-INFINITY, buffer);
 }
 
