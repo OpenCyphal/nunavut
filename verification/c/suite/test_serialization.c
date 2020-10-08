@@ -21,7 +21,7 @@ static void testVoidZeroed(void)
     typename_unsigned_bit_length bit_size;
 
     uavcan_primitive_scalar_Bit_1_0_init(&subject);
-    int32_t rc = uavcan_primitive_scalar_Bit_1_0_serialize(&subject, 0, buffer, &bit_size);
+    int32_t rc = uavcan_primitive_scalar_Bit_1_0_serialize(&subject, 0, buffer, sizeof(buffer), &bit_size);
 
     TEST_ASSERT_EQUAL_HEX8(0x00, (buffer[0] & 0x7F));
     TEST_ASSERT_EQUAL_INT32(NUNAVUT_SUCCESS, rc);
@@ -37,7 +37,7 @@ static void testVariablePrimitiveArrayLength(void)
     uavcan_register_Name_1_0_init(&subject);
     subject.name_length = strlen("foo");
     memcpy((void*)subject.name, (void*)"foo", subject.name_length);
-    int32_t rc = uavcan_register_Name_1_0_serialize(&subject, 0, buffer, &bit_size);
+    int32_t rc = uavcan_register_Name_1_0_serialize(&subject, 0, buffer, sizeof(buffer), &bit_size);
 
     TEST_ASSERT_EQUAL_STRING_LEN("foo", (char*)&buffer[1], strlen("foo"));
     TEST_ASSERT_EQUAL_INT32(NUNAVUT_SUCCESS, rc);
@@ -52,7 +52,7 @@ static void testArrayOverflow(void)
 
     uavcan_register_Name_1_0_init(&subject);
     subject.name_length = 51;
-    int32_t rc = uavcan_register_Name_1_0_serialize(&subject, 0, buffer, &bit_size);
+    int32_t rc = uavcan_register_Name_1_0_serialize(&subject, 0, buffer, sizeof(buffer), &bit_size);
 
     TEST_ASSERT_EQUAL_INT32(-NUNAVUT_ERR_INVALID_LEN, rc);
 }
@@ -66,7 +66,7 @@ static void testInvalidTag(void)
 
     uavcan_register_Value_1_0_init(&subject);
     subject._tag_ = 200;
-    int32_t rc = uavcan_register_Value_1_0_serialize(&subject, 0, buffer, &bit_size);
+    int32_t rc = uavcan_register_Value_1_0_serialize(&subject, 0, buffer, sizeof(buffer), &bit_size);
 
     TEST_ASSERT_EQUAL_INT32(-NUNAVUT_ERR_INVALID_TAG, rc);
 }
@@ -83,7 +83,7 @@ static void testCompositeLength(void)
     memcpy((void*)subject.name.name, (void*)"foo", subject.name.name_length);
     uavcan_register_Value_1_0_set_natural32(&subject.value);
     subject.value.natural32.value_length = 1;
-    int32_t rc = uavcan_register_Access_1_0_Request_serialize(&subject, 0, buffer, &bit_size);
+    int32_t rc = uavcan_register_Access_1_0_Request_serialize(&subject, 0, buffer, sizeof(buffer), &bit_size);
 
     TEST_ASSERT_EQUAL_INT32(NUNAVUT_SUCCESS, rc);
     TEST_ASSERT_EQUAL_UINT32(80, bit_size);

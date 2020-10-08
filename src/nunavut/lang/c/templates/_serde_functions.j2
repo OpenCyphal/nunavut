@@ -5,14 +5,26 @@
 /// @param out_buffer    Output message buffer.
 /// @param out_size_bits Size of serialized output (in bits).
 ///
-/// @returns             Size of encoded data (in bits)
-static inline {{typename_error_type}} {{ composite_type | full_reference_name }}_serialize(const {{ composite_type | full_reference_name }}* in_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const out_buffer, {{typename_unsigned_bit_length}}* out_size_bits)
+/// @returns             Error type. Negative values on failure, 0 on success.
+static inline {{typename_error_type}} {{ composite_type | full_reference_name }}_serialize(const {{ composite_type | full_reference_name }}* in_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const out_buffer, {{typename_unsigned_length}} buf_size_bytes, {{typename_unsigned_bit_length}}* out_size_bits)
 {
     *out_size_bits = 0;
 {%- if (composite_type.fields | length) > 0 %}
     {#- Do not declare rc if we do not use it. Avoids compiler warnings -#}
-    {%- from '_utils.j2' import gen_rc -%}
-    {{ gen_rc(composite_type) }}
+    {#- We likely need to do the same thing for deserialization - macro time -#}
+    {%- set ns = namespace(rc=False, size=False) -%}
+    {%- for field in composite_type.fields if field is not VoidType -%}
+        {%- set ns.rc = True -%}
+        {%- if field is CompositeType -%}
+            {%- set ns.size = True -%}
+        {%- endif -%}
+    {%- endfor -%}
+    {%- if ns.size %}
+    {{typename_unsigned_bit_length}} size_bits;
+    {%- endif %}
+    {%- if ns.rc %}
+    {{typename_error_type}} rc = 0;
+    {%- endif %}
 
     if (out_buffer == NULL)
     {
@@ -22,6 +34,7 @@ static inline {{typename_error_type}} {{ composite_type | full_reference_name }}
     {%- from '_serialize.j2' import serialize %}
     {{ serialize(composite_type) }}
 {%- else %}
+    (void)buf_size_bytes;
     (void)in_instance;
     (void)out_buffer;
     (void)offset;
@@ -38,7 +51,7 @@ static inline {{typename_error_type}} {{ composite_type | full_reference_name }}
 /// @param buf_size_bytes    Length of input buffer (in bytes) to avoid overflow.
 /// @param in_size_bits      Length of deserialized data (in bits).
 ///
-/// @returns                 Size of decoded data (in bits)
+/// @returns                 Error type. Negative values on failure, 0 on success.
 static inline {{typename_error_type}} {{ composite_type | full_reference_name }}_deserialize({{ composite_type | full_reference_name }}* const out_instance, {{typename_unsigned_bit_length}} offset, uint8_t* const in_buffer, const {{typename_unsigned_length}} buf_size_bytes, {{typename_unsigned_bit_length}}* in_size_bits)
 {
     *in_size_bits = 0;
