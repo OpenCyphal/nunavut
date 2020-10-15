@@ -10,22 +10,6 @@ static inline {{typename_error_type}} {{ composite_type | full_reference_name }}
 {
     *out_size_bits = 0;
 {%- if (composite_type.fields | length) > 0 %}
-    {#- Do not declare rc if we do not use it. Avoids compiler warnings -#}
-    {#- We likely need to do the same thing for deserialization - macro time -#}
-    {%- set ns = namespace(rc=False, size=False) -%}
-    {%- for field in composite_type.fields if field is not VoidType -%}
-        {%- set ns.rc = True -%}
-        {%- if field is CompositeType -%}
-            {%- set ns.size = True -%}
-        {%- endif -%}
-    {%- endfor -%}
-    {%- if ns.size %}
-    {{typename_unsigned_bit_length}} size_bits;
-    {%- endif %}
-    {%- if ns.rc %}
-    {{typename_error_type}} rc = 0;
-    {%- endif %}
-
     if (out_buffer == NULL)
     {
         return -NUNAVUT_ERR_INVALID_BUF;
@@ -56,10 +40,6 @@ static inline {{typename_error_type}} {{ composite_type | full_reference_name }}
 {
     *in_size_bits = 0;
 {%- if (composite_type.fields | length) > 0 %}
-    {#- Do not declare rc if we do not use it. Avoids compiler warnings -#}
-    {%- from '_utils.j2' import gen_rc -%}
-    {{ gen_rc(composite_type) }}
-
     if (in_buffer == NULL)
     {
         return -NUNAVUT_ERR_INVALID_BUF;
