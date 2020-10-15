@@ -35,12 +35,15 @@ in_buffer, buf_size_bytes, offset + *in_size_bits, {{ bit_length }}
     {%- endif -%}
     {%- if offset.is_aligned_at_byte() -%}
     {#- Data is byte aligned: use generated function -#}
-    rc = {{ type | full_reference_name }}_deserialize(&({{ ref_name }}), offset + *in_size_bits, in_buffer, buf_size_bytes, &size_bits);
-    if (rc < 0)
     {
-        return rc;
+        {{typename_unsigned_bit_length}} size_bits;
+        const {{typename_error_type}} rc = {{ type | full_reference_name }}_deserialize(&({{ ref_name }}), offset + *in_size_bits, in_buffer, buf_size_bytes, &size_bits);
+        if (rc < 0)
+        {
+            return rc;
+        }
+        *in_size_bits += size_bits;
     }
-    *in_size_bits += size_bits;
     {%- else -%}
     {#- Not byte-aligned: inline serialization -#}
     {{ _deserialize_composite(type, ref_name + '.', offset) }}
