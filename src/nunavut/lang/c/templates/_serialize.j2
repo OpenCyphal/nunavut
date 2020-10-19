@@ -121,11 +121,27 @@ out_buffer, buf_size_bytes, offset + *out_size_bits, {{ ref }}{{ field_name | id
     {%- if base_offset.is_aligned_at_byte() and option_target_endianness == "little" %}
     {#- Data is byte-aligned, so we can use memcpy #}
     {%- if type is VariableLengthArrayType %}
-    memcpy((void*)((uint8_t*)out_buffer + ((offset + *out_size_bits)>> 3)), (void*){{ ref }}{{ name | id }}, {{ ref }}{{ name | id }}_length * {{ (loop_type.bit_length / 8) | int }});
-    *out_size_bits += ({{typename_unsigned_bit_length}})({{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }});
+    {
+        const {{typename_unsigned_length}} current_offset_bytes = ((offset + *out_size_bits) >> 3);
+        const {{typename_unsigned_length}} copy_length_bytes = {{ ref }}{{ name | id }}_length * {{ (loop_type.bit_length / 8) | int }};
+        if (current_offset_bytes + copy_length_bytes > buf_size_bytes)
+        {
+            return -NUNAVUT_ERR_BUF_OVERFLOW;
+        }
+        memcpy((void*)((uint8_t*)out_buffer + current_offset_bytes), (void*){{ ref }}{{ name | id }}, copy_length_bytes);
+        *out_size_bits += ({{typename_unsigned_bit_length}})({{ ref }}{{ name | id }}_length * {{ loop_type.bit_length }});
+    }
     {%- else %}
-    memcpy((void*)((uint8_t*)out_buffer + ((offset + *out_size_bits)>> 3)), (void*){{ ref }}{{ name | id }}, {{ type.capacity }} * {{ (loop_type.bit_length / 8) | int }});
-    *out_size_bits += ({{typename_unsigned_bit_length}})({{ type.capacity }} * {{ loop_type.bit_length }});
+    {
+        const {{typename_unsigned_length}} current_offset_bytes = ((offset + *out_size_bits) >> 3);
+        const {{typename_unsigned_length}} copy_length_bytes = {{ type.capacity }} * {{ (loop_type.bit_length / 8) | int }};
+        if (current_offset_bytes + copy_length_bytes > buf_size_bytes)
+        {
+            return -NUNAVUT_ERR_BUF_OVERFLOW;
+        }
+        memcpy((void*)((uint8_t*)out_buffer + current_offset_bytes), (void*){{ ref }}{{ name | id }}, copy_length_bytes);
+        *out_size_bits += ({{typename_unsigned_bit_length}})({{ type.capacity }} * {{ loop_type.bit_length }});
+    }
     {%- endif -%}
     {%- else %}
     {#- Data is not byte-aligned and/or not LE, so we need to use more intensive functions #}
@@ -165,10 +181,6 @@ out_buffer, buf_size_bytes, offset + *out_size_bits, {{ ref }}{{ field_name | id
         {%- elif type is BooleanType -%}
         {{ _serialize_boolean(type, name, ref) }}
         {%- endif %}
-        if (rc < 0)
-        {
-            return rc;
-        }
         *out_size_bits += {{ type.bit_length }};
     }
 {%- endmacro %}
@@ -179,17 +191,41 @@ out_buffer, buf_size_bytes, offset + *out_size_bits, {{ ref }}{{ field_name | id
 {# Signed and unsigned integers #}
 {%- macro _serialize_int(type, name, ref) -%}
     {%- if type is UnsignedIntegerType -%}
-    const {{typename_error_type}} rc = nunavutSetUxx({{ nunavut_set(name, ref) }}, {{ type.bit_length }});
+    {
+        const {{typename_error_type}} rc = nunavutSetUxx({{ nunavut_set(name, ref) }}, {{ type.bit_length }});
+        if (rc < 0)
+        {
+            return rc;
+        }
+    }
     {%- elif type is SignedIntegerType -%}
-    const {{typename_error_type}} rc = nunavutSetIxx({{ nunavut_set(name, ref) }}, {{ type.bit_length }});
+    {
+        const {{typename_error_type}} rc = nunavutSetIxx({{ nunavut_set(name, ref) }}, {{ type.bit_length }});
+        if (rc < 0)
+        {
+            return rc;
+        }
+    }
     {%- endif %}
 {%- endmacro %}
 
 {# Floats don't have bit lengths other than 16, 32, or 64 #}
 {%- macro _serialize_float(type, name, ref) -%}
-    const {{typename_error_type}} rc = nunavutSetF{{ type.bit_length }}({{nunavut_set(name, ref)}});
+    {
+        const {{typename_error_type}} rc = nunavutSetF{{ type.bit_length }}({{nunavut_set(name, ref)}});
+        if (rc < 0)
+        {
+            return rc;
+        }
+    }
 {%- endmacro %}
 
 {%- macro _serialize_boolean(type, name, ref) -%}
-    const {{typename_error_type}} rc = nunavutSetBit({{ nunavut_set(name, ref) }});
+    {
+        const {{typename_error_type}} rc = nunavutSetBit({{ nunavut_set(name, ref) }});
+        if (rc < 0)
+        {
+            return rc;
+        }
+    }
 {%- endmacro %}
