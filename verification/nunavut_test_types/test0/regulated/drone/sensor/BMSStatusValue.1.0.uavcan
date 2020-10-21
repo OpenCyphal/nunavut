@@ -1,5 +1,6 @@
-# Enumeration for the status of a BMS. This is a nested type.
-
+#
+# This is a test dummy and not the real type.
+#
 uint8 status
 
 uint8 STATUS_ASK_PARS       = 1
@@ -28,3 +29,5 @@ uint8 STATUS_OPTIONAL2      = 128
 
 uint8 STATUS_UNKNOWN        = 255
 # When the status is unknown
+
+@sealed
