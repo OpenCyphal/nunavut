@@ -595,7 +595,7 @@ class DSDLCodeGenerator(CodeGenerator):
 
             # Given
             B = pydsdl.BitLengthSet(32)
-            B.increment(1)
+            B += 1
 
             # and
             template = '{{ B | alignment_prefix }}'
