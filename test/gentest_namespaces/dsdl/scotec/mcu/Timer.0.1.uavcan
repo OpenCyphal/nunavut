@@ -1,2 +1,4 @@
 
 uavcan.time.SynchronizedTimestamp.1.0 timestamp
+
+@sealed

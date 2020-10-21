@@ -8,3 +8,4 @@ truncated uint56 data
 
 @assert _offset_ % 8 == {0}
 @assert _offset_.max == 56
+@sealed

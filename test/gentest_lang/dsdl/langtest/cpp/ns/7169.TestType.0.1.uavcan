@@ -3,3 +3,5 @@
 #
 
 truncated uint64 data
+
+@sealed
