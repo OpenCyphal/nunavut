@@ -1,0 +1,9 @@
+#
+# This is a test Dummy. NOT the real type.
+#
+truncated uint56 previous_transmission_timestamp_microsecond
+
+@assert _offset_ % 8 == {0}
+@assert _offset_.max <= 56
+
+@sealed

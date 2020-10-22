@@ -1,5 +1,6 @@
-# Smart battery status message. This is a top-level data type.
-
+#
+# This is a test dummy and not the real type.
+#
 float16 temperature         # Battery temperature
 float16 voltage             # Battery pack voltage
 float16 current             # Last measured current
@@ -14,3 +15,5 @@ bool output_status
 regulated.drone.sensor.BMSStatusValue.1.0 status  # Status bitmask
 
 @assert _offset_ % 8 == {0}
+
+@sealed

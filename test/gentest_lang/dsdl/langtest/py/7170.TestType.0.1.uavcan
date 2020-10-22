@@ -3,3 +3,5 @@
 #
 
 bool data0
+
+@sealed

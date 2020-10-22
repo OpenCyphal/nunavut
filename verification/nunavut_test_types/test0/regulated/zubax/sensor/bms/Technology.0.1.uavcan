@@ -1,5 +1,6 @@
-# Battery chemistry type and its form-factor. This is a nested type.
-
+#
+# This is a test dummy and not the real type.
+#
 uint7 value
 void1
 
@@ -18,3 +19,5 @@ uint7 NI_ZN = 34
 
 uint7 PB_AC        = 48  # Lead acid
 uint7 PB_AC_SEALED = 49
+
+@sealed

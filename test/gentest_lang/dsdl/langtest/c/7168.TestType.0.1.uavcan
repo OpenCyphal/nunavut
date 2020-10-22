@@ -15,3 +15,5 @@ truncated uint64 data6
 saturated int64 data7
 
 bool data8
+
+@sealed

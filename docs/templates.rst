@@ -292,11 +292,12 @@ Template Mapping and Use
 *************************************************
 
 Templates are resolved as ``templates/path/[dsdl_typename].j2``
-This means you must, typically, start with three templates under the templates directory
+This means you must, typically, start with four templates under the templates directory
 given to the ``Generator`` instance ::
 
     ServiceType.j2
     StructureType.j2
+    DelimitedType.j2
     UnionType.j2
 
 .. note::

@@ -1,2 +1,4 @@
 
 bool ATOMIC_VALUE
+
+@sealed

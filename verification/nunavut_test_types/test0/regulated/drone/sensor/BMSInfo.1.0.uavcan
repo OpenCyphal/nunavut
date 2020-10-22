@@ -1,5 +1,6 @@
-# Smart battery info message response to remote procedure call.
-# This is a top-level data type.
+#
+# This is a test dummy and not the real type.
+#
 
 uint8[<32] model_name
 # Model name is a human-readable string that normally should include the
@@ -46,6 +47,6 @@ uint8 cell_count
 regulated.drone.sensor.BatteryChemistry.1.0 chemistry
 # Battery chemistry
 
-void5
-
 @assert _offset_ % 8 == {0}
+
+@sealed

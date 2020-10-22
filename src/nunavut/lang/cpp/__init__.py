@@ -480,7 +480,8 @@ def filter_definition_begin(language: Language, instance: pydsdl.CompositeType) 
 
     """
     short_name = filter_short_reference_name(language, instance)
-    if isinstance(instance, pydsdl.StructureType) or isinstance(instance, pydsdl.UnionType):
+    if isinstance(instance, pydsdl.DelimitedType) or isinstance(instance, pydsdl.StructureType) \
+            or isinstance(instance, pydsdl.UnionType):
         return 'struct {}'.format(short_name)
     elif isinstance(instance, pydsdl.ServiceType):
         return 'namespace {}'.format(short_name)
@@ -534,7 +535,8 @@ def filter_definition_end(language: Language, instance: pydsdl.CompositeType) ->
                             my_type=my_type)
 
     """
-    if isinstance(instance, pydsdl.StructureType) or isinstance(instance, pydsdl.UnionType):
+    if isinstance(instance, pydsdl.DelimitedType) or isinstance(instance, pydsdl.StructureType) \
+            or isinstance(instance, pydsdl.UnionType):
         return ';'
     elif isinstance(instance, pydsdl.ServiceType):
         return ' // namespace {}'.format(filter_short_reference_name(language, instance))
