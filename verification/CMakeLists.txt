@@ -24,9 +24,21 @@ else()
     message(STATUS "Using ${NUNAVUT_PROJECT_ROOT} for NUNAVUT_PROJECT_ROOT")
 endif()
 
-set(NUNAVUT_VERIFICATION_LANG "unspecified" CACHE STRING "The Nunavut output language to verify.")
+if(DEFINED ENV{NUNAVUT_VERIFICATION_LANG})
+     message(STATUS "Getting NUNAVUT_VERIFICATION_LANG from the environment ($ENV{NUNAVUT_VERIFICATION_LANG})")
+     set(NUNAVUT_VERIFICATION_LANG "$ENV{NUNAVUT_VERIFICATION_LANG}" CACHE STRING "The Nunavut output language to verify.")
+else()
+     set(NUNAVUT_VERIFICATION_LANG "unspecified" CACHE STRING "The Nunavut output language to verify.")
+endif()
+
 set(NUNAVUT_SUBMODULES_ROOT "${NUNAVUT_PROJECT_ROOT}/submodules" CACHE STRING "The path to git submodules for the project.")
-set(NUNAVUT_FLAG_SET "native" CACHE STRING "The flags to apply while building (See cmake/compiler_flag_sets).")
+
+if(DEFINED ENV{NUNAVUT_FLAG_SET})
+     message(STATUS "Getting NUNAVUT_FLAG_SET from the environment ($ENV{NUNAVUT_FLAG_SET})")
+     set(NUNAVUT_FLAG_SET "$ENV{NUNAVUT_FLAG_SET}" CACHE STRING "The flags to apply while building (See cmake/compiler_flag_sets).")
+else()
+     set(NUNAVUT_FLAG_SET "native" CACHE STRING "The flags to apply while building (See cmake/compiler_flag_sets).")
+endif()
 
 if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp")
     set(NUNAVUT_VERIFICATION_ROOT "${CMAKE_SOURCE_DIR}/cpp")
