@@ -37,6 +37,43 @@ recommend the following environment for vscode::
     source .tox/local/bin/activate
 
 
+cmake
+================================================
+
+Our language generation verification suite uses CMake to build and run unit tests.
+Instructions for reproducing the CI automation execution steps are below. This section will tell you how
+to manually build and run individual unit tests as you develop them.
+
+TLDR::
+
+    git submodule update --init --recursive
+    export NUNAVUT_VERIFICATION_LANG=c
+    cd verification
+    mkdir "build_$NUNAVUT_VERIFICATION_LANG"
+    cd "build_$NUNAVUT_VERIFICATION_LANG"
+    cmake ..
+    cmake --build . --target help
+
+Try running a test which will first compile the test. For example, in the C language build ::
+
+    cmake --build . --target run_test_serialiization
+
+If you get an error about missing pthreads from the linker then you are on linux and we need to tweek the
+compile flags (assuming you are in the directory the TLDR above dumped you into) ::
+
+    rm CMakeCache.txt
+    export NUNAVUT_FLAG_SET=linux
+    cmake ..
+    cmake --build . --target run_test_serialization
+
+To run the C++ test use the same steps shown in the TLDR above but set :code:`NUNAVUT_VERIFICATION_LANG` to
+"cpp" first.
+
+In the list of targets that the :code:`cmake --build . --target help` command lists the targets that build tests
+will be prefixed with :code:`test_` and the psedo-target that also executes the test will be prefixed with
+:code:`run_test_`. You should avoid the :code:`_with_lcov` when you are manually building tests.
+
+
 Visual Studio Code
 ================================================
 
@@ -45,6 +82,7 @@ To use vscode you'll need:
 1. vscode
 2. install vscode commandline (`Shell Command: Install`)
 3. tox
+4. cmake (and an available GCC or Clang toolchain, or Docker to use our toolchain-as-container)
 
 Do::
 
@@ -190,8 +228,8 @@ test run (See `Running The Tests`_) or do
 the docs target. You can open the index.html under .tox/docs/tmp/index.html or run a local
 web-server::
 
-    python -m http.server --directory .tox/docs/tmp &
-    open http://localhost:8000/index.html
+    python3 -m http.server --directory .tox/docs/tmp &
+    open http://localhost:8000/docs/index.html
 
 Of course, you can just use `Visual Studio Code`_ to build and preview the docs using
 :code:`> reStructuredText: Open Preview`.
