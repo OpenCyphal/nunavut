@@ -506,7 +506,7 @@ static void testNunavutFloat16Unpack_quietNan(void)
     TEST_ASSERT_EQUAL_MESSAGE(1, as_bits.ieee.mantessa.as_nan.nsignalling, "Quiet NAN was converted to signalling!");
 }
 
-void testNunavutFloat16Unpack_INFINITY(void)
+static void testNunavutFloat16Unpack_INFINITY(void)
 {
     TEST_ASSERT_FLOAT_IS_INF(nunavutFloat16Unpack(0x7C00));
     TEST_ASSERT_FLOAT_IS_NEG_INF(nunavutFloat16Unpack(0xFC00));
