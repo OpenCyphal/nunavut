@@ -631,6 +631,22 @@ class DSDLCodeGenerator(CodeGenerator):
         """
         return pydsdl.BitLengthSet(values)
 
+    @staticmethod
+    def filter_remove_blank_lines(text: str) -> str:
+        """
+        Remove blank lines from the supplied string.
+        Lines that contain only whitespace characters are also considered blank.
+
+        .. invisible-code-block: python
+
+            from nunavut.jinja import DSDLCodeGenerator
+            import pydsdl
+
+            assert DSDLCodeGenerator.filter_remove_blank_lines('123\n  \n\n456\n\t\n\v\f\n789') == '123\n456\n789'
+
+        """
+        return re.sub(r'\n([ \t\f\v]*\n)+', r'\n', text)
+
     # +-----------------------------------------------------------------------+
     # | JINJA : tests
     # +-----------------------------------------------------------------------+
