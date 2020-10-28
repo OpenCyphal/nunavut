@@ -212,6 +212,8 @@ Common Filters
    :noindex:
 .. autofunction:: nunavut.jinja.Generator.filter_bit_length_set
    :noindex:
+.. autofunction:: nunavut.jinja.Generator.filter_remove_blank_lines
+   :noindex:
 
 C Filters
 -------------------------------------------------
