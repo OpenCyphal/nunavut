@@ -1,3 +1,5 @@
 
 uint8 hello
 uint16 world
+
+@sealed

@@ -1,3 +1,5 @@
 @union
 complex.Nested.1.0[2] a
 uint32 b
+
+@sealed
