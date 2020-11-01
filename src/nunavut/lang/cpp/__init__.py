@@ -296,15 +296,11 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
 
     :param pydsdl.CompositeType t: The DSDL type to get the fully-resolved reference name for.
     """
-    ns_parts = t.full_name.split('.')
+    ns_parts = t.full_namespace.split('.')
     if language.enable_stropping:
-        ns = list(map(functools.partial(filter_id, language), ns_parts[:-1]))
+        ns = list(map(functools.partial(filter_id, language), ns_parts))
     else:
-        ns = ns_parts[:-1]
-
-    if t.parent_service is not None:
-        assert len(ns) > 0  # Well-formed DSDL will never have a request or response type that isn't nested.
-        ns = ns[:-1] + [filter_short_reference_name(language, t.parent_service)]
+        ns = ns_parts
 
     full_path = ns + [filter_short_reference_name(language, t)]
     return '::'.join(full_path)
@@ -349,10 +345,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
     :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
     """
-    if t.parent_service is None:
-        short_name = '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
-    else:
-        short_name = t.short_name
+    short_name = '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
     if language.enable_stropping:
         return filter_id(language, short_name)
     else:

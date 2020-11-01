@@ -540,10 +540,7 @@ def _to_short_name(language: Language, t: pydsdl.CompositeType) -> str:
     """
     Internal method for producing an un-stropped short_name.
     """
-    if t.parent_service is None:
-        return '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
-    else:
-        return str(t.short_name)
+    return '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
 
 
 @template_language_filter(__name__)
@@ -799,11 +796,7 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
 
     :param pydsdl.CompositeType t: The DSDL type to get the fully-resolved reference name for.
     """
-    ns = t.full_name.split('.')[:-1]
-
-    if t.parent_service is not None:
-        assert len(ns) > 0  # Well-formed DSDL will never have a request or response type that isn't nested.
-        ns = ns[:-1] + [_to_short_name(language, t.parent_service)]
+    ns = t.full_namespace.split('.')
 
     full_path = ns + [_to_short_name(language, t)]
     not_stropped = '_'.join(full_path)
