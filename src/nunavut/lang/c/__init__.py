@@ -736,13 +736,14 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
         import pydsdl
 
         my_obj = MagicMock()
-        my_obj.parent_service = None
+        my_obj.has_parent_service = False
         my_obj.version = MagicMock()
 
     .. code-block:: python
 
         # Given a type with illegal characters for C++
         my_obj.full_name = 'any.int.2Foo'
+        my_obj.full_namespace = 'any.int'
         my_obj.version.major = 1
         my_obj.version.minor = 2
 
@@ -756,43 +757,6 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
 
         my_obj.short_name = my_obj.full_name.split('.')[-1]
         jinja_filter_tester(filter_full_reference_name, template, rendered, 'c', my_obj=my_obj)
-
-        my_obj = MagicMock()
-        my_obj.version = MagicMock()
-        my_obj.parent_service = None
-
-    .. invisible-code-block: python
-
-        my_obj = MagicMock(spec=pydsdl.CompositeType)
-        my_obj.version = MagicMock()
-        my_service = MagicMock(spec=pydsdl.ServiceType)
-        my_service.parent_service = None
-        my_service.version = MagicMock()
-        my_service.attributes = { 'Request': my_obj }
-        my_obj.parent_service = my_service
-
-    Note that for service types
-
-    .. code-block:: python
-
-        # Given a service type
-        my_service.full_name = 'my.Service'
-        my_service.version.major = 1
-        my_service.version.minor = 8
-
-        # and
-        template = '{{ my_service.attributes["Request"] | full_reference_name }}'
-
-        # then
-        rendered = 'my_Service_1_8_Request'
-
-    .. invisible-code-block: python
-
-        my_service.short_name = my_service.full_name.split('.')[-1]
-        my_obj.short_name = 'Request'
-        my_obj.full_name = my_service.full_name + '.' + my_obj.short_name
-
-        jinja_filter_tester(filter_full_reference_name, template, rendered, 'c', my_service=my_service)
 
     :param pydsdl.CompositeType t: The DSDL type to get the fully-resolved reference name for.
     """
