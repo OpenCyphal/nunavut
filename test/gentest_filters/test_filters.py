@@ -6,15 +6,15 @@
 
 import json
 import pathlib
+import typing
 from pathlib import Path, PurePath
 
 import pytest
-from pydsdl import read_namespace
-
 from nunavut import Namespace, build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
 from nunavut.jinja.jinja2.exceptions import TemplateAssertionError
 from nunavut.lang import LanguageContext
+from pydsdl import read_namespace
 
 
 def test_template_assert(gen_paths):  # type: ignore
@@ -233,3 +233,92 @@ def test_python_filter_includes(gen_paths, stropping, sort):  # type: ignore
                                      '"uavcan/str/bar_1_0.h"',
                                      '<array>',
                                      '<cstdint>'))
+
+
+@typing.no_type_check
+@pytest.mark.parametrize('language_name,namespace_separator', [('c', '_'), ('cpp', '::')])
+def test_filter_full_reference_name_via_template(gen_paths, language_name, namespace_separator):
+    root_path = str(gen_paths.dsdl_dir / Path("uavcan"))
+    output_path = gen_paths.out_dir / 'filter_and_test'
+    compound_types = read_namespace(root_path, [])
+    language_context = LanguageContext(target_language=language_name)
+    namespace = build_namespace_tree(compound_types,
+                                     root_path,
+                                     output_path,
+                                     language_context)
+    template_path = gen_paths.templates_dir / Path('full_reference_test')
+    generator = DSDLCodeGenerator(namespace,
+                                  templates_dir=template_path)
+
+    generator.generate_all()
+    outfile = gen_paths.find_outfile_in_namespace("uavcan.str.bar_svc", namespace)
+
+    assert (outfile is not None)
+
+    with open(str(outfile), 'r') as json_file:
+        json_blob = json.load(json_file)
+
+    assert json_blob is not None
+    assert json_blob['parent']['full_reference_name'] == 'uavcan.str.bar_svc_1_0'.replace('.', namespace_separator)
+    assert json_blob['parent']['short_reference_name'] == 'bar_svc_1_0'
+    assert json_blob['request']['full_reference_name'] == 'uavcan.str.bar_svc.Request_1_0'.replace(
+        '.', namespace_separator)
+    assert json_blob['request']['short_reference_name'] == 'Request_1_0'
+    assert json_blob['response']['full_reference_name'] == 'uavcan.str.bar_svc.Response_1_0'.replace(
+        '.', namespace_separator)
+    assert json_blob['response']['short_reference_name'] == 'Response_1_0'
+
+
+@typing.no_type_check
+@pytest.mark.parametrize(
+    'language_name,stropping,namespace_separator',
+    [('c', False, '_'),
+     ('c', True, '_'),
+     ('cpp', False, '::'),
+     ('cpp', True, '::')])
+def test_filter_full_reference_name(gen_paths, language_name, stropping, namespace_separator):
+    """
+    Cover issue #153
+    """
+    lctx = LanguageContext()
+    ln_package_name = 'nunavut.lang.{}'.format(language_name)
+    lctx.config.set(ln_package_name, 'enable_stropping', str(stropping))
+    ln = lctx.get_language(ln_package_name)
+
+    import importlib
+
+    from pydsdl import ServiceType, StructureType, Version
+
+    test_subject_module = importlib.import_module(ln_package_name)
+
+    service_request_type = StructureType(name='register.getting.tired.of.Python',
+                                         version=Version(0, 1),
+                                         attributes=[],
+                                         deprecated=False,
+                                         fixed_port_id=None,
+                                         source_file_path='',
+                                         has_parent_service=True)
+    service_response_type = StructureType(name='register.getting.tired.of.Python',
+                                          version=Version(0, 1),
+                                          attributes=[],
+                                          deprecated=False,
+                                          fixed_port_id=None,
+                                          source_file_path='',
+                                          has_parent_service=True)
+
+    service_type = ServiceType(service_request_type,
+                               service_response_type,
+                               None)
+
+    # C++ is special because namespaces are part of the language and therefore each namespace
+    # name must be stropped
+    top_level_name = ('_register' if stropping and language_name == 'cpp' else 'register')
+
+    assert test_subject_module.filter_full_reference_name(
+        ln, service_type) == '{}.getting.tired.of_0_1'.format(top_level_name).replace('.', namespace_separator)
+    assert test_subject_module.filter_full_reference_name(
+        ln, service_request_type) == '{}.getting.tired.of.Python_0_1'.format(top_level_name)\
+        .replace('.', namespace_separator)
+    assert test_subject_module.filter_full_reference_name(
+        ln, service_response_type) == '{}.getting.tired.of.Python_0_1'.format(top_level_name)\
+        .replace('.', namespace_separator)

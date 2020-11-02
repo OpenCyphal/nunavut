@@ -2,7 +2,9 @@
 # This is a test Dummy. NOT the real type.
 #
 
----
+@sealed
+
+--------------------------------------------------------------
 
 float32 error_variance
 
@@ -12,5 +14,6 @@ uint12 time_difference_tai_minus_utc
 
 void12
 
+@sealed
 @assert _offset_ % 8 == {0}
 @assert _offset_.max <= 64
