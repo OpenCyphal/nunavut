@@ -334,7 +334,7 @@ static void testNunavutGetI64_zeroDataLen(void)
 
 static void testNunavutFloat16Pack(void)
 {
-    // Comparing to Numpy calculated values
+    // Comparing to NumPy calculated values
 
     uint16_t packed_float = nunavutFloat16Pack(3.14f);
     // hex(int.from_bytes(np.array([np.float16('3.14')]).tobytes(), 'little'))
@@ -353,53 +353,15 @@ static void testNunavutFloat16Pack(void)
     TEST_ASSERT_EQUAL_HEX16_MESSAGE(0xFC00, packed_float, "Failed to serialize -65536.141592653589793238462643383279f");
 }
 
-
 static void testNunavutFloat16Pack_NAN_cmath(void)
 {
     uint16_t packed_float = nunavutFloat16Pack(NAN);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x200, (0x200 & packed_float), "NAN was not silent.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "Exponent bits were not all set for NAN.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x80000 & packed_float), "NAN sign bit was negative.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00UL & packed_float), "Exponent bits were not all set for NAN.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x80000UL & packed_float), "NAN sign bit was negative.");
 
     packed_float = nunavutFloat16Pack(-NAN);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x200, (0x200 & packed_float), "-NAN was not silent.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "Exponent bits were not all set for -NAN.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x80000, (0x80000 & packed_float), "-NAN sign bit was positive.");
-}
-
-
-static void testNunavutFloat16Pack_NAN_quiet(void)
-{
-    const uint32_t quiet_nan_bits = 0x7FC00000U | 0x200000U;
-    uint16_t packed_float = nunavutFloat16Pack(*((float*)&quiet_nan_bits));
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x200, (0x200 & packed_float), "NAN was not silent.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "Exponent bits were not all set for NAN.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x80000 & packed_float), "NAN sign bit was negative.");
-
-    const uint32_t quiet_nan_negative_bits = 0x7FC00000U | 0x200000U;
-    packed_float = nunavutFloat16Pack(*((float*)&quiet_nan_negative_bits));
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x200, (0x200 & packed_float), "-NAN was not silent.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "Exponent bits were not all set for -NAN.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x80000, (0x80000 & packed_float), "-NAN sign bit was positive.");
-}
-
-static void testNunavutFloat16Pack_NAN_signalling(void)
-{
-    const uint32_t signalling_nan_bits = 0x7F800000U | 0x200000U;
-    // The specification requires at least one non-zero bit is set in the trailing significant
-    // to distinguish from INFINITY.
-    uint16_t packed_float = nunavutFloat16Pack(*((float*)&signalling_nan_bits));
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x200 & packed_float), "NAN was silent.");
-    TEST_ASSERT_MESSAGE(0 != (0x3FF & packed_float), "Mantessa bits were all zero. At least one bit must be non-zero.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "Exponent bits were not all set for signalling NAN.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x8000 & packed_float), "Signalling NAN sign bit was negative.");
-
-    const uint32_t signalling_negative_nan_bits = 0xFF800000U | 0x200000U;
-    packed_float = nunavutFloat16Pack(*((float*)&signalling_negative_nan_bits));
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x200 & packed_float), "-NAN was silent.");
-    TEST_ASSERT_MESSAGE(0 != (0x3FF & packed_float), "Mantessa bits were all zero. At least one bit must be non-zero.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "Exponent bits were not all set for -NAN (signalling).");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x8000, (0x8000 & packed_float), "-NAN (signalling) sign bit was positive.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00UL & packed_float), "Exponent bits were not all set for -NAN.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x80000, (0x80000UL & packed_float), "-NAN sign bit was positive.");
 }
 
 static void testNunavutFloat16Pack_infinity(void)
@@ -452,58 +414,6 @@ static void testNunavutFloat16Unpack(void)
     // >>> hex(int.from_bytes(np.array([-np.float16('infinity')]).tobytes(), 'little'))
     // '0xfc00'
     TEST_ASSERT_FLOAT_IS_NEG_INF(nunavutFloat16Unpack(0xfc00));
-}
-
-static void testNunavutFloat16Unpack_signallingNan(void)
-{
-    const uint16_t signalling_nan_bits = 0x7D00;
-    const float signalling_nan = nunavutFloat16Unpack(signalling_nan_bits);
-    TEST_ASSERT_FLOAT_IS_NAN(signalling_nan);
-    union
-    {
-        float fp;
-        struct
-        {
-            union
-            {
-                uint32_t as_number : 23;
-                struct
-                {
-                    uint32_t diagnostic : 22;
-                    uint32_t nsignalling : 1;
-                } as_nan;
-            } mantessa;
-            uint32_t exponent : 8;
-            uint32_t sign : 1;
-        } ieee;
-    } as_bits = {signalling_nan};
-    TEST_ASSERT_EQUAL_MESSAGE(0, as_bits.ieee.mantessa.as_nan.nsignalling, "Signalling NAN was quieted!");
-}
-
-static void testNunavutFloat16Unpack_quietNan(void)
-{
-    const uint16_t signalling_nan_bits = 0x7E00;
-    const float signalling_nan = nunavutFloat16Unpack(signalling_nan_bits);
-    TEST_ASSERT_FLOAT_IS_NAN(signalling_nan);
-    union
-    {
-        float fp;
-        struct
-        {
-            union
-            {
-                uint32_t as_number : 23;
-                struct
-                {
-                    uint32_t diagnostic : 22;
-                    uint32_t nsignalling : 1;
-                } as_nan;
-            } mantessa;
-            uint32_t exponent : 8;
-            uint32_t sign : 1;
-        } ieee;
-    } as_bits = {signalling_nan};
-    TEST_ASSERT_EQUAL_MESSAGE(1, as_bits.ieee.mantessa.as_nan.nsignalling, "Quiet NAN was converted to signalling!");
 }
 
 static void testNunavutFloat16Unpack_INFINITY(void)
@@ -818,13 +728,9 @@ int main(void)
     RUN_TEST(testNunavutGetI64_zeroDataLen);
     RUN_TEST(testNunavutFloat16Pack);
     RUN_TEST(testNunavutFloat16Pack_NAN_cmath);
-    RUN_TEST(testNunavutFloat16Pack_NAN_quiet);
-    RUN_TEST(testNunavutFloat16Pack_NAN_signalling);
     RUN_TEST(testNunavutFloat16Pack_infinity);
     RUN_TEST(testNunavutFloat16Pack_zero);
     RUN_TEST(testNunavutFloat16Unpack);
-    RUN_TEST(testNunavutFloat16Unpack_signallingNan);
-    RUN_TEST(testNunavutFloat16Unpack_quietNan);
     RUN_TEST(testNunavutFloat16PackUnpack);
     RUN_TEST(testNunavutFloat16PackUnpack_NAN);
     RUN_TEST(testNunavutFloat16Unpack_INFINITY);
