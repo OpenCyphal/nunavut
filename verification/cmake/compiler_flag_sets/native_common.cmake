@@ -24,7 +24,6 @@ list(APPEND C_AND_CXX_FLAG_SET
                 "-Werror"
                 "-Wfloat-equal"
                 "-Wconversion"
-                "-Wabi"
                 "-Wunused-parameter"
                 "-Wunused-variable"
                 "-Wunused-value"
