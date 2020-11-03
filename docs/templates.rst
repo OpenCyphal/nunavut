@@ -121,7 +121,7 @@ Named Values by Language
 --------------------------------------------------
 
 +--------------------+--------------------------------+
-| Type name          | Language(s)                    |
+| Value name         | Language(s)                    |
 +====================+================================+
 | valuetoken_true    | C, C++, Python, JavaScript     |
 +--------------------+--------------------------------+
@@ -177,18 +177,25 @@ Language Options with Built-in Defaults
 The following options have built-in defaults for certain languages. These options will
 always be defined in templates targeting their languages.
 
-+-----------------------------+--------------------------------+
-| Type name                   | Language(s)                    |
-+=============================+================================+
-| option_target_endianness    | C, C++                         |
-+-----------------------------+--------------------------------+
+option_target_endianness
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This option is currently defined for C and C++; the possible values are as follows:
+
+- ``any`` --- generate endianness-agnostic code that is compatible with big-endian and little-endian machines alike.
+
+- ``big`` --- generate code optimized for big-endian platforms only.
+  Implementations may treat this option like ``any`` when no such optimizations are possible.
+
+- ``little`` --- generate code optimized for little-endian platforms only.
+  Little-endian optimizations are made possible by the fact that DSDL is a little-endian format.
 
 .. code-block:: python
 
    template = '{{ option_target_endianness }}'
 
    # then
-   rendered = 'little'
+   rendered = 'any'
 
 .. invisible-code-block: python
 

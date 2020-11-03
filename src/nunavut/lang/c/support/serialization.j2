@@ -77,9 +77,20 @@ static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_u
 // By default Nunavut does not generate assert statements since the logic to halt a program is platform
 // dependent and because this header requires an absolute minimum from a platform and from the C standard library.
 // Most platforms can simply define "NUNAVUT_ASSERT(x)=assert(x)" (<assert.h> is always included by Nunavut).
-#   error "You must either define NUNAVUT_ASSERT or you need to disable assertions"
+#   error "You must either define NUNAVUT_ASSERT or you need to disable assertions" \
           " when generating serialziation support code using Nunavut language options"
 #endif
+{% endif -%}
+
+{%- if option_target_endianness == 'little' %}
+#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__)
+#   error "This code has been generated for little-endian platforms only. " \
+          "To generate portable endianness-invariant code, set the Nunavut option target_endianness='any' " \
+          "and regenerate the code. This change will have some performance impact for little-endian machines."
+#endif
+{%- elif option_target_endianness in ('any', 'big') %}
+// This code is endianness-invariant. Use target_endianness='little' to generate little-endian-optimized code.
+{%- else %}{%- assert False %}
 {% endif -%}
 
 // --------------------------------------------- PRIMITIVE SERIALIZATION ---------------------------------------------
@@ -116,18 +127,13 @@ static inline void nunavutCopyBits(
     {{ assert('src != NULL') }}
     {{ assert('dst != NULL') }}
     {{ assert('src != dst') }}
-    if ((0U == (length_bit % 8U)) &&
-        (0U == (src_offset_bit % 8U)) &&
-        (0U == (dst_offset_bit % 8U)))
+    if ((0U == (length_bit % 8U)) && (0U == (src_offset_bit % 8U)) && (0U == (dst_offset_bit % 8U)))
     {
         {{ assert('((src < dst) ? ((uintptr_t)(src + ((src_offset_bit + length_bit) / 8U)) <= (uintptr_t)dst) : 1)') }}
         {{ assert('((src > dst) ? ((uintptr_t)(dst + ((dst_offset_bit + length_bit) / 8U)) <= (uintptr_t)src) : 1)') }}
-        // Intentional violation of MISRA: Pointer arithmetics.
-        // This is done to remove the API constraint that offsets be under 8 bits.
-        // Fewer constraints reduce the chance of API misuse.
-        (void) memcpy(dst + (dst_offset_bit / 8U),  // NOSONAR NOLINT
-                      src + (src_offset_bit / 8U),  // NOSONAR
-                      length_bit / 8U);
+        // Intentional violation of MISRA: Pointer arithmetics. This is done to remove the API constraint that
+        // offsets be under 8 bits. Fewer constraints reduce the chance of API misuse.
+        (void) memcpy(dst + (dst_offset_bit / 8U), src + (src_offset_bit / 8U), length_bit / 8U);  // NOSONAR NOLINT
     }
     else
     {
@@ -200,20 +206,21 @@ static inline {{typename_error_type}} nunavutSetUxx(
         return -NUNAVUT_ERR_BUF_OVERFLOW;
     }
     const {{ typename_unsigned_bit_length }} saturated_len_bit = {{ choose_min('len_bit', '64U') }};
-{%- if option_target_endianness == "little" %}
+{%- if option_target_endianness == 'little' %}
     nunavutCopyBits(saturated_len_bit, 0U, off_bit, (const uint8_t*) &value, buf);
-{%- else %}
+{%- elif option_target_endianness in ('any', 'big') %}
     const uint8_t tmp[sizeof(uint64_t)] = {
-        (uint8_t)((value >> 0U) & BYTE_MAX),
-        (uint8_t)((value >> 8U) & BYTE_MAX),
-        (uint8_t)((value >> 16U) & BYTE_MAX),
-        (uint8_t)((value >> 24U) & BYTE_MAX),
-        (uint8_t)((value >> 32U) & BYTE_MAX),
-        (uint8_t)((value >> 40U) & BYTE_MAX),
-        (uint8_t)((value >> 48U) & BYTE_MAX),
-        (uint8_t)((value >> 56U) & BYTE_MAX),
+        (uint8_t)((value >> 0U) & 0xFFU),
+        (uint8_t)((value >> 8U) & 0xFFU),
+        (uint8_t)((value >> 16U) & 0xFFU),
+        (uint8_t)((value >> 24U) & 0xFFU),
+        (uint8_t)((value >> 32U) & 0xFFU),
+        (uint8_t)((value >> 40U) & 0xFFU),
+        (uint8_t)((value >> 48U) & 0xFFU),
+        (uint8_t)((value >> 56U) & 0xFFU),
     };
     nunavutCopyBits(saturated_len_bit, 0U, off_bit, &tmp[0], buf);
+{%- else %}{%- assert False %}
 {%- endif %}
     return NUNAVUT_SUCCESS;
 }
@@ -266,14 +273,15 @@ static inline uint16_t nunavutGetU16(const uint8_t* const buf,
     const {{ typename_unsigned_bit_length }} copy_size = {# -#}
         _nunavutInternalGetBitCopySize(buf_size_bytes, off_bit, len_bit, 16U);
     {{ assert('copy_size <= (sizeof(uint16_t) * 8U)') }}
-{%- if option_target_endianness == "little" %}
+{%- if option_target_endianness == 'little' %}
     uint16_t val = 0U;
     nunavutCopyBits(copy_size, off_bit, 0U, buf, (uint8_t*) &val);
     return val;
-{%- else %}
+{%- elif option_target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint16_t)] = {0};
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
     return (uint16_t)(tmp[0] | (uint16_t)(((uint16_t) tmp[1]) << 8U));
+{%- else %}{%- assert False %}
 {%- endif %}
 }
 
@@ -286,14 +294,15 @@ static inline uint32_t nunavutGetU32(const uint8_t* const buf,
     const {{ typename_unsigned_bit_length }} copy_size = {# -#}
         _nunavutInternalGetBitCopySize(buf_size_bytes, off_bit, len_bit, 32U);
     {{ assert('copy_size <= (sizeof(uint32_t) * 8U)') }}
-{%- if option_target_endianness == "little" %}
+{%- if option_target_endianness == 'little' %}
     uint32_t val = 0U;
     nunavutCopyBits(copy_size, off_bit, 0U, buf, (uint8_t*) &val);
     return val;
-{%- else %}
+{%- elif option_target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint32_t)] = {0};
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
     return (uint32_t)(tmp[0] | ((uint32_t) tmp[1] << 8U) | ((uint32_t) tmp[2] << 16U) | ((uint32_t) tmp[3] << 24U));
+{%- else %}{%- assert False %}
 {%- endif %}
 }
 
@@ -306,11 +315,11 @@ static inline uint64_t nunavutGetU64(const uint8_t* const buf,
     const {{ typename_unsigned_bit_length }} copy_size = {# -#}
         _nunavutInternalGetBitCopySize(buf_size_bytes, off_bit, len_bit, 64U);
     {{ assert('copy_size <= (sizeof(uint64_t) * 8U)') }}
-{%- if option_target_endianness == "little" %}
+{%- if option_target_endianness == 'little' %}
     uint64_t val = 0U;
     nunavutCopyBits(copy_size, off_bit, 0U, buf, (uint8_t*) &val);
     return val;
-{%- else %}
+{%- elif option_target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint64_t)] = {0};
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
     return (uint64_t)(tmp[0] |
@@ -321,6 +330,7 @@ static inline uint64_t nunavutGetU64(const uint8_t* const buf,
                       ((uint64_t) tmp[5] << 40U) |
                       ((uint64_t) tmp[6] << 48U) |
                       ((uint64_t) tmp[7] << 56U));
+{%- else %}{%- assert False %}
 {%- endif %}
 }
 

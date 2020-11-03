@@ -163,7 +163,7 @@ def test_language_option_defaults(gen_paths: typing.Any, run_nnvg: typing.Callab
     run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
     with open(expected_output, 'r') as generated:
         generated_results = json.load(generated)
-        assert generated_results['target_endianness'] == 'little'
+        assert generated_results['target_endianness'] == 'any'
         assert not generated_results['omit_float_serialization_support']
         assert not generated_results['enable_serialization_asserts']
 
