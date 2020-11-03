@@ -107,7 +107,7 @@ and running do::
     tox
 
 To run a limited suite using only locally available interpreters directly on your host machine,
-skip the docker invocations and use `tox -s`.
+skip the docker invocations and use ``tox -s``.
 
 To run the language verification build you'll need to use a different docker container:
 
