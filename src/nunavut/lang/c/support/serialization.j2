@@ -78,7 +78,7 @@ static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_u
 // dependent and because this header requires an absolute minimum from a platform and from the C standard library.
 // Most platforms can simply define "NUNAVUT_ASSERT(x)=assert(x)" (<assert.h> is always included by Nunavut).
 #   error "You must either define NUNAVUT_ASSERT or you need to disable assertions" \
-          " when generating serialziation support code using Nunavut language options"
+          " when generating serialization support code using Nunavut language options"
 #endif
 {% endif -%}
 
@@ -91,7 +91,7 @@ static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_u
 {%- elif option_target_endianness in ('any', 'big') %}
 // This code is endianness-invariant. Use target_endianness='little' to generate little-endian-optimized code.
 {%- else %}{%- assert False %}
-{% endif -%}
+{%- endif %}
 
 // --------------------------------------------- PRIMITIVE SERIALIZATION ---------------------------------------------
 
@@ -395,7 +395,6 @@ static inline uint16_t nunavutFloat16Pack(const {{typename_float_32}} value)
 {
     {{ float32_union() }}
 
-    // The no-lint statements suppress the warnings about magic numbers.
     // The no-lint statements suppress the warning about the use of union. This is required for low-level bit access.
     const uint32_t round_mask = ~(uint32_t) 0x0FFFU;
     Float32Bits    f32inf;  // NOSONAR
@@ -411,7 +410,6 @@ static inline uint16_t nunavutFloat16Pack(const {{typename_float_32}} value)
     uint16_t out = 0;
     if (in.bits >= f32inf.bits)
     {
-        // The no-lint statements suppress the warnings about magic numbers.
         if ((in.bits & 0x7FFFFFUL) != 0)
         {
             out = 0x7E00U;
@@ -440,7 +438,6 @@ static inline {{typename_float_32}} nunavutFloat16Unpack(const uint16_t value)
 {
     {{ float32_union() }}
 
-    // The no-lint statements suppress the warnings about magic numbers.
     // The no-lint statements suppress the warning about the use of union. This is required for low-level bit access.
     Float32Bits magic;    // NOSONAR
     Float32Bits inf_nan;  // NOSONAR
