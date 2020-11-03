@@ -50,7 +50,7 @@ TEST(GeneralTests, VarArrayCompiles) {
  * Make sure we strop C++ reserved words in C-structures.
  */
 TEST(GeneralTests, TestCppReservedWord) {
-    uavcan_register_Access_1_0_Response subject;
+    uavcan_register_Access_Response_1_0 subject;
     // mutable is only reserved in C++. It should be stropped to _mutable
     // for c types to be compatible with C++.
     subject._mutable = false;

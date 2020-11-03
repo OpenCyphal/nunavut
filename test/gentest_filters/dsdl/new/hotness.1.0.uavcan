@@ -2,3 +2,4 @@ new.malloc.1.0 malloc
 uavcan.str.bar.1.0 timestamp
 uavcan.time.SynchronizedTimestamp.1.0[4] data
 uint8 no_include
+@sealed
