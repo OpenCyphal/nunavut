@@ -204,14 +204,14 @@ static inline {{typename_error_type}} nunavutSetUxx(
     nunavutCopyBits(saturated_len_bit, 0U, off_bit, (const uint8_t*) &value, buf);
 {%- else %}
     const uint8_t tmp[sizeof(uint64_t)] = {
-        (uint8_t)((value >> 0U) & BYTE_MAX),   // Suppress warnings about the magic numbers. Their purpose is clear.
-        (uint8_t)((value >> 8U) & BYTE_MAX),   // NOLINT NOSONAR
-        (uint8_t)((value >> 16U) & BYTE_MAX),  // NOLINT NOSONAR
-        (uint8_t)((value >> 24U) & BYTE_MAX),  // NOLINT NOSONAR
-        (uint8_t)((value >> 32U) & BYTE_MAX),  // NOLINT NOSONAR
-        (uint8_t)((value >> 40U) & BYTE_MAX),  // NOLINT NOSONAR
-        (uint8_t)((value >> 48U) & BYTE_MAX),  // NOLINT NOSONAR
-        (uint8_t)((value >> 56U) & BYTE_MAX),  // NOLINT NOSONAR
+        (uint8_t)((value >> 0U) & BYTE_MAX),
+        (uint8_t)((value >> 8U) & BYTE_MAX),
+        (uint8_t)((value >> 16U) & BYTE_MAX),
+        (uint8_t)((value >> 24U) & BYTE_MAX),
+        (uint8_t)((value >> 32U) & BYTE_MAX),
+        (uint8_t)((value >> 40U) & BYTE_MAX),
+        (uint8_t)((value >> 48U) & BYTE_MAX),
+        (uint8_t)((value >> 56U) & BYTE_MAX),
     };
     nunavutCopyBits(saturated_len_bit, 0U, off_bit, &tmp[0], buf);
 {%- endif %}
@@ -293,10 +293,7 @@ static inline uint32_t nunavutGetU32(const uint8_t* const buf,
 {%- else %}
     uint8_t tmp[sizeof(uint32_t)] = {0};
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
-    return (uint32_t)(tmp[0] |                      // Suppress warnings about the magic numbers.
-                      ((uint32_t) tmp[1] << 8U) |   // NOLINT NOSONAR
-                      ((uint32_t) tmp[2] << 16U) |  // NOLINT NOSONAR
-                      ((uint32_t) tmp[3] << 24U));  // NOLINT NOSONAR
+    return (uint32_t)(tmp[0] | ((uint32_t) tmp[1] << 8U) | ((uint32_t) tmp[2] << 16U) | ((uint32_t) tmp[3] << 24U));
 {%- endif %}
 }
 
@@ -316,14 +313,14 @@ static inline uint64_t nunavutGetU64(const uint8_t* const buf,
 {%- else %}
     uint8_t tmp[sizeof(uint64_t)] = {0};
     nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
-    return (uint64_t)(tmp[0] |                      // Suppress warnings about the magic numbers.
-                      ((uint64_t) tmp[1] << 8U) |   // NOLINT NOSONAR
-                      ((uint64_t) tmp[2] << 16U) |  // NOLINT NOSONAR
-                      ((uint64_t) tmp[3] << 24U) |  // NOLINT NOSONAR
-                      ((uint64_t) tmp[4] << 32U) |  // NOLINT NOSONAR
-                      ((uint64_t) tmp[5] << 40U) |  // NOLINT NOSONAR
-                      ((uint64_t) tmp[6] << 48U) |  // NOLINT NOSONAR
-                      ((uint64_t) tmp[7] << 56U));  // NOLINT NOSONAR
+    return (uint64_t)(tmp[0] |
+                      ((uint64_t) tmp[1] << 8U) |
+                      ((uint64_t) tmp[2] << 16U) |
+                      ((uint64_t) tmp[3] << 24U) |
+                      ((uint64_t) tmp[4] << 32U) |
+                      ((uint64_t) tmp[5] << 40U) |
+                      ((uint64_t) tmp[6] << 48U) |
+                      ((uint64_t) tmp[7] << 56U));
 {%- endif %}
 }
 
@@ -390,28 +387,28 @@ static inline uint16_t nunavutFloat16Pack(const {{typename_float_32}} value)
 
     // The no-lint statements suppress the warnings about magic numbers.
     // The no-lint statements suppress the warning about the use of union. This is required for low-level bit access.
-    const uint32_t round_mask = ~(uint32_t) 0x0FFFU;            // NOLINT NOSONAR
-    Float32Bits    f32inf;                                      // NOLINT NOSONAR
-    Float32Bits    f16inf;                                      // NOLINT NOSONAR
-    Float32Bits    magic;                                       // NOLINT NOSONAR
-    Float32Bits    in;                                          // NOSONAR
-    f32inf.bits = ((uint32_t) 255U) << 23U;                     // NOLINT NOSONAR
-    f16inf.bits = ((uint32_t) 31U) << 23U;                      // NOLINT NOSONAR
-    magic.bits = ((uint32_t) 15U) << 23U;                       // NOLINT NOSONAR
+    const uint32_t round_mask = ~(uint32_t) 0x0FFFU;
+    Float32Bits    f32inf;  // NOSONAR
+    Float32Bits    f16inf;  // NOSONAR
+    Float32Bits    magic;   // NOSONAR
+    Float32Bits    in;      // NOSONAR
+    f32inf.bits = ((uint32_t) 255U) << 23U;
+    f16inf.bits = ((uint32_t) 31U) << 23U;
+    magic.bits = ((uint32_t) 15U) << 23U;
     in.real = value;
-    const uint32_t sign = in.bits & (((uint32_t) 1U) << 31U);   // NOLINT NOSONAR
+    const uint32_t sign = in.bits & (((uint32_t) 1U) << 31U);
     in.bits ^= sign;
     uint16_t out = 0;
     if (in.bits >= f32inf.bits)
     {
         // The no-lint statements suppress the warnings about magic numbers.
-        if ((in.bits & 0x7FFFFFUL) != 0)  // NOLINT NOSONAR
+        if ((in.bits & 0x7FFFFFUL) != 0)
         {
-            out = 0x7E00U;  // NOLINT NOSONAR
+            out = 0x7E00U;
         }
         else
         {
-            out = (in.bits > f32inf.bits) ? (uint16_t) 0x7FFFU : (uint16_t) 0x7C00U;  // NOLINT NOSONAR
+            out = (in.bits > f32inf.bits) ? (uint16_t) 0x7FFFU : (uint16_t) 0x7C00U;
         }
     }
     else
@@ -423,9 +420,9 @@ static inline uint16_t nunavutFloat16Pack(const {{typename_float_32}} value)
         {
             in.bits = f16inf.bits;
         }
-        out = (uint16_t)(in.bits >> 13U);  // NOLINT NOSONAR
+        out = (uint16_t)(in.bits >> 13U);
     }
-    out |= (uint16_t)(sign >> 16U);  // NOLINT NOSONAR
+    out |= (uint16_t)(sign >> 16U);
     return out;
 }
 
@@ -435,18 +432,18 @@ static inline {{typename_float_32}} nunavutFloat16Unpack(const uint16_t value)
 
     // The no-lint statements suppress the warnings about magic numbers.
     // The no-lint statements suppress the warning about the use of union. This is required for low-level bit access.
-    Float32Bits magic;                                // NOLINT NOSONAR
-    Float32Bits inf_nan;                              // NOLINT NOSONAR
-    Float32Bits out;                                  // NOLINT NOSONAR
-    magic.bits = ((uint32_t) 0xEFU) << 23U;           // NOLINT NOSONAR
-    inf_nan.bits = ((uint32_t) 0x8FU) << 23U;         // NOLINT NOSONAR
-    out.bits = ((uint32_t)(value & 0x7FFFU)) << 13U;  // NOLINT NOSONAR
+    Float32Bits magic;    // NOSONAR
+    Float32Bits inf_nan;  // NOSONAR
+    Float32Bits out;      // NOSONAR
+    magic.bits = ((uint32_t) 0xEFU) << 23U;
+    inf_nan.bits = ((uint32_t) 0x8FU) << 23U;
+    out.bits = ((uint32_t)(value & 0x7FFFU)) << 13U;
     out.real *= magic.real;
     if (out.real >= inf_nan.real)
     {
-        out.bits |= ((uint32_t) 0xFFU) << 23U;  // NOLINT NOSONAR
+        out.bits |= ((uint32_t) 0xFFU) << 23U;
     }
-    out.bits |= ((uint32_t)(value & 0x8000U)) << 16U;  // NOLINT NOSONAR
+    out.bits |= ((uint32_t)(value & 0x8000U)) << 16U;
     return out.real;
 }
 
@@ -502,7 +499,7 @@ static inline {{typename_float_32}} nunavutGetF32(
     {
         uint32_t in;
         {{typename_float_32}} fl;
-    } const tmp = {nunavutGetU32(buf, buf_size_bytes, off_bit, 32U)};  // NOSONAR
+    } const tmp = {nunavutGetU32(buf, buf_size_bytes, off_bit, 32U)};
     return tmp.fl;
 }
 
@@ -541,7 +538,7 @@ static inline {{typename_float_64}} nunavutGetF64(
     {
         uint64_t in;
         {{typename_float_64}} fl;
-    } const tmp = {nunavutGetU64(buf, buf_size_bytes, off_bit, 64U)};  // NOSONAR
+    } const tmp = {nunavutGetU64(buf, buf_size_bytes, off_bit, 64U)};
     return tmp.fl;
 }
 
