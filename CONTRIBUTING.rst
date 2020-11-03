@@ -29,7 +29,7 @@ tox -e local
 
 I highly recommend using the local tox environment when doing python development. It'll save you hours
 of lost productivity the first time it keeps you from pulling in an unexpected dependency from your
-global python environment. You can install tox from brew on osx or apt-get on linux. I'd
+global python environment. You can install tox from brew on osx or apt-get on GNU/Linux. I'd
 recommend the following environment for vscode::
 
     git submodule update --init --recursive
@@ -56,9 +56,9 @@ TLDR::
 
 Try running a test which will first compile the test. For example, in the C language build ::
 
-    cmake --build . --target run_test_serialiization
+    cmake --build . --target run_test_serialization
 
-If you get an error about missing pthreads from the linker then you are on linux and we need to tweek the
+If you get an error about missing pthreads from the linker then you are on GNU/Linux and we need to tweak the
 compile flags (assuming you are in the directory the TLDR above dumped you into) ::
 
     rm CMakeCache.txt
@@ -70,7 +70,7 @@ To run the C++ test use the same steps shown in the TLDR above but set :code:`NU
 "cpp" first.
 
 In the list of targets that the :code:`cmake --build . --target help` command lists the targets that build tests
-will be prefixed with :code:`test_` and the psedo-target that also executes the test will be prefixed with
+will be prefixed with :code:`test_` and the pseudo-target that also executes the test will be prefixed with
 :code:`run_test_`. You should avoid the :code:`_with_lcov` when you are manually building tests.
 
 
@@ -80,7 +80,7 @@ Visual Studio Code
 To use vscode you'll need:
 
 1. vscode
-2. install vscode commandline (`Shell Command: Install`)
+2. install vscode command line (`Shell Command: Install`)
 3. tox
 4. cmake (and an available GCC or Clang toolchain, or Docker to use our toolchain-as-container)
 
