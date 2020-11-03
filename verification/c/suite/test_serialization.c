@@ -12,32 +12,17 @@
 typedef size_t typename_unsigned_bit_length;
 
 
-/// Void fields must explicitely be zeroed by serialization.
-/// Ensures that uninitialized memory in buffer does not "leak".
-static void testVoidZeroed(void)
-{
-    uavcan_primitive_scalar_Bit_1_0 subject;
-    uint8_t buffer[1] = {0xFF};
-    typename_unsigned_bit_length bit_size;
-
-    uavcan_primitive_scalar_Bit_1_0_init(&subject);
-    int32_t rc = uavcan_primitive_scalar_Bit_1_0_serialize(&subject, 0, buffer, sizeof(buffer), &bit_size);
-
-    TEST_ASSERT_EQUAL_HEX8(0x00, (buffer[0] & 0x7F));
-    TEST_ASSERT_EQUAL_INT32(NUNAVUT_SUCCESS, rc);
-}
-
 /// Ensures that variable length primitive arrays copy correctly.
 static void testVariablePrimitiveArrayLength(void)
 {
-    uavcan_register_Name_1_0 subject;
+    uavcan_register_Name_1_0 obj;
     uint8_t buffer[uavcan_register_Name_1_0_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES];
     typename_unsigned_bit_length bit_size;
 
-    uavcan_register_Name_1_0_init(&subject);
-    subject.name_length = strlen("foo");
-    memcpy((void*)subject.name, (void*)"foo", subject.name_length);
-    int32_t rc = uavcan_register_Name_1_0_serialize(&subject, 0, buffer, sizeof(buffer), &bit_size);
+    uavcan_register_Name_1_0_init(&obj);
+    obj.name_length = strlen("foo");
+    memcpy((void*)obj.name, (void*)"foo", obj.name_length);
+    int32_t rc = uavcan_register_Name_1_0_serialize(&obj, 0, buffer, sizeof(buffer), &bit_size);
 
     TEST_ASSERT_EQUAL_STRING_LEN("foo", (char*)&buffer[1], strlen("foo"));
     TEST_ASSERT_EQUAL_INT32(NUNAVUT_SUCCESS, rc);
@@ -46,13 +31,13 @@ static void testVariablePrimitiveArrayLength(void)
 /// Serialization functions must catch over-sized arrays.
 static void testArrayOverflow(void)
 {
-    uavcan_register_Name_1_0 subject;
+    uavcan_register_Name_1_0 obj;
     uint8_t buffer [uavcan_register_Name_1_0_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES];
     typename_unsigned_bit_length bit_size;
 
-    uavcan_register_Name_1_0_init(&subject);
-    subject.name_length = 51;
-    int32_t rc = uavcan_register_Name_1_0_serialize(&subject, 0, buffer, sizeof(buffer), &bit_size);
+    uavcan_register_Name_1_0_init(&obj);
+    obj.name_length = 51;
+    int32_t rc = uavcan_register_Name_1_0_serialize(&obj, 0, buffer, sizeof(buffer), &bit_size);
 
     TEST_ASSERT_EQUAL_INT32(-NUNAVUT_ERR_INVALID_LEN, rc);
 }
@@ -60,13 +45,13 @@ static void testArrayOverflow(void)
 /// Test that an obviously invalid tag returns the correct error.
 static void testInvalidTag(void)
 {
-    uavcan_register_Value_1_0 subject;
+    uavcan_register_Value_1_0 obj;
     uint8_t buffer[uavcan_register_Value_1_0_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES];
     typename_unsigned_bit_length bit_size;
 
-    uavcan_register_Value_1_0_init(&subject);
-    subject._tag_ = 200;
-    int32_t rc = uavcan_register_Value_1_0_serialize(&subject, 0, buffer, sizeof(buffer), &bit_size);
+    uavcan_register_Value_1_0_init(&obj);
+    obj._tag_ = 200;
+    int32_t rc = uavcan_register_Value_1_0_serialize(&obj, 0, buffer, sizeof(buffer), &bit_size);
 
     TEST_ASSERT_EQUAL_INT32(-NUNAVUT_ERR_INVALID_TAG, rc);
 }
@@ -74,16 +59,16 @@ static void testInvalidTag(void)
 // Test that the length is correct when implementing nested composite types.
 static void testCompositeLength(void)
 {
-    uavcan_register_Access_Request_1_0 subject;
+    uavcan_register_Access_Request_1_0 obj;
     uint8_t buffer[uavcan_register_Access_Request_1_0_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES];
     typename_unsigned_bit_length bit_size;
 
-    uavcan_register_Access_Request_1_0_init(&subject);
-    subject.name.name_length = strlen("foo");
-    memcpy((void*)subject.name.name, (void*)"foo", subject.name.name_length);
-    uavcan_register_Value_1_0_set_natural32(&subject.value);
-    subject.value.natural32.value_length = 1;
-    int32_t rc = uavcan_register_Access_Request_1_0_serialize(&subject, 0, buffer, sizeof(buffer), &bit_size);
+    uavcan_register_Access_Request_1_0_init(&obj);
+    obj.name.name_length = strlen("foo");
+    memcpy((void*)obj.name.name, (void*)"foo", obj.name.name_length);
+    uavcan_register_Value_1_0_set_natural32(&obj.value);
+    obj.value.natural32.value_length = 1;
+    int32_t rc = uavcan_register_Access_Request_1_0_serialize(&obj, 0, buffer, sizeof(buffer), &bit_size);
 
     TEST_ASSERT_EQUAL_INT32(NUNAVUT_SUCCESS, rc);
     TEST_ASSERT_EQUAL_UINT32(80, bit_size);
@@ -103,7 +88,6 @@ int main(void)
 {
     UNITY_BEGIN();
 
-    RUN_TEST(testVoidZeroed);
     RUN_TEST(testVariablePrimitiveArrayLength);
     RUN_TEST(testArrayOverflow);
     RUN_TEST(testInvalidTag);
