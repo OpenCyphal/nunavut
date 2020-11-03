@@ -117,7 +117,7 @@ static void testNunavutSetIxx_bufferOverflow(void)
     TEST_ASSERT_EQUAL_INT8(NUNAVUT_SUCCESS, rc);
     TEST_ASSERT_EQUAL_HEX8(0xAA, buffer[2]);
     rc = nunavutSetIxx(buffer, 2, 16, 0x00, 8);
-    TEST_ASSERT_EQUAL_INT8(-NUNAVUT_ERR_BUF_OVERFLOW, rc);
+    TEST_ASSERT_EQUAL_INT8(-NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL, rc);
     TEST_ASSERT_EQUAL_HEX8(0xAA, buffer[2]);
 }
 
@@ -141,7 +141,7 @@ static void testNunavutSetBit_bufferOverflow(void)
 {
     uint8_t buffer[] = {0x00, 0x00};
     int8_t rc = nunavutSetBit(buffer, 1, 8, true);
-    TEST_ASSERT_EQUAL_INT8(-NUNAVUT_ERR_BUF_OVERFLOW, rc);
+    TEST_ASSERT_EQUAL_INT8(-NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL, rc);
     TEST_ASSERT_EQUAL_HEX8(0x00, buffer[1]);
 }
 

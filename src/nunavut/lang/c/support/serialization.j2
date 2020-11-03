@@ -51,18 +51,21 @@ static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_u
     "that do not lose data. You will need to regenerate Nunavut serialization support with a larger "
     "unsigned_bit_length type specified.");
 
-/// Nunavut returns 0 for success and < 0 for any failure. It is always adequate to
-/// check that error_value < 0 to detect errors or error_value == 0 for success.
+/// Nunavut returns 0 for success and < 0 for any failure. It is always adequate to check that error_value < 0
+/// to detect errors or error_value == 0 for success.
 ///
-/// Nunavut serialization will never define more than 127 errors and the reserved
-/// error numbers are [-1,-127] (-128 is not used).
+/// Nunavut serialization will never define more than 127 errors and the reserved error numbers are [-1,-127]
+/// (-128 is not used). Error code 1 is currently also not used to avoid conflicts with 3rd-party software.
 ///
 /// Return values > 0 for Nunavut serialization are undefined.
 #define NUNAVUT_SUCCESS 0
-#define NUNAVUT_ERR_INVALID_BUF 1   /// Indicates a NULL pointer to a data buffer was given.
-#define NUNAVUT_ERR_INVALID_LEN 2   /// Indicates a variable length array was serialized with an invalid length tag.
-#define NUNAVUT_ERR_BUF_OVERFLOW 3  /// Indicates the data being deserialized overflows the given buffer.
-#define NUNAVUT_ERR_INVALID_TAG 4   /// Indicates that a union field was assigned an invalid tag.
+// API usage errors:
+#define NUNAVUT_ERROR_INVALID_ARGUMENT                  2
+#define NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL    3
+// Invalid serialized representation (caused by bad input data, not API misuse):
+#define NUNAVUT_ERROR_SERIALIZED_REPRESENTATION_BAD_ARRAY_LENGTH        10
+#define NUNAVUT_ERROR_SERIALIZED_REPRESENTATION_BAD_UNION_TAG           11
+#define NUNAVUT_ERROR_SERIALIZED_REPRESENTATION_BAD_DELIMITER_HEADER    12
 
 {% if not option_omit_float_serialization_support -%}
 /// Detect whether the target platform is compatible with IEEE 754.
@@ -185,7 +188,7 @@ static inline {{typename_error_type}} nunavutSetBit(
     {{ assert('buf != NULL') }}
     if ((buf_size_bytes * 8) <= off_bit)
     {
-        return -NUNAVUT_ERR_BUF_OVERFLOW;
+        return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
     const uint8_t val = value ? 1U : 0U;
     nunavutCopyBits(1U, 0U, off_bit, &val, buf);
@@ -203,7 +206,7 @@ static inline {{typename_error_type}} nunavutSetUxx(
     {{ assert('buf != NULL') }}
     if ((buf_size_bytes * 8) < (off_bit + len_bit))
     {
-        return -NUNAVUT_ERR_BUF_OVERFLOW;
+        return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
     const {{ typename_unsigned_bit_length }} saturated_len_bit = {{ choose_min('len_bit', '64U') }};
 {%- if option_target_endianness == 'little' %}

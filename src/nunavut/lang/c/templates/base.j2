@@ -1,0 +1,34 @@
+// This is an AUTO-GENERATED UAVCAN DSDL data type implementation. Curious? See https://uavcan.org.
+// Please consider the environment before checking this file under version control. Normally, it should be
+// generated as part of the build process, unless it is used as part of a high-SIL safety-critical codebase.
+// You shouldn't attempt to edit this file. Bring your questions and issues to https://forum.uavcan.org.
+//
+// Generator:     nunavut-{{ nunavut.version }} (serialization was {{ 'not ' * nunavut.support.omit }}enabled)
+// Source file:   {{ T.source_file_path }}
+// Generated at:  {{ now_utc }} UTC
+// Is deprecated: {{ T.deprecated and 'yes' or 'no' }}
+// Fixed port ID: {{ T.fixed_port_id }}
+// Full name:     {{ T.full_name }}
+// Version:       {{ T.version.major }}.{{ T.version.minor }}
+
+{% set include_guard -%}{{T.full_name | c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED{%- endset -%}
+#ifndef {{ include_guard }}
+#define {{ include_guard }}
+
+{% for n in T | includes -%}
+#include {{ n }}
+{% endfor %}
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+{% macro generate_composite(type) %}
+    // TODO
+{% endmacro %}
+
+{% block contents %}{% endblock %}
+
+#ifdef __cplusplus
+}
+#endif
+#endif // {{ include_guard }}

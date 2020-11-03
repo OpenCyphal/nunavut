@@ -1,24 +1,8 @@
-{% extends "Header.j2" %}
-{%- block object -%}
-// +------------------------------------------------------------------------------------------------------------------+
-// | Begin service definitions for {{ T | full_reference_name }}
-// +------------------------------------------------------------------------------------------------------------------+
-{% set composite_type = T.request_type -%}
-{% include '_composite_type.j2' %}
+{% extends "base.j2" %}
+{% block contents %}
 
-// +------------------------------------------------------------------------------------------------------------------+
-{% set composite_type = T.response_type -%}
-{% include '_composite_type.j2' %}
-{% set composite_type = T -%}
-{% include '_metadata.j2' %}
+{{ generate_composite(T.request_type) }}
 
-{% set composite_type = T.request_type -%}
-{% include '_serde_functions.j2' %}
+{{ generate_composite(T.response_type) }}
 
-{% set composite_type = T.response_type -%}
-{% include '_serde_functions.j2' %}
-
-// +------------------------------------------------------------------------------------------------------------------+
-// | End service definitions for {{ T | full_reference_name }}
-// +------------------------------------------------------------------------------------------------------------------+
-{% endblock -%}
+{% endblock %}

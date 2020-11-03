@@ -4,7 +4,7 @@
 # This software is distributed under the terms of the MIT License.
 #
 """
-Contains the Jinja templates to generate C++ headers.
+Contains the Jinja templates to generate C headers.
 """
 
 __version__ = "1.0.0"
