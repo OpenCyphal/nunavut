@@ -74,16 +74,16 @@ static void testInvalidTag(void)
 // Test that the length is correct when implementing nested composite types.
 static void testCompositeLength(void)
 {
-    uavcan_register_Access_1_0_Request subject;
-    uint8_t buffer[uavcan_register_Access_1_0_Request_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES];
+    uavcan_register_Access_Request_1_0 subject;
+    uint8_t buffer[uavcan_register_Access_Request_1_0_MAX_SERIALIZED_REPRESENTATION_SIZE_BYTES];
     typename_unsigned_bit_length bit_size;
 
-    uavcan_register_Access_1_0_Request_init(&subject);
+    uavcan_register_Access_Request_1_0_init(&subject);
     subject.name.name_length = strlen("foo");
     memcpy((void*)subject.name.name, (void*)"foo", subject.name.name_length);
     uavcan_register_Value_1_0_set_natural32(&subject.value);
     subject.value.natural32.value_length = 1;
-    int32_t rc = uavcan_register_Access_1_0_Request_serialize(&subject, 0, buffer, sizeof(buffer), &bit_size);
+    int32_t rc = uavcan_register_Access_Request_1_0_serialize(&subject, 0, buffer, sizeof(buffer), &bit_size);
 
     TEST_ASSERT_EQUAL_INT32(NUNAVUT_SUCCESS, rc);
     TEST_ASSERT_EQUAL_UINT32(80, bit_size);
