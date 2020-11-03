@@ -106,6 +106,9 @@ and running do::
     docker run --rm -it -v $PWD:/repo uavcan/toxic:py35-py38-sq
     tox
 
+To run a limited suite using only locally available interpreters directly on your host machine,
+skip the docker invocations and use `tox -s`.
+
 To run the language verification build you'll need to use a different docker container:
 
     docker pull uavcan/c_cpp:ubuntu-18.04
