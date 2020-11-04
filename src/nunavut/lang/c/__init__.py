@@ -382,9 +382,10 @@ def filter_type_from_primitive(language: Language,
     return _CFit.get_best_fit(value.bit_length).to_c_type(value, language)
 
 
-_snake_case_pattern_0 = re.compile(r'[\W]+')
-_snake_case_pattern_1 = re.compile(r'(?<=_)([A-Z])+')
-_snake_case_pattern_2 = re.compile(r'(?<=[a-z])([A-Z])+')
+_snake_case_pattern_0 = re.compile(r'[\W]+')                    # 'port.SubjectIDList'  -> 'port_SubjectIDList'
+_snake_case_pattern_1 = re.compile(r'(?<=[A-Z])([A-Z][a-z]+)')  # 'port_SubjectIDList'  -> 'port_SubjectID_list'
+_snake_case_pattern_2 = re.compile(r'(?<=_)([A-Z])+')           # 'port_SubjectID_list' -> 'port_subjectID_list'
+_snake_case_pattern_3 = re.compile(r'(?<=[a-z])([A-Z])+')       # 'port_subjectID_list' -> 'port_subject_id_list'
 
 
 def filter_to_snake_case(value: str) -> str:
@@ -435,7 +436,7 @@ def filter_to_snake_case(value: str) -> str:
         jinja_filter_tester(filter_to_snake_case, template, rendered, 'c')
 
         template = '{{ " aa bb. cCcAAa_aAa_AAaAa_AAaA_a " | to_snake_case }}'
-        rendered = 'aa_bb_c_cc_aaa_a_aa_aaa_aa_aaa_a_a'
+        rendered = 'aa_bb_c_cc_a_aa_a_aa_a_aa_aa_a_aa_a_a'
 
         jinja_filter_tester(filter_to_snake_case, template, rendered, 'c')
 
@@ -444,8 +445,9 @@ def filter_to_snake_case(value: str) -> str:
     :returns: A valid C99 token using the snake-case convention.
     """
     pass0 = _snake_case_pattern_0.sub('_', str.strip(value))
-    pass1 = _snake_case_pattern_1.sub(lambda x: x.group(0).lower(), pass0)
-    return _snake_case_pattern_2.sub(lambda x: '_' + x.group(0).lower(), pass1).lower()
+    pass1 = _snake_case_pattern_1.sub(lambda x: '_' + x.group(0).lower(), pass0)
+    pass2 = _snake_case_pattern_2.sub(lambda x: x.group(0).lower(), pass1)
+    return _snake_case_pattern_3.sub(lambda x: '_' + x.group(0).lower(), pass2).lower()
 
 
 def filter_to_screaming_snake_case(value: str) -> str:
