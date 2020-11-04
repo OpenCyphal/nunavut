@@ -1,6 +1,8 @@
 {% extends "base.j2" %}
 {% block contents %}
 
+{% from 'definitions.j2' import generate_composite %}
+
 {{ generate_composite(T.request_type) }}
 
 {{ generate_composite(T.response_type) }}

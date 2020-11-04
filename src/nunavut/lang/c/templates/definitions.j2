@@ -1,0 +1,53 @@
+{% macro generate_composite(t) %}
+{% if t.inner_type is StructureType %}
+{{ _define_structure(t.inner_type) }}
+
+{% elif t.inner_type is UnionType %}
+{{ _define_union(t.inner_type) }}
+
+{% else %}{% assert False %}{# Not a valid composite type. #}
+{% endif %}
+{% endmacro %}
+
+
+{% macro _define_structure(t) %}
+{% assert t is StructureType %}
+typedef struct
+{
+{%- for f in t.fields_except_padding %}
+    {{ _define_field(f.data_type, f.name) | indent }};
+{%- else %}{#- To maintain consistency between C and C++ we define any empty composite type with a dummy byte. #}
+    {{ typename_byte }} _dummy_;
+{%- endfor %}
+} {{ t | full_reference_name }};
+{% endmacro %}
+
+
+{% macro _define_union(t) %}
+{% assert t is UnionType %}
+typedef struct
+{
+    union  /// The tag is located after the union to ensure that the active element address equals the struct address.
+    {
+    {%- for f in t.fields_except_padding %}
+        {{ _define_field(f.data_type, f.name) | indent | indent }};  // _tag_ = {{ loop.index0 }}
+    {%- endfor %}
+    };
+    {{ t.tag_field_type | type_from_primitive }} _tag_;
+} {{ t | full_reference_name }};
+{% endmacro %}
+
+
+{% macro _define_field(t, name, suffix='') %}
+{%- if t is PrimitiveType -%}         {{ t | type_from_primitive }} {{ name }}{{ suffix }}
+{%- elif t is CompositeType -%}       {{ t | full_reference_name }} {{ name }}{{ suffix }}
+{%- elif t is FixedLengthArrayType -%}{{ _define_field(t.element_type, name, '[%s]'|format(t.capacity)) }}{{ suffix }}
+{%- elif t is VariableLengthArrayType -%}
+struct
+{   /// Array address equivalence guarantee: &elements[0] == &{{ name }}
+    {{ _define_field(t.element_type, 'elements', '[%s]'|format(t.capacity)) }};
+    {{ typename_unsigned_length }} count;
+} {{ name }}{{ suffix }}
+{%- else -%}{% assert False %}{# Not a valid field type. #}
+{%- endif -%}
+{% endmacro %}
