@@ -1,3 +1,11 @@
+{#-
+ # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2020  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+ # Authors: David Lenfesty, Scott Dixon <dixonsco@amazon.com>, Pavel Kirienko <pavel@uavcan.org>,
+ #          Peter van der Perk <peter.vanderperk@nxp.com>
+-#}
+
 {% macro generate_composite(t) %}
 
 {%- assert t.extent % 8 == 0 %}
@@ -17,14 +25,18 @@ static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
 
 {% for constant in t.constants %}
 /// {{ constant }}
-#define {{ t | full_reference_name }}_{{ constant.name | id }} ({{ constant | constant_value }})
+#define {{ t | full_reference_name }}_{{ constant.name }} ({{ constant | constant_value }})
 {%- endfor %}
 {% for f in t.fields_except_padding if f.data_type is ArrayType %}
 /// Array metadata for: {{ f }}
-#define {{ t | full_reference_name }}_{{ f.name | id }}_ARRAY_CAPACITY_           {{ f.data_type.capacity }}U
-#define {{ t | full_reference_name }}_{{ f.name | id }}_ARRAY_IS_VARIABLE_LENGTH_ {# -#}
+#define {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_           {{ f.data_type.capacity }}U
+#define {{ t | full_reference_name }}_{{ f.name }}_ARRAY_IS_VARIABLE_LENGTH_ {# -#}
         {{ valuetoken_true if f.data_type is VariableLengthArrayType else valuetoken_false }}
 {%- endfor %}
+{% if t.inner_type is UnionType %}
+/// The number of fields in the union. Valid tag values range from zero to this value minus one, inclusive.
+#define {{ t | full_reference_name }}_UNION_OPTION_COUNT_ {{ t.fields | length }}U
+{% endif %}
 
 {% if t.inner_type is StructureType %}
 {{ _define_structure(t.inner_type) }}
@@ -99,7 +111,7 @@ struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
 
 
 {% macro _define_bitpacked_array_field(name, capacity) -%}
-/// Bitpacked array: 8 bits per byte, capacity {{ capacity }} bits. Access via nunavutSetBit(), nunavutGetBit().
+/// Bitpacked array, capacity {{ capacity }} bits. Access via @ref nunavutSetBit(), @ref nunavutGetBit().
 {{ typename_byte }} {{ (name + '_bitpacked_') | id }}[{{ (capacity + 7) // 8 }}]
 {%- endmacro %}{# https://en.wiktionary.org/wiki/bitpacked #}
 
@@ -182,7 +194,7 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_deserializ
 {% for f in t.fields_except_padding %}
 {% if t.inner_type is UnionType %}
 /// Mark option "{{ f.name }}" active without initializing it. Does nothing if @param obj is {{ valuetoken_null }}.
-static inline void {{ t | full_reference_name }}_select_{{ f.name | id }}_{# -#}
+static inline void {{ t | full_reference_name }}_select_{{ f.name }}_{# -#}
                   ({{ t | full_reference_name }}* const obj)
 {
     if (obj != {{valuetoken_null}})
@@ -192,7 +204,7 @@ static inline void {{ t | full_reference_name }}_select_{{ f.name | id }}_{# -#}
 }
 
 /// Check if option "{{ f.name }}" is active. Returns false if @param obj is {{ valuetoken_null }}.
-static inline {{ typename_boolean }} {{ t | full_reference_name }}_is_{{ f.name | id }}_{# -#}
+static inline {{ typename_boolean }} {{ t | full_reference_name }}_is_{{ f.name }}_{# -#}
                               (const {{ t | full_reference_name }}* const obj)
 {
     return ((obj != {{ valuetoken_null }}) && (obj->_tag_ == {{ loop.index0 }}));

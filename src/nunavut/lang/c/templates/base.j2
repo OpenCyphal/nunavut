@@ -1,7 +1,19 @@
+{#-
+ # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2020  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+ # Authors: David Lenfesty, Scott Dixon <dixonsco@amazon.com>, Pavel Kirienko <pavel@uavcan.org>,
+ #          Peter van der Perk <peter.vanderperk@nxp.com>
+-#}
+
 // This is an AUTO-GENERATED UAVCAN DSDL data type implementation. Curious? See https://uavcan.org.
+// You shouldn't attempt to edit this file.
+//
 // Please consider the environment before checking this file under version control. Normally, it should be
 // generated as part of the build process, unless it is used as part of a high-SIL safety-critical codebase.
-// You shouldn't attempt to edit this file. Bring your questions and issues to https://forum.uavcan.org.
+//
+// To avoid conflicts with definitions given in the source DSDL file, all entities created by the code generator
+// are named with an underscore at the end, like foo_bar_().
 //
 // Generator:     nunavut-{{ nunavut.version }} (serialization was {{ 'not ' * nunavut.support.omit }}enabled)
 // Source file:   {{ T.source_file_path }}
@@ -11,7 +23,7 @@
 // Full name:     {{ T.full_name }}
 // Version:       {{ T.version.major }}.{{ T.version.minor }}
 
-{% set include_guard -%}{{T.full_name | c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED{%- endset -%}
+{% set include_guard -%}{{T.full_name | c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED_{%- endset -%}
 #ifndef {{ include_guard }}
 #define {{ include_guard }}
 
