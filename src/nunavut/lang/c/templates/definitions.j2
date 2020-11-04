@@ -9,7 +9,7 @@
 /// When allocating a serialization (TX) buffer, it is safe to use the size of the largest serialized representation
 /// instead of the extent because it provides a tighter bound of the object size; it is safe because the concrete type
 /// is always known during serialization (unlike deserialization). If not sure, use extent everywhere.
-#define {{ t | full_reference_name }}_EXTENT_BYTES_ {{ t.extent // 8 }}UL
+#define {{ t | full_reference_name }}_EXTENT_BYTES_                    {{ t.extent // 8 }}UL
 #define {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_ {{ t.inner_type.extent // 8 }}UL
 static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
               {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_,
@@ -21,7 +21,7 @@ static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
 {%- endfor %}
 {% for f in t.fields_except_padding if f.data_type is ArrayType %}
 /// Array metadata for: {{ f }}
-#define {{ t | full_reference_name }}_{{ f.name | id }}_ARRAY_CAPACITY_ {{ f.data_type.capacity }}U
+#define {{ t | full_reference_name }}_{{ f.name | id }}_ARRAY_CAPACITY_           {{ f.data_type.capacity }}U
 #define {{ t | full_reference_name }}_{{ f.name | id }}_ARRAY_IS_VARIABLE_LENGTH_ {# -#}
         {{ valuetoken_true if f.data_type is VariableLengthArrayType else valuetoken_false }}
 {%- endfor %}
