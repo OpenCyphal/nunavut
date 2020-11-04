@@ -699,14 +699,20 @@ def filter_constant_value(language: Language,
         jinja_filter_tester(filter_constant_value, template, rendered, lctx, my_true_constant=my_true_constant)
 
     """
-    if isinstance(constant.data_type, pydsdl.BooleanType):
+    ty = constant.data_type
+    if isinstance(ty, pydsdl.BooleanType):
         return str(language.valuetoken_true if constant.value.native_value else language.valuetoken_false)
-    elif isinstance(constant.data_type, pydsdl.IntegerType):
-        return str(constant.value.native_value)
-    elif isinstance(constant.data_type, pydsdl.FloatType):
-        return '( {} / {} )'.format(constant.value.native_value.numerator, constant.value.native_value.denominator)
+    elif isinstance(ty, pydsdl.IntegerType):
+        out = str(constant.value.native_value) + 'U' * isinstance(ty, pydsdl.UnsignedIntegerType) \
+            + 'L' * (ty.bit_length > 16) + 'L' * (ty.bit_length > 32)
+        assert isinstance(out, str)
+        return out
+    elif isinstance(ty, pydsdl.FloatType):
+        expr = '{} / {}'.format(constant.value.native_value.numerator, constant.value.native_value.denominator)
+        cast = filter_constant_value(language, constant)
+        return '(({})({}))'.format(cast, expr)
     else:
-        raise ValueError('Constant with data_type "{}" was malformed.'.format(type(constant.data_type).__name__))
+        raise ValueError('Constant with data_type "{}" was malformed.'.format(type(ty).__name__))
 
 
 @template_language_filter(__name__)

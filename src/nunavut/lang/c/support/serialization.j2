@@ -62,10 +62,10 @@ static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_u
 // API usage errors:
 #define NUNAVUT_ERROR_INVALID_ARGUMENT                  2
 #define NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL    3
-// Invalid serialized representation (caused by bad input data, not API misuse):
-#define NUNAVUT_ERROR_SERIALIZED_REPRESENTATION_BAD_ARRAY_LENGTH        10
-#define NUNAVUT_ERROR_SERIALIZED_REPRESENTATION_BAD_UNION_TAG           11
-#define NUNAVUT_ERROR_SERIALIZED_REPRESENTATION_BAD_DELIMITER_HEADER    12
+// Invalid representation (caused by bad input data, not API misuse):
+#define NUNAVUT_ERROR_REPRESENTATION_BAD_ARRAY_LENGTH        10
+#define NUNAVUT_ERROR_REPRESENTATION_BAD_UNION_TAG           11
+#define NUNAVUT_ERROR_REPRESENTATION_BAD_DELIMITER_HEADER    12
 
 {% if not option_omit_float_serialization_support -%}
 /// Detect whether the target platform is compatible with IEEE 754.
