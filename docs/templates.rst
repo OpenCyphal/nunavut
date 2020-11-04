@@ -239,8 +239,6 @@ C Filters
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_includes
    :noindex:
-.. autofunction:: nunavut.lang.c.filter_declaration
-   :noindex:
 .. autofunction:: nunavut.lang.c.filter_constant_value
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_full_reference_name

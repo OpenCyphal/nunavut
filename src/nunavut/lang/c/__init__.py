@@ -655,21 +655,6 @@ def filter_includes(language: Language,
 
 
 @template_language_filter(__name__)
-def filter_declaration(language: Language,
-                       instance: pydsdl.Any) -> str:
-    """
-    Emit a declaration statement for the given instance.
-    """
-    if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.VoidType):
-        return filter_type_from_primitive(language, instance)
-    elif isinstance(instance, pydsdl.ArrayType):
-        return '{}'.format(
-            filter_declaration(language, instance.element_type))
-    else:
-        return filter_full_reference_name(language, instance)
-
-
-@template_language_filter(__name__)
 def filter_constant_value(language: Language,
                           constant: pydsdl.Constant) -> str:
     """
