@@ -10,6 +10,8 @@
 # :function: create_dsdl_target
 # Creates a target that will generate source code from dsdl definitions.
 #
+# Extra command line arguments can be passed to nnvg by setting the string variable NNVG_FLAGS.
+#
 # :param str ARG_TARGET_NAME:               The name to give the target.
 # :param str ARG_OUTPUT_LANGUAGE            The language to generate for this target.
 # :param Path ARG_OUTPUT_FOLDER:            The directory to generate all source under.
@@ -23,7 +25,7 @@
 #           will generate. For example, if ARG_TARGET_NAME == 'foo-bar' then after calling this function
 #           ${foo-bar-OUTPUT} will be set to the list of output files.
 #
-function (create_dsdl_target ARG_TARGET_NAME 
+function (create_dsdl_target ARG_TARGET_NAME
                              ARG_OUTPUT_LANGUAGE
                              ARG_OUTPUT_FOLDER
                              ARG_DSDL_ROOT_DIR
@@ -31,7 +33,7 @@ function (create_dsdl_target ARG_TARGET_NAME
                              ARG_ENABLE_SER_ASSERT
                              ARG_DISABLE_SER_FP)
 
-    set(NNVG_CMD_ARGS "")
+    separate_arguments(NNVG_CMD_ARGS UNIX_COMMAND "${NNVG_FLAGS}")
 
     if (${ARGC} GREATER 7)
         MATH(EXPR ARG_N_LAST "${ARGC}-1")
@@ -50,7 +52,7 @@ function (create_dsdl_target ARG_TARGET_NAME
     if (ARG_ENABLE_SER_ASSERT)
         list(APPEND NNVG_CMD_ARGS "--enable-serialization-asserts")
     endif()
-    
+
     execute_process(COMMAND ${NNVG} --list-outputs ${NNVG_CMD_ARGS}
                     OUTPUT_VARIABLE OUTPUT_FILES
                     RESULT_VARIABLE LIST_OUTPUTS_RESULT)
@@ -152,4 +154,3 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(nnvg
     REQUIRED_VARS NNVG_VERSION
 )
-

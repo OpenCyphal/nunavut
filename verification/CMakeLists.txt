@@ -110,13 +110,18 @@ find_package(unity REQUIRED)
 find_package(nnvg REQUIRED)
 
 #
+# Configure extra arguments for the subsequent invocations of nnvg.
+#
+set(NNVG_FLAGS "--pp-max-emptylines=1 --pp-trim-trailing-whitespace")
+
+#
 # Generate types for the UAVCAN v1 public_regulated_data_types set.
 #
 create_dsdl_target(dsdl-regulated
                    ${NUNAVUT_VERIFICATION_LANG}
                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
-                   ON
+                   OFF
                    ON
                    OFF)
 
@@ -127,7 +132,7 @@ create_dsdl_target(dsdl-test
                    ${NUNAVUT_VERIFICATION_LANG}
                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
                    ${CMAKE_SOURCE_DIR}/nunavut_test_types/test0/regulated
-                   ON
+                   OFF
                    ON
                    OFF
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
