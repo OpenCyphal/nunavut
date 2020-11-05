@@ -8,17 +8,103 @@
 
 {% from 'definitions.j2' import assert %}
 
+
 {% macro serialize(t) %}
-    const {{ typename_unsigned_bit_length }} capacity_bits = {# -#}
-        8U * ({{ typename_unsigned_bit_length }}) *inout_buffer_size_bytes;
+    {# TODO XXX FIXME possibly move these into the caller scope for consistency. #}
+    const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
+    const {{ typename_unsigned_bit_length }} capacity_bits = 8U * ({{ typename_unsigned_bit_length }}) capacity_bytes;
     {{ typename_unsigned_bit_length }} offset_bits = 0U;
 
-    {{ assert('offset_bits % 8U == 0') }}
+{% if t.inner_type is StructureType %}
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
+    // {{ f }}
+    {{ _serialize_any(f.data_type, 'obj->' + (f | id), offset) | trim | remove_blank_lines }}
+    {% endfor %}
+
+{% elif t.inner_type is UnionType %}
+    {{ assert('false') }}
+
+{% else %}{% assert False %}
+{% endif %}
+
+    {{ assert('offset_bits % 8U == 0U') }}
     *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (offset_bits / 8U);
 {% endmacro %}
 
-{% macro _serialize_primitive(t, reference, offset) %}
-{% endmacro %}
 
 {% macro _serialize_any(t, reference, offset) %}
+    {% if offset.is_aligned_at_byte() %}
+    {{ assert('offset_bits % 8U == 0U') }}
+    {% endif %}
+    {%   if t is VoidType %}                {{- _serialize_void(t, offset) }}
+    {% elif t is BooleanType %}             {{- _serialize_boolean(t, reference, offset) }}
+    {% elif t is IntegerType %}             {{- _serialize_integer(t, reference, offset) }}
+    {% elif t is FloatType %}               {{- _serialize_float(t, reference, offset) }}
+    {% elif t is FixedLengthArrayType %}    {{- _serialize_fixed_length_array(t, reference, offset) }}
+    {% elif t is VariableLengthArrayType %} {{- _serialize_variable_length_array(t, reference, offset) }}
+    {% elif t is CompositeType %}           {{- _serialize_composite(t, reference, offset) }}
+    {% else %}{% assert False %}
+    {% endif %}
+{% endmacro %}
+
+
+{% macro _serialize_void(t, offset) %}
+    {% if t.bit_length % 8 == 0 and offset.is_aligned_at_byte() %}
+    if ((offset_bits + {{ t.bit_length }}U) > capacity_bits)
+    {
+        return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
+    }
+    (void) memset(&buffer[offset_bits / 8U], 0, {{ t.bit_length // 8 }});
+    {% else %}
+    {
+        const {{ typename_error_type }} rc = nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {# -#}
+                                                           {{ t.bit_length }}U);
+        if (rc < 0)
+        {
+            return rc;
+        }
+    }
+    {% endif %}
+    offset_bits += {{ t.bit_length }}U;
+{% endmacro %}
+
+
+{% macro _serialize_boolean(t, reference, offset) %}
+    if ((offset_bits + {{ t.bit_length }}U) > capacity_bits)
+    {
+        return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
+    }
+    {% if offset.is_aligned_at_byte() %}
+    buffer[offset_bits / 8U] = {{ reference }} ? 1U : 0U;
+    {% else %}
+    if ({{ reference }})
+    {
+        buffer[offset_bits / 8U] |= 1U << (offset_bits % 8U);
+    }
+    else
+    {
+        buffer[offset_bits / 8U] &= ~(1U << (offset_bits % 8U));
+    }
+    {% endif %}
+    offset_bits += 1U;
+{% endmacro %}
+
+
+{% macro _serialize_integer(t, reference, offset) %}
+{% endmacro %}
+
+
+{% macro _serialize_float(t, reference, offset) %}
+{% endmacro %}
+
+
+{% macro _serialize_fixed_length_array(t, reference, offset) %}
+{% endmacro %}
+
+
+{% macro _serialize_variable_length_array(t, reference, offset) %}
+{% endmacro %}
+
+
+{% macro _serialize_composite(t, reference, offset) %}
 {% endmacro %}
