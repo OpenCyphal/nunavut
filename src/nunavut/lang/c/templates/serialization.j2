@@ -12,7 +12,10 @@
 {% macro serialize(t) %}
     {# TODO XXX FIXME possibly move these into the caller scope for consistency. #}
     const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
-    const {{ typename_unsigned_bit_length }} capacity_bits = 8U * ({{ typename_unsigned_bit_length }}) capacity_bytes;
+    if ((8U * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.bit_length_set|max }}U)
+    {
+        return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
+    }
     {{ typename_unsigned_bit_length }} offset_bits = 0U;
 
 {% if t.inner_type is StructureType %}
@@ -36,6 +39,7 @@
     {% if offset.is_aligned_at_byte() %}
     {{ assert('offset_bits % 8U == 0U') }}
     {% endif %}
+    {{ assert('(offset_bits + %dU) <= (capacity_bytes * 8U)'|format(t.bit_length_set | max)) }}
     {%   if t is VoidType %}                {{- _serialize_void(t, offset) }}
     {% elif t is BooleanType %}             {{- _serialize_boolean(t, reference, offset) }}
     {% elif t is IntegerType %}             {{- _serialize_integer(t, reference, offset) }}
@@ -50,10 +54,6 @@
 
 {% macro _serialize_void(t, offset) %}
     {% if t.bit_length % 8 == 0 and offset.is_aligned_at_byte() %}
-    if ((offset_bits + {{ t.bit_length }}U) > capacity_bits)
-    {
-        return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
-    }
     (void) memset(&buffer[offset_bits / 8U], 0, {{ t.bit_length // 8 }});
     {% else %}
     {
@@ -70,10 +70,6 @@
 
 
 {% macro _serialize_boolean(t, reference, offset) %}
-    if ((offset_bits + {{ t.bit_length }}U) > capacity_bits)
-    {
-        return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
-    }
     {% if offset.is_aligned_at_byte() %}
     buffer[offset_bits / 8U] = {{ reference }} ? 1U : 0U;
     {% else %}
@@ -91,14 +87,93 @@
 
 
 {% macro _serialize_integer(t, reference, offset) %}
+    // TODO: SATURATION
+    {% if offset.is_aligned_at_byte() and option_target_endianness == 'little' %}
+        {% if t.bit_length % 8 != 0 %}
+    // The size of {{ t.bit_length }} bits is not byte-aligned, but round it up to byte and use memcpy() anyway.
+    // Extra {{ 8 - t.bit_length % 8 }} bits will be copied but this is guaranteed to not overrun the buffer.
+        {% endif %}
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, {{ (t.bit_length + 7) // 8 }}U);
+
+    {% else %}
+    {
+        const {{ typename_error_type }} rc = nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, {# -#}
+                                                           {{ reference }}, {{ t.bit_length }}U);
+        if (rc < 0)
+        {
+            return rc;
+        }
+    }
+    {% endif %}
+    offset_bits += {{ t.bit_length }}U;
 {% endmacro %}
 
 
 {% macro _serialize_float(t, reference, offset) %}
+    // TODO: SATURATION
+    {% if offset.is_aligned_at_byte() and option_target_endianness == 'little' %}
+        {% if t.bit_length == 16 %}
+    {
+        const uint16_t _half_ = nunavutFloat16Pack({{ reference }});
+        (void) memcpy(&buffer[offset_bits / 8U], &_half_, 2U);
+    }
+        {% elif t.bit_length == 32 %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 is required for this optimization");
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, 4U);
+        {% elif t.bit_length == 64 %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 is required for this optimization");
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, 8U);
+        {% else %}{% assert False %}
+        {% endif %}
+
+    {% else %}
+    {
+        const {{ typename_error_type }} rc = nunavutSetF{{ t.bit_length }}{#- -#}
+            (&buffer[0], capacity_bytes, offset_bits, {{ reference }});
+        if (rc < 0)
+        {
+            return rc;
+        }
+    }
+    {% endif %}
+    offset_bits += {{ t.bit_length }}U;
 {% endmacro %}
 
 
 {% macro _serialize_fixed_length_array(t, reference, offset) %}
+    {# PACKED BIT ARRAY #}
+    {% if t.element_type is BooleanType %}
+        {% if offset.is_aligned_at_byte() %}
+            {% if t.capacity % 8 != 0 %}
+    // The capacity of {{ t.capacity }} bits is not byte-aligned, but round it up to byte and use memcpy() anyway.
+    // Extra {{ 8 - t.capacity % 8 }} bits will be copied but this is guaranteed to not overrun the buffer.
+            {% endif %}
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference + '_bitpacked_' }}, {{ (t.capacity + 7) // 8 }}U);
+        {% else %}
+    nunavutCopyBits({{ t.capacity }}U, 0U, offset_bits, &{{ reference + '_bitpacked_' }}, &buffer[0]);
+        {% endif %}
+    offset_bits += {{ t.capacity }}U;
+
+    {# BYTES-LIKE ARRAY (endianness-invariant) #}
+    {% elif offset.is_aligned_at_byte() and t.element_type is PrimitiveType and t.element_type.bit_length == 8 %}
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, {{ t.capacity }}U);
+    offset_bits += {{ t.capacity }}U * 8U;
+
+    {# STANDARD SIZE PRIMITIVES (like uint32_t, floats, etc.) #}
+    {% elif offset.is_aligned_at_byte() and t.element_type is PrimitiveType and t.element_type.standard_bit_length and
+            option_target_endianness == 'little'
+    %}
+        {% if t.element_type is FloatType %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 is required for this optimization");
+    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 is required for this optimization");
+        {% endif %}
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, {# -#}
+                   {{ t.capacity }}U * {{ t.element_type.bit_length // 8 }}U);
+    offset_bits += {{ t.capacity }}U * {{ t.element_type.bit_length }}U;
+
+    {% else %}
+    // TODO serialization
+    {% endif %}
 {% endmacro %}
 
 
