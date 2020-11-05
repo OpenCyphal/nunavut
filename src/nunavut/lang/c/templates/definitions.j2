@@ -123,9 +123,9 @@ static inline void {{ t | full_reference_name }}_initialize_({{ t | full_referen
 {
     if (out_obj != {{ valuetoken_null }})
     {
-        {{ typename_unsigned_length }} size = 0;
+        {{ typename_unsigned_length }} size_bytes = 0;
         const {{ typename_byte }} buf = 0;
-        const {{ typename_error_type }} err = {{ t | full_reference_name }}_deserialize_(out_obj, &buf, &size);
+        const {{ typename_error_type }} err = {{ t | full_reference_name }}_deserialize_(out_obj, &buf, &size_bytes);
         {{ assert('err >= 0') }}
         (void) err;
     }
@@ -141,22 +141,25 @@ static inline void {{ t | full_reference_name }}_initialize_({{ t | full_referen
 /// @param buffer   The destination buffer. There are no alignment requirements.
 ///                 @see {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_
 ///
-/// @param inout_buffer_size    When calling, this is a pointer to value that contains the size of the buffer.
-///                             Upon return this value will be updated with the size of the constructed serialized
-///                             representation; this value is then to be passed over to the transport layer.
-///                             In case of error this value is undefined.
+/// @param inout_buffer_size_bytes  When calling, this is a pointer to the size of the buffer in bytes.
+///                                 Upon return this value will be updated with the size of the constructed serialized
+///                                 representation (in bytes); this value is then to be passed over to the transport
+///                                 layer. In case of error this value is undefined.
 ///
 /// @returns Negative on error, zero on success.
 static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_(
     const {{ t | full_reference_name }}* const obj, {# -#}
     {{ typename_byte }}* const buffer,  {# -#}
-    {{ typename_unsigned_length }}* const inout_buffer_size)
+    {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
 {
     if ((obj == {{ valuetoken_null }}) || (buffer == {{ valuetoken_null }}) || {# -#}
-        (inout_buffer_size == {{ valuetoken_null }}))
+        (inout_buffer_size_bytes == {{ valuetoken_null }}))
     {
         return -NUNAVUT_ERROR_INVALID_ARGUMENT;
     }
+
+    {% from 'serialization.j2' import serialize -%}
+    {{ serialize(t) }}
 
     return NUNAVUT_SUCCESS;
 }
@@ -172,18 +175,18 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_
 ///                 If the buffer is shorter or longer than expected, it will be implicitly zero-extended or truncated,
 ///                 respectively; see Specification for "implicit zero extension" and "implicit truncation" rules.
 ///
-/// @param inout_buffer_size    When calling, this is a pointer to value that contains the size of the buffer.
-///                             Upon return this value will be updated with the size of the consumed serialized
-///                             representation. In case of error this value is undefined.
+/// @param inout_buffer_size_bytes  When calling, this is a pointer to the size of the buffer in bytes.
+///                                 Upon return this value will be updated with the size of the consumed serialized
+///                                 representation (in bytes). In case of error this value is undefined.
 ///
 /// @returns Negative on error, zero on success.
 static inline {{ typename_error_type }} {{ t | full_reference_name }}_deserialize_(
     {{ t | full_reference_name }}* const out_obj, {# -#}
     const {{ typename_byte }}* const buffer, {# -#}
-    {{ typename_unsigned_length }}* const inout_buffer_size)
+    {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
 {
     if ((out_obj == {{ valuetoken_null }}) || (buffer == {{ valuetoken_null }}) || {# -#}
-        (inout_buffer_size == {{ valuetoken_null }}))
+        (inout_buffer_size_bytes == {{ valuetoken_null }}))
     {
         return -NUNAVUT_ERROR_INVALID_ARGUMENT;
     }

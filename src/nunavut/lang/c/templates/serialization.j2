@@ -1,0 +1,24 @@
+{#-
+ # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2020  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+ # Authors: David Lenfesty, Scott Dixon <dixonsco@amazon.com>, Pavel Kirienko <pavel@uavcan.org>,
+ #          Peter van der Perk <peter.vanderperk@nxp.com>
+-#}
+
+{% from 'definitions.j2' import assert %}
+
+{% macro serialize(t) %}
+    const {{ typename_unsigned_bit_length }} capacity_bits = {# -#}
+        8U * ({{ typename_unsigned_bit_length }}) *inout_buffer_size_bytes;
+    {{ typename_unsigned_bit_length }} offset_bits = 0U;
+
+    {{ assert('offset_bits % 8U == 0') }}
+    *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (offset_bits / 8U);
+{% endmacro %}
+
+{% macro _serialize_primitive(t, reference, offset) %}
+{% endmacro %}
+
+{% macro _serialize_any(t, reference, offset) %}
+{% endmacro %}
