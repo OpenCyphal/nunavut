@@ -13,7 +13,7 @@
 {% macro serialize(t) %}
     {# TODO XXX FIXME possibly move these into the caller scope for consistency. #}
     const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
-    if ((8U * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.bit_length_set|max }}UL)
+    if ((8U * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.inner_type.bit_length_set|max }}UL)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
@@ -23,6 +23,11 @@
 
 {% if t.inner_type is StructureType %}
     {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
+        {% if loop.first %}
+            {% assert f.data_type.alignment_requirement <= t.inner_type.alignment_requirement %}
+        {% else %}
+    {{ _pad_to_alignment(f.data_type.alignment_requirement) | trim | remove_blank_lines }}
+        {% endif %}
     {   // {{ f }}
         {{ _serialize_any(f.data_type, 'obj->' + (f | id), offset) | trim | remove_blank_lines | indent }}
     }
@@ -34,11 +39,15 @@
 {% else %}{% assert False %}
 {% endif %}
 
-{%- if t.bit_length_set|length > 1 %}
-    {{ assert('offset_bits >= %sUL' | format(t.bit_length_set|min)) }}
-    {{ assert('offset_bits <= %sUL' | format(t.bit_length_set|max)) }}
+{# PAD OBJECT SIZE #}
+    {{ _pad_to_alignment(t.inner_type.alignment_requirement) | trim | remove_blank_lines }}
+
+{# FINAL VERIFICATION #}
+{%- if t.inner_type.bit_length_set|length > 1 %}
+    {{ assert('offset_bits >= %sUL' | format(t.inner_type.bit_length_set|min)) }}
+    {{ assert('offset_bits <= %sUL' | format(t.inner_type.bit_length_set|max)) }}
 {%- else %}
-    {{ assert('offset_bits == %sUL' | format(t.bit_length_set|sum)) }}
+    {{ assert('offset_bits == %sUL' | format(t.inner_type.bit_length_set|sum)) }}
 {%- endif %}
     {{ assert('offset_bits % 8U == 0U') }}
     *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (offset_bits / 8U);
@@ -46,11 +55,39 @@
 
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _pad_to_alignment(n_bits) %}
+{% if n_bits > 1 %}
+    if (offset_bits % {{ n_bits }}U != 0U)  // Pad to {{ n_bits }} bits. TODO: Eliminate redundant padding checks.
+    {
+        {% set ref_padding = 'pad' | to_template_unique_name %}
+        {% set ref_err = 'err' | to_template_unique_name %}
+        const size_t {{ ref_padding }} = {{ n_bits }}U - offset_bits % {{ n_bits }}U;
+        {{ assert('%s > 0'|format(ref_padding)) }}
+        const {{ typename_error_type }} {{ ref_err }} = {# -#}
+            nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ ref_padding }});
+        if ({{ ref_err }} < 0)
+        {
+            return {{ ref_err }};
+        }
+        offset_bits += {{ ref_padding }};
+        {{ assert('offset_bits %% %dU == 0U'|format(n_bits)) }}
+    }
+{% endif %}
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_any(t, reference, offset) %}
+{# CHECK INVARIANTS #}
+{% if t.alignment_requirement > 1 %}
+    {{ assert('offset_bits %% %dU == 0U'|format(t.alignment_requirement)) }}
+{% endif %}
 {% if offset.is_aligned_at_byte() %}
     {{ assert('offset_bits % 8U == 0U') }}
 {% endif %}
     {{ assert('(offset_bits + %dU) <= (capacity_bytes * 8U)'|format(t.bit_length_set | max)) }}
+
+{# SERIALIZE #}
 {%   if t is VoidType %}                {{- _serialize_void(t, offset) }}
 {% elif t is BooleanType %}             {{- _serialize_boolean(t, reference, offset) }}
 {% elif t is IntegerType %}             {{- _serialize_integer(t, reference, offset) }}
@@ -122,7 +159,7 @@
     }
     {% else %}
         {% set ref_value = reference %}
-        // Saturation code not emitted -- native representation matches the serialized representation.
+    // Saturation code not emitted -- native representation matches the serialized representation.
     {% endif %}
 {% else %}
     {% set ref_value = reference %}
