@@ -13,7 +13,7 @@
 {% macro serialize(t) %}
     {# TODO XXX FIXME possibly move these into the caller scope for consistency. #}
     const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
-    if ((8U * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.bit_length_set|max }}U)
+    if ((8U * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.bit_length_set|max }}UL)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
@@ -35,10 +35,10 @@
 {% endif %}
 
 {%- if t.bit_length_set|length > 1 %}
-    {{ assert('offset_bits >= %sU' | format(t.bit_length_set|min)) }}
-    {{ assert('offset_bits <= %sU' | format(t.bit_length_set|max)) }}
+    {{ assert('offset_bits >= %sUL' | format(t.bit_length_set|min)) }}
+    {{ assert('offset_bits <= %sUL' | format(t.bit_length_set|max)) }}
 {%- else %}
-    {{ assert('offset_bits == %sU' | format(t.bit_length_set|sum)) }}
+    {{ assert('offset_bits == %sUL' | format(t.bit_length_set|sum)) }}
 {%- endif %}
     {{ assert('offset_bits % 8U == 0U') }}
     *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (offset_bits / 8U);
@@ -74,13 +74,13 @@
 {% else %}
     {% set ref_err = 'err' | to_template_unique_name %}
     const {{ typename_error_type }} {{ ref_err }} = {# -#}
-        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ t.bit_length }}U);
+        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ t.bit_length }}UL);
     if ({{ ref_err }} < 0)
     {
         return {{ ref_err }};
     }
 {% endif %}
-    offset_bits += {{ t.bit_length }}U;
+    offset_bits += {{ t.bit_length }}UL;
 {% endmacro %}
 
 
@@ -130,17 +130,17 @@
 {% if offset.is_aligned_at_byte() and t.bit_length <= 8 %}                      {# SERIALIZE THE SATURATED VALUE #}
     buffer[offset_bits / 8U] = {{ ref_value }};
 {% elif offset.is_aligned_at_byte() and LITTLE_ENDIAN %}
-    (void) memcpy(&buffer[offset_bits / 8U], &{{ ref_value }}, {{ t.bit_length | bits2bytes_ceil }}U);
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ ref_value }}, {{ t.bit_length | bits2bytes_ceil }}UL);
 {% else %}
     {% set ref_err = 'err' | to_template_unique_name %}
     const {{ typename_error_type }} {{ ref_err }} = {# -#}
-        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, {{ ref_value }}, {{ t.bit_length }}U);
+        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, {{ ref_value }}, {{ t.bit_length }}UL);
     if ({{ ref_err }} < 0)
     {
         return {{ ref_err }};
     }
 {% endif %}
-    offset_bits += {{ t.bit_length }}U;
+    offset_bits += {{ t.bit_length }}UL;
 {% endmacro %}
 
 
@@ -196,7 +196,7 @@
         return {{ ref_err }};
     }
 {% endif %}
-    offset_bits += {{ t.bit_length }}U;
+    offset_bits += {{ t.bit_length }}UL;
 {% endmacro %}
 
 
@@ -206,16 +206,16 @@
 {% if t.element_type is BooleanType %}
     {% if offset.is_aligned_at_byte() %}
     (void) memcpy(&buffer[offset_bits / 8U], &{{ reference + BITPACKED_ARRAY_SUFFIX }}, {# -#}
-                 {{ t.capacity | bits2bytes_ceil }}U);
+                 {{ t.capacity | bits2bytes_ceil }}UL);
     {% else %}
-    nunavutCopyBits({{ t.capacity }}U, 0U, offset_bits, &{{ reference + BITPACKED_ARRAY_SUFFIX }}, &buffer[0]);
+    nunavutCopyBits({{ t.capacity }}UL, 0U, offset_bits, &{{ reference + BITPACKED_ARRAY_SUFFIX }}, &buffer[0]);
     {% endif %}
-    offset_bits += {{ t.capacity }}U;
+    offset_bits += {{ t.capacity }}UL;
 
 {# BYTES-LIKE ARRAY (endianness-invariant) #}
 {% elif offset.is_aligned_at_byte() and t.element_type is PrimitiveType and t.element_type.bit_length == 8 %}
-    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, {{ t.capacity }}U);
-    offset_bits += {{ t.capacity }}U * 8U;
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, {{ t.capacity }}UL);
+    offset_bits += {{ t.capacity }}UL * 8U;
 
 {# STANDARD SIZE PRIMITIVES (like uint32_t, floats, etc.) #}
 {% elif offset.is_aligned_at_byte() and t.element_type is PrimitiveType and t.element_type.standard_bit_length and
@@ -229,8 +229,8 @@
         {% endif %}
     {% endif %}
     (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, {# -#}
-                   {{ t.capacity }}U * {{ t.element_type.bit_length | bits2bytes_ceil }}U);
-    offset_bits += {{ t.capacity }}U * {{ t.element_type.bit_length }}U;
+                   {{ t.capacity }}UL * {{ t.element_type.bit_length | bits2bytes_ceil }}UL);
+    offset_bits += {{ t.capacity }}UL * {{ t.element_type.bit_length }}UL;
 
 {# GENERAL CASE, always unroll to take advantage of element alignment #}
 {% else %}
@@ -242,10 +242,10 @@
     }
     {% endfor %}
     {% if t.bit_length_set|length > 1 %}
-    {{ assert('(offset_bits - %s) >= %sU' | format(ref_origin_offset, t.bit_length_set|min)) }}
-    {{ assert('(offset_bits - %s) <= %sU' | format(ref_origin_offset, t.bit_length_set|max)) }}
+    {{ assert('(offset_bits - %s) >= %sUL' | format(ref_origin_offset, t.bit_length_set|min)) }}
+    {{ assert('(offset_bits - %s) <= %sUL' | format(ref_origin_offset, t.bit_length_set|max)) }}
     {% else %}
-    {{ assert('(offset_bits - %s) == %sU' | format(ref_origin_offset, t.bit_length_set|sum)) }}
+    {{ assert('(offset_bits - %s) == %sUL' | format(ref_origin_offset, t.bit_length_set|sum)) }}
     {% endif %}
     (void) {{ ref_origin_offset }};
 
