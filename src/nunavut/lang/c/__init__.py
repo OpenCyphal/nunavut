@@ -10,6 +10,7 @@
 
 import enum
 import functools
+import fractions
 import re
 import typing
 
@@ -660,7 +661,7 @@ def filter_includes(language: Language,
 def filter_constant_value(language: Language,
                           constant: pydsdl.Constant) -> str:
     """
-    Provides a string that is the full namespace, typename, major, and minor version for a given composite type.
+    Renders the specified constant as a literal. This is a shorthand for :func:`filter_literal`.
 
     .. invisible-code-block: python
 
@@ -701,20 +702,35 @@ def filter_constant_value(language: Language,
         jinja_filter_tester(filter_constant_value, template, rendered, lctx, my_true_constant=my_true_constant)
 
     """
-    ty = constant.data_type
+    return filter_literal(language, constant.value.native_value, constant.data_type)
+
+
+@template_language_filter(__name__)
+def filter_literal(language: Language,
+                   value: typing.Union[fractions.Fraction, bool],
+                   ty: pydsdl.Any) -> str:
+    """
+    Renders the specified value of the specified type as a literal.
+    """
     if isinstance(ty, pydsdl.BooleanType):
-        return str(language.valuetoken_true if constant.value.native_value else language.valuetoken_false)
+        return str(language.valuetoken_true if value else language.valuetoken_false)
+
     elif isinstance(ty, pydsdl.IntegerType):
-        out = str(constant.value.native_value) + 'U' * isinstance(ty, pydsdl.UnsignedIntegerType) \
+        out = str(value) + 'U' * isinstance(ty, pydsdl.UnsignedIntegerType) \
             + 'L' * (ty.bit_length > 16) + 'L' * (ty.bit_length > 32)
         assert isinstance(out, str)
         return out
+
     elif isinstance(ty, pydsdl.FloatType):
-        expr = '{} / {}'.format(constant.value.native_value.numerator, constant.value.native_value.denominator)
-        cast = filter_constant_value(language, constant)
-        return '(({})({}))'.format(cast, expr)
+        if value.denominator == 1:
+            expr = '{}.0'.format(value.numerator)
+        else:
+            expr = '({}.0 / {}.0)'.format(value.numerator, value.denominator)
+        cast = filter_type_from_primitive(language, ty)
+        return '(({}) {})'.format(cast, expr)
+
     else:
-        raise ValueError('Constant with data_type "{}" was malformed.'.format(type(ty).__name__))
+        raise ValueError('Cannot construct a C literal from an instance of {}'.format(type(ty).__name__))
 
 
 @template_language_filter(__name__)

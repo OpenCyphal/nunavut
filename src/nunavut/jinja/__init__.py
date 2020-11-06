@@ -647,6 +647,25 @@ class DSDLCodeGenerator(CodeGenerator):
         """
         return re.sub(r'\n([ \t\f\v]*\n)+', r'\n', text)
 
+    @staticmethod
+    def filter_bits2bytes_ceil(n_bits: int) -> int:
+        """
+        Implements ``int(ceil(x/8)) | x >= 0``.
+
+        .. invisible-code-block: python
+
+            from nunavut.jinja import DSDLCodeGenerator
+            assert DSDLCodeGenerator.filter_bits2bytes_ceil(50) == 7
+            assert DSDLCodeGenerator.filter_bits2bytes_ceil(8) == 1
+            assert DSDLCodeGenerator.filter_bits2bytes_ceil(7) == 1
+            assert DSDLCodeGenerator.filter_bits2bytes_ceil(1) == 1
+            assert DSDLCodeGenerator.filter_bits2bytes_ceil(0) == 0
+
+        """
+        if n_bits < 0:
+            raise ValueError('The number of bits cannot be negative')
+        return (int(n_bits) + 7) // 8
+
     # +-----------------------------------------------------------------------+
     # | JINJA : tests
     # +-----------------------------------------------------------------------+

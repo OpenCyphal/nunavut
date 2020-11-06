@@ -49,10 +49,11 @@ extern "C"
 #include <string.h>
 {%- if not option_omit_float_serialization_support %}
 #include <float.h>
+#include <math.h>  // For isfinite().
 {% endif -%}
 #include <stdbool.h>
 #include <stdint.h>
-#include <assert.h> // For static_assert (C11) and assert() if NUNAVUT_ASSERT is used.
+#include <assert.h>  // For static_assert (C11) and assert() if NUNAVUT_ASSERT is used.
 
 static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_unsigned_length }}),
     "The bit-length type used by Nunavut, {{ typename_unsigned_bit_length }}, "

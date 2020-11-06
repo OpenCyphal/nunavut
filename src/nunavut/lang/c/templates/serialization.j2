@@ -6,9 +6,10 @@
  #          Peter van der Perk <peter.vanderperk@nxp.com>
 -#}
 
-{% from 'definitions.j2' import assert %}
+{% from 'definitions.j2' import assert, BITPACKED_ARRAY_SUFFIX, LITTLE_ENDIAN %}
 
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro serialize(t) %}
     {# TODO XXX FIXME possibly move these into the caller scope for consistency. #}
     const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
@@ -17,11 +18,14 @@
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
     {{ typename_unsigned_bit_length }} offset_bits = 0U;
+    // Notice that fields that are not an integer number of bytes long may overrun the space allocated for them
+    // in the serialization buffer up to the next byte boundary. This is by design and is guaranteed to be safe.
 
 {% if t.inner_type is StructureType %}
     {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
-    // {{ f }}
-    {{ _serialize_any(f.data_type, 'obj->' + (f | id), offset) | trim | remove_blank_lines }}
+    {   // {{ f }}
+        {{ _serialize_any(f.data_type, 'obj->' + (f | id), offset) | trim | remove_blank_lines | indent }}
+    }
     {% endfor %}
 
 {% elif t.inner_type is UnionType %}
@@ -30,49 +34,61 @@
 {% else %}{% assert False %}
 {% endif %}
 
+{%- if t.bit_length_set|length > 1 %}
+    {{ assert('offset_bits >= %sU' | format(t.bit_length_set|min)) }}
+    {{ assert('offset_bits <= %sU' | format(t.bit_length_set|max)) }}
+{%- else %}
+    {{ assert('offset_bits == %sU' | format(t.bit_length_set|sum)) }}
+{%- endif %}
     {{ assert('offset_bits % 8U == 0U') }}
     *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (offset_bits / 8U);
 {% endmacro %}
 
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_any(t, reference, offset) %}
-    {% if offset.is_aligned_at_byte() %}
+{% if offset.is_aligned_at_byte() %}
     {{ assert('offset_bits % 8U == 0U') }}
-    {% endif %}
+{% endif %}
     {{ assert('(offset_bits + %dU) <= (capacity_bytes * 8U)'|format(t.bit_length_set | max)) }}
-    {%   if t is VoidType %}                {{- _serialize_void(t, offset) }}
-    {% elif t is BooleanType %}             {{- _serialize_boolean(t, reference, offset) }}
-    {% elif t is IntegerType %}             {{- _serialize_integer(t, reference, offset) }}
-    {% elif t is FloatType %}               {{- _serialize_float(t, reference, offset) }}
-    {% elif t is FixedLengthArrayType %}    {{- _serialize_fixed_length_array(t, reference, offset) }}
-    {% elif t is VariableLengthArrayType %} {{- _serialize_variable_length_array(t, reference, offset) }}
-    {% elif t is CompositeType %}           {{- _serialize_composite(t, reference, offset) }}
-    {% else %}{% assert False %}
-    {% endif %}
+{%   if t is VoidType %}                {{- _serialize_void(t, offset) }}
+{% elif t is BooleanType %}             {{- _serialize_boolean(t, reference, offset) }}
+{% elif t is IntegerType %}             {{- _serialize_integer(t, reference, offset) }}
+{% elif t is FloatType %}               {{- _serialize_float(t, reference, offset) }}
+{% elif t is FixedLengthArrayType %}    {{- _serialize_fixed_length_array(t, reference, offset) }}
+{% elif t is VariableLengthArrayType %} {{- _serialize_variable_length_array(t, reference, offset) }}
+{% elif t is CompositeType %}           {{- _serialize_composite(t, reference, offset) }}
+{% else %}{% assert False %}
+{% endif %}
 {% endmacro %}
 
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_void(t, offset) %}
-    {% if t.bit_length % 8 == 0 and offset.is_aligned_at_byte() %}
-    (void) memset(&buffer[offset_bits / 8U], 0, {{ t.bit_length // 8 }});
+{% if offset.is_aligned_at_byte() %}
+    {% if t.bit_length <= 8 %}
+    buffer[offset_bits / 8U] = 0U;
     {% else %}
-    {
-        const {{ typename_error_type }} rc = nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {# -#}
-                                                           {{ t.bit_length }}U);
-        if (rc < 0)
-        {
-            return rc;
-        }
-    }
+    (void) memset(&buffer[offset_bits / 8U], 0, {{ t.bit_length | bits2bytes_ceil }});
     {% endif %}
+{% else %}
+    {% set ref_err = 'err' | to_template_unique_name %}
+    const {{ typename_error_type }} {{ ref_err }} = {# -#}
+        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ t.bit_length }}U);
+    if ({{ ref_err }} < 0)
+    {
+        return {{ ref_err }};
+    }
+{% endif %}
     offset_bits += {{ t.bit_length }}U;
 {% endmacro %}
 
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_boolean(t, reference, offset) %}
-    {% if offset.is_aligned_at_byte() %}
+{% if offset.is_aligned_at_byte() %}
     buffer[offset_bits / 8U] = {{ reference }} ? 1U : 0U;
-    {% else %}
+{% else %}
     if ({{ reference }})
     {
         buffer[offset_bits / 8U] |= 1U << (offset_bits % 8U);
@@ -81,105 +97,167 @@
     {
         buffer[offset_bits / 8U] &= ~(1U << (offset_bits % 8U));
     }
-    {% endif %}
+{% endif %}
     offset_bits += 1U;
 {% endmacro %}
 
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_integer(t, reference, offset) %}
-    // TODO: SATURATION
-    {% if offset.is_aligned_at_byte() and option_target_endianness == 'little' %}
-        {% if t.bit_length % 8 != 0 %}
-    // The size of {{ t.bit_length }} bits is not byte-aligned, but round it up to byte and use memcpy() anyway.
-    // Extra {{ 8 - t.bit_length % 8 }} bits will be copied but this is guaranteed to not overrun the buffer.
-        {% endif %}
-    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, {{ (t.bit_length + 7) // 8 }}U);
-
-    {% else %}
-    {
-        const {{ typename_error_type }} rc = nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, {# -#}
-                                                           {{ reference }}, {{ t.bit_length }}U);
-        if (rc < 0)
-        {
-            return rc;
-        }
-    }
-    {% endif %}
-    offset_bits += {{ t.bit_length }}U;
-{% endmacro %}
-
-
-{% macro _serialize_float(t, reference, offset) %}
-    // TODO: SATURATION
-    {% if offset.is_aligned_at_byte() and option_target_endianness == 'little' %}
-        {% if t.bit_length == 16 %}
-    {
-        const uint16_t _half_ = nunavutFloat16Pack({{ reference }});
-        (void) memcpy(&buffer[offset_bits / 8U], &_half_, 2U);
-    }
-        {% elif t.bit_length == 32 %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 is required for this optimization");
-    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, 4U);
-        {% elif t.bit_length == 64 %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 is required for this optimization");
-    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, 8U);
-        {% else %}{% assert False %}
-        {% endif %}
-
-    {% else %}
-    {
-        const {{ typename_error_type }} rc = nunavutSetF{{ t.bit_length }}{#- -#}
-            (&buffer[0], capacity_bytes, offset_bits, {{ reference }});
-        if (rc < 0)
-        {
-            return rc;
-        }
-    }
-    {% endif %}
-    offset_bits += {{ t.bit_length }}U;
-{% endmacro %}
-
-
-{% macro _serialize_fixed_length_array(t, reference, offset) %}
-    {# PACKED BIT ARRAY #}
-    {% if t.element_type is BooleanType %}
-        {% if offset.is_aligned_at_byte() %}
-            {% if t.capacity % 8 != 0 %}
-    // The capacity of {{ t.capacity }} bits is not byte-aligned, but round it up to byte and use memcpy() anyway.
-    // Extra {{ 8 - t.capacity % 8 }} bits will be copied but this is guaranteed to not overrun the buffer.
-            {% endif %}
-    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference + '_bitpacked_' }}, {{ (t.capacity + 7) // 8 }}U);
+{% if t is saturated %}                                                         {# SATURATE THE VALUE #}
+    {% if not t.standard_bit_length %}
+        {% set ref_value = 'sat' | to_template_unique_name %}
+    {{ t | type_from_primitive }} {{ ref_value }} = {{ reference }};
+        {% if t is UnsignedIntegerType %}
+            {% assert t.inclusive_value_range[0] == 0 %}
         {% else %}
-    nunavutCopyBits({{ t.capacity }}U, 0U, offset_bits, &{{ reference + '_bitpacked_' }}, &buffer[0]);
+    if ({{ ref_value }} < {{ t.inclusive_value_range[0] | literal(t) }})
+    {
+        {{ ref_value }} = {{ t.inclusive_value_range[0] | literal(t) }};
+    }
         {% endif %}
+    if ({{ ref_value }} > {{ t.inclusive_value_range[1] | literal(t) }})
+    {
+        {{ ref_value }} = {{ t.inclusive_value_range[1] | literal(t) }};
+    }
+    {% else %}
+        {% set ref_value = reference %}
+        // Saturation code not emitted -- native representation matches the serialized representation.
+    {% endif %}
+{% else %}
+    {% set ref_value = reference %}
+{% endif %}
+{% if offset.is_aligned_at_byte() and t.bit_length <= 8 %}                      {# SERIALIZE THE SATURATED VALUE #}
+    buffer[offset_bits / 8U] = {{ ref_value }};
+{% elif offset.is_aligned_at_byte() and LITTLE_ENDIAN %}
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ ref_value }}, {{ t.bit_length | bits2bytes_ceil }}U);
+{% else %}
+    {% set ref_err = 'err' | to_template_unique_name %}
+    const {{ typename_error_type }} {{ ref_err }} = {# -#}
+        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, {{ ref_value }}, {{ t.bit_length }}U);
+    if ({{ ref_err }} < 0)
+    {
+        return {{ ref_err }};
+    }
+{% endif %}
+    offset_bits += {{ t.bit_length }}U;
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _serialize_float(t, reference, offset) %}
+{% if t is saturated %}                                                         {# SATURATE THE VALUE #}
+    {% if t.bit_length not in (32, 64) %}
+        {% set ref_value = 'sat' | to_template_unique_name %}
+    {{ t | type_from_primitive }} {{ ref_value }} = {{ reference }};
+    if (isfinite({{ ref_value }}))
+    {
+        if ({{ ref_value }} < {{ t.inclusive_value_range[0] | literal(t) }})
+        {
+            {{ ref_value }} = {{ t.inclusive_value_range[0] | literal(t) }};
+        }
+        if ({{ ref_value }} > {{ t.inclusive_value_range[1] | literal(t) }})
+        {
+            {{ ref_value }} = {{ t.inclusive_value_range[1] | literal(t) }};
+        }
+    }
+    {% elif t.bit_length == 32 %}
+        {% set ref_value = reference %}
+    // Saturation code not emitted -- assume the native representation of float32 is conformant.
+    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
+    {% elif t.bit_length == 64 %}
+        {% set ref_value = reference %}
+    // Saturation code not emitted -- assume the native representation of float64 is conformant.
+    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
+    {% else %}{% assert False %}
+    {% endif %}
+{% else %}
+    {% set ref_value = reference %}
+{% endif %}
+{% if offset.is_aligned_at_byte() and LITTLE_ENDIAN %}                          {# SERIALIZE THE SATURATED VALUE #}
+    {% if t.bit_length == 16 %}
+    {% set ref_half = 'half' | to_template_unique_name %}
+    const uint16_t {{ ref_half }} = nunavutFloat16Pack({{ ref_value }});
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ ref_half }}, 2U);
+    {% elif t.bit_length == 32 %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ ref_value }}, 4U);
+    {% elif t.bit_length == 64 %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ ref_value }}, 8U);
+    {% else %}{% assert False %}
+    {% endif %}
+{% else %}
+    {% set ref_err = 'err' | to_template_unique_name %}
+    const {{ typename_error_type }} {{ ref_err }} = nunavutSetF{{ t.bit_length }}{#- -#}
+        (&buffer[0], capacity_bytes, offset_bits, {{ ref_value }});
+    if ({{ ref_err }} < 0)
+    {
+        return {{ ref_err }};
+    }
+{% endif %}
+    offset_bits += {{ t.bit_length }}U;
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _serialize_fixed_length_array(t, reference, offset) %}
+{# PACKED BIT ARRAY #}
+{% if t.element_type is BooleanType %}
+    {% if offset.is_aligned_at_byte() %}
+    (void) memcpy(&buffer[offset_bits / 8U], &{{ reference + BITPACKED_ARRAY_SUFFIX }}, {# -#}
+                 {{ t.capacity | bits2bytes_ceil }}U);
+    {% else %}
+    nunavutCopyBits({{ t.capacity }}U, 0U, offset_bits, &{{ reference + BITPACKED_ARRAY_SUFFIX }}, &buffer[0]);
+    {% endif %}
     offset_bits += {{ t.capacity }}U;
 
-    {# BYTES-LIKE ARRAY (endianness-invariant) #}
-    {% elif offset.is_aligned_at_byte() and t.element_type is PrimitiveType and t.element_type.bit_length == 8 %}
+{# BYTES-LIKE ARRAY (endianness-invariant) #}
+{% elif offset.is_aligned_at_byte() and t.element_type is PrimitiveType and t.element_type.bit_length == 8 %}
     (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, {{ t.capacity }}U);
     offset_bits += {{ t.capacity }}U * 8U;
 
-    {# STANDARD SIZE PRIMITIVES (like uint32_t, floats, etc.) #}
-    {% elif offset.is_aligned_at_byte() and t.element_type is PrimitiveType and t.element_type.standard_bit_length and
-            option_target_endianness == 'little'
-    %}
-        {% if t.element_type is FloatType %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 is required for this optimization");
-    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 is required for this optimization");
+{# STANDARD SIZE PRIMITIVES (like uint32_t, floats, etc.) #}
+{% elif offset.is_aligned_at_byte() and t.element_type is PrimitiveType and t.element_type.standard_bit_length and
+        LITTLE_ENDIAN
+%}
+    // Saturation code not emitted -- assume the native representation is conformant.
+    {% if t.element_type is FloatType %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
+        {% if t.element_type.bit_length > 32 %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
         {% endif %}
+    {% endif %}
     (void) memcpy(&buffer[offset_bits / 8U], &{{ reference }}, {# -#}
-                   {{ t.capacity }}U * {{ t.element_type.bit_length // 8 }}U);
+                   {{ t.capacity }}U * {{ t.element_type.bit_length | bits2bytes_ceil }}U);
     offset_bits += {{ t.capacity }}U * {{ t.element_type.bit_length }}U;
 
+{# GENERAL CASE, always unroll to take advantage of element alignment #}
+{% else %}
+    {% set ref_origin_offset = 'origin' | to_template_unique_name %}
+    const {{ typename_unsigned_bit_length }} {{ ref_origin_offset }} = offset_bits;
+    {% for index, element_offset in t.enumerate_elements_with_offsets(offset) %}
+    {   // Array element #{{ index }}
+        {{ _serialize_any(t.element_type, reference + ('[%d]'|format(index)), element_offset) | trim | indent }}
+    }
+    {% endfor %}
+    {% if t.bit_length_set|length > 1 %}
+    {{ assert('(offset_bits - %s) >= %sU' | format(ref_origin_offset, t.bit_length_set|min)) }}
+    {{ assert('(offset_bits - %s) <= %sU' | format(ref_origin_offset, t.bit_length_set|max)) }}
     {% else %}
-    // TODO serialization
+    {{ assert('(offset_bits - %s) == %sU' | format(ref_origin_offset, t.bit_length_set|sum)) }}
     {% endif %}
+    (void) {{ ref_origin_offset }};
+
+{% endif %}
 {% endmacro %}
 
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_variable_length_array(t, reference, offset) %}
 {% endmacro %}
 
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_composite(t, reference, offset) %}
 {% endmacro %}

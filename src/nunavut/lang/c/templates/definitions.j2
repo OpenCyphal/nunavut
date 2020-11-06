@@ -6,6 +6,16 @@
  #          Peter van der Perk <peter.vanderperk@nxp.com>
 -#}
 
+{% set BITPACKED_ARRAY_SUFFIX = '_bitpacked_' %}
+
+{% if option_target_endianness == 'little' %}
+    {% set LITTLE_ENDIAN = True %}
+{% elif option_target_endianness in ('any', 'big') %}
+    {% set LITTLE_ENDIAN = False %}
+{% else %}{% assert False %}
+{% endif %}
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro generate_composite(t) %}
 
 {%- assert t.extent % 8 == 0 %}
@@ -52,6 +62,15 @@ static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
 {% endmacro %}
 
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{%- macro assert(expression) -%}
+    {%- if option_enable_serialization_asserts -%}
+    NUNAVUT_ASSERT({{ expression }});
+    {%- endif -%}
+{%- endmacro -%}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _define_structure(t) %}
 {% assert t is StructureType %}
 typedef struct
@@ -65,6 +84,7 @@ typedef struct
 {% endmacro %}
 
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _define_union(t) %}
 {% assert t is UnionType %}
 typedef struct
@@ -80,6 +100,7 @@ typedef struct
 {% endmacro %}
 
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _define_field(t, name, suffix='') %}
 {%- if t is PrimitiveType -%}
 {{ t | type_from_primitive }} {{ name | id }}{{ suffix }}
@@ -110,12 +131,14 @@ struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
 {% endmacro %}
 
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _define_bitpacked_array_field(name, capacity) -%}
 /// Bitpacked array, capacity {{ capacity }} bits. Access via @ref nunavutSetBit(), @ref nunavutGetBit().
-{{ typename_byte }} {{ (name + '_bitpacked_') | id }}[{{ (capacity + 7) // 8 }}]
+{{ typename_byte }} {{ (name + BITPACKED_ARRAY_SUFFIX) | id }}[{{ (capacity + 7) // 8 }}]
 {%- endmacro %}{# https://en.wiktionary.org/wiki/bitpacked #}
 
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _define_functions(t) %}
 
 /// Initialize an instance to default values. Does nothing if @param out_obj is {{ valuetoken_null }}.
@@ -215,10 +238,3 @@ static inline {{ typename_boolean }} {{ t | full_reference_name }}_is_{{ f.name 
 {% endif %}
 {% endfor %}
 {% endmacro %}
-
-
-{%- macro assert(expression) -%}
-    {%- if option_enable_serialization_asserts -%}
-    NUNAVUT_ASSERT({{ expression }});
-    {%- endif -%}
-{%- endmacro -%}
