@@ -9,11 +9,8 @@
 {% extends "base.j2" %}
 {% block contents %}
 
-{%- if T.has_fixed_port_id %}
-#define {{ T | full_reference_name }}_FIXED_SUBJECT_ID_ {{ T.fixed_port_id }}U
-{%- endif %}
-
 {% from 'definitions.j2' import generate_composite %}
+
 {{ generate_composite(T) }}
 
 {% endblock %}

@@ -14,10 +14,19 @@
 {% endif %}
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro generate_metadata(t) %}
+{% set ref = t | full_reference_name %}
+#define {{ ref }}_FULL_NAME_             "{{ t.full_name }}"
+#define {{ ref }}_FULL_NAME_AND_VERSION_ "{{ t.full_name }}.{{ t.version.major }}.{{ t.version.minor }}"
+{% endmacro %}
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro generate_composite(t) %}
 
-{%- assert t.extent % 8 == 0 %}
-{%- assert t.inner_type.extent % 8 == 0 %}
+{{ generate_metadata(t) }}
+
+{% assert t.extent % 8 == 0 %}
+{% assert t.inner_type.extent % 8 == 0 %}
 /// Extent is the minimum amount of memory required to hold any serialized representation of any compatible
 /// version of the data type; or, on other words, it is the the maximum possible size of received objects of this type.
 /// The size is specified in bytes (rather than bits) because by definition, extent is an integer number of bytes long.
