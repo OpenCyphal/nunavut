@@ -11,7 +11,11 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro serialize(t) %}
-    {# TODO XXX FIXME possibly move these into the caller scope for consistency. #}
+    if ((obj == {{ valuetoken_null }}) || (buffer == {{ valuetoken_null }}) || {# -#}
+        (inout_buffer_size_bytes == {{ valuetoken_null }}))
+    {
+        return -NUNAVUT_ERROR_INVALID_ARGUMENT;
+    }
     const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
     if ((8U * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.inner_type.bit_length_set|max }}UL)
     {
@@ -34,7 +38,23 @@
     {% endfor %}
 
 {% elif t.inner_type is UnionType %}
-    {{ assert('false') }}
+    {   // Union tag field: {{ t.inner_type.tag_field_type }}
+        {{
+            _serialize_integer(t.inner_type.tag_field_type, 'obj->_tag_', 0|bit_length_set)
+            | trim | remove_blank_lines | indent
+        }}
+    }
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
+    {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == obj->_tag_)
+    {
+        {%- assert f.data_type.alignment_requirement <= (offset | min) %}
+        {{ _serialize_any(f.data_type, 'obj->' + (f | id), offset) | trim | remove_blank_lines | indent }}
+    }
+    {%- endfor %}
+    else
+    {
+        return -NUNAVUT_ERROR_REPRESENTATION_BAD_UNION_TAG;
+    }
 
 {% else %}{% assert False %}
 {% endif %}

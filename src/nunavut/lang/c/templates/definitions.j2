@@ -175,15 +175,8 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_
     {{ typename_byte }}* const buffer,  {# -#}
     {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
 {
-    if ((obj == {{ valuetoken_null }}) || (buffer == {{ valuetoken_null }}) || {# -#}
-        (inout_buffer_size_bytes == {{ valuetoken_null }}))
-    {
-        return -NUNAVUT_ERROR_INVALID_ARGUMENT;
-    }
-
     {% from 'serialization.j2' import serialize -%}
     {{ serialize(t) }}
-
     return NUNAVUT_SUCCESS;
 }
 
