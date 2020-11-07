@@ -16,15 +16,30 @@
     {
         return -NUNAVUT_ERROR_INVALID_ARGUMENT;
     }
+    {{ typename_unsigned_bit_length }} offset_bits = 0U;
+{%- if t.inner_type.bit_length_set|max > 0 %}
+    {{ _serialize_impl(t) }}
+{%- endif %}
+{%- if t.inner_type.bit_length_set|length > 1 %}
+    {{ assert('offset_bits >= %sULL' | format(t.inner_type.bit_length_set|min)) }}
+    {{ assert('offset_bits <= %sULL' | format(t.inner_type.bit_length_set|max)) }}
+{%- else %}
+    {{ assert('offset_bits == %sULL' | format(t.inner_type.bit_length_set|sum)) }}
+{%- endif %}
+    {{ assert('offset_bits % 8U == 0U') }}
+    *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (offset_bits / 8U);
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _serialize_impl(t) %}
     const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
     if ((8U * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.inner_type.bit_length_set|max }}UL)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
-    {{ typename_unsigned_bit_length }} offset_bits = 0U;
     // Notice that fields that are not an integer number of bytes long may overrun the space allocated for them
     // in the serialization buffer up to the next byte boundary. This is by design and is guaranteed to be safe.
-
 {% if t.inner_type is StructureType %}
     {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
         {% if loop.first %}
@@ -36,7 +51,6 @@
         {{ _serialize_any(f.data_type, 'obj->' + (f | id), offset) | trim | remove_blank_lines | indent }}
     }
     {% endfor %}
-
 {% elif t.inner_type is UnionType %}
     {   // Union tag field: {{ t.inner_type.tag_field_type }}
         {{
@@ -55,22 +69,9 @@
     {
         return -NUNAVUT_ERROR_REPRESENTATION_BAD_UNION_TAG;
     }
-
 {% else %}{% assert False %}
 {% endif %}
-
-{# PAD OBJECT SIZE #}
     {{ _pad_to_alignment(t.inner_type.alignment_requirement) | trim | remove_blank_lines }}
-
-{# FINAL VERIFICATION #}
-{%- if t.inner_type.bit_length_set|length > 1 %}
-    {{ assert('offset_bits >= %sULL' | format(t.inner_type.bit_length_set|min)) }}
-    {{ assert('offset_bits <= %sULL' | format(t.inner_type.bit_length_set|max)) }}
-{%- else %}
-    {{ assert('offset_bits == %sULL' | format(t.inner_type.bit_length_set|sum)) }}
-{%- endif %}
-    {{ assert('offset_bits % 8U == 0U') }}
-    *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (offset_bits / 8U);
 {% endmacro %}
 
 
@@ -81,7 +82,7 @@
     {
         {% set ref_padding = 'pad' | to_template_unique_name %}
         {% set ref_err = 'err' | to_template_unique_name %}
-        const size_t {{ ref_padding }} = {{ n_bits }}U - offset_bits % {{ n_bits }}U;
+        const uint8_t {{ ref_padding }} = {{ n_bits }}U - offset_bits % {{ n_bits }}U;
         {{ assert('%s > 0'|format(ref_padding)) }}
         const {{ typename_error_type }} {{ ref_err }} = {# -#}
             nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ ref_padding }});  // Optimize?
@@ -133,7 +134,7 @@
 {% else %}
     {% set ref_err = 'err' | to_template_unique_name %}
     const {{ typename_error_type }} {{ ref_err }} = {# -#}
-        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ t.bit_length }}UL);  // Optimize?
+        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ t.bit_length }}U);  // Optimize?
     if ({{ ref_err }} < 0)
     {
         return {{ ref_err }};
@@ -150,11 +151,11 @@
 {% else %}
     if ({{ reference }})
     {
-        buffer[offset_bits / 8U] |= 1U << (offset_bits % 8U);
+        buffer[offset_bits / 8U] = ({{ typename_byte }})(buffer[offset_bits / 8U] | (1U << (offset_bits % 8U)));
     }
     else
     {
-        buffer[offset_bits / 8U] &= ~(1U << (offset_bits % 8U));
+        buffer[offset_bits / 8U] = ({{ typename_byte }})(buffer[offset_bits / 8U] & ~(1U << (offset_bits % 8U)));
     }
 {% endif %}
     offset_bits += 1U;
@@ -187,13 +188,13 @@
     {% set ref_value = reference %}
 {% endif %}
 {% if offset.is_aligned_at_byte() and t.bit_length <= 8 %}                      {# SERIALIZE THE SATURATED VALUE #}
-    buffer[offset_bits / 8U] = {{ ref_value }};
+    buffer[offset_bits / 8U] = ({{ typename_byte }})({{ ref_value }});
 {% elif offset.is_aligned_at_byte() and LITTLE_ENDIAN %}
     (void) memmove(&buffer[offset_bits / 8U], &{{ ref_value }}, {{ t.bit_length | bits2bytes_ceil }}U);
 {% else %}
     {% set ref_err = 'err' | to_template_unique_name %}
-    const {{ typename_error_type }} {{ ref_err }} = {# -#}
-        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, {{ ref_value }}, {{ t.bit_length }}U);
+    const {{ typename_error_type }} {{ ref_err }} = nunavutSet{{ 'U' if t is UnsignedIntegerType else 'I' }}xx({# -#}
+        &buffer[0], capacity_bytes, offset_bits, {{ ref_value }}, {{ t.bit_length }}U);
     if ({{ ref_err }} < 0)
     {
         return {{ ref_err }};
@@ -405,8 +406,12 @@
     {
         return {{ ref_err }};
     }
-    {{ assert('(%s * 8U) >= %s'|format(ref_size_bytes, t.inner_type.bit_length_set | min)) }}
-    {{ assert('(%s * 8U) <= %s'|format(ref_size_bytes, t.inner_type.bit_length_set | max)) }}
+{% if t.inner_type.bit_length_set | length > 1 %}
+    {{ assert('(%s * 8U) >= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set | min)) }}
+    {{ assert('(%s * 8U) <= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set | max)) }}
+{% else %}
+    {{ assert('(%s * 8U) == %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set | sum)) }}
+{% endif %}
 
 {# EPILOGUE #}
 {% if t is DelimitedType and is_variable_size %}
@@ -417,7 +422,7 @@
     {% else %}
     {{ ref_err }} = nunavutSetUxx(&buffer[0], capacity_bytes, {# -#}
                                   offset_bits - {{ t.delimiter_header_type.bit_length }}, {{ ref_size_bytes }}, {# -#}
-                                  {{ t.delimiter_header_type.bit_length }});
+                                  {{ t.delimiter_header_type.bit_length }}U);
     if ({{ ref_err }} < 0)
     {
         return {{ ref_err }};

@@ -147,19 +147,6 @@ struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _define_functions(t) %}
 
-/// Initialize an instance to default values. Does nothing if @param out_obj is {{ valuetoken_null }}.
-static inline void {{ t | full_reference_name }}_initialize_({{ t | full_reference_name }}* const out_obj)
-{
-    if (out_obj != {{ valuetoken_null }})
-    {
-        {{ typename_unsigned_length }} size_bytes = 0;
-        const {{ typename_byte }} buf = 0;
-        const {{ typename_error_type }} err = {{ t | full_reference_name }}_deserialize_(out_obj, &buf, &size_bytes);
-        {{ assert('err >= 0') }}
-        (void) err;
-    }
-}
-
 /// Serialize an instance into the provided buffer.
 /// The lifetime of the resulting serialized representation is independent of the original instance.
 /// This method may be slow for large objects (e.g., images, point clouds, radar samples), so in a later revision
@@ -182,7 +169,7 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_
     {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
 {
     {% from 'serialization.j2' import serialize -%}
-    {{ serialize(t) }}
+    {{ serialize(t) | trim }}
     return NUNAVUT_SUCCESS;
 }
 
@@ -214,6 +201,19 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_deserializ
     }
 
     return NUNAVUT_SUCCESS;
+}
+
+/// Initialize an instance to default values. Does nothing if @param out_obj is {{ valuetoken_null }}.
+static inline void {{ t | full_reference_name }}_initialize_({{ t | full_reference_name }}* const out_obj)
+{
+    if (out_obj != {{ valuetoken_null }})
+    {
+        {{ typename_unsigned_length }} size_bytes = 0;
+        const {{ typename_byte }} buf = 0;
+        const {{ typename_error_type }} err = {{ t | full_reference_name }}_deserialize_(out_obj, &buf, &size_bytes);
+        {{ assert('err >= 0') }}
+        (void) err;
+    }
 }
 
 {% for f in t.fields_except_padding %}
