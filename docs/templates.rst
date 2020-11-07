@@ -219,7 +219,9 @@ Common Filters
    :noindex:
 .. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_bit_length_set
    :noindex:
-.. autofunction:: nunavut.jinja.Generator.filter_remove_blank_lines
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_remove_blank_lines
+   :noindex:
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_bits2bytes_ceil
    :noindex:
 
 C Filters
@@ -240,6 +242,8 @@ C Filters
 .. autofunction:: nunavut.lang.c.filter_includes
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_constant_value
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_literal
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_full_reference_name
    :noindex:
