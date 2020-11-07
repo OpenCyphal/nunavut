@@ -164,13 +164,6 @@ static void testStructReference(void)
     TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &size));
     TEST_ASSERT_EQUAL(sizeof(reference) - 16U, size);
 
-    puts("index  expect  result  equal?");
-    for (size_t i = 0U; i < sizeof(buf); i++)
-    {
-        printf("%4u   0x%02X    0x%02X    %s\n",
-               (unsigned) i, reference[i], buf[i], (reference[i] == buf[i]) ? "ok" : "DIVERGENCE");
-    }
-
     TEST_ASSERT_EQUAL_HEX8_ARRAY(reference, buf, sizeof(reference));
 }
 
