@@ -198,51 +198,11 @@ static void testStructDelimited(void)
     obj.del.fix.elements[0].a[1] = 6;
 
     const uint8_t reference[] = {
-        0x01U,
-        0x17U,
-        0x00U,
-        0x00U,
-        0x00U,
-        0x02U,
-        0x04U,
-        0x00U,
-        0x00U,
-        0x00U,
-        0x02U,
-        0x01U,
-        0x02U,
-        0x00U,
-        0x03U,
-        0x00U,
-        0x00U,
-        0x00U,
-        0x01U,
-        0x03U,
-        0x04U,
-        0x01U,
-        0x02U,
-        0x00U,
-        0x00U,
-        0x00U,
-        0x05U,
-        0x06U,
+        // 0    1      2      3      4      5      6      7      8      9     10     11     12     13     14     15
+        0x01U, 0x17U, 0x00U, 0x00U, 0x00U, 0x02U, 0x04U, 0x00U, 0x00U, 0x00U, 0x02U, 0x01U, 0x02U, 0x00U, 0x03U, 0x00U,
+        0x00U, 0x00U, 0x01U, 0x03U, 0x04U, 0x01U, 0x02U, 0x00U, 0x00U, 0x00U, 0x05U, 0x06U,
         // END OF SERIALIZED REPRESENTATION
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
-        0xAAU,
+        0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU,
         0xAAU,
     };
     static_assert(sizeof(reference) == regulated_delimited_A_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_, "");
@@ -258,6 +218,7 @@ static void testStructDelimited(void)
 static void testStructErrors(void)
 {
     regulated_basics_Struct__0_1 obj = {0};
+    // Construct a reference in Python for cross-validation: b''.join(pyuavcan.dsdl.serialize(Struct__0_1()))
     // Default state -- all zeros except delimiter headers of the nested delimited objects:
     const uint8_t reference[] = {
         0x00U,  // void1, boolean, i10_4[0]
