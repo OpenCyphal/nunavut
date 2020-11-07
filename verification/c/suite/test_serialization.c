@@ -3,7 +3,7 @@
 
 #include <regulated/basics/Struct__0_1.h>
 #include <regulated/basics/Union_0_1.h>
-#include "unity.h"  // Include 3rd-party headers afterward to ensure that our header is self-sufficient.
+#include "unity.h"  // Include 3rd-party headers afterward to ensure that our headers are self-sufficient.
 
 /// The reference array has been pedantically validated manually bit by bit (it did really took me about three hours).
 /// The following Python script has been used to cross-check against PyUAVCAN, which has been cross-checked against
@@ -167,6 +167,106 @@ static void testStructReference(void)
     TEST_ASSERT_EQUAL_HEX8_ARRAY(reference, buf, sizeof(reference));
 }
 
+static void testStructErrors(void)
+{
+    regulated_basics_Struct__0_1 obj = {0};
+    // Default state -- all zeros except delimiter headers of the nested delimited objects:
+    const uint8_t reference[] = {
+        0x00U,  // void1, boolean, i10_4[0]
+        0x00U,  // i10_4[]
+        0x00U,  // i10_4[]
+        0x00U,  // i10_4[]
+        0x00U,  // i10_4[]
+        0x00U,  // i10_4[] f16_le2[]
+        0x00U,  // f16_le2[] unaligned_bitpacked_3[]
+        0x00U,  // bytes_lt3[]
+        0x00U,  // bytes_3[0]
+        0x00U,  // bytes_3[1]
+        0x00U,  // bytes_3[2]
+        0x00U,  // u2_le4[]
+        0x00U,  // delimited_fix_le2[]
+        0x00U,  // u16_2[0]
+        0x00U,  // u16_2[0]
+        0x00U,  // u16_2[1]
+        0x00U,  // u16_2[1]
+        0x00U,  // aligned_bitpacked_3[] unaligned_bitpacked_lt3[]
+        0x00U,  // unaligned_bitpacked_lt3[], padding
+        0x03U,  // delimited_var_2[0] delimiter header                  <--- nonzero
+        0x00U,  // delimited_var_2[0] delimiter header
+        0x00U,  // delimited_var_2[0] delimiter header
+        0x00U,  // delimited_var_2[0] delimiter header
+        0x00U,  // delimited_var_2[0] union tag
+        0x00U,  // delimited_var_2[0] f16
+        0x00U,  // delimited_var_2[0] f16
+        0x03U,  // delimited_var_2[1] delimiter header                  <--- nonzero
+        0x00U,  // delimited_var_2[1] delimiter header
+        0x00U,  // delimited_var_2[1] delimiter header
+        0x00U,  // delimited_var_2[1] delimiter header
+        0x00U,  // delimited_var_2[1] union tag
+        0x00U,  // delimited_var_2[1] f16
+        0x00U,  // delimited_var_2[1] f16
+        0x00U,  // aligned_bitpacked_le3[], padding
+        // END OF SERIALIZED REPRESENTATION
+        0xAAU,  // canary  1
+        0xAAU,  // canary  2
+        0xAAU,  // canary  3
+        0xAAU,  // canary  4
+        0xAAU,  // canary  5
+        0xAAU,  // canary  6
+        0xAAU,  // canary  7
+        0xAAU,  // canary  8
+        0xAAU,  // canary  9
+        0xAAU,  // canary 10
+        0xAAU,  // canary 11
+        0xAAU,  // canary 12
+        0xAAU,  // canary 13
+        0xAAU,  // canary 14
+        0xAAU,  // canary 15
+        0xAAU,  // canary 16
+    };
+
+    uint8_t buf[regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];  // Min size buffer
+    (void) memset(&buf[0], 0xAAU, sizeof(buf));  // Fill out the canaries
+
+    // Happy path, validate the test rig
+    size_t size = regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_;
+    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &size));
+    TEST_ASSERT_EQUAL(sizeof(reference) - 16U, size);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(reference, buf, sizeof(reference));
+
+    // Buffer too small
+    size = regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_ - 1;
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL,
+                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &size));
+    size = 0;
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL,
+                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &size));
+
+    // Null pointers at the input
+    size = regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_;
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
+                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], NULL));
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
+                      regulated_basics_Struct__0_1_serialize_(&obj, NULL, &size));
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
+                      regulated_basics_Struct__0_1_serialize_(NULL, &buf[0], &size));
+
+    // Bad array length
+    size = regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_;
+    obj.delimited_fix_le2.count = 123;
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_ARRAY_LENGTH,
+                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &size));
+    obj.delimited_fix_le2.count = 0;
+
+    // Bad union tag
+    obj.delimited_var_2[0]._tag_ = 42;
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_UNION_TAG,
+                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &size));
+    obj.delimited_var_2[0]._tag_ = 0;
+
+    // Bad delimiter header error cannot occur during serialization so this state is not explored.
+}
+
 void setUp(void)
 {
 
@@ -182,6 +282,7 @@ int main(void)
     UNITY_BEGIN();
 
     RUN_TEST(testStructReference);
+    RUN_TEST(testStructErrors);
 
     return UNITY_END();
 }
