@@ -6,7 +6,7 @@
  #          Peter van der Perk <peter.vanderperk@nxp.com>
 -#}
 
-{% from 'definitions.j2' import assert, BITPACKED_ARRAY_SUFFIX, LITTLE_ENDIAN %}
+{% from 'definitions.j2' import assert, LITTLE_ENDIAN %}
 
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
@@ -264,10 +264,10 @@
 {# SPECIAL CASE: PACKED BIT ARRAY #}
 {% if t.element_type is BooleanType %}
     {% if offset.is_aligned_at_byte() %}
-    (void) memmove(&buffer[offset_bits / 8U], &{{ reference + BITPACKED_ARRAY_SUFFIX }}[0], {# -#}
+    (void) memmove(&buffer[offset_bits / 8U], &{{ reference }}_bitpacked_[0], {# -#}
                  {{ t.capacity | bits2bytes_ceil }}UL);
     {% else %}
-    nunavutCopyBits({{ t.capacity }}UL, 0U, offset_bits, &{{ reference + BITPACKED_ARRAY_SUFFIX }}, &buffer[0]);
+    nunavutCopyBits({{ t.capacity }}UL, 0U, offset_bits, &{{ reference }}_bitpacked_[0], &buffer[0]);
     {% endif %}
     offset_bits += {{ t.capacity }}UL;
 
@@ -336,11 +336,9 @@
 {# SPECIAL CASE: PACKED BIT ARRAY #}
 {% if t.element_type is BooleanType %}
     {% if first_element_offset.is_aligned_at_byte() %}
-    (void) memmove(&buffer[offset_bits / 8U], &{{ reference }}.elements{{ BITPACKED_ARRAY_SUFFIX }}[0], {# -#}
-                   ({{ reference }}.count + 7U) / 8U);
+    (void) memmove(&buffer[offset_bits / 8U], &{{ reference }}.bitpacked[0], ({{ reference }}.count + 7U) / 8U);
     {% else %}
-    nunavutCopyBits({{ reference }}.count, 0U, offset_bits, {# -#}
-                    &{{ reference }}.elements{{ BITPACKED_ARRAY_SUFFIX }}[0], &buffer[0]);
+    nunavutCopyBits({{ reference }}.count, 0U, offset_bits, &{{ reference }}.bitpacked[0], &buffer[0]);
     {% endif %}
     offset_bits += {{ reference }}.count;
 
