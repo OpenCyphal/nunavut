@@ -361,26 +361,27 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_composite(t, reference, offset) %}
-{% set ref_err = 'err' | to_template_unique_name %}
-{% set ref_size_bytes = 'nbytes' | to_template_unique_name %}
-{% set size_bytes = t.inner_type.bit_length_set | max | bits2bytes_ceil %}
+{% set ref_err              = 'err'         | to_template_unique_name %}
+{% set ref_size_bytes       = 'size_bytes'  | to_template_unique_name %}
+{% set is_variable_size     = (t.inner_type.bit_length_set | length) > 1 %}
+{% set size_bytes           = t.inner_type.bit_length_set | max | bits2bytes_ceil %}
+    {{ typename_unsigned_length }} {{ ref_size_bytes }} = {{ size_bytes }}UL;  // Nested object (max) size, in bytes.
 
-    {{ typename_unsigned_length }} {{ ref_size_bytes }} = {{ size_bytes }}UL;
-
-{# DELIMITED VARIABLE-SIZE #}
-{% if t is DelimitedType and (t.inner_type.bit_length_set | length) > 1 %}
-
-{# DELIMITED FIXED-SIZE OR SEALED #}
-{% else %}
-    {% if t is DelimitedType %}
+{# PROLOGUE #}
+{% if t is DelimitedType %}
+    {% if is_variable_size %}
+    offset_bits += {{ t.delimiter_header_type.bit_length }}U;  // Reserve space for the delimiter header.
+    {% else %}
         {% assert size_bytes * 8 == (t.inner_type.bit_length_set | min) == (t.inner_type.bit_length_set | max) %}
-    // Constant delimiter header.
+    // Constant delimiter header can be written ahead of the nested object.
     {{ _serialize_integer(t.delimiter_header_type, ref_size_bytes, offset) | trim }}
     {% endif %}
+{% endif %}
 
+{# NESTED OBJECT SERIALIZATION #}
     {{ assert('offset_bits % 8U == 0U') }}
     {{ assert('(offset_bits / 8U + %s) <= capacity_bytes'|format(ref_size_bytes)) }}
-    const {{ typename_error_type }} {{ ref_err }} = {{ t | full_reference_name }}_serialize_(
+    {{ typename_error_type }} {{ ref_err }} = {{ t | full_reference_name }}_serialize_(
         &{{ reference }}, &buffer[offset_bits / 8U], &{{ ref_size_bytes }});
     if ({{ ref_err }} < 0)
     {
@@ -388,6 +389,24 @@
     }
     {{ assert('(%s * 8U) >= %s'|format(ref_size_bytes, t.inner_type.bit_length_set | min)) }}
     {{ assert('(%s * 8U) <= %s'|format(ref_size_bytes, t.inner_type.bit_length_set | max)) }}
-    offset_bits += {{ ref_size_bytes }} * 8U;
+
+{# EPILOGUE #}
+{% if t is DelimitedType and is_variable_size %}
+    // Jump back to write the delimiter header after the nested object is serialized and its length is known.
+    {% if LITTLE_ENDIAN %}
+    (void) memmove(&buffer[(offset_bits - {{ t.delimiter_header_type.bit_length }}) / 8U], {# -#}
+                   &{{ ref_size_bytes }}, {{ t.delimiter_header_type.bit_length | bits2bytes_ceil }}U);
+    {% else %}
+    {{ ref_err }} = nunavutSetUxx(&buffer[0], capacity_bytes, {# -#}
+                                  offset_bits - {{ t.delimiter_header_type.bit_length }}, {{ ref_size_bytes }}, {# -#}
+                                  {{ t.delimiter_header_type.bit_length }});
+    if ({{ ref_err }} < 0)
+    {
+        return {{ ref_err }};
+    }
+    {% endif %}
 {% endif %}
+
+    offset_bits += {{ ref_size_bytes }} * 8U;  // Advance by the size of the nested object.
+    {{ assert('offset_bits <= (capacity_bytes * 8U)') }}
 {% endmacro %}
