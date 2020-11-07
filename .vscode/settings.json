@@ -47,6 +47,7 @@
         "Pytest",
         "Pytest's",
         "Ronacher",
+        "SONARQUBE",
         "TLDR",
         "apidoc",
         "autofunction",
@@ -120,6 +121,7 @@
         "upid",
         "valuetoken",
         "wchar",
+        "workdir",
         "xargs",
         "yamlfy"
     ],

@@ -3,7 +3,7 @@ steps:
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
     id: toxic-docker-build
     command: "tox"
-    artifact_paths: 
+    artifact_paths:
       - ".tox/report/tmp/*"
       - ".tox/mypy/tmp/*"
       - ".tox/flake8/tmp/*"
@@ -21,12 +21,12 @@ steps:
             - "BUILDKITE_BUILD_NUMBER"
     agents:
       queue: 'default'
-    timeout_in_minutes: 15
+    timeout_in_minutes: 40
   - label: ':cpp::hammer: verification build'
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
     id: cpp-docker-verify
     command: "./.buildkite/verify.sh"
-    artifact_paths: 
+    artifact_paths:
       - "verification/build_c/coverage_all.zip"
       - "verification/build_cpp/coverage_all.zip"
     plugins:
@@ -39,7 +39,7 @@ steps:
             - "BUILDKITE_BUILD_NUMBER"
     agents:
       queue: 'default'
-    timeout_in_minutes: 15
+    timeout_in_minutes: 40
   - wait
   - label: ':python::amazon-s3::sonarqube: release'
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
