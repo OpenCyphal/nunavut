@@ -3,6 +3,7 @@
 
 #include <regulated/basics/Struct__0_1.h>
 #include <regulated/basics/Union_0_1.h>
+#include <regulated/delimited/A_1_0.h>
 #include "unity.h"  // Include 3rd-party headers afterward to ensure that our headers are self-sufficient.
 
 /// The reference array has been pedantically validated manually bit by bit (it did really took me about three hours).
@@ -163,7 +164,94 @@ static void testStructReference(void)
     size_t size = sizeof(buf);
     TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &size));
     TEST_ASSERT_EQUAL(sizeof(reference) - 16U, size);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(reference, buf, sizeof(reference));
 
+    // Check union manipulation functions.
+    TEST_ASSERT_TRUE(regulated_basics_DelimitedVariableSize_0_1_is_f16_(&obj.delimited_var_2[0]));
+    TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f32_(&obj.delimited_var_2[0]));
+    TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f64_(&obj.delimited_var_2[0]));
+    TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f64_(NULL));
+    regulated_basics_DelimitedVariableSize_0_1_select_f32_(NULL);        // No action; same state retained.
+    TEST_ASSERT_TRUE(regulated_basics_DelimitedVariableSize_0_1_is_f16_(&obj.delimited_var_2[0]));
+    TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f32_(&obj.delimited_var_2[0]));
+    TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f64_(&obj.delimited_var_2[0]));
+    TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f64_(NULL));
+}
+
+/// The test is based on https://forum.uavcan.org/t/delimited-serialization-example/975
+static void testStructDelimited(void)
+{
+    regulated_delimited_A_1_0 obj = {0};
+    regulated_delimited_A_1_0_select_del_(&obj);
+    regulated_delimited_A_1_0_select_del_(NULL);  // No action.
+    obj.del.var.count = 2;
+    obj.del.var.elements[0].a.count = 2;
+    obj.del.var.elements[0].a.elements[0] = 1;
+    obj.del.var.elements[0].a.elements[1] = 2;
+    obj.del.var.elements[0].b = 0;
+    obj.del.var.elements[1].a.count = 1;
+    obj.del.var.elements[1].a.elements[0] = 3;
+    obj.del.var.elements[1].a.elements[1] = 123;  // ignored
+    obj.del.var.elements[1].b = 4;
+    obj.del.fix.count = 1;
+    obj.del.fix.elements[0].a[0] = 5;
+    obj.del.fix.elements[0].a[1] = 6;
+
+    const uint8_t reference[] = {
+        0x01U,
+        0x17U,
+        0x00U,
+        0x00U,
+        0x00U,
+        0x02U,
+        0x04U,
+        0x00U,
+        0x00U,
+        0x00U,
+        0x02U,
+        0x01U,
+        0x02U,
+        0x00U,
+        0x03U,
+        0x00U,
+        0x00U,
+        0x00U,
+        0x01U,
+        0x03U,
+        0x04U,
+        0x01U,
+        0x02U,
+        0x00U,
+        0x00U,
+        0x00U,
+        0x05U,
+        0x06U,
+        // END OF SERIALIZED REPRESENTATION
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+        0xAAU,
+    };
+    static_assert(sizeof(reference) == regulated_delimited_A_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_, "");
+
+    uint8_t buf[regulated_delimited_A_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
+    (void) memset(&buf[0], 0xAAU, sizeof(buf));  // Fill out the canaries
+    size_t size = sizeof(buf);
+    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_0_serialize_(&obj, &buf[0], &size));
+    TEST_ASSERT_EQUAL(28U, size);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(reference, buf, sizeof(reference));
 }
 
@@ -282,6 +370,7 @@ int main(void)
     UNITY_BEGIN();
 
     RUN_TEST(testStructReference);
+    RUN_TEST(testStructDelimited);
     RUN_TEST(testStructErrors);
 
     return UNITY_END();
