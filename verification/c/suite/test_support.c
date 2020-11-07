@@ -1,11 +1,9 @@
-/*
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Tests the common functionality provided by the Nunavut support headers.
- */
-#include "unity.h"
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+//
+// Tests the common functionality provided by the Nunavut support headers.
+
 #include "nunavut/support/serialization.h"
-#include <math.h>
+#include "unity.h"  // Include 3rd-party headers afterward to ensure that our header is self-sufficient.
 
 // +--------------------------------------------------------------------------+
 // | nunavutCopyBits

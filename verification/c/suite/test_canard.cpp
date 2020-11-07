@@ -1,11 +1,10 @@
-/*
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- * Copyright (c) 2016-2020 UAVCAN Development Team.
- *
- * This software is distributed under the terms of the MIT License.
- *
- * Contains tests pulled from libcanard.
- */
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright (c) 2016-2020 UAVCAN Development Team.
+//
+// This software is distributed under the terms of the MIT License.
+//
+// Contains tests pulled from libcanard.
+
 #include "gmock/gmock.h"
 #include "nunavut/support/serialization.h"
 
