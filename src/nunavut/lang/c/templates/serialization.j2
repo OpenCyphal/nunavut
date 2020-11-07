@@ -84,7 +84,7 @@
         const size_t {{ ref_padding }} = {{ n_bits }}U - offset_bits % {{ n_bits }}U;
         {{ assert('%s > 0'|format(ref_padding)) }}
         const {{ typename_error_type }} {{ ref_err }} = {# -#}
-            nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ ref_padding }});
+            nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ ref_padding }});  // Optimize?
         if ({{ ref_err }} < 0)
         {
             return {{ ref_err }};
@@ -133,7 +133,7 @@
 {% else %}
     {% set ref_err = 'err' | to_template_unique_name %}
     const {{ typename_error_type }} {{ ref_err }} = {# -#}
-        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ t.bit_length }}UL);
+        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ t.bit_length }}UL);  // Optimize?
     if ({{ ref_err }} < 0)
     {
         return {{ ref_err }};

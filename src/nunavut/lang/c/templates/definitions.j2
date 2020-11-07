@@ -76,6 +76,7 @@ static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
 typedef struct
 {
 {%- for f in t.fields_except_padding %}
+    /// {{ f }}
     {{ _define_field(f.data_type, f.name) | indent }};
 {%- else %}{#- To maintain consistency between C and C++ we define any empty composite type with a dummy byte. #}
     {{ typename_byte }} _dummy_;
@@ -92,6 +93,7 @@ typedef struct
     union  /// The union is placed first to ensure that the active element address equals the struct address.
     {
     {%- for f in t.fields_except_padding %}
+        /// {{ f }}
         {{ _define_field(f.data_type, f.name) | indent | indent }};
     {%- endfor %}
     };
