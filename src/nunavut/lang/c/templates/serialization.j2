@@ -44,10 +44,10 @@
 
 {# FINAL VERIFICATION #}
 {%- if t.inner_type.bit_length_set|length > 1 %}
-    {{ assert('offset_bits >= %sUL' | format(t.inner_type.bit_length_set|min)) }}
-    {{ assert('offset_bits <= %sUL' | format(t.inner_type.bit_length_set|max)) }}
+    {{ assert('offset_bits >= %sULL' | format(t.inner_type.bit_length_set|min)) }}
+    {{ assert('offset_bits <= %sULL' | format(t.inner_type.bit_length_set|max)) }}
 {%- else %}
-    {{ assert('offset_bits == %sUL' | format(t.inner_type.bit_length_set|sum)) }}
+    {{ assert('offset_bits == %sULL' | format(t.inner_type.bit_length_set|sum)) }}
 {%- endif %}
     {{ assert('offset_bits % 8U == 0U') }}
     *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (offset_bits / 8U);
@@ -87,7 +87,7 @@
 {% endif %}
     {# NOTICE: If this is a delimited type, we will be requiring the buffer to be at least extent-sized.
      # This is a bit wasteful because when serializing we can often use a smaller buffer. #}
-    {{ assert('(offset_bits + %dU) <= (capacity_bytes * 8U)'|format(t.bit_length_set | max)) }}
+    {{ assert('(offset_bits + %dULL) <= (capacity_bytes * 8U)'|format(t.bit_length_set | max)) }}
 
 {# SERIALIZE #}
 {%   if t is VoidType %}                {{- _serialize_void(t, offset) }}
@@ -281,10 +281,10 @@
     }
     {% endfor %}
     {% if t.bit_length_set|length > 1 %}
-    {{ assert('(offset_bits - %s) >= %sUL' | format(ref_origin_offset, t.bit_length_set|min)) }}
-    {{ assert('(offset_bits - %s) <= %sUL' | format(ref_origin_offset, t.bit_length_set|max)) }}
+    {{ assert('(offset_bits - %s) >= %sULL' | format(ref_origin_offset, t.bit_length_set|min)) }}
+    {{ assert('(offset_bits - %s) <= %sULL' | format(ref_origin_offset, t.bit_length_set|max)) }}
     {% else %}
-    {{ assert('(offset_bits - %s) == %sUL' | format(ref_origin_offset, t.bit_length_set|sum)) }}
+    {{ assert('(offset_bits - %s) == %sULL' | format(ref_origin_offset, t.bit_length_set|sum)) }}
     {% endif %}
     (void) {{ ref_origin_offset }};
 
