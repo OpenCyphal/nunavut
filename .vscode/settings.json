@@ -104,6 +104,7 @@
         "pyenv",
         "pypi",
         "pytest",
+        "pyuavcan",
         "pyyaml",
         "rcfile",
         "reflexpr",
