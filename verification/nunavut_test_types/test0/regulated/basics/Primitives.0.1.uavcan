@@ -35,7 +35,9 @@ float64 a_f64
 float32 a_f32
 float16 a_f16
 
-void1
+# Aligned and unaligned booleans
+bool a_bool
+bool n_bool
 
 # Non-aligned floats
 float64 n_f64
