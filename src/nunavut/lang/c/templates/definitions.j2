@@ -179,7 +179,6 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_
 {
     {% from 'serialization.j2' import serialize -%}
     {{ serialize(t) | trim }}
-    return NUNAVUT_SUCCESS;
 }
 
 /// Deserialize an instance from the provided buffer.
@@ -193,9 +192,12 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_
 ///                 If the buffer is shorter or longer than expected, it will be implicitly zero-extended or truncated,
 ///                 respectively; see Specification for "implicit zero extension" and "implicit truncation" rules.
 ///
-/// @param inout_buffer_size_bytes  When calling, this is a pointer to the size of the buffer in bytes.
-///                                 Upon return this value will be updated with the size of the consumed serialized
-///                                 representation (in bytes). In case of error this value is undefined.
+/// @param inout_buffer_size_bytes  When calling, this is a pointer to the size of the supplied serialized
+///                                 representation, in bytes. Upon return this value will be updated with the
+///                                 size of the consumed fragment of the serialized representation (in bytes),
+///                                 which may be smaller due to the implicit truncation rule, but it is guaranteed
+///                                 to never exceed the original buffer size even if the implicit zero extension rule
+///                                 was activated. In case of error this value is undefined.
 ///
 /// @returns Negative on error, zero on success.
 static inline {{ typename_error_type }} {{ t | full_reference_name }}_deserialize_(
@@ -203,13 +205,8 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_deserializ
     const {{ typename_byte }}* const buffer, {# -#}
     {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
 {
-    if ((out_obj == {{ valuetoken_null }}) || (buffer == {{ valuetoken_null }}) || {# -#}
-        (inout_buffer_size_bytes == {{ valuetoken_null }}))
-    {
-        return -NUNAVUT_ERROR_INVALID_ARGUMENT;
-    }
-
-    return NUNAVUT_SUCCESS;
+    {% from 'deserialization.j2' import deserialize -%}
+    {{ deserialize(t) | trim }}
 }
 
 /// Initialize an instance to default values. Does nothing if @param out_obj is {{ valuetoken_null }}.
