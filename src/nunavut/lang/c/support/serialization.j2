@@ -121,7 +121,7 @@ static inline {{ typename_unsigned_bit_length }} nunavutChooseMin(const {{ typen
 ///         [--------------- fragment_offset_bits ---------------][--- fragment_length_bits ---]
 ///                                                               [-- out bits --]
 ///
-static inline {{ typename_unsigned_bit_length }} nunavutSaturateBufferFragmentBitLength({# -#}
+static inline {{ typename_unsigned_bit_length }} nunavutSaturateBufferFragmentBitLength(
     const {{ typename_unsigned_length }} buffer_size_bytes, {# -#}
     const {{ typename_unsigned_bit_length }} fragment_offset_bits, {# -#}
     const {{ typename_unsigned_bit_length }} fragment_length_bits)
@@ -144,12 +144,11 @@ static inline {{ typename_unsigned_bit_length }} nunavutSaturateBufferFragmentBi
 ///     dst_offset_bit  Offset in bits from the destination pointer. May exceed 8.
 ///     src_origin      Source buffer. Shall be at least ceil(length_bit/8) bytes large.
 ///     dst_origin      Destination buffer. Shall be at least ceil(length_bit/8) bytes large.
-static inline void nunavutCopyBits(
-    const {{ typename_unsigned_bit_length }} length_bit,
-    const {{ typename_unsigned_bit_length }} src_offset_bit,
-    const {{ typename_unsigned_bit_length }} dst_offset_bit,
-    const void* const src_origin,
-    void*       const dst_origin)
+static inline void nunavutCopyBits(const {{ typename_unsigned_bit_length }} length_bit,
+                                   const {{ typename_unsigned_bit_length }} src_offset_bit,
+                                   const {{ typename_unsigned_bit_length }} dst_offset_bit,
+                                   const void* const src_origin,
+                                   void*       const dst_origin)
 {
     {{ assert('src_origin != NULL') }}
     {{ assert('dst_origin != NULL') }}
@@ -328,11 +327,11 @@ static inline uint8_t nunavutGetU8(const uint8_t* const buf,
                                    const uint8_t len_bit)
 {
     {{ assert('buf != NULL') }}
-    const {{ typename_unsigned_bit_length }} copy_size = {# -#}
+    const {{ typename_unsigned_bit_length }} bits = {# -#}
         nunavutSaturateBufferFragmentBitLength(buf_size_bytes, off_bit, nunavutChooseMin(len_bit, 8U));
-    {{ assert('copy_size <= (sizeof(uint8_t) * 8U)') }}
+    {{ assert('bits <= (sizeof(uint8_t) * 8U)') }}
     uint8_t val = 0;
-    nunavutCopyBits(copy_size, off_bit, 0U, buf, &val);
+    nunavutCopyBits(bits, off_bit, 0U, buf, &val);
     return val;
 }
 
@@ -342,16 +341,16 @@ static inline uint16_t nunavutGetU16(const uint8_t* const buf,
                                      const uint8_t len_bit)
 {
     {{ assert('buf != NULL') }}
-    const {{ typename_unsigned_bit_length }} copy_size = {# -#}
+    const {{ typename_unsigned_bit_length }} bits = {# -#}
         nunavutSaturateBufferFragmentBitLength(buf_size_bytes, off_bit, nunavutChooseMin(len_bit, 16U));
-    {{ assert('copy_size <= (sizeof(uint16_t) * 8U)') }}
+    {{ assert('bits <= (sizeof(uint16_t) * 8U)') }}
 {%- if option_target_endianness == 'little' %}
     uint16_t val = 0U;
-    nunavutCopyBits(copy_size, off_bit, 0U, buf, (uint8_t*) &val);
+    nunavutCopyBits(bits, off_bit, 0U, buf, (uint8_t*) &val);
     return val;
 {%- elif option_target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint16_t)] = {0};
-    nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
+    nunavutCopyBits(bits, off_bit, 0U, buf, &tmp[0]);
     return (uint16_t)(tmp[0] | (uint16_t)(((uint16_t) tmp[1]) << 8U));
 {%- else %}{%- assert False %}
 {%- endif %}
@@ -363,16 +362,16 @@ static inline uint32_t nunavutGetU32(const uint8_t* const buf,
                                      const uint8_t len_bit)
 {
     {{ assert('buf != NULL') }}
-    const {{ typename_unsigned_bit_length }} copy_size = {# -#}
+    const {{ typename_unsigned_bit_length }} bits = {# -#}
         nunavutSaturateBufferFragmentBitLength(buf_size_bytes, off_bit, nunavutChooseMin(len_bit, 32U));
-    {{ assert('copy_size <= (sizeof(uint32_t) * 8U)') }}
+    {{ assert('bits <= (sizeof(uint32_t) * 8U)') }}
 {%- if option_target_endianness == 'little' %}
     uint32_t val = 0U;
-    nunavutCopyBits(copy_size, off_bit, 0U, buf, (uint8_t*) &val);
+    nunavutCopyBits(bits, off_bit, 0U, buf, (uint8_t*) &val);
     return val;
 {%- elif option_target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint32_t)] = {0};
-    nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
+    nunavutCopyBits(bits, off_bit, 0U, buf, &tmp[0]);
     return (uint32_t)(tmp[0] | ((uint32_t) tmp[1] << 8U) | ((uint32_t) tmp[2] << 16U) | ((uint32_t) tmp[3] << 24U));
 {%- else %}{%- assert False %}
 {%- endif %}
@@ -384,16 +383,16 @@ static inline uint64_t nunavutGetU64(const uint8_t* const buf,
                                      const uint8_t len_bit)
 {
     {{ assert('buf != NULL') }}
-    const {{ typename_unsigned_bit_length }} copy_size = {# -#}
+    const {{ typename_unsigned_bit_length }} bits = {# -#}
         nunavutSaturateBufferFragmentBitLength(buf_size_bytes, off_bit, nunavutChooseMin(len_bit, 64U));
-    {{ assert('copy_size <= (sizeof(uint64_t) * 8U)') }}
+    {{ assert('bits <= (sizeof(uint64_t) * 8U)') }}
 {%- if option_target_endianness == 'little' %}
     uint64_t val = 0U;
-    nunavutCopyBits(copy_size, off_bit, 0U, buf, (uint8_t*) &val);
+    nunavutCopyBits(bits, off_bit, 0U, buf, (uint8_t*) &val);
     return val;
 {%- elif option_target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint64_t)] = {0};
-    nunavutCopyBits(copy_size, off_bit, 0U, buf, &tmp[0]);
+    nunavutCopyBits(bits, off_bit, 0U, buf, &tmp[0]);
     return (uint64_t)(tmp[0] |
                       ((uint64_t) tmp[1] << 8U) |
                       ((uint64_t) tmp[2] << 16U) |
