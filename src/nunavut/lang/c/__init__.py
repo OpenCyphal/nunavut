@@ -849,7 +849,7 @@ def filter_is_zero_cost_primitive(t: pydsdl.PrimitiveType) -> bool:
         )
 
         # then
-        rendered = 'False True False True'
+        rendered = 'False True False True '
 
     .. invisible-code-block: python
 
