@@ -835,10 +835,10 @@ def filter_is_zero_cost_primitive(t: pydsdl.PrimitiveType) -> bool:
 
     .. code-block: python
         # Given
-        i7  = pydsdl.SignedIntegerType(7, pydsdl.PrimitiveType.CastMode.TRUNCATED)
-        u32 = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.SATURATED)
+        i7  = pydsdl.SignedIntegerType(7, pydsdl.PrimitiveType.CastMode.SATURATED)
+        u32 = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
         f16 = pydsdl.FloatType(16, pydsdl.PrimitiveType.CastMode.TRUNCATED)
-        f32 = pydsdl.FloatType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+        f32 = pydsdl.FloatType(32, pydsdl.PrimitiveType.CastMode.SATURATED)
 
         # and
         template = (

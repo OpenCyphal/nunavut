@@ -322,9 +322,8 @@
     {
         return -NUNAVUT_ERROR_REPRESENTATION_BAD_ARRAY_LENGTH;
     }
-    {   // Array length prefix: {{ t.length_field_type }}
-        {{ _serialize_integer(t.length_field_type, reference + '.count', offset)|trim|indent }}
-    }
+    // Array length prefix: {{ t.length_field_type }}
+    {{ _serialize_integer(t.length_field_type, reference + '.count', offset) }}
 
 {# COMPUTE THE ARRAY ELEMENT OFFSETS #}
 {# NOTICE: The offset is no longer valid at this point because we just emitted the array length prefix. #}
