@@ -10,6 +10,9 @@
 
 #include <cmath>
 #include <limits>
+#include <array>
+#include <algorithm>
+
 
 TEST(CanardTests, float16Pack)
 {
@@ -68,4 +71,33 @@ TEST(CanardTests, canardDSDLFloat16)
     EXPECT_TRUE(0b0111111000000000 == nunavutFloat16Pack(nunavutFloat16Unpack(0b0111110111111111)));  // +sNaN
     EXPECT_TRUE(0b1111111000000000 == nunavutFloat16Pack(nunavutFloat16Unpack(0b1111111111111111)));  // -qNaN
     EXPECT_TRUE(0b1111111000000000 == nunavutFloat16Pack(nunavutFloat16Unpack(0b1111110111111111)));  // -sNaN
+}
+
+TEST(CanardTests, canardDSDLCopyBits)
+{
+    {
+        uint8_t a = 0;
+        uint8_t b = 0;
+        nunavutCopyBits(0, 0, 0, &a, &b);
+    }
+
+    const auto test = [&](const size_t                     length_bit,
+                          const size_t                     src_offset_bit,
+                          const size_t                     dst_offset_bit,
+                          const std::vector<std::uint8_t>& src,
+                          const std::vector<std::uint8_t>& dst,
+                          const std::vector<std::uint8_t>& ref) {
+        assert(length_bit <= (dst.size() * 8));
+        assert(length_bit <= (src.size() * 8));
+        std::vector<std::uint8_t> result = dst;
+        nunavutCopyBits(length_bit, src_offset_bit, dst_offset_bit, src.data(), result.data());
+        return std::equal(std::begin(ref), std::end(ref), std::begin(result));
+    };
+
+    EXPECT_TRUE(test(8, 0, 0, {0xFF}, {0x00}, {0xFF}));
+    EXPECT_TRUE(test(16, 0, 0, {0xFF, 0xFF}, {0x00, 0x00}, {0xFF, 0xFF}));
+    EXPECT_TRUE(test(12, 0, 0, {0xFF, 0x0A}, {0x55, 0x00}, {0xFF, 0x0A}));
+    EXPECT_TRUE(test(12, 0, 0, {0xFF, 0x0A}, {0x00, 0xF0}, {0xFF, 0xFA}));
+    EXPECT_TRUE(test(12, 0, 4, {0xFF, 0x0A}, {0x53, 0x55}, {0xF3, 0xAF}));
+    EXPECT_TRUE(test(8, 4, 4, {0x55, 0x55}, {0xAA, 0xAA}, {0x5A, 0xA5}));
 }

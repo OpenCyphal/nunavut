@@ -64,17 +64,16 @@ static void testNunavutCopyBitsWithUnalignedOffset(void)
 }
 
 // +--------------------------------------------------------------------------+
-// | _nunavutInternalGetBitCopySize
+// | nunavutSaturateBufferFragmentBitLength
 // +--------------------------------------------------------------------------+
 
-static void testNunavutInternalGetBitCopySize(void)
+static void testNunavutSaturateBufferFragmentBitLength(void)
 {
-    // buf_size_bytes, offset_bit, requested_length_bit, value_length_bit
-    TEST_ASSERT_EQUAL_UINT32(4 * 8, _nunavutInternalGetBitCopySize(4, 0, 4 * 8, 24 * 8));
-    TEST_ASSERT_EQUAL_UINT32((4 * 8) - 1, _nunavutInternalGetBitCopySize(4, 1, 4 * 8, 24 * 8));
-    TEST_ASSERT_EQUAL_UINT32(2 * 8, _nunavutInternalGetBitCopySize(4, 0, 4 * 8, 2 * 8));
-    TEST_ASSERT_EQUAL_UINT32((2 * 8) - 1, _nunavutInternalGetBitCopySize(4, (2 * 8) + 1, 4 * 8, 3 * 8));
-    TEST_ASSERT_EQUAL_UINT32(0, _nunavutInternalGetBitCopySize(2, (3 * 8), 3 * 8, 4 * 8));
+    TEST_ASSERT_EQUAL_UINT32(32, nunavutSaturateBufferFragmentBitLength(4, 0, 32));
+    TEST_ASSERT_EQUAL_UINT32(31, nunavutSaturateBufferFragmentBitLength(4, 1, 32));
+    TEST_ASSERT_EQUAL_UINT32(16, nunavutSaturateBufferFragmentBitLength(4, 0, 16));
+    TEST_ASSERT_EQUAL_UINT32(15, nunavutSaturateBufferFragmentBitLength(4, 17, 24));
+    TEST_ASSERT_EQUAL_UINT32(0,  nunavutSaturateBufferFragmentBitLength(2, 24, 24));
 }
 
 // +--------------------------------------------------------------------------+
@@ -692,7 +691,7 @@ int main(void)
     RUN_TEST(testNunavutCopyBits);
     RUN_TEST(testNunavutCopyBitsWithAlignedOffset);
     RUN_TEST(testNunavutCopyBitsWithUnalignedOffset);
-    RUN_TEST(testNunavutInternalGetBitCopySize);
+    RUN_TEST(testNunavutSaturateBufferFragmentBitLength);
     RUN_TEST(testNunavutSetIxx_neg1);
     RUN_TEST(testNunavutSetIxx_neg255);
     RUN_TEST(testNunavutSetIxx_neg255_tooSmall);
