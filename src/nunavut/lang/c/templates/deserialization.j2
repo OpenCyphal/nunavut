@@ -173,6 +173,54 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _deserialize_fixed_length_array(t, reference, offset) %}
+{% set ref_bit_length = 'size_bits' | to_template_unique_name %}
+{# SPECIAL CASE: PACKED BIT ARRAY #}
+{% if t.element_type is BooleanType %}
+    {
+        const {{ typename_unsigned_bit_length }} {{ ref_bit_length }} = {# -#}
+            nunavutSaturateBufferFragmentBitLength(capacity_bytes, offset_bits, {{ t.capacity }}UL);
+        if ({{ ref_bit_length }} < {{ t.capacity }}UL)  // Implicit zero extension. May write the boundary byte twice.
+        {
+            (void) memset(&{{ reference }}_bitpacked_[{{ ref_bit_length }} / 8U], 0, {# -#}
+                          {{ t.capacity | bits2bytes_ceil }}UL - ({{ ref_bit_length }} / 8U));
+        }
+        nunavutCopyBits({{ ref_bit_length }}, offset_bits, 0U, &buffer[0], &{{ reference }}_bitpacked_[0]);
+    }
+    offset_bits += {{ t.capacity }}UL;
+
+{# SPECIAL CASE: BYTES-LIKE ARRAY (endianness-invariant) #}
+{% elif t.element_type is PrimitiveType and t.element_type.bit_length == 8 %}
+    {
+        const {{ typename_unsigned_bit_length }} {{ ref_bit_length }} = {# -#}
+            nunavutSaturateBufferFragmentBitLength(capacity_bytes, offset_bits, {{ t.capacity }}UL * 8U);
+        if ({{ ref_bit_length }} < ({{ t.capacity }}UL * 8U))  // Implicit zero extension.
+        {
+            (void) memset(&{{ reference }}[{{ ref_bit_length }} / 8U], 0, {# -#}
+                          {{ t.capacity }}UL - ({{ ref_bit_length }} / 8U));
+        }
+        nunavutCopyBits({{ ref_bit_length }}, offset_bits, 0U, &buffer[0], &{{ reference }}[0]);
+    }
+    offset_bits += {{ t.capacity }}UL * 8U;
+
+{# SPECIAL CASE: STANDARD SIZE PRIMITIVES (like uint32_t, floats, etc.) #}
+{% elif t.element_type is PrimitiveType and t.element_type.standard_bit_length and LITTLE_ENDIAN %}
+    {% if t.element_type is FloatType %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
+        {% if t.element_type.bit_length > 32 %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
+        {% endif %}
+    {% endif %}
+    // TODO implicit zero extension
+    // TODO invoke nunavutCopyBits()
+    offset_bits += {{ t.capacity }}UL * {{ t.element_type.bit_length }}UL;
+
+{# GENERAL CASE, always unroll to take advantage of element alignment #}
+{% else %}
+    {% for index, element_offset in t.enumerate_elements_with_offsets(offset) %}
+    // Array element #{{ index }}
+    {{ _deserialize_any(t.element_type, reference + ('[%d]'|format(index)), element_offset) | trim }}
+    {% endfor %}
+{% endif %}
 {% endmacro %}
 
 
