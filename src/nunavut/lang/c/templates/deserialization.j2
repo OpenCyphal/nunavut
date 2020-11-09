@@ -232,4 +232,39 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _deserialize_composite(t, reference, offset) %}
+{% set ref_err        = 'err'        |to_template_unique_name %}
+{% set ref_size_bytes = 'size_bytes' |to_template_unique_name %}
+{% set remaining_bytes -%}
+    (capacity_bytes - nunavutChooseMin((offset_bits / 8U), capacity_bytes))
+{%- endset %}
+    {
+{# DETERMINE THE SIZE OF THE NESTED SERIALIZED REPRESENTATION #}
+{% if t is DelimitedType %}
+        // Delimiter header: {{ t.delimiter_header_type }}
+        {{ typename_unsigned_length }} {{ ref_size_bytes }} = 0U;
+        {{ _deserialize_integer(t.delimiter_header_type, ref_size_bytes, offset)|trim }}
+        if ({{ ref_size_bytes }} > {{ remaining_bytes }})
+        {
+            return -NUNAVUT_ERROR_REPRESENTATION_BAD_DELIMITER_HEADER;
+        }
+{% else %}
+        {{ typename_unsigned_length }} {{ ref_size_bytes }} = ({{ typename_unsigned_length }}){{ remaining_bytes }};
+{% endif %}
+
+{# DESERIALIZE THE NESTED OBJECT #}
+        {{ assert('offset_bits % 8U == 0U') }}
+        const {{ typename_error_type }} {{ ref_err }} = {{ t|full_reference_name }}_deserialize_(
+            &{{ reference }}, &buffer[offset_bits / 8U], &{{ ref_size_bytes }});
+        if ({{ ref_err }} < 0)
+        {
+            return {{ ref_err }};
+        }
+{% if t.inner_type.bit_length_set|length > 1 %}
+        {{ assert('(%s * 8U) >= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set|min)) }}
+        {{ assert('(%s * 8U) <= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set|max)) }}
+{% else %}
+        {{ assert('(%s * 8U) == %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set|sum)) }}
+{% endif %}
+        offset_bits += {{ ref_size_bytes }} * 8U;  // Advance by the size of the nested object.
+    }
 {% endmacro %}
