@@ -78,7 +78,7 @@ TEST(CanardTests, canardDSDLCopyBits)
     {
         uint8_t a = 0;
         uint8_t b = 0;
-        nunavutCopyBits(0, 0, 0, &a, &b);
+        nunavutCopyBits(&b, 0, 0, &a, 0);
     }
 
     const auto test = [&](const size_t                     length_bit,
@@ -90,7 +90,7 @@ TEST(CanardTests, canardDSDLCopyBits)
         assert(length_bit <= (dst.size() * 8));
         assert(length_bit <= (src.size() * 8));
         std::vector<std::uint8_t> result = dst;
-        nunavutCopyBits(length_bit, src_offset_bit, dst_offset_bit, src.data(), result.data());
+        nunavutCopyBits(result.data(), dst_offset_bit, length_bit, src.data(), src_offset_bit);
         return std::equal(std::begin(ref), std::end(ref), std::begin(result));
     };
 

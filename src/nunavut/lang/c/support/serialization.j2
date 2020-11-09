@@ -139,34 +139,34 @@ static inline {{ typename_unsigned_bit_length }} nunavutSaturateBufferFragmentBi
 /// If the source and the destination overlap AND the offsets are not byte-aligned, the behavior is undefined.
 /// If either source or destination pointers are NULL, the behavior is undefined.
 /// Arguments:
-///     length_bit      The number of bits to copy. Both source and destination shall be large enough.
-///     src_offset_bit  Offset in bits from the source pointer. May exceed 8.
+///     dst             Destination buffer. Shall be at least ceil(length_bit/8) bytes large.
 ///     dst_offset_bit  Offset in bits from the destination pointer. May exceed 8.
-///     src_origin      Source buffer. Shall be at least ceil(length_bit/8) bytes large.
-///     dst_origin      Destination buffer. Shall be at least ceil(length_bit/8) bytes large.
-static inline void nunavutCopyBits(const {{ typename_unsigned_bit_length }} length_bit,
-                                   const {{ typename_unsigned_bit_length }} src_offset_bit,
+///     length_bit      The number of bits to copy. Both source and destination shall be large enough.
+///     src             Source buffer. Shall be at least ceil(length_bit/8) bytes large.
+///     src_offset_bit  Offset in bits from the source pointer. May exceed 8.
+static inline void nunavutCopyBits(void* const dst,
                                    const {{ typename_unsigned_bit_length }} dst_offset_bit,
-                                   const void* const src_origin,
-                                   void*       const dst_origin)
+                                   const {{ typename_unsigned_bit_length }} length_bit,
+                                   const void* const src,
+                                   const {{ typename_unsigned_bit_length }} src_offset_bit)
 {
-    {{ assert('src_origin != NULL') }}
-    {{ assert('dst_origin != NULL') }}
-    {{ assert('src_origin != dst_origin') }}
+    {{ assert('src != NULL') }}
+    {{ assert('dst != NULL') }}
+    {{ assert('src != dst') }}
     if ((0U == (src_offset_bit % 8U)) && (0U == (dst_offset_bit % 8U)))  // Aligned copy, optimized, most common case.
     {
         const {{ typename_unsigned_length }} length_bytes = ({{ typename_unsigned_length }})(length_bit / 8U);
         // Intentional violation of MISRA: Pointer arithmetics. This is done to remove the API constraint that
         // offsets be under 8 bits. Fewer constraints reduce the chance of API misuse.
-        const uint8_t* const src = (src_offset_bit / 8U) + (const uint8_t*) src_origin;  // NOSONAR NOLINT
-        uint8_t*       const dst = (dst_offset_bit / 8U) +       (uint8_t*) dst_origin;  // NOSONAR NOLINT
-        (void) memmove(dst, src, length_bytes);
+        const uint8_t* const psrc = (src_offset_bit / 8U) + (const uint8_t*) src;  // NOSONAR NOLINT
+        uint8_t*       const pdst = (dst_offset_bit / 8U) +       (uint8_t*) dst;  // NOSONAR NOLINT
+        (void) memmove(pdst, psrc, length_bytes);
         const uint8_t length_mod = (uint8_t)(length_bit % 8U);
         if (0U != length_mod)  // If the length is unaligned, the last byte requires special treatment.
         {
             // Intentional violation of MISRA: Pointer arithmetics. It is unavoidable in this context.
-            const uint8_t* const last_src = src + length_bytes;  // NOLINT NOSONAR
-            uint8_t* const last_dst       = dst + length_bytes;  // NOLINT NOSONAR
+            const uint8_t* const last_src = psrc + length_bytes;  // NOLINT NOSONAR
+            uint8_t* const last_dst       = pdst + length_bytes;  // NOLINT NOSONAR
             {{ assert('length_mod < 8U') }}
             const uint8_t mask = (uint8_t)((1U << length_mod) - 1U);
             *last_dst = (*last_dst & (uint8_t)~mask) | (*last_src & mask);
@@ -177,16 +177,16 @@ static inline void nunavutCopyBits(const {{ typename_unsigned_bit_length }} leng
         // The algorithm was originally designed by Ben Dyer for Libuavcan v0:
         // https://github.com/UAVCAN/libuavcan/blob/legacy-v0/libuavcan/src/marshal/uc_bit_array_copy.cpp
         // This version is modified for v1 where the bit order is the opposite.
-        const uint8_t* const src = (const uint8_t*) src_origin;
-        uint8_t*       const dst =       (uint8_t*) dst_origin;
+        const uint8_t* const psrc = (const uint8_t*) src;
+        uint8_t*       const pdst =       (uint8_t*) dst;
         {{ typename_unsigned_bit_length }}       src_off  = src_offset_bit;
         {{ typename_unsigned_bit_length }}       dst_off  = dst_offset_bit;
         const {{ typename_unsigned_bit_length }} last_bit = src_off + length_bit;
         {{ assert(
-            '((src < dst) ? ((uintptr_t)(src + ((src_offset_bit + length_bit + 8U) / 8U)) <= (uintptr_t)dst) : 1)'
+            '((psrc < pdst) ? ((uintptr_t)(psrc + ((src_offset_bit + length_bit + 8U) / 8U)) <= (uintptr_t)pdst) : 1)'
         ) }}
         {{ assert(
-            '((src > dst) ? ((uintptr_t)(dst + ((dst_offset_bit + length_bit + 8U) / 8U)) <= (uintptr_t)src) : 1)'
+            '((psrc > pdst) ? ((uintptr_t)(pdst + ((dst_offset_bit + length_bit + 8U) / 8U)) <= (uintptr_t)psrc) : 1)'
         ) }}
         while (last_bit > src_off)
         {
@@ -201,14 +201,14 @@ static inline void nunavutCopyBits(const {{ typename_unsigned_bit_length }} leng
             {{ assert('mask > 0U') }}
             // Intentional violation of MISRA: indexing on a pointer.
             // This simplifies the implementation greatly and avoids pointer arithmetics.
-            const uint8_t in = (uint8_t)((uint8_t)(src[src_off / 8U] >> src_mod) << dst_mod) & 0xFFU;  // NOSONAR
+            const uint8_t in = (uint8_t)((uint8_t)(psrc[src_off / 8U] >> src_mod) << dst_mod) & 0xFFU;  // NOSONAR
             // Intentional violation of MISRA: indexing on a pointer.
             // This simplifies the implementation greatly and avoids pointer arithmetics.
-            const uint8_t a = dst[dst_off / 8U] & ((uint8_t) ~mask);  // NOSONAR
+            const uint8_t a = pdst[dst_off / 8U] & ((uint8_t) ~mask);  // NOSONAR
             const uint8_t b = in & mask;
             // Intentional violation of MISRA: indexing on a pointer.
             // This simplifies the implementation greatly and avoids pointer arithmetics.
-            dst[dst_off / 8U] = a | b;  // NOSONAR
+            pdst[dst_off / 8U] = a | b;  // NOSONAR
             src_off += size;
             dst_off += size;
         }
@@ -241,7 +241,7 @@ static inline {{typename_error_type}} nunavutSetBit(
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
     const uint8_t val = value ? 1U : 0U;
-    nunavutCopyBits(1U, 0U, off_bit, &val, buf);
+    nunavutCopyBits(buf, off_bit, 1U, &val, 0U);
     return NUNAVUT_SUCCESS;
 }
 
@@ -260,7 +260,7 @@ static inline {{typename_error_type}} nunavutSetUxx(
     }
     const {{ typename_unsigned_bit_length }} saturated_len_bit = nunavutChooseMin(len_bit, 64U);
 {%- if option_target_endianness == 'little' %}
-    nunavutCopyBits(saturated_len_bit, 0U, off_bit, (const uint8_t*) &value, buf);
+    nunavutCopyBits(buf, off_bit, saturated_len_bit, (const uint8_t*) &value, 0U);
 {%- elif option_target_endianness in ('any', 'big') %}
     const uint8_t tmp[sizeof(uint64_t)] = {
         (uint8_t)((value >> 0U) & 0xFFU),
@@ -272,7 +272,7 @@ static inline {{typename_error_type}} nunavutSetUxx(
         (uint8_t)((value >> 48U) & 0xFFU),
         (uint8_t)((value >> 56U) & 0xFFU),
     };
-    nunavutCopyBits(saturated_len_bit, 0U, off_bit, &tmp[0], buf);
+    nunavutCopyBits(buf, off_bit, saturated_len_bit, &tmp[0], 0U);
 {%- else %}{%- assert False %}
 {%- endif %}
     return NUNAVUT_SUCCESS;
@@ -331,7 +331,7 @@ static inline uint8_t nunavutGetU8(const uint8_t* const buf,
         nunavutSaturateBufferFragmentBitLength(buf_size_bytes, off_bit, nunavutChooseMin(len_bit, 8U));
     {{ assert('bits <= (sizeof(uint8_t) * 8U)') }}
     uint8_t val = 0;
-    nunavutCopyBits(bits, off_bit, 0U, buf, &val);
+    nunavutCopyBits(&val, 0U, bits, buf, off_bit);
     return val;
 }
 
@@ -346,11 +346,11 @@ static inline uint16_t nunavutGetU16(const uint8_t* const buf,
     {{ assert('bits <= (sizeof(uint16_t) * 8U)') }}
 {%- if option_target_endianness == 'little' %}
     uint16_t val = 0U;
-    nunavutCopyBits(bits, off_bit, 0U, buf, (uint8_t*) &val);
+    nunavutCopyBits(&val, 0U, bits, buf, off_bit);
     return val;
 {%- elif option_target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint16_t)] = {0};
-    nunavutCopyBits(bits, off_bit, 0U, buf, &tmp[0]);
+    nunavutCopyBits(&tmp[0], 0U, bits, buf, off_bit);
     return (uint16_t)(tmp[0] | (uint16_t)(((uint16_t) tmp[1]) << 8U));
 {%- else %}{%- assert False %}
 {%- endif %}
@@ -367,11 +367,11 @@ static inline uint32_t nunavutGetU32(const uint8_t* const buf,
     {{ assert('bits <= (sizeof(uint32_t) * 8U)') }}
 {%- if option_target_endianness == 'little' %}
     uint32_t val = 0U;
-    nunavutCopyBits(bits, off_bit, 0U, buf, (uint8_t*) &val);
+    nunavutCopyBits(&val, 0U, bits, buf, off_bit);
     return val;
 {%- elif option_target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint32_t)] = {0};
-    nunavutCopyBits(bits, off_bit, 0U, buf, &tmp[0]);
+    nunavutCopyBits(&tmp[0], 0U, bits, buf, off_bit);
     return (uint32_t)(tmp[0] | ((uint32_t) tmp[1] << 8U) | ((uint32_t) tmp[2] << 16U) | ((uint32_t) tmp[3] << 24U));
 {%- else %}{%- assert False %}
 {%- endif %}
@@ -388,11 +388,11 @@ static inline uint64_t nunavutGetU64(const uint8_t* const buf,
     {{ assert('bits <= (sizeof(uint64_t) * 8U)') }}
 {%- if option_target_endianness == 'little' %}
     uint64_t val = 0U;
-    nunavutCopyBits(bits, off_bit, 0U, buf, (uint8_t*) &val);
+    nunavutCopyBits(&val, 0U, bits, buf, off_bit);
     return val;
 {%- elif option_target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint64_t)] = {0};
-    nunavutCopyBits(bits, off_bit, 0U, buf, &tmp[0]);
+    nunavutCopyBits(&tmp[0], 0U, bits, buf, off_bit);
     return (uint64_t)(tmp[0] |
                       ((uint64_t) tmp[1] << 8U) |
                       ((uint64_t) tmp[2] << 16U) |

@@ -268,7 +268,7 @@
     {% if offset.is_aligned_at_byte() %}
     // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
     {% endif %}
-    nunavutCopyBits({{ t.capacity }}UL, 0U, offset_bits, &{{ reference }}_bitpacked_[0], &buffer[0]);
+    nunavutCopyBits(&buffer[0], offset_bits, {{ t.capacity }}UL, &{{ reference }}_bitpacked_[0], 0U);
     offset_bits += {{ t.capacity }}UL;
 
 {# SPECIAL CASE: BYTES-LIKE ARRAY #}
@@ -276,7 +276,7 @@
     {% if offset.is_aligned_at_byte() %}
     // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
     {% endif %}
-    nunavutCopyBits({{ t.capacity }}UL * 8U, 0U, offset_bits, &{{ reference }}[0], &buffer[0]);
+    nunavutCopyBits(&buffer[0], offset_bits, {{ t.capacity }}UL * 8U, &{{ reference }}[0], 0U);
     offset_bits += {{ t.capacity }}UL * 8U;
 
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
@@ -291,8 +291,8 @@
     {% if offset.is_aligned_at_byte() %}
     // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
     {% endif %}
-    nunavutCopyBits({{ t.capacity }}UL * {{ t.element_type.bit_length }}UL, 0U, offset_bits, {# -#}
-                    &{{ reference }}[0], &buffer[0]);
+    nunavutCopyBits(&buffer[0], offset_bits, {{ t.capacity }}UL * {{ t.element_type.bit_length }}UL, {# -#}
+                    &{{ reference }}[0], 0U);
     offset_bits += {{ t.capacity }}UL * {{ t.element_type.bit_length }}UL;
 
 {# GENERAL CASE #}
@@ -340,7 +340,7 @@
     {% if first_element_offset.is_aligned_at_byte() %}
     // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
     {% endif %}
-    nunavutCopyBits({{ reference }}.count, 0U, offset_bits, &{{ reference }}.bitpacked[0], &buffer[0]);
+    nunavutCopyBits(&buffer[0], offset_bits, {{ reference }}.count, &{{ reference }}.bitpacked[0], 0U);
     offset_bits += {{ reference }}.count;
 
 {# SPECIAL CASE: BYTES-LIKE ARRAY #}
@@ -348,7 +348,7 @@
     {% if element_offset.is_aligned_at_byte() %}
     // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
     {% endif %}
-    nunavutCopyBits({{ reference }}.count * 8U, 0U, offset_bits, &{{ reference }}.elements[0], &buffer[0]);
+    nunavutCopyBits(&buffer[0], offset_bits, {{ reference }}.count * 8U, &{{ reference }}.elements[0], 0U);
     offset_bits += {{ reference }}.count * 8U;
 
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
@@ -363,8 +363,8 @@
     {% if element_offset.is_aligned_at_byte() %}
     // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
     {% endif %}
-    nunavutCopyBits({{ reference }}.count * {{ t.element_type.bit_length }}UL, 0U, offset_bits, {# -#}
-                    &{{ reference }}.elements[0], &buffer[0]);
+    nunavutCopyBits(&buffer[0], offset_bits, {{ reference }}.count * {{ t.element_type.bit_length }}UL, {# -#}
+                    &{{ reference }}.elements[0], 0U);
     offset_bits += {{ reference }}.count * {{ t.element_type.bit_length }}UL;
 
 {# GENERAL CASE #}

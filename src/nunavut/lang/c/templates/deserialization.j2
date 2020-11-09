@@ -153,7 +153,7 @@
             (void) memset(&{{ reference }}_bitpacked_[{{ ref_bit_length }} / 8U], 0, {# -#}
                           {{ t.capacity|bits2bytes_ceil }}UL - ({{ ref_bit_length }} / 8U));
         }
-        nunavutCopyBits({{ ref_bit_length }}, offset_bits, 0U, &buffer[0], &{{ reference }}_bitpacked_[0]);
+        nunavutCopyBits(&{{ reference }}_bitpacked_[0], 0U, {{ ref_bit_length }}, &buffer[0], offset_bits);
     }
     offset_bits += {{ t.capacity }}UL;
 
@@ -167,7 +167,7 @@
             (void) memset(&{{ reference }}[{{ ref_bit_length }} / 8U], 0, {# -#}
                           {{ t.capacity }}UL - ({{ ref_bit_length }} / 8U));
         }
-        nunavutCopyBits({{ ref_bit_length }}, offset_bits, 0U, &buffer[0], &{{ reference }}[0]);
+        nunavutCopyBits(&{{ reference }}[0], 0U, {{ ref_bit_length }}, &buffer[0], offset_bits);
     }
     offset_bits += {{ t.capacity }}UL * 8U;
 
