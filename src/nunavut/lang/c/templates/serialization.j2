@@ -54,7 +54,7 @@
         }}
     }
     {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
-    {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == obj->_tag_)
+    {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == obj->_tag_)  // {{ f }}
     {
         {%- assert f.data_type.alignment_requirement <= (offset|min) %}
         {{ _serialize_any(f.data_type, 'obj->' + (f|id), offset)|trim|remove_blank_lines|indent }}

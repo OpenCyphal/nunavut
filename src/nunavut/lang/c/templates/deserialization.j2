@@ -41,15 +41,25 @@
     {{ _deserialize_any(f.data_type, 'out_obj->' + (f|id), offset)|trim|remove_blank_lines }}
     {% endfor %}
 {% elif t.inner_type is UnionType %}
-    // TODO: union deserialization.
-    {{ assert('false') }}
+    // Union tag field: {{ t.inner_type.tag_field_type }}
+    {{ _deserialize_integer(t.inner_type.tag_field_type, 'out_obj->_tag_', 0|bit_length_set)|trim|remove_blank_lines }}
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
+    {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == out_obj->_tag_)  // {{ f }}
+    {
+        {%- assert f.data_type.alignment_requirement <= (offset|min) %}
+        {{ _deserialize_any(f.data_type, 'out_obj->' + (f|id), offset)|trim|remove_blank_lines|indent }}
+    }
+    {%- endfor %}
+    else
+    {
+        return -NUNAVUT_ERROR_REPRESENTATION_BAD_UNION_TAG;
+    }
 {% else %}{% assert False %}
 {% endif %}
     {{ _pad_to_alignment(t.inner_type.alignment_requirement) }}
     {{ assert('offset_bits <= %sULL'|format(t.inner_type.bit_length_set|max)) }}
     {{ assert('offset_bits % 8U == 0U') }}
-    *inout_buffer_size_bytes = {# -#}
-        (offset_bits < capacity_bits) ? ({{ typename_unsigned_length }}) (offset_bits / 8U) : capacity_bytes;
+    *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (nunavutChooseMin(offset_bits, capacity_bits) / 8U);
     {{ assert('capacity_bytes >= *inout_buffer_size_bytes') }}
 {% endmacro %}
 
