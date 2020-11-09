@@ -176,6 +176,57 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _deserialize_variable_length_array(t, reference, offset) %}
+{# DESERIALIZE THE IMPLICIT ARRAY LENGTH FIELD #}
+    // Array length prefix: {{ t.length_field_type }}
+    {{ _deserialize_integer(t.length_field_type, reference + '.count', offset) }}
+    if ({{ reference }}.count > {{ t.capacity }})
+    {
+        return -NUNAVUT_ERROR_REPRESENTATION_BAD_ARRAY_LENGTH;
+    }
+
+{# COMPUTE THE ARRAY ELEMENT OFFSETS #}
+{# NOTICE: The offset is no longer valid at this point because we just emitted the array length prefix. #}
+{# TODO:   The following transformations are computationally taxing; see https://github.com/UAVCAN/pydsdl/issues/23 #}
+{% set element_offset = offset + t.bit_length_set %}
+{% set first_element_offset = offset + t.length_field_type.bit_length %}
+{% assert (element_offset|min) == (first_element_offset|min) %}
+{% if first_element_offset.is_aligned_at_byte() %}
+    {{ assert('offset_bits % 8U == 0U') }}
+{% endif %}
+
+{# SPECIAL CASE: PACKED BIT ARRAY #}
+{% if t.element_type is BooleanType %}
+    nunavutGetBits(&{{ reference }}.bitpacked[0], &buffer[0], capacity_bytes, offset_bits, {{ reference }}.count);
+    offset_bits += {{ reference }}.count;
+
+{# SPECIAL CASE: BYTES-LIKE ARRAY #}
+{% elif t.element_type is PrimitiveType and t.element_type.bit_length == 8 and t.element_type|is_zero_cost_primitive %}
+    nunavutGetBits(&{{ reference }}.elements[0], &buffer[0], capacity_bytes, offset_bits, {{ reference }}.count * 8U);
+    offset_bits += {{ reference }}.count * 8U;
+
+{# SPECIAL CASE: ZERO-COST PRIMITIVES #}
+{% elif t.element_type is PrimitiveType and LITTLE_ENDIAN and t.element_type|is_zero_cost_primitive %}
+    {% if t.element_type is FloatType %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
+        {% if t.element_type.bit_length > 32 %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
+        {% endif %}
+    {% endif %}
+    nunavutGetBits(&{{ reference }}.elements[0], &buffer[0], capacity_bytes, offset_bits, {# -#}
+                   {{ reference }}.count * {{ t.element_type.bit_length }}U);
+    offset_bits += {{ reference }}.count * {{ t.element_type.bit_length }}U;
+
+{# GENERAL CASE #}
+{% else %}
+    {% set ref_index = 'index'|to_template_unique_name %}
+    for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ reference }}.count; ++{{ ref_index }})
+    {
+        {{
+            _deserialize_any(t.element_type, reference + ('.elements[%s]'|format(ref_index)), element_offset)
+           |trim|indent
+        }}
+    }
+{% endif %}
 {% endmacro %}
 
 
