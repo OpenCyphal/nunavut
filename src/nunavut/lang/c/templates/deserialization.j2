@@ -142,33 +142,14 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _deserialize_fixed_length_array(t, reference, offset) %}
-{% set ref_bit_length = 'size_bits'|to_template_unique_name %}
 {# SPECIAL CASE: PACKED BIT ARRAY #}
 {% if t.element_type is BooleanType %}
-    {
-        const {{ typename_unsigned_bit_length }} {{ ref_bit_length }} = {# -#}
-            nunavutSaturateBufferFragmentBitLength(capacity_bytes, offset_bits, {{ t.capacity }}UL);
-        if ({{ ref_bit_length }} < {{ t.capacity }}UL)  // Implicit zero extension. May write the boundary byte twice.
-        {
-            (void) memset(&{{ reference }}_bitpacked_[{{ ref_bit_length }} / 8U], 0, {# -#}
-                          {{ t.capacity|bits2bytes_ceil }}UL - ({{ ref_bit_length }} / 8U));
-        }
-        nunavutCopyBits(&{{ reference }}_bitpacked_[0], 0U, {{ ref_bit_length }}, &buffer[0], offset_bits);
-    }
+    nunavutGetBits(&{{ reference }}_bitpacked_[0], &buffer[0], capacity_bytes, offset_bits, {{ t.capacity }}UL);
     offset_bits += {{ t.capacity }}UL;
 
 {# SPECIAL CASE: BYTES-LIKE ARRAY #}
 {% elif t.element_type is PrimitiveType and t.element_type.bit_length == 8 and t.element_type|is_zero_cost_primitive %}
-    {
-        const {{ typename_unsigned_bit_length }} {{ ref_bit_length }} = {# -#}
-            nunavutSaturateBufferFragmentBitLength(capacity_bytes, offset_bits, {{ t.capacity }}UL * 8U);
-        if ({{ ref_bit_length }} < ({{ t.capacity }}UL * 8U))  // Implicit zero extension.
-        {
-            (void) memset(&{{ reference }}[{{ ref_bit_length }} / 8U], 0, {# -#}
-                          {{ t.capacity }}UL - ({{ ref_bit_length }} / 8U));
-        }
-        nunavutCopyBits(&{{ reference }}[0], 0U, {{ ref_bit_length }}, &buffer[0], offset_bits);
-    }
+    nunavutGetBits(&{{ reference }}[0], &buffer[0], capacity_bytes, offset_bits, {{ t.capacity }}UL * 8U);
     offset_bits += {{ t.capacity }}UL * 8U;
 
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
@@ -179,9 +160,9 @@
     static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
         {% endif %}
     {% endif %}
-    // TODO implicit zero extension
-    // TODO invoke nunavutCopyBits()
-    offset_bits += {{ t.capacity }}UL * {{ t.element_type.bit_length }}UL;
+    nunavutGetBits(&{{ reference }}[0], &buffer[0], capacity_bytes, offset_bits, {# -#}
+                   {{ t.capacity }}UL * {{ t.element_type.bit_length }}U);
+    offset_bits += {{ t.capacity }}UL * {{ t.element_type.bit_length }}U;
 
 {# GENERAL CASE #}
 {% else %}

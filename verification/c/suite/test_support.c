@@ -77,6 +77,76 @@ static void testNunavutSaturateBufferFragmentBitLength(void)
 }
 
 // +--------------------------------------------------------------------------+
+// | nunavutGetBits
+// +--------------------------------------------------------------------------+
+
+static void testNunavutGetBits(void)
+{
+    const uint8_t src[] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF };
+    uint8_t dst[6];
+    memset(dst, 0xAA, sizeof(dst));
+    nunavutGetBits(dst, src, 6, 0, 0);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[0]);   // no bytes copied
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[1]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[2]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[3]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[4]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[5]);
+
+    nunavutGetBits(dst, src, 0, 0, 32);
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[0]);   // all bytes zero-extended
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[3]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[4]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[5]);
+
+    nunavutGetBits(dst, src, 6, 48, 32);
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[0]);   // all bytes zero-extended
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[3]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[4]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[5]);
+
+    memset(dst, 0xAA, sizeof(dst));
+    nunavutGetBits(dst, src, 6, 40, 32);
+    TEST_ASSERT_EQUAL_HEX8(0x66, dst[0]);   // one byte copied
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[1]);   // the rest are zero-extended
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[3]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[4]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[5]);
+
+    memset(dst, 0xAA, sizeof(dst));
+    nunavutGetBits(dst, src, 6, 36, 32);
+    TEST_ASSERT_EQUAL_HEX8(0x65, dst[0]);   // one-and-half bytes are copied
+    TEST_ASSERT_EQUAL_HEX8(0x06, dst[1]);   // the rest are zero-extended
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, dst[3]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[4]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[5]);
+
+    memset(dst, 0xAA, sizeof(dst));
+    nunavutGetBits(dst, src, 7, 4, 32);
+    TEST_ASSERT_EQUAL_HEX8(0x21, dst[0]);   // all bytes are copied offset by half
+    TEST_ASSERT_EQUAL_HEX8(0x32, dst[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x43, dst[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x54, dst[3]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[4]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[5]);
+
+    memset(dst, 0xAA, sizeof(dst));
+    nunavutGetBits(dst, src, 7, 4, 28);
+    TEST_ASSERT_EQUAL_HEX8(0x21, dst[0]);   // 28 bits are copied
+    TEST_ASSERT_EQUAL_HEX8(0x32, dst[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x43, dst[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x04, dst[3]);   // the last bits of the last byte are zero-padded out
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[4]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, dst[5]);
+}
+
+// +--------------------------------------------------------------------------+
 // | nunavutSetIxx
 // +--------------------------------------------------------------------------+
 
@@ -692,6 +762,7 @@ int main(void)
     RUN_TEST(testNunavutCopyBitsWithAlignedOffset);
     RUN_TEST(testNunavutCopyBitsWithUnalignedOffset);
     RUN_TEST(testNunavutSaturateBufferFragmentBitLength);
+    RUN_TEST(testNunavutGetBits);
     RUN_TEST(testNunavutSetIxx_neg1);
     RUN_TEST(testNunavutSetIxx_neg255);
     RUN_TEST(testNunavutSetIxx_neg255_tooSmall);
