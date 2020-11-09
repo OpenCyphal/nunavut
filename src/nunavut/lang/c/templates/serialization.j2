@@ -165,7 +165,7 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_integer(t, reference, offset) %}
-{% if t is saturated %}                                                         {# SATURATE THE VALUE #}
+{% if t is saturated %}
     {% if not t.standard_bit_length %}
         {% set ref_value = 'sat'|to_template_unique_name %}
     {{ t|type_from_primitive }} {{ ref_value }} = {{ reference }};
@@ -188,7 +188,7 @@
 {% else %}
     {% set ref_value = reference %}
 {% endif %}
-{% if offset.is_aligned_at_byte() and t.bit_length <= 8 %}                      {# SERIALIZE THE SATURATED VALUE #}
+{% if offset.is_aligned_at_byte() and t.bit_length <= 8 %}
     buffer[offset_bits / 8U] = ({{ typename_byte }})({{ ref_value }});  // C std, 6.3.1.3 Signed and unsigned integers
 {% elif offset.is_aligned_at_byte() and LITTLE_ENDIAN %}
     (void) memmove(&buffer[offset_bits / 8U], &{{ ref_value }}, {{ t.bit_length|bits2bytes_ceil }}U);

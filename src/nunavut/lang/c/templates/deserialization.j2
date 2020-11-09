@@ -111,9 +111,6 @@
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _deserialize_integer(t, reference, offset) %}
 {% set getter = 'nunavutGet%s%d'|format('U' if t is UnsignedIntegerType else 'I', t|to_standard_bit_length) %}
-{% set last_resort -%}
-    {{ reference }} = {{ getter }}(&buffer[0], capacity_bytes, offset_bits, {{ t.bit_length }});
-{%- endset %}
 {# Mem-copy optimization is difficult to perform on non-standard-size signed integers because the C standard does
  # not define a portable way of unsigned-to-signed conversion (but the other way around is well-defined).
  # See 6.3.1.8 Usual arithmetic conversions, 6.3.1.3 Signed and unsigned integers.
@@ -126,19 +123,10 @@
     }
     else
     {
-        {{ last_resort|indent }}
-    }
-{% elif offset.is_aligned_at_byte() and LITTLE_ENDIAN and t|is_zero_cost_primitive %}
-    if ((offset_bits + {{ t.bit_length }}U) <= capacity_bits)
-    {
-        (void) memmove(&{{ reference }}, &buffer[offset_bits / 8U], {{ t.bit_length|bits2bytes_ceil }}U);
-    }
-    else
-    {
-        {{ last_resort|indent }}
+        {{ reference }} = 0U;
     }
 {% else %}
-    {{ last_resort }}
+    {{ reference }} = {{ getter }}(&buffer[0], capacity_bytes, offset_bits, {{ t.bit_length }});
 {% endif %}
     offset_bits += {{ t.bit_length }}U;
 {% endmacro %}
@@ -146,31 +134,8 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _deserialize_float(t, reference, offset) %}
-{% set last_resort -%}
+    {# TODO: apply special case optimizations for aligned data and little-endian IEEE754-conformant platforms. #}
     {{ reference }} = nunavutGetF{{ t.bit_length }}(&buffer[0], capacity_bytes, offset_bits);
-{%- endset %}
-{% if offset.is_aligned_at_byte() and LITTLE_ENDIAN %}
-    if ((offset_bits + {{ t.bit_length }}U) <= capacity_bits)
-    {
-    {% if t.bit_length == 16 %}
-        {{ reference }} = nunavutFloat16Unpack((uint16_t)((buffer[offset_bits / 8U + 0U] << 0U) |
-                                                          (buffer[offset_bits / 8U + 1U] << 8U)));
-    {% elif t.bit_length == 32 %}
-        static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
-        (void) memmove(&{{ reference }}, &buffer[offset_bits / 8U], 4U);
-    {% elif t.bit_length == 64 %}
-        static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
-        (void) memmove(&{{ reference }}, &buffer[offset_bits / 8U], 8U);
-    {% else %}{% assert False %}
-    {% endif %}
-    }
-    else
-    {
-        {{ last_resort|indent }}
-    }
-{% else %}
-    {{ last_resort }}
-{% endif %}
     offset_bits += {{ t.bit_length }}U;
 {% endmacro %}
 
