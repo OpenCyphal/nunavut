@@ -156,6 +156,8 @@ struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _define_functions(t) %}
 
+{% if not nunavut.support.omit %}
+
 /// Serialize an instance into the provided buffer.
 /// The lifetime of the resulting serialized representation is independent of the original instance.
 /// This method may be slow for large objects (e.g., images, point clouds, radar samples), so in a later revision
@@ -224,6 +226,8 @@ static inline void {{ t | full_reference_name }}_initialize_({{ t | full_referen
         (void) err;
     }
 }
+
+{% endif %}  {# if not nunavut.support.omit #}
 
 {% for f in t.fields_except_padding %}
 {% if t.inner_type is UnionType %}

@@ -112,7 +112,7 @@ find_package(nnvg REQUIRED)
 #
 # Configure extra arguments for the subsequent invocations of nnvg.
 #
-set(NNVG_FLAGS "--pp-max-emptylines=1 --pp-trim-trailing-whitespace --target-endianness=little")
+set(NNVG_FLAGS "--pp-max-emptylines=1 --pp-trim-trailing-whitespace")
 
 #
 # Generate types for the UAVCAN v1 public_regulated_data_types set.
