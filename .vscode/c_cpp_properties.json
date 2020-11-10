@@ -52,7 +52,8 @@
             "includePath": [
                 "${workspaceFolder}/submodules/googletest/googlemock/include",
                 "${workspaceFolder}/submodules/unity/src",
-                "${workspaceFolder}/verification/build_vscode/native-gcc-c/generated"
+                "${workspaceFolder}/verification/build_vscode/native-gcc-c/generated",
+                "${workspaceFolder}/verification/build_c/generated/c"
             ],
             "browse": {
                 "path": [
@@ -72,8 +73,7 @@
             "includePath": [
                 "${workspaceFolder}/submodules/googletest/googlemock/include",
                 "${workspaceFolder}/submodules/unity/src",
-                "${workspaceFolder}/verification/build_vscode/native-gcc-cpp/generated",
-                "${workspaceFolder}/verification/build_c/generated/c"
+                "${workspaceFolder}/verification/build_vscode/native-gcc-cpp/generated"
             ],
             "browse": {
                 "path": [
