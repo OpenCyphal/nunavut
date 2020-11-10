@@ -235,6 +235,8 @@ C Filters
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_to_snake_case
    :noindex:
+.. autofunction:: nunavut.lang.c.filter_to_screaming_snake_case
+   :noindex:
 .. autofunction:: nunavut.lang.c.filter_to_template_unique_name
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_short_reference_name
@@ -246,6 +248,10 @@ C Filters
 .. autofunction:: nunavut.lang.c.filter_literal
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_full_reference_name
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_to_standard_bit_length
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_is_zero_cost_primitive
    :noindex:
 
 C++ Filters
