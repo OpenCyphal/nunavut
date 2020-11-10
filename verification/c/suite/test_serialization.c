@@ -4,6 +4,7 @@
 #include <regulated/basics/Struct__0_1.h>
 #include <regulated/basics/Union_0_1.h>
 #include <regulated/delimited/A_1_0.h>
+#include <regulated/delimited/A_1_1.h>
 #include "unity.h"  // Include 3rd-party headers afterward to ensure that our headers are self-sufficient.
 
 /// The reference array has been pedantically validated manually bit by bit (it did really took me about three hours).
@@ -281,7 +282,8 @@ static void testStructReference(void)
 /// The test is based on https://forum.uavcan.org/t/delimited-serialization-example/975
 static void testStructDelimited(void)
 {
-    regulated_delimited_A_1_0 obj = {0};
+    regulated_delimited_A_1_0 obj;
+    regulated_delimited_A_1_0_initialize_(&obj);
     regulated_delimited_A_1_0_select_del_(&obj);
     regulated_delimited_A_1_0_select_del_(NULL);  // No action.
     obj.del.var.count = 2;
@@ -307,12 +309,80 @@ static void testStructDelimited(void)
     };
     static_assert(sizeof(reference) == regulated_delimited_A_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_, "");
 
-    uint8_t buf[regulated_delimited_A_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
+    uint8_t buf[1024] = {0};
     (void) memset(&buf[0], 0xAAU, sizeof(buf));  // Fill out the canaries
     size_t size = sizeof(buf);
     TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_0_serialize_(&obj, &buf[0], &size));
     TEST_ASSERT_EQUAL(28U, size);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(reference, buf, sizeof(reference));
+
+    // Deserialize back from the reference using the same type and compare the field values.
+    regulated_delimited_A_1_0_initialize_(&obj);  // Erase prior state.
+    size = sizeof(reference);
+    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_0_deserialize_(&obj, &reference[0], &size));
+    TEST_ASSERT_EQUAL(28U, size);
+    TEST_ASSERT_TRUE(regulated_delimited_A_1_0_is_del_(&obj));
+    TEST_ASSERT_EQUAL(2, obj.del.var.count);
+    TEST_ASSERT_EQUAL(2, obj.del.var.elements[0].a.count);
+    TEST_ASSERT_EQUAL(1, obj.del.var.elements[0].a.elements[0]);
+    TEST_ASSERT_EQUAL(2, obj.del.var.elements[0].a.elements[1]);
+    TEST_ASSERT_EQUAL(0, obj.del.var.elements[0].b);
+    TEST_ASSERT_EQUAL(1, obj.del.var.elements[1].a.count);
+    TEST_ASSERT_EQUAL(3, obj.del.var.elements[1].a.elements[0]);
+    TEST_ASSERT_EQUAL(4, obj.del.var.elements[1].b);
+    TEST_ASSERT_EQUAL(1, obj.del.fix.count);
+    TEST_ASSERT_EQUAL(5, obj.del.fix.elements[0].a[0]);
+    TEST_ASSERT_EQUAL(6, obj.del.fix.elements[0].a[1]);
+
+    // Deserialize using a different type to test extensibility enabled by delimited serialization.
+    regulated_delimited_A_1_1 dif;
+    size = sizeof(reference);
+    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_1_deserialize_(&dif, &reference[0], &size));
+    TEST_ASSERT_EQUAL(28U, size);
+    TEST_ASSERT_TRUE(regulated_delimited_A_1_1_is_del_(&dif));
+    TEST_ASSERT_EQUAL(2, dif.del.var.count);
+    TEST_ASSERT_EQUAL(2, dif.del.var.elements[0].a.count);
+    TEST_ASSERT_EQUAL(1, dif.del.var.elements[0].a.elements[0]);
+    TEST_ASSERT_EQUAL(2, dif.del.var.elements[0].a.elements[1]);
+    // b implicitly truncated away
+    TEST_ASSERT_EQUAL(1, dif.del.var.elements[1].a.count);
+    TEST_ASSERT_EQUAL(3, dif.del.var.elements[1].a.elements[0]);
+    // b implicitly truncated away
+    TEST_ASSERT_EQUAL(1, dif.del.fix.count);
+    TEST_ASSERT_EQUAL(5, dif.del.fix.elements[0].a[0]);
+    TEST_ASSERT_EQUAL(6, dif.del.fix.elements[0].a[1]);
+    TEST_ASSERT_EQUAL(0, dif.del.fix.elements[0].a[2]);     // 3rd element is implicitly zero-extended
+    TEST_ASSERT_EQUAL(0, dif.del.fix.elements[0].b);        // b is implicitly zero-extended
+
+    // Reverse version switch -- serialize v1.1 and then deserialize back using v1.0.
+    dif.del.var.count = 1;
+    dif.del.var.elements[0].a.count = 2;
+    dif.del.var.elements[0].a.elements[0] = 11;
+    dif.del.var.elements[0].a.elements[1] = 22;
+    dif.del.fix.count = 2;
+    dif.del.fix.elements[0].a[0] = 5;
+    dif.del.fix.elements[0].a[1] = 6;
+    dif.del.fix.elements[0].a[2] = 7;
+    dif.del.fix.elements[0].b = 8;
+    dif.del.fix.elements[1].a[0] = 100;
+    dif.del.fix.elements[1].a[1] = 200;
+    dif.del.fix.elements[1].a[2] = 123;
+    dif.del.fix.elements[1].b = 99;
+    size = sizeof(buf);
+    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_1_serialize_(&dif, &buf[0], &size));
+    TEST_ASSERT_EQUAL(30U, size);                           // the reference size was computed by hand
+    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_0_deserialize_(&obj, &buf[0], &size));
+    TEST_ASSERT_TRUE(regulated_delimited_A_1_0_is_del_(&obj));
+    TEST_ASSERT_EQUAL(1, obj.del.var.count);
+    TEST_ASSERT_EQUAL(2, obj.del.var.elements[0].a.count);
+    TEST_ASSERT_EQUAL(11, obj.del.var.elements[0].a.elements[0]);
+    TEST_ASSERT_EQUAL(22, obj.del.var.elements[0].a.elements[1]);
+    TEST_ASSERT_EQUAL(0, obj.del.var.elements[0].b);        // b is implicitly zero-extended
+    TEST_ASSERT_EQUAL(2, obj.del.fix.count);
+    TEST_ASSERT_EQUAL(5, obj.del.fix.elements[0].a[0]);     // 3rd is implicitly truncated, b is implicitly truncated
+    TEST_ASSERT_EQUAL(6, obj.del.fix.elements[0].a[1]);
+    TEST_ASSERT_EQUAL(100, obj.del.fix.elements[1].a[0]);   // 3rd is implicitly truncated, b is implicitly truncated
+    TEST_ASSERT_EQUAL(200, obj.del.fix.elements[1].a[1]);
 }
 
 static void testStructErrors(void)
@@ -320,7 +390,7 @@ static void testStructErrors(void)
     regulated_basics_Struct__0_1 obj = {0};
     // Construct a reference in Python for cross-validation: b''.join(pyuavcan.dsdl.serialize(Struct__0_1()))
     // Default state -- all zeros except delimiter headers of the nested delimited objects:
-    const uint8_t reference[] = {
+    uint8_t sr[] = {
         0x00U,  // void1, boolean, i10_4[0]
         0x00U,  // i10_4[]
         0x00U,  // i10_4[]
@@ -380,8 +450,8 @@ static void testStructErrors(void)
     // Happy path, validate the test rig
     size_t size = regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_;
     TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &size));
-    TEST_ASSERT_EQUAL(sizeof(reference) - 16U, size);
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(reference, buf, sizeof(reference));
+    TEST_ASSERT_EQUAL(sizeof(sr) - 16U, size);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(sr, buf, sizeof(sr));
 
     // Buffer too small
     size = regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_ - 1;
@@ -414,6 +484,40 @@ static void testStructErrors(void)
     obj.delimited_var_2[0]._tag_ = 0;
 
     // Bad delimiter header error cannot occur during serialization so this state is not explored.
+
+    // The other way around -- deserialization. First, validate the happy path to make sure the test rig is okay.
+    size = sizeof(sr);
+    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], &size));
+    TEST_ASSERT_EQUAL(sizeof(sr) - 16U, size);
+
+    // Null pointers at the input.
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
+                      regulated_basics_Struct__0_1_deserialize_(&obj, &buf[0], NULL));
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
+                      regulated_basics_Struct__0_1_deserialize_(&obj, NULL, &size));
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
+                      regulated_basics_Struct__0_1_deserialize_(NULL, &buf[0], &size));
+
+    // Bad array length
+    size = sizeof(sr);
+    sr[7] = 123;  // uint8[<3] bytes_lt3
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_ARRAY_LENGTH,
+                      regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], &size));
+    sr[7] = 0;
+
+    // Bad union tag in a nested composite; make sure the error floats up to the caller.
+    size = sizeof(sr);
+    sr[23] = 4;  // first element of DelimitedVariableSize.0.1[2] delimited_var_2
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_UNION_TAG,
+                      regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], &size));
+    sr[23] = 0;
+
+    // Bad delimiter header
+    size = sizeof(sr);
+    sr[20] = 200;  // 2nd byte of delimiter header of the first element of DelimitedVariableSize.0.1[2] delimited_var_2
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_DELIMITER_HEADER,
+                      regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], &size));
+    sr[20] = 0;
 }
 
 void setUp(void)
