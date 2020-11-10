@@ -153,7 +153,7 @@
 {% else %}
     if ({{ reference }})
     {
-        buffer[offset_bits / 8U] = ({{ typename_byte }})(buffer[offset_bits / 8U]|(1U << (offset_bits % 8U)));
+        buffer[offset_bits / 8U] = ({{ typename_byte }})(buffer[offset_bits / 8U] | (1U << (offset_bits % 8U)));
     }
     else
     {
