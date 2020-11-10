@@ -40,39 +40,9 @@ recommend the following environment for vscode::
 cmake
 ================================================
 
-Our language generation verification suite uses CMake to build and run unit tests.
-Instructions for reproducing the CI automation execution steps are below. This section will tell you how
-to manually build and run individual unit tests as you develop them.
-
-TLDR::
-
-    git submodule update --init --recursive
-    export NUNAVUT_VERIFICATION_LANG=c
-    cd verification
-    mkdir "build_$NUNAVUT_VERIFICATION_LANG"
-    cd "build_$NUNAVUT_VERIFICATION_LANG"
-    cmake ..
-    cmake --build . --target help
-
-Try running a test which will first compile the test. For example, in the C language build ::
-
-    cmake --build . --target run_test_serialization
-
-If you get an error about missing pthreads from the linker then you are on GNU/Linux and we need to tweak the
-compile flags (assuming you are in the directory the TLDR above dumped you into) ::
-
-    rm CMakeCache.txt
-    export NUNAVUT_FLAG_SET=linux
-    cmake ..
-    cmake --build . --target run_test_serialization
-
-To run the C++ test use the same steps shown in the TLDR above but set :code:`NUNAVUT_VERIFICATION_LANG` to
-"cpp" first.
-
-In the list of targets that the :code:`cmake --build . --target help` command lists the targets that build tests
-will be prefixed with :code:`test_` and the pseudo-target that also executes the test will be prefixed with
-:code:`run_test_`. You should avoid the :code:`_with_lcov` when you are manually building tests.
-
+Our language generation verification suite uses CMake to build and run unit tests. If you are working
+with a native language see `Nunavut Verification Suite`_ for details on manually running these builds
+and tests.
 
 Visual Studio Code
 ================================================
@@ -201,25 +171,6 @@ Alternatively just nuke everything temporary using git clean::
 
     git clean -X -d -f
 
-
-VSCode Remote Container Development of Verification Tests
-====================================================================================
-
-To write and debug verification tests using `VSCode Remote Containers`_ you'll need to use the
-"Open Folder in Container..." option:
-
-.. image:: /docs/static/images/vscode_open_in_container.png
-
-Open the "verification" folder:
-
-.. image:: /docs/static/images/vscode_folder_verification.png
-
-We play a little trick here where we dump you back into the Nunvut repo root when you reopen in
-the container. This lets you also work with the Python source. If you "reopen locally" while in
-this state, however, you'll find yourself back in the verification folder which can be a little
-disorienting. Write to Microsoft asking them to allow multiple images in the .devcontainer
-json and we can get rid of this ugly hack. Sorry.
-
 ************************************************
 Building The Docs
 ************************************************
@@ -287,6 +238,95 @@ our Buildkite `AWS CloudFormation`_ stack and of our PyPI UAVCAN organization.
 
     4. Back in the PyPI keys list delete any keys that are older than the one previously in use. You can keep the key
        you just rotated until you rotate the new key.
+
+
+################################################
+Nunavut Verification Suite
+################################################
+
+Nunavut has built-in support for several languages. Included with this is a suite of tests using typical test
+frameworks and language compilers, interpreters, and/or virtual machines. While each release of Nunavut is
+gated on automatic and successful completion of these tests this guide is provided to give system integrators
+information on how to customize these verifications to use other compilers, interpreters, and/or virtual
+machines.
+
+
+################################################
+Tools
+################################################
+
+cmake
+================================================
+
+Our language generation verification suite uses CMake to build and run unit tests.
+Instructions for reproducing the CI automation execution steps are below. This section will tell you how
+to manually build and run individual unit tests as you develop them.
+
+TLDR::
+
+    git submodule update --init --recursive
+    export NUNAVUT_VERIFICATION_LANG=c
+    cd verification
+    mkdir "build_$NUNAVUT_VERIFICATION_LANG"
+    cd "build_$NUNAVUT_VERIFICATION_LANG"
+    cmake ..
+    cmake --build . --target help
+
+Try running a test which will first compile the test. For example, in the C language build ::
+
+    cmake --build . --target run_test_serialiization
+
+If you get an error about missing pthreads from the linker then you are on linux and we need to tweek the
+compile flags (assuming you are in the directory the TLDR above dumped you into) ::
+
+    rm CMakeCache.txt
+    export NUNAVUT_FLAG_SET=linux
+    cmake ..
+    cmake --build . --target run_test_serialization
+
+To run the C++ test use the same steps shown in the TLDR above but set :code:`NUNAVUT_VERIFICATION_LANG` to
+"cpp" first.
+
+In the list of targets that the :code:`cmake --build . --target help` command lists the targets that build tests
+will be prefixed with :code:`test_` and the psedo-target that also executes the test will be prefixed with
+:code:`run_test_`. You should avoid the :code:`_with_lcov` when you are manually building tests.
+
+
+VSCode Remote Container Development of Verification Tests
+====================================================================================
+
+To write and debug verification tests using `VSCode Remote Containers`_ you'll need to use the
+"Open Folder in Container..." option:
+
+.. image:: /docs/static/images/vscode_open_in_container.png
+
+Open the "verification" folder:
+
+.. image:: /docs/static/images/vscode_folder_verification.png
+
+We play a little trick here where we dump you back into the Nunvut repo root when you reopen in
+the container. This lets you also work with the Python source. If you "reopen locally" while in
+this state, however, you'll find yourself back in the verification folder which can be a little
+disorienting. Write to Microsoft asking them to allow multiple images in the .devcontainer
+json and we can get rid of this ugly hack. Sorry.
+
+
+************************************************
+C++
+************************************************
+
+.. warning::
+
+    C++ support is a work-in-progress
+
+************************************************
+C
+************************************************
+
+.. warning::
+
+    C support is a work-in-progress
+
 
 .. _`read the docs`: https://readthedocs.org/
 .. _`tox`: https://tox.readthedocs.io/en/latest/

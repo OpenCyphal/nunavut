@@ -40,6 +40,11 @@ else()
      set(NUNAVUT_FLAG_SET "native" CACHE STRING "The flags to apply while building (See cmake/compiler_flag_sets).")
 endif()
 
+if(DEFINED ENV{NUNAVUT_VERIFICATION_TARGET_ENDIANNESS})
+     message(STATUS "Getting NUNAVUT_VERIFICATION_TARGET_ENDIANNESS from the environment ($ENV{NUNAVUT_VERIFICATION_TARGET_ENDIANNESS})")
+     set(NUNAVUT_VERIFICATION_TARGET_ENDIANNESS "$ENV{NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}" CACHE STRING "The endianess for the target verification architecture.")
+endif()
+
 if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp")
     set(NUNAVUT_VERIFICATION_ROOT "${CMAKE_SOURCE_DIR}/cpp")
     message(STATUS "NUNAVUT_VERIFICATION_LANG is C++ (${NUNAVUT_VERIFICATION_LANG})")
@@ -123,7 +128,8 @@ create_dsdl_target(dsdl-regulated
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
                    OFF
                    ON
-                   OFF)
+                   OFF
+                   "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}")
 
 #
 # Generate additional types for verification
@@ -135,6 +141,7 @@ create_dsdl_target(dsdl-test
                    OFF
                    ON
                    OFF
+                   "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
 
 # +---------------------------------------------------------------------------+

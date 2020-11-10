@@ -20,6 +20,9 @@
 # :param bool ARG_ENABLE_SER_ASSERT:        Generates code with serialization asserts enabled
 # :param bool ARG_DISABLE_SER_FP:           Generates code with floating point support removed from
 #                                           serialization logic.
+# :param str ARG_SER_ENDIANNESS:            One of 'any', 'big', or 'little' to pass as the value of the
+#                                           nnvg `--target-endianness` argument. Set to an empty string
+#                                           to omit this argument.
 # :param ...:                               A list of paths to use when looking up dependent DSDL types.
 # :returns: Sets a variable "ARG_TARGET_NAME"-OUTPUT in the parent scope to the list of files the target
 #           will generate. For example, if ARG_TARGET_NAME == 'foo-bar' then after calling this function
@@ -31,13 +34,14 @@ function (create_dsdl_target ARG_TARGET_NAME
                              ARG_DSDL_ROOT_DIR
                              ARG_ENABLE_CLANG_FORMAT
                              ARG_ENABLE_SER_ASSERT
-                             ARG_DISABLE_SER_FP)
+                             ARG_DISABLE_SER_FP
+                             ARG_SER_ENDIANNESS)
 
     separate_arguments(NNVG_CMD_ARGS UNIX_COMMAND "${NNVG_FLAGS}")
 
-    if (${ARGC} GREATER 7)
+    if (${ARGC} GREATER 8)
         MATH(EXPR ARG_N_LAST "${ARGC}-1")
-        foreach(ARG_N RANGE 7 ${ARG_N_LAST})
+        foreach(ARG_N RANGE 8 ${ARG_N_LAST})
             list(APPEND NNVG_CMD_ARGS "-I")
             list(APPEND NNVG_CMD_ARGS "${ARGV${ARG_N}}")
         endforeach(ARG_N)
@@ -48,6 +52,14 @@ function (create_dsdl_target ARG_TARGET_NAME
     list(APPEND NNVG_CMD_ARGS  -O)
     list(APPEND NNVG_CMD_ARGS ${ARG_OUTPUT_FOLDER})
     list(APPEND NNVG_CMD_ARGS ${ARG_DSDL_ROOT_DIR})
+
+    if (${ARGC} GREATER 6)
+        if (NOT "${ARG_SER_ENDIANNESS}" STREQUAL "")
+            list(APPEND NNVG_CMD_ARGS "--target-endianness")
+            list(APPEND NNVG_CMD_ARGS ${ARG_SER_ENDIANNESS})
+            message(STATUS "Setting --target-endianness to ${ARG_SER_ENDIANNESS}")
+        endif()
+    endif()
 
     if (ARG_ENABLE_SER_ASSERT)
         list(APPEND NNVG_CMD_ARGS "--enable-serialization-asserts")
