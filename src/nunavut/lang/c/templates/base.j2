@@ -9,8 +9,8 @@
 // This is an AUTO-GENERATED UAVCAN DSDL data type implementation. Curious? See https://uavcan.org.
 // You shouldn't attempt to edit this file.
 //
-// Please consider the environment before checking this file under version control. Normally, it should be
-// generated as part of the build process, unless it is used as part of a high-SIL safety-critical codebase.
+// Checking this file under version control is not recommended unless it is used as part of a high-SIL
+// safety-critical codebase. The typical usage scenario is to generate it as part of the build process.
 //
 // To avoid conflicts with definitions given in the source DSDL file, all entities created by the code generator
 // are named with an underscore at the end, like foo_bar_().
@@ -22,7 +22,6 @@
 // Fixed port-ID: {{ T.fixed_port_id }}
 // Full name:     {{ T.full_name }}
 // Version:       {{ T.version.major }}.{{ T.version.minor }}
-//
 {%- if T.deprecated %}
 {#- Courtesy http://patorjk.com/software/taag/#p=display&f=Big&t=DEPRECATED #}
 {#- In C there is no standard way of marking definitions deprecated. #}
@@ -48,9 +47,11 @@ extern "C" {
 #endif
 
 {% if T.has_fixed_port_id %}
-#define {{ T | full_reference_name }}_FIXED_PORT_ID_ {{ T.fixed_port_id }}U
+#define {{ T | full_reference_name }}_HAS_FIXED_PORT_ID_ true
+#define {{ T | full_reference_name }}_FIXED_PORT_ID_     {{ T.fixed_port_id }}U
 {% else %}
-// This type does not have a fixed port-ID. Explanation: https://forum.uavcan.org/t/choosing-message-and-service-ids/889
+/// This type does not have a fixed port-ID. See https://forum.uavcan.org/t/choosing-message-and-service-ids/889
+#define {{ T | full_reference_name }}_HAS_FIXED_PORT_ID_ false
 {% endif %}
 
 {% block contents %}{% endblock %}

@@ -210,6 +210,9 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_deserializ
 }
 
 /// Initialize an instance to default values. Does nothing if @param out_obj is {{ valuetoken_null }}.
+/// This function intentionally leaves inactive elements uninitialized; for example, members of a variable-length
+/// array beyond its length are left uninitialized; aliased union memory that is not used by the first union field
+/// is left uninitialized, etc. If full zero-initialization is desired, just use memset(&obj, 0, sizeof(obj)).
 static inline void {{ t | full_reference_name }}_initialize_({{ t | full_reference_name }}* const out_obj)
 {
     if (out_obj != {{ valuetoken_null }})

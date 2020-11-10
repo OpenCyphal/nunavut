@@ -57,7 +57,6 @@
 {% else %}{% assert False %}
 {% endif %}
     {{ _pad_to_alignment(t.inner_type.alignment_requirement) }}
-    {{ assert('offset_bits <= %sULL'|format(t.inner_type.bit_length_set|max)) }}
     {{ assert('offset_bits % 8U == 0U') }}
     *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (nunavutChooseMin(offset_bits, capacity_bits) / 8U);
     {{ assert('capacity_bytes >= *inout_buffer_size_bytes') }}
@@ -68,7 +67,7 @@
 {% macro _pad_to_alignment(n_bits) %}
 {%- if n_bits > 1 -%}
     {%- assert n_bits in (8, 16, 32, 64) -%}
-    offset_bits = (offset_bits + {{ n_bits - 1 }}U) & ~(({{ typename_unsigned_bit_length }}) {{ n_bits - 1 }}U);  {# -#}
+    offset_bits = (offset_bits + {{ n_bits - 1 }}U) & ~({{ typename_unsigned_bit_length }}) {{ n_bits - 1 }}U;  {# -#}
         // Align on {{ n_bits }} bits.
 {%- endif -%}
 {% endmacro %}
@@ -252,7 +251,7 @@
 {% if t is DelimitedType %}
         // Delimiter header: {{ t.delimiter_header_type }}
         {{ typename_unsigned_length }} {{ ref_size_bytes }} = 0U;
-        {{ _deserialize_integer(t.delimiter_header_type, ref_size_bytes, offset)|trim }}
+        {{ _deserialize_integer(t.delimiter_header_type, ref_size_bytes, offset)|trim|indent }}
         if ({{ ref_size_bytes }} > {{ remaining_bytes }})
         {
             return -NUNAVUT_ERROR_REPRESENTATION_BAD_DELIMITER_HEADER;
@@ -269,12 +268,6 @@
         {
             return {{ ref_err }};
         }
-{% if t.inner_type.bit_length_set|length > 1 %}
-        {{ assert('(%s * 8U) >= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set|min)) }}
-        {{ assert('(%s * 8U) <= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set|max)) }}
-{% else %}
-        {{ assert('(%s * 8U) == %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set|sum)) }}
-{% endif %}
         offset_bits += {{ ref_size_bytes }} * 8U;  // Advance by the size of the nested object.
     }
 {% endmacro %}

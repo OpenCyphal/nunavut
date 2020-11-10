@@ -9,6 +9,7 @@
 static void testStructConstants(void)
 {
     // Type parameters.
+    TEST_ASSERT_TRUE(regulated_basics_Struct__0_1_HAS_FIXED_PORT_ID_);
     TEST_ASSERT_EQUAL(7000, regulated_basics_Struct__0_1_FIXED_PORT_ID_);
     TEST_ASSERT_EQUAL_STRING("regulated.basics.Struct_", regulated_basics_Struct__0_1_FULL_NAME_);
     TEST_ASSERT_EQUAL_STRING("regulated.basics.Struct_.0.1", regulated_basics_Struct__0_1_FULL_NAME_AND_VERSION_);
@@ -61,6 +62,7 @@ static void testStructConstants(void)
 static void testUnionConstants(void)
 {
     // Type parameters.
+    TEST_ASSERT_FALSE(regulated_basics_Union_0_1_HAS_FIXED_PORT_ID_);
     TEST_ASSERT_EQUAL_STRING("regulated.basics.Union", regulated_basics_Union_0_1_FULL_NAME_);
     TEST_ASSERT_EQUAL_STRING("regulated.basics.Union.0.1", regulated_basics_Union_0_1_FULL_NAME_AND_VERSION_);
     TEST_ASSERT_EQUAL(1U + regulated_basics_Struct__0_1_EXTENT_BYTES_,  // Largest option + union tag field
@@ -78,6 +80,7 @@ static void testUnionConstants(void)
 static void testServiceConstants(void)
 {
     // Type parameters.
+    TEST_ASSERT_TRUE(regulated_basics_Service_0_1_HAS_FIXED_PORT_ID_);
     TEST_ASSERT_EQUAL(300, regulated_basics_Service_0_1_FIXED_PORT_ID_);
 
     TEST_ASSERT_EQUAL_STRING("regulated.basics.Service", regulated_basics_Service_0_1_FULL_NAME_);

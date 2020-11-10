@@ -67,6 +67,7 @@
 {% else %}{% assert False %}
 {% endif %}
     {{ _pad_to_alignment(t.inner_type.alignment_requirement)|trim|remove_blank_lines }}
+    // It is assumed that we know the exact type of the serialized entity, hence we expect the size to match.
 {% if t.inner_type.bit_length_set|length > 1 %}
     {{ assert('offset_bits >= %sULL'|format(t.inner_type.bit_length_set|min)) }}
     {{ assert('offset_bits <= %sULL'|format(t.inner_type.bit_length_set|max)) }}
@@ -304,6 +305,7 @@
         {{ _serialize_any(t.element_type, reference + ('[%d]'|format(index)), element_offset)|trim|indent }}
     }
     {% endfor %}
+    // It is assumed that we know the exact type of the serialized entity, hence we expect the size to match.
     {% if t.bit_length_set|length > 1 %}
     {{ assert('(offset_bits - %s) >= %sULL'|format(ref_origin_offset, t.bit_length_set|min)) }}
     {{ assert('(offset_bits - %s) <= %sULL'|format(ref_origin_offset, t.bit_length_set|max)) }}
@@ -410,6 +412,7 @@
     {
         return {{ ref_err }};
     }
+    // It is assumed that we know the exact type of the serialized entity, hence we expect the size to match.
 {% if t.inner_type.bit_length_set|length > 1 %}
     {{ assert('(%s * 8U) >= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set|min)) }}
     {{ assert('(%s * 8U) <= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set|max)) }}

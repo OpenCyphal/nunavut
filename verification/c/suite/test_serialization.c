@@ -51,13 +51,15 @@
 static void testStructReference(void)
 {
     regulated_basics_Struct__0_1 obj = {0};
+
+    // Initialize a reference object, serialize, and compare against the reference serialized representation.
     obj.boolean = true;
     obj.i10_4[0] = +0x5555;                             // saturates to +511
     obj.i10_4[1] = -0x6666;                             // saturates to -512
     obj.i10_4[2] = +0x0055;                             // original value retained
     obj.i10_4[3] = -0x00AA;                             // original value retained
     obj.f16_le2.elements[0] = -1e9F;                    // saturated to -65504
-    obj.f16_le2.elements[1] = +INFINITY;                // negative infinity retained
+    obj.f16_le2.elements[1] = +INFINITY;                // infinity retained
     obj.f16_le2.count = 2;
     obj.unaligned_bitpacked_3_bitpacked_[0] = 0xF5;     // 0b101, rest truncated away and ignored
     obj.sealed._dummy_ = 123;                           // ignored
@@ -176,6 +178,104 @@ static void testStructReference(void)
     TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f32_(&obj.delimited_var_2[0]));
     TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f64_(&obj.delimited_var_2[0]));
     TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f64_(NULL));
+
+    // Test default initialization.
+    (void) memset(&obj, 0x55, sizeof(obj));             // Fill using a non-zero pattern.
+    regulated_basics_Struct__0_1_initialize_(&obj);
+    TEST_ASSERT_EQUAL(false, obj.boolean);
+    TEST_ASSERT_EQUAL(0, obj.i10_4[0]);
+    TEST_ASSERT_EQUAL(0, obj.i10_4[1]);
+    TEST_ASSERT_EQUAL(0, obj.i10_4[2]);
+    TEST_ASSERT_EQUAL(0, obj.i10_4[3]);
+    TEST_ASSERT_EQUAL(0, obj.f16_le2.count);
+    TEST_ASSERT_EQUAL(0, obj.unaligned_bitpacked_3_bitpacked_[0]);
+    TEST_ASSERT_EQUAL(0, obj.bytes_lt3.count);
+    TEST_ASSERT_EQUAL(0, obj.bytes_3[0]);
+    TEST_ASSERT_EQUAL(0, obj.bytes_3[1]);
+    TEST_ASSERT_EQUAL(0, obj.bytes_3[2]);
+    TEST_ASSERT_EQUAL(0, obj.u2_le4.count);
+    TEST_ASSERT_EQUAL(0, obj.delimited_fix_le2.count);
+    TEST_ASSERT_EQUAL(0, obj.u16_2[0]);
+    TEST_ASSERT_EQUAL(0, obj.u16_2[1]);
+    TEST_ASSERT_EQUAL(0, obj.aligned_bitpacked_3_bitpacked_[0]);
+    TEST_ASSERT_EQUAL(0, obj.unaligned_bitpacked_lt3.count);
+    TEST_ASSERT_EQUAL(0, obj.delimited_var_2[0]._tag_);
+    TEST_ASSERT_FLOAT_WITHIN(1e-9, 0, obj.delimited_var_2[0].f16);
+    TEST_ASSERT_EQUAL(0, obj.delimited_var_2[1]._tag_);
+    TEST_ASSERT_FLOAT_WITHIN(1e-9, 0, obj.delimited_var_2[1].f16);
+    TEST_ASSERT_EQUAL(0, obj.aligned_bitpacked_le3.count);
+
+    // Deserialize the above reference representation and compare the result against the original object.
+    size = sizeof(buf);
+    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_deserialize_(&obj, &reference[0], &size));
+    TEST_ASSERT_EQUAL(sizeof(reference) - 16U, size);   // 16 trailing bytes implicitly truncated away
+
+    TEST_ASSERT_EQUAL(true, obj.boolean);
+    TEST_ASSERT_EQUAL(+511, obj.i10_4[0]);                              // saturated
+    TEST_ASSERT_EQUAL(-512, obj.i10_4[1]);                              // saturated
+    TEST_ASSERT_EQUAL(+0x55, obj.i10_4[2]);
+    TEST_ASSERT_EQUAL(-0xAA, obj.i10_4[3]);
+    TEST_ASSERT_FLOAT_WITHIN(1e-3, -65504.0, obj.f16_le2.elements[0]);
+    TEST_ASSERT_FLOAT_IS_INF(obj.f16_le2.elements[1]);
+    TEST_ASSERT_EQUAL(2, obj.f16_le2.count);
+    TEST_ASSERT_EQUAL(5, obj.unaligned_bitpacked_3_bitpacked_[0]);      // unused MSB are zero-padded
+    TEST_ASSERT_EQUAL(111, obj.bytes_lt3.elements[0]);
+    TEST_ASSERT_EQUAL(222, obj.bytes_lt3.elements[1]);
+    TEST_ASSERT_EQUAL(2, obj.bytes_lt3.count);
+    TEST_ASSERT_EQUAL(-0x77, obj.bytes_3[0]);
+    TEST_ASSERT_EQUAL(-0x11, obj.bytes_3[1]);
+    TEST_ASSERT_EQUAL(+0x77, obj.bytes_3[2]);
+    TEST_ASSERT_EQUAL(2, obj.u2_le4.elements[0]);
+    TEST_ASSERT_EQUAL(1, obj.u2_le4.elements[1]);
+    TEST_ASSERT_EQUAL(3, obj.u2_le4.elements[2]);
+    TEST_ASSERT_EQUAL(3, obj.u2_le4.count);
+    TEST_ASSERT_EQUAL(1, obj.delimited_fix_le2.count);
+    TEST_ASSERT_EQUAL(0x1234, obj.u16_2[0]);
+    TEST_ASSERT_EQUAL(0x5678, obj.u16_2[1]);
+    TEST_ASSERT_EQUAL(1, obj.aligned_bitpacked_3_bitpacked_[0]);        // unused MSB are zero-padded
+    TEST_ASSERT_EQUAL(1, obj.unaligned_bitpacked_lt3.bitpacked[0]);     // unused MSB are zero-padded
+    TEST_ASSERT_EQUAL(2, obj.unaligned_bitpacked_lt3.count);
+    TEST_ASSERT_EQUAL(0, obj.delimited_var_2[0]._tag_);
+    TEST_ASSERT_FLOAT_IS_INF(obj.delimited_var_2[0].f16);
+    TEST_ASSERT_EQUAL(2, obj.delimited_var_2[1]._tag_);
+    TEST_ASSERT_DOUBLE_WITHIN(0.5, -1e+40, obj.delimited_var_2[1].f64);
+    TEST_ASSERT_EQUAL(1, obj.aligned_bitpacked_le3.bitpacked[0]);       // unused MSB are zero-padded
+    TEST_ASSERT_EQUAL(1, obj.aligned_bitpacked_le3.count);
+
+    // Repeat the above, but apply implicit zero extension somewhere in the middle.
+    size = 25U;
+    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_deserialize_(&obj, &reference[0], &size));
+    TEST_ASSERT_EQUAL(25, size);   // the returned size shall not exceed the buffer size
+
+    TEST_ASSERT_EQUAL(true, obj.boolean);
+    TEST_ASSERT_EQUAL(+511, obj.i10_4[0]);                              // saturated
+    TEST_ASSERT_EQUAL(-512, obj.i10_4[1]);                              // saturated
+    TEST_ASSERT_EQUAL(+0x55, obj.i10_4[2]);
+    TEST_ASSERT_EQUAL(-0xAA, obj.i10_4[3]);
+    TEST_ASSERT_FLOAT_WITHIN(1e-3, -65504.0, obj.f16_le2.elements[0]);
+    TEST_ASSERT_FLOAT_IS_INF(obj.f16_le2.elements[1]);
+    TEST_ASSERT_EQUAL(2, obj.f16_le2.count);
+    TEST_ASSERT_EQUAL(5, obj.unaligned_bitpacked_3_bitpacked_[0]);      // unused MSB are zero-padded
+    TEST_ASSERT_EQUAL(111, obj.bytes_lt3.elements[0]);
+    TEST_ASSERT_EQUAL(222, obj.bytes_lt3.elements[1]);
+    TEST_ASSERT_EQUAL(2, obj.bytes_lt3.count);
+    TEST_ASSERT_EQUAL(-0x77, obj.bytes_3[0]);
+    TEST_ASSERT_EQUAL(-0x11, obj.bytes_3[1]);
+    TEST_ASSERT_EQUAL(+0x77, obj.bytes_3[2]);
+    TEST_ASSERT_EQUAL(2, obj.u2_le4.elements[0]);
+    TEST_ASSERT_EQUAL(1, obj.u2_le4.elements[1]);
+    TEST_ASSERT_EQUAL(3, obj.u2_le4.elements[2]);
+    TEST_ASSERT_EQUAL(3, obj.u2_le4.count);
+    TEST_ASSERT_EQUAL(1, obj.delimited_fix_le2.count);
+    TEST_ASSERT_EQUAL(0x0034, obj.u16_2[0]);                            // <-- IMPLICIT ZERO EXTENSION STARTS HERE
+    TEST_ASSERT_EQUAL(0x0000, obj.u16_2[1]);                            // IT'S
+    TEST_ASSERT_EQUAL(0, obj.aligned_bitpacked_3_bitpacked_[0]);        //      ZEROS
+    TEST_ASSERT_EQUAL(0, obj.unaligned_bitpacked_lt3.count);            //          ALL
+    TEST_ASSERT_EQUAL(0, obj.delimited_var_2[0]._tag_);                 //              THE
+    TEST_ASSERT_FLOAT_WITHIN(1e-9, 0, obj.delimited_var_2[0].f16);      //                  WAY
+    TEST_ASSERT_EQUAL(0, obj.delimited_var_2[1]._tag_);                 //                      DOWN
+    TEST_ASSERT_FLOAT_WITHIN(1e-9, 0, obj.delimited_var_2[1].f16);
+    TEST_ASSERT_EQUAL(0, obj.aligned_bitpacked_le3.count);
 }
 
 /// The test is based on https://forum.uavcan.org/t/delimited-serialization-example/975
