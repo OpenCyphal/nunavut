@@ -112,6 +112,7 @@ function(define_native_unit_test
 
     if (${ARG_FRAMEWORK} STREQUAL "gtest")
         target_link_libraries(${ARG_TEST_NAME} gmock_main)
+        target_link_libraries(${ARG_TEST_NAME} Threads::Threads)
     elseif (${ARG_FRAMEWORK} STREQUAL "unity")
         target_link_libraries(${ARG_TEST_NAME} unity_core)
     else()

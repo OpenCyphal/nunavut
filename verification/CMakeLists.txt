@@ -33,13 +33,6 @@ endif()
 
 set(NUNAVUT_SUBMODULES_ROOT "${NUNAVUT_PROJECT_ROOT}/submodules" CACHE STRING "The path to git submodules for the project.")
 
-if(DEFINED ENV{NUNAVUT_FLAG_SET})
-     message(STATUS "Getting NUNAVUT_FLAG_SET from the environment ($ENV{NUNAVUT_FLAG_SET})")
-     set(NUNAVUT_FLAG_SET "$ENV{NUNAVUT_FLAG_SET}" CACHE STRING "The flags to apply while building (See cmake/compiler_flag_sets).")
-else()
-     set(NUNAVUT_FLAG_SET "native" CACHE STRING "The flags to apply while building (See cmake/compiler_flag_sets).")
-endif()
-
 if(DEFINED ENV{NUNAVUT_VERIFICATION_TARGET_ENDIANNESS})
      message(STATUS "Getting NUNAVUT_VERIFICATION_TARGET_ENDIANNESS from the environment ($ENV{NUNAVUT_VERIFICATION_TARGET_ENDIANNESS})")
      set(NUNAVUT_VERIFICATION_TARGET_ENDIANNESS "$ENV{NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}" CACHE STRING "The endianess for the target verification architecture.")
@@ -49,12 +42,10 @@ if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp")
     set(NUNAVUT_VERIFICATION_ROOT "${CMAKE_SOURCE_DIR}/cpp")
     message(STATUS "NUNAVUT_VERIFICATION_LANG is C++ (${NUNAVUT_VERIFICATION_LANG})")
     message(STATUS "Setting NUNAVUT_VERIFICATION_ROOT = ${NUNAVUT_VERIFICATION_ROOT}")
-    message(STATUS "Setting NUNAVUT_FLAG_SET = ${NUNAVUT_FLAG_SET}")
 elseif(NUNAVUT_VERIFICATION_LANG STREQUAL "c")
     set(NUNAVUT_VERIFICATION_ROOT "${CMAKE_SOURCE_DIR}/c")
     message(STATUS "NUNAVUT_VERIFICATION_LANG is C (${NUNAVUT_VERIFICATION_LANG})")
     message(STATUS "Setting NUNAVUT_VERIFICATION_ROOT = ${NUNAVUT_VERIFICATION_ROOT}")
-    message(STATUS "Setting NUNAVUT_FLAG_SET = ${NUNAVUT_FLAG_SET}")
 else()
     message(FATAL_ERROR "Unknown or no verification language (${NUNAVUT_VERIFICATION_LANG}). Try cmake -DNUNAVUT_VERIFICATION_LANG:string=[cpp|c]")
 endif()
@@ -99,6 +90,11 @@ find_package(tox REQUIRED)
 # +---------------------------------------------------------------------------+
 # | SOURCE GENERATION
 # +---------------------------------------------------------------------------+
+#
+# Required for gtest
+#
+find_package(Threads REQUIRED)
+
 #
 # We require googletest to run the verification suite.
 #
@@ -150,7 +146,7 @@ create_dsdl_target(dsdl-test
 #
 # Load all our compile flag sets into the appropriate places.
 #
-apply_flag_set("${CMAKE_SOURCE_DIR}/cmake/compiler_flag_sets/${NUNAVUT_FLAG_SET}.cmake")
+apply_flag_set("${CMAKE_SOURCE_DIR}/cmake/compiler_flag_sets/native.cmake")
 
 
 # +---------------------------------------------------------------------------+
