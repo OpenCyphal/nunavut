@@ -13,6 +13,11 @@ include(${CMAKE_SOURCE_DIR}/cmake/utils.cmake)
 # +---------------------------------------------------------------------------+
 # | GLOBAL DEFINITIONS
 # +---------------------------------------------------------------------------+
+if(NOT CMAKE_BUILD_TYPE)
+     set(CMAKE_BUILD_TYPE Release)
+endif()
+
+message(STATUS "Configuring with CMAKE_BUILD_TYPE=\"${CMAKE_BUILD_TYPE}\"")
 
 if (NOT DEFINED NUNAVUT_PROJECT_ROOT)
     get_filename_component(NUNAVUT_PROJECT_ROOT
@@ -33,9 +38,16 @@ endif()
 
 set(NUNAVUT_SUBMODULES_ROOT "${NUNAVUT_PROJECT_ROOT}/submodules" CACHE STRING "The path to git submodules for the project.")
 
-if(DEFINED ENV{NUNAVUT_VERIFICATION_TARGET_ENDIANNESS})
-     message(STATUS "Getting NUNAVUT_VERIFICATION_TARGET_ENDIANNESS from the environment ($ENV{NUNAVUT_VERIFICATION_TARGET_ENDIANNESS})")
-     set(NUNAVUT_VERIFICATION_TARGET_ENDIANNESS "$ENV{NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}" CACHE STRING "The endianess for the target verification architecture.")
+if(NOT DEFINED NUNAVUT_VERIFICATION_TARGET_ENDIANNESS)
+     set(NUNAVUT_VERIFICATION_TARGET_ENDIANNESS "any" CACHE STRING "The endianess for the target verification architecture.")
+endif()
+
+if(NOT DEFINED NUNAVUT_VERIFICATION_SER_ASSERT)
+     set(NUNAVUT_VERIFICATION_SER_ASSERT ON CACHE STRING "Enable or disable serialization asserts in generated code.")
+endif()
+
+if(NOT DEFINED NUNAVUT_VERIFICATION_SER_FP_DISABLE)
+     set(NUNAVUT_VERIFICATION_SER_FP_DISABLE OFF CACHE STRING "Enable or disable floating point support in generated support code.")
 endif()
 
 if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp")
@@ -71,6 +83,20 @@ set(NUNAVUT_VERIFICATIONS_BINARY_DIR ${CMAKE_BINARY_DIR}/suite)
 file(WRITE ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/README.txt
      "All test binaries and output will appear under here.")
 
+#
+# Handle other inputs that translate to compiler flags.
+#
+set(NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS "")
+
+if(DEFINED NUNAVUT_VERIFICATION_TARGET_PLATFORM)
+     if(${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "native32")
+          list(APPEND NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS "-m32")
+     elseif(${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "native64")
+          list(APPEND NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS "-m64")
+     else()
+          message(FATAL_ERROR "\"${NUNAVUT_VERIFICATION_TARGET_PLATFORM}\" is not a supported value.")
+     endif()
+endif()
 
 # +---------------------------------------------------------------------------+
 # | BUILD ENVIRONMENT
@@ -90,10 +116,6 @@ find_package(tox REQUIRED)
 # +---------------------------------------------------------------------------+
 # | SOURCE GENERATION
 # +---------------------------------------------------------------------------+
-#
-# Required for gtest
-#
-find_package(Threads REQUIRED)
 
 #
 # We require googletest to run the verification suite.
@@ -123,8 +145,8 @@ create_dsdl_target(dsdl-regulated
                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
                    OFF
-                   ON
-                   OFF
+                   ${NUNAVUT_VERIFICATION_SER_ASSERT}
+                   ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
                    "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}")
 
 #
@@ -135,8 +157,8 @@ create_dsdl_target(dsdl-test
                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
                    ${CMAKE_SOURCE_DIR}/nunavut_test_types/test0/regulated
                    OFF
-                   ON
-                   OFF
+                   ${NUNAVUT_VERIFICATION_SER_ASSERT}
+                   ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
                    "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
 
@@ -182,16 +204,17 @@ set(ALL_TEST_COVERAGE "")
 
 foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
+    set(${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS)
+
     if(NUNAVUT_VERIFICATION_LANG STREQUAL "c")
           #
           # If we are testing C headers with C++ tests we have to disable
           # certain checks to allow the inline code to compile without
           # warnings.
           #
-          set(${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS "-Wno-old-style-cast")
-    else()
-          set(${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS "")
+          list(APPEND ${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS "-Wno-old-style-cast")
     endif()
+
     define_native_unit_test("gtest"
                             ${NATIVE_TEST_NAME}
                             ${NATIVE_TEST}
@@ -214,7 +237,7 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_C})
                             ${NATIVE_TEST_NAME}
                             ${NATIVE_TEST}
                             ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
-                            ""
+                            ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS}
                             dsdl-regulated
                             dsdl-test)
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})

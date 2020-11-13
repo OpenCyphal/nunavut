@@ -63,6 +63,12 @@ function (create_dsdl_target ARG_TARGET_NAME
 
     if (ARG_ENABLE_SER_ASSERT)
         list(APPEND NNVG_CMD_ARGS "--enable-serialization-asserts")
+        message(STATUS "Enabling seralization asserts in generated code.")
+    endif()
+
+    if (ARG_DISABLE_SER_FP)
+        list(APPEND NNVG_CMD_ARGS "--omit-float-serialization-support")
+        message(STATUS "Disabling floating point seralization routines in generated support code.")
     endif()
 
     execute_process(COMMAND ${NNVG} --list-outputs ${NNVG_CMD_ARGS}

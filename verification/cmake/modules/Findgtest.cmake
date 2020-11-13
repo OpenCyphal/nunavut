@@ -32,6 +32,7 @@ target_compile_options(gmock_main PUBLIC
                        "-Wno-zero-as-null-pointer-constant"
                        "-Wno-missing-declarations"
                        "-Wno-sign-conversion"
+                       "-DGTEST_HAS_PTHREAD=0"
                        )
 
 include(FindPackageHandleStandardArgs)
