@@ -85,8 +85,9 @@ def _make_parser() -> argparse.ArgumentParser:
                         help='Disables generation of test coverage data. This is enabled by default.')
 
     parser.add_argument('-j', '--jobs',
-                        default=4,
-                        help='The number of concurrent build jobs to request.')
+                        default=os.cpu_count(),
+                        help='The number of concurrent build jobs to request. '
+                             'Defaults to the number of logical CPUs on the local machine.')
 
     parser.add_argument('--cc',
                         help='The value to set CC to (e.g. /usr/bin/clang)')
