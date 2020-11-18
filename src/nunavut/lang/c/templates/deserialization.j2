@@ -188,7 +188,7 @@
 {# DESERIALIZE THE IMPLICIT ARRAY LENGTH FIELD #}
     // Array length prefix: {{ t.length_field_type }}
     {{ _deserialize_integer(t.length_field_type, reference + '.count', offset) }}
-    if ({{ reference }}.count > {{ t.capacity }})
+    if ({{ reference }}.count > {{ t.capacity }}U)
     {
         return -NUNAVUT_ERROR_REPRESENTATION_BAD_ARRAY_LENGTH;
     }
