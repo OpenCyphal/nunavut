@@ -255,8 +255,7 @@ gated on automatic and successful completion of these tests this guide is provid
 information on how to customize these verifications to use other compilers, interpreters, and/or virtual
 machines.
 
-
-CMake
+CMake scripts
 ================================================
 
 Our language generation verification suite uses CMake to build and run unit tests.
