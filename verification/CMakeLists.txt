@@ -204,7 +204,7 @@ set(ALL_TEST_COVERAGE "")
 
 foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
-    set(${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS})
+    string(REPLACE ";" " " ${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS "${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS}")
 
     if(NUNAVUT_VERIFICATION_LANG STREQUAL "c")
           #
@@ -212,7 +212,7 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
           # certain checks to allow the inline code to compile without
           # warnings.
           #
-          list(APPEND ${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS "-Wno-old-style-cast")
+          set(${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS "${${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS} -Wno-old-style-cast")
     endif()
 
     define_native_unit_test("gtest"
@@ -233,7 +233,7 @@ endforeach()
 
 foreach(NATIVE_TEST ${NATIVE_TESTS_C})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
-    set(${NATIVE_TEST_NAME}_C_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS})
+    string(REPLACE ";" " " ${NATIVE_TEST_NAME}_C_EXTRA_FLAGS "${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS}")
 
     define_native_unit_test("unity"
                             ${NATIVE_TEST_NAME}
