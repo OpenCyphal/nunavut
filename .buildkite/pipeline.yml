@@ -22,10 +22,28 @@ steps:
     agents:
       queue: 'default'
     timeout_in_minutes: 40
-  - label: ':cpp::hammer: verification build'
+  - label: ':cpp::hammer: verification build, c, gcc'
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
-    id: cpp-docker-verify
-    command: "./.buildkite/verify.sh"
+    id: c-gcc-docker-verify
+    command: "./.buildkite/verify.py -l c -f"
+    artifact_paths:
+      - "verification/build_c/coverage_all.zip"
+      - "verification/build_cpp/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+    timeout_in_minutes: 40
+  - label: ':cpp::hammer: verification build, cpp, gcc'
+    if: build.branch == "master" && pipeline.slug == "nunavut-release"
+    id: cpp-gcc-docker-verify
+    command: "./.buildkite/verify.py -l cpp -f"
     artifact_paths:
       - "verification/build_c/coverage_all.zip"
       - "verification/build_cpp/coverage_all.zip"

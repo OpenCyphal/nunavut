@@ -13,11 +13,15 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 from nunavut.version import __version__  # noqa: E402
+from datetime import date
 
 # -- Project information -----------------------------------------------------
 
 project = 'nunavut'
-copyright = '2019 Amazon.com, Inc. or its affiliates. All Rights Reserved. 2019, UAVCAN Development Team'
+copyright = '{YEAR} Amazon.com, Inc. or its affiliates. All Rights Reserved. {YEAR}, UAVCAN Development Team'.format(
+    YEAR=date.today().year
+)
+
 author = 'UAVCAN Development Team'
 
 _version_tuple = __version__.split('.')
