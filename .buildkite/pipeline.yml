@@ -25,7 +25,7 @@ steps:
   - label: ':cpp::hammer: verification build, c, gcc'
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
     id: c-gcc-docker-verify
-    command: "./.buildkite/verify.py -l c -f"
+    command: "./.buildkite/verify_c.sh"
     artifact_paths:
       - "verification/build_c/coverage_all.zip"
       - "verification/build_cpp/coverage_all.zip"
@@ -39,7 +39,6 @@ steps:
             - "BUILDKITE_BUILD_NUMBER"
     agents:
       queue: 'default'
-    timeout_in_minutes: 40
   - label: ':cpp::hammer: verification build, cpp, gcc'
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
     id: cpp-gcc-docker-verify
@@ -57,7 +56,6 @@ steps:
             - "BUILDKITE_BUILD_NUMBER"
     agents:
       queue: 'default'
-    timeout_in_minutes: 40
   - wait
   - label: ':python::amazon-s3::sonarqube: release'
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
