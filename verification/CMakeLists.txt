@@ -43,11 +43,11 @@ if(NOT DEFINED NUNAVUT_VERIFICATION_TARGET_ENDIANNESS)
 endif()
 
 if(NOT DEFINED NUNAVUT_VERIFICATION_SER_ASSERT)
-     set(NUNAVUT_VERIFICATION_SER_ASSERT ON CACHE STRING "Enable or disable serialization asserts in generated code.")
+     set(NUNAVUT_VERIFICATION_SER_ASSERT ON CACHE BOOL "Enable or disable serialization asserts in generated code.")
 endif()
 
 if(NOT DEFINED NUNAVUT_VERIFICATION_SER_FP_DISABLE)
-     set(NUNAVUT_VERIFICATION_SER_FP_DISABLE OFF CACHE STRING "Enable or disable floating point support in generated support code.")
+     set(NUNAVUT_VERIFICATION_SER_FP_DISABLE OFF CACHE BOOL "Enable or disable floating point support in generated support code.")
 endif()
 
 if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp")
@@ -233,11 +233,13 @@ endforeach()
 
 foreach(NATIVE_TEST ${NATIVE_TESTS_C})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
+    set(${NATIVE_TEST_NAME}_C_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS})
+
     define_native_unit_test("unity"
                             ${NATIVE_TEST_NAME}
                             ${NATIVE_TEST}
                             ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
-                            ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS}
+                            "${${NATIVE_TEST_NAME}_C_EXTRA_FLAGS}"
                             dsdl-regulated
                             dsdl-test)
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})

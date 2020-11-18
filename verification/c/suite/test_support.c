@@ -522,8 +522,11 @@ static void testNunavutFloat16PackUnpack(void)
 
     helperPackUnpack(NAN, 0xFE00, 10);
     helperPackUnpack(-NAN, 0xFE00, 10);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
     helperPackUnpack(*((float*)&signalling_nan_bits), 0xFF00, 10);
     helperPackUnpack(*((float*)&signalling_negative_nan_bits), 0xFF00, 10);
+#pragma GCC diagnostic pop
     helperPackUnpack(INFINITY, 0xFF00, 10);
     helperPackUnpack(-INFINITY, 0xFF00, 10);
 }
