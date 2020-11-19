@@ -24,7 +24,7 @@ steps:
     timeout_in_minutes: 40
   - label: ':cpp::hammer: verification build, c, gcc, amd64'
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
-    id: c-gcc-docker-verify
+    id: c-gcc-docker-verify-amd64
     command: ".buildkite/verify_c_amd64.sh"
     artifact_paths:
       - "verification/build_c/coverage_all.zip"
@@ -41,7 +41,7 @@ steps:
       queue: 'default'
   - label: ':cpp::hammer: verification build, c, gcc, x86'
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
-    id: c-gcc-docker-verify
+    id: c-gcc-docker-verify-x86
     command: ".buildkite/verify_c_x86.sh"
     artifact_paths:
       - "verification/build_c/coverage_all.zip"
