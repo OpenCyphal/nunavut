@@ -228,8 +228,21 @@ At the end of the mypy run we generate the following summaries:
 - .tox/mypy/tmp/mypy-report-script/index.txt
 
 ************************************************
-Buildkite on aws
+Buildkite
 ************************************************
+
+If you have Docker installed and running you'll be able to use the `Buildkite cli`_ to run local builds. For example::
+
+    bk local run
+
+The run command will execute all build step in series so it could be really slooooowwwww. Use filters to build
+select individual steps to speed things up::
+
+    bk local run --filter="verification build"
+
+
+Administrating Buildkite on AWS
+================================================
 
 The PyPI upload keys should be rotated periodically. To do this you'll need to be an administrator of
 our Buildkite `AWS CloudFormation`_ stack and of our PyPI UAVCAN organization.
@@ -348,3 +361,4 @@ json and we can get rid of this ugly hack. Sorry.
 .. _`nunavut on read the docs`: https://nunavut.readthedocs.io/en/latest/index.html
 .. _`AWS CloudFormation`: https://aws.amazon.com/cloudformation/
 .. _`VSCode Remote Containers`: https://code.visualstudio.com/docs/remote/containers
+.. _`Buildkite cli`: https://github.com/buildkite/cli
