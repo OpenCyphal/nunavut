@@ -108,7 +108,7 @@ function(define_native_unit_test
         endforeach(ARG_N)
     endif()
 
-    target_link_libraries(${ARG_TEST_NAME} ${LOCAL_${ARG_TEST_NAME}_LINK_LIBS})
+    target_link_libraries(${ARG_TEST_NAME} ${LOCAL_${ARG_TEST_NAME}_LINK_LIBS} "${ARG_EXTRA_COMPILE_FLAGS}")
 
     if (${ARG_FRAMEWORK} STREQUAL "gtest")
         target_link_libraries(${ARG_TEST_NAME} gmock_main)

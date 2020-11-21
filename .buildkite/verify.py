@@ -86,6 +86,7 @@ def _make_parser() -> argparse.ArgumentParser:
 
     parser.add_argument('-j', '--jobs',
                         default=os.cpu_count(),
+                        type=int,
                         help='The number of concurrent build jobs to request. '
                              'Defaults to the number of logical CPUs on the local machine.')
 

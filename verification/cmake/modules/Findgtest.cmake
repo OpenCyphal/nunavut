@@ -33,6 +33,7 @@ target_compile_options(gmock_main PUBLIC
                        "-Wno-missing-declarations"
                        "-Wno-sign-conversion"
                        "-DGTEST_HAS_PTHREAD=0"
+                       "${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS}"
                        )
 
 include(FindPackageHandleStandardArgs)
