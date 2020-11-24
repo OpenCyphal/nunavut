@@ -124,8 +124,12 @@ find_package(gtest REQUIRED)
 
 #
 # We also require unity to run c-specific tests as part of the verification suite.
+# Configuration docs: https://github.com/ThrowTheSwitch/Unity/blob/master/docs/UnityConfigurationGuide.md
 #
 find_package(unity REQUIRED)
+add_definitions(-DUNITY_SUPPORT_64=1
+                -DUNITY_INCLUDE_FLOAT=1
+                -DUNITY_INCLUDE_DOUBLE=1)
 
 #
 # Make sure nnvg was installed correctly.
