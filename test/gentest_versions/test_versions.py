@@ -15,7 +15,10 @@ from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import LanguageContext
 
 
-include_pattern_map = (['cpp', 'VIRUSES_COVID_{major}_{minor}_INCLUDED'], ['c', 'VIRUSES_COVID_{major}_{minor}_INCLUDED'])
+include_pattern_map = (
+    ['cpp', 'VIRUSES_COVID_{major}_{minor}_INCLUDED'],
+    ['c', 'VIRUSES_COVID_{major}_{minor}_INCLUDED_'],  # Due to the limitations of C, collisions are likely, hence '_'
+)
 
 
 @pytest.mark.parametrize('lang_key,include_format', include_pattern_map)

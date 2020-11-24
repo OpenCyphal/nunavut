@@ -3,4 +3,10 @@
 {%- if option_target_endianness is defined %},
      "target_endianness": "{{ option_target_endianness }}"
 {% endif %}
+{%- if option_omit_float_serialization_support is defined %},
+     "omit_float_serialization_support": {{ option_omit_float_serialization_support | js.to_true_or_false }}
+{% endif %}
+{%- if option_enable_serialization_asserts is defined %},
+     "enable_serialization_asserts": {{ option_enable_serialization_asserts | js.to_true_or_false }}
+{% endif %}
 }

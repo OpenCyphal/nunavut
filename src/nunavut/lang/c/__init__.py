@@ -10,6 +10,7 @@
 
 import enum
 import functools
+import fractions
 import re
 import typing
 
@@ -382,9 +383,10 @@ def filter_type_from_primitive(language: Language,
     return _CFit.get_best_fit(value.bit_length).to_c_type(value, language)
 
 
-_snake_case_pattern_0 = re.compile(r'[\W]+')
-_snake_case_pattern_1 = re.compile(r'(?<=_)([A-Z])+')
-_snake_case_pattern_2 = re.compile(r'(?<=[a-z])([A-Z])+')
+_snake_case_pattern_0 = re.compile(r'[\W]+')                    # 'port.SubjectIDList'  -> 'port_SubjectIDList'
+_snake_case_pattern_1 = re.compile(r'(?<=[A-Z])([A-Z][a-z]+)')  # 'port_SubjectIDList'  -> 'port_SubjectID_list'
+_snake_case_pattern_2 = re.compile(r'(?<=_)([A-Z])+')           # 'port_SubjectID_list' -> 'port_subjectID_list'
+_snake_case_pattern_3 = re.compile(r'(?<=[a-z])([A-Z])+')       # 'port_subjectID_list' -> 'port_subject_id_list'
 
 
 def filter_to_snake_case(value: str) -> str:
@@ -435,7 +437,7 @@ def filter_to_snake_case(value: str) -> str:
         jinja_filter_tester(filter_to_snake_case, template, rendered, 'c')
 
         template = '{{ " aa bb. cCcAAa_aAa_AAaAa_AAaA_a " | to_snake_case }}'
-        rendered = 'aa_bb_c_cc_aaa_a_aa_aaa_aa_aaa_a_a'
+        rendered = 'aa_bb_c_cc_a_aa_a_aa_a_aa_aa_a_aa_a_a'
 
         jinja_filter_tester(filter_to_snake_case, template, rendered, 'c')
 
@@ -444,8 +446,9 @@ def filter_to_snake_case(value: str) -> str:
     :returns: A valid C99 token using the snake-case convention.
     """
     pass0 = _snake_case_pattern_0.sub('_', str.strip(value))
-    pass1 = _snake_case_pattern_1.sub(lambda x: x.group(0).lower(), pass0)
-    return _snake_case_pattern_2.sub(lambda x: '_' + x.group(0).lower(), pass1).lower()
+    pass1 = _snake_case_pattern_1.sub(lambda x: '_' + x.group(0).lower(), pass0)
+    pass2 = _snake_case_pattern_2.sub(lambda x: x.group(0).lower(), pass1)
+    return _snake_case_pattern_3.sub(lambda x: '_' + x.group(0).lower(), pass2).lower()
 
 
 def filter_to_screaming_snake_case(value: str) -> str:
@@ -655,25 +658,10 @@ def filter_includes(language: Language,
 
 
 @template_language_filter(__name__)
-def filter_declaration(language: Language,
-                       instance: pydsdl.Any) -> str:
-    """
-    Emit a declaration statement for the given instance.
-    """
-    if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.VoidType):
-        return filter_type_from_primitive(language, instance)
-    elif isinstance(instance, pydsdl.ArrayType):
-        return '{}'.format(
-            filter_declaration(language, instance.element_type))
-    else:
-        return filter_full_reference_name(language, instance)
-
-
-@template_language_filter(__name__)
 def filter_constant_value(language: Language,
                           constant: pydsdl.Constant) -> str:
     """
-    Provides a string that is the full namespace, typename, major, and minor version for a given composite type.
+    Renders the specified constant as a literal. This is a shorthand for :func:`filter_literal`.
 
     .. invisible-code-block: python
 
@@ -714,14 +702,35 @@ def filter_constant_value(language: Language,
         jinja_filter_tester(filter_constant_value, template, rendered, lctx, my_true_constant=my_true_constant)
 
     """
-    if isinstance(constant.data_type, pydsdl.BooleanType):
-        return str(language.valuetoken_true if constant.value.native_value else language.valuetoken_false)
-    elif isinstance(constant.data_type, pydsdl.IntegerType):
-        return str(constant.value.native_value)
-    elif isinstance(constant.data_type, pydsdl.FloatType):
-        return '( {} / {} )'.format(constant.value.native_value.numerator, constant.value.native_value.denominator)
+    return filter_literal(language, constant.value.native_value, constant.data_type)
+
+
+@template_language_filter(__name__)
+def filter_literal(language: Language,
+                   value: typing.Union[fractions.Fraction, bool],
+                   ty: pydsdl.Any) -> str:
+    """
+    Renders the specified value of the specified type as a literal.
+    """
+    if isinstance(ty, pydsdl.BooleanType):
+        return str(language.valuetoken_true if value else language.valuetoken_false)
+
+    elif isinstance(ty, pydsdl.IntegerType):
+        out = str(value) + 'U' * isinstance(ty, pydsdl.UnsignedIntegerType) \
+            + 'L' * (ty.bit_length > 16) + 'L' * (ty.bit_length > 32)
+        assert isinstance(out, str)
+        return out
+
+    elif isinstance(ty, pydsdl.FloatType):
+        if value.denominator == 1:
+            expr = '{}.0'.format(value.numerator)
+        else:
+            expr = '({}.0 / {}.0)'.format(value.numerator, value.denominator)
+        cast = filter_type_from_primitive(language, ty)
+        return '(({}) {})'.format(cast, expr)
+
     else:
-        raise ValueError('Constant with data_type "{}" was malformed.'.format(type(constant.data_type).__name__))
+        raise ValueError('Cannot construct a C literal from an instance of {}'.format(type(ty).__name__))
 
 
 @template_language_filter(__name__)
@@ -768,3 +777,94 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
         return filter_id(language, not_stropped)
     else:
         return not_stropped
+
+
+def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
+    """
+    Returns the nearest standard bit length of a type as an int.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.c import filter_to_standard_bit_length
+        import pydsdl
+
+    .. code-block: python
+        # Given
+        I = pydsdl.UnsignedIntegerType(7, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+
+        # and
+        template = '{{ I | to_standard_bit_length }}'
+
+        # then
+        rendered = '8'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_standard_bit_length, template, rendered, 'c', I=I)
+
+    """
+    return int(_CFit.get_best_fit(t.bit_length).value)
+
+
+def filter_is_zero_cost_primitive(t: pydsdl.PrimitiveType) -> bool:
+    """
+    Assuming that the target platform is:
+
+    - little-endian
+    - IEEE754-conformant
+
+    ...detects whether the native in-memory representation of a value of the supplied primitive type is the same
+    as its on-the-wire representation defined by the DSDL Specification.
+
+    For instance, all conventional platforms (where stated assumptions hold) have compatible in-memory
+    representation of int8, int16, int32, int64, uint8, uint16, uint32, uint64, float32, float64.
+    Values of other primitive types typically require some transformations (e.g., float16).
+
+    It follows that arrays, certain composite types, and some other entities composed of zero-cost composites
+    are also zero-cost types, but such non-trivial conjectures are not recognized by this function.
+
+    Raises a :class:`TypeError` if the argument is not a value of type :class:`pydsdl.PrimitiveType`.
+
+    This filter should actually be a Jinja test, but language support modules currently can only export filters,
+    not tests. This may change in a later release.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.c import filter_is_zero_cost_primitive
+        import pydsdl
+
+    .. code-block: python
+        # Given
+        i7  = pydsdl.SignedIntegerType(7, pydsdl.PrimitiveType.CastMode.SATURATED)
+        u32 = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+        f16 = pydsdl.FloatType(16, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+        f32 = pydsdl.FloatType(32, pydsdl.PrimitiveType.CastMode.SATURATED)
+
+        # and
+        template = (
+            '{{ i7  | is_zero_cost_primitive }} '
+            '{{ u32 | is_zero_cost_primitive }} '
+            '{{ f16 | is_zero_cost_primitive }} '
+            '{{ f32 | is_zero_cost_primitive }} '
+        )
+
+        # then
+        rendered = 'False True False True '
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_is_zero_cost_primitive, template, rendered, 'c', i7=i7, u32=u32, f16=f16, f32=f32)
+
+    """
+    if isinstance(t, pydsdl.IntegerType):
+        out = t.standard_bit_length
+        assert isinstance(out, bool)
+        return out
+
+    if isinstance(t, pydsdl.FloatType):
+        return t.bit_length in (32, 64)  # float16 is excluded
+
+    if isinstance(t, pydsdl.BooleanType):
+        return False
+
+    raise TypeError('Zero-cost predicate is not defined on ' + type(t).__name__)

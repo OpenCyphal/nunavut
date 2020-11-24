@@ -1,0 +1,252 @@
+{#-
+ # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2020  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+ # Authors: David Lenfesty, Scott Dixon <dixonsco@amazon.com>, Pavel Kirienko <pavel@uavcan.org>,
+ #          Peter van der Perk <peter.vanderperk@nxp.com>
+-#}
+
+{% if option_target_endianness == 'little' %}
+    {% set LITTLE_ENDIAN = True %}
+{% elif option_target_endianness in ('any', 'big') %}
+    {% set LITTLE_ENDIAN = False %}
+{% else %}{% assert False %}
+{% endif %}
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro generate_metadata(t) %}
+{% set ref = t | full_reference_name %}
+#define {{ ref }}_FULL_NAME_             "{{ t.full_name }}"
+#define {{ ref }}_FULL_NAME_AND_VERSION_ "{{ t.full_name }}.{{ t.version.major }}.{{ t.version.minor }}"
+{% endmacro %}
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro generate_composite(t) %}
+
+{{ generate_metadata(t) }}
+
+{% assert t.extent % 8 == 0 %}
+{% assert t.inner_type.extent % 8 == 0 %}
+/// Extent is the minimum amount of memory required to hold any serialized representation of any compatible
+/// version of the data type; or, on other words, it is the the maximum possible size of received objects of this type.
+/// The size is specified in bytes (rather than bits) because by definition, extent is an integer number of bytes long.
+/// When allocating a deserialization (RX) buffer for this data type, it should be at least extent bytes large.
+/// When allocating a serialization (TX) buffer, it is safe to use the size of the largest serialized representation
+/// instead of the extent because it provides a tighter bound of the object size; it is safe because the concrete type
+/// is always known during serialization (unlike deserialization). If not sure, use extent everywhere.
+#define {{ t | full_reference_name }}_EXTENT_BYTES_                    {{ t.extent // 8 }}UL
+#define {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_ {{ t.inner_type.extent // 8 }}UL
+static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
+              {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_,
+              "Internal constraint violation");
+
+{% for constant in t.constants %}
+/// {{ constant }}
+#define {{ t | full_reference_name }}_{{ constant.name }} ({{ constant | constant_value }})
+{%- endfor %}
+{% for f in t.fields_except_padding if f.data_type is ArrayType %}
+/// Array metadata for: {{ f }}
+#define {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_           {{ f.data_type.capacity }}U
+#define {{ t | full_reference_name }}_{{ f.name }}_ARRAY_IS_VARIABLE_LENGTH_ {# -#}
+        {{ valuetoken_true if f.data_type is VariableLengthArrayType else valuetoken_false }}
+{%- endfor %}
+{% if t.inner_type is UnionType %}
+/// The number of fields in the union. Valid tag values range from zero to this value minus one, inclusive.
+#define {{ t | full_reference_name }}_UNION_OPTION_COUNT_ {{ t.fields | length }}U
+{% endif %}
+
+{% if t.inner_type is StructureType %}
+{{ _define_structure(t.inner_type) }}
+
+{% elif t.inner_type is UnionType %}
+{{ _define_union(t.inner_type) }}
+
+{% else %}{% assert False %}{# Not a valid composite type. #}
+{% endif %}
+
+{{ _define_functions(t) }}
+
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{%- macro assert(expression) -%}
+    {%- if option_enable_serialization_asserts -%}
+    NUNAVUT_ASSERT({{ expression }});
+    {%- endif -%}
+{%- endmacro -%}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _define_structure(t) %}
+{% assert t is StructureType %}
+typedef struct
+{
+{%- for f in t.fields_except_padding %}
+    {%- if not loop.first %}
+        {# Blank line between fields. #}
+    {%- endif %}
+    /// {{ f }}
+    {{ _define_field(f.data_type, f.name) | indent }};
+{%- else %}{#- To maintain consistency between C and C++ we define any empty composite type with a dummy byte. #}
+    {{ typename_byte }} _dummy_;
+{%- endfor %}
+} {{ t | full_reference_name }};
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _define_union(t) %}
+{% assert t is UnionType %}
+typedef struct
+{
+    union  /// The union is placed first to ensure that the active element address equals the struct address.
+    {
+    {%- for f in t.fields_except_padding %}
+        {%- if not loop.first %}
+            {# Blank line between fields. #}
+        {%- endif %}
+        /// {{ f }}
+        {{ _define_field(f.data_type, f.name) | indent | indent }};
+    {%- endfor %}
+    };
+    {{ t.tag_field_type | type_from_primitive }} _tag_;
+} {{ t | full_reference_name }};
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _define_field(t, name, suffix='') %}
+{%- if t is PrimitiveType -%}
+{{ t | type_from_primitive }} {{ name | id }}{{ suffix }}
+
+{%- elif t is CompositeType -%}
+{{ t | full_reference_name }} {{ name | id }}{{ suffix }}
+
+{%- elif t is FixedLengthArrayType -%}
+    {%- if t.element_type is BooleanType -%}
+{{ _define_bitpacked_array_field(name + '_bitpacked_', t.capacity) }}{{ suffix }}
+    {%- else -%}
+{{ _define_field(t.element_type, name, '[%s]'|format(t.capacity)) }}{{ suffix }}
+    {%- endif -%}
+
+{%- elif t is VariableLengthArrayType -%}
+struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
+{
+    {%- if t.element_type is BooleanType %}
+    {{ _define_bitpacked_array_field('bitpacked', t.capacity) | indent }};
+    {%- else %}
+    {{ _define_field(t.element_type, 'elements', '[%s]'|format(t.capacity)) }};
+    {%- endif %}
+    {{ typename_unsigned_length }} count;
+} {{ name | id }}{{ suffix }}
+
+{%- else -%}{% assert False %}{# Not a valid field type. #}
+{%- endif -%}
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _define_bitpacked_array_field(name, capacity) -%}
+/// Bitpacked array, capacity {{ capacity }} bits. Access via @ref nunavutSetBit(), @ref nunavutGetBit().
+{{ typename_byte }} {{ name | id }}[{{ capacity | bits2bytes_ceil }}]
+{%- endmacro %}{# https://en.wiktionary.org/wiki/bitpacked #}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _define_functions(t) %}
+
+{% if not nunavut.support.omit %}
+
+/// Serialize an instance into the provided buffer.
+/// The lifetime of the resulting serialized representation is independent of the original instance.
+/// This method may be slow for large objects (e.g., images, point clouds, radar samples), so in a later revision
+/// we may define a zero-copy alternative that keeps references to the original object where possible.
+///
+/// @param obj      The object to serialize.
+///
+/// @param buffer   The destination buffer. There are no alignment requirements.
+///                 @see {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_
+///
+/// @param inout_buffer_size_bytes  When calling, this is a pointer to the size of the buffer in bytes.
+///                                 Upon return this value will be updated with the size of the constructed serialized
+///                                 representation (in bytes); this value is then to be passed over to the transport
+///                                 layer. In case of error this value is undefined.
+///
+/// @returns Negative on error, zero on success.
+static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_(
+    const {{ t | full_reference_name }}* const obj, {# -#}
+    {{ typename_byte }}* const buffer,  {# -#}
+    {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
+{
+    {% from 'serialization.j2' import serialize -%}
+    {{ serialize(t) | trim }}
+}
+
+/// Deserialize an instance from the provided buffer.
+/// The lifetime of the resulting object is independent of the original buffer.
+/// This method may be slow for large objects (e.g., images, point clouds, radar samples), so in a later revision
+/// we may define a zero-copy alternative that keeps references to the original buffer where possible.
+///
+/// @param obj      The object to update from the provided serialized representation.
+///
+/// @param buffer   The source buffer containing the serialized representation. There are no alignment requirements.
+///                 If the buffer is shorter or longer than expected, it will be implicitly zero-extended or truncated,
+///                 respectively; see Specification for "implicit zero extension" and "implicit truncation" rules.
+///
+/// @param inout_buffer_size_bytes  When calling, this is a pointer to the size of the supplied serialized
+///                                 representation, in bytes. Upon return this value will be updated with the
+///                                 size of the consumed fragment of the serialized representation (in bytes),
+///                                 which may be smaller due to the implicit truncation rule, but it is guaranteed
+///                                 to never exceed the original buffer size even if the implicit zero extension rule
+///                                 was activated. In case of error this value is undefined.
+///
+/// @returns Negative on error, zero on success.
+static inline {{ typename_error_type }} {{ t | full_reference_name }}_deserialize_(
+    {{ t | full_reference_name }}* const out_obj, {# -#}
+    const {{ typename_byte }}* const buffer, {# -#}
+    {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
+{
+    {% from 'deserialization.j2' import deserialize -%}
+    {{ deserialize(t) | trim }}
+}
+
+/// Initialize an instance to default values. Does nothing if @param out_obj is {{ valuetoken_null }}.
+/// This function intentionally leaves inactive elements uninitialized; for example, members of a variable-length
+/// array beyond its length are left uninitialized; aliased union memory that is not used by the first union field
+/// is left uninitialized, etc. If full zero-initialization is desired, just use memset(&obj, 0, sizeof(obj)).
+static inline void {{ t | full_reference_name }}_initialize_({{ t | full_reference_name }}* const out_obj)
+{
+    if (out_obj != {{ valuetoken_null }})
+    {
+        {{ typename_unsigned_length }} size_bytes = 0;
+        const {{ typename_byte }} buf = 0;
+        const {{ typename_error_type }} err = {{ t | full_reference_name }}_deserialize_(out_obj, &buf, &size_bytes);
+        {{ assert('err >= 0') }}
+        (void) err;
+    }
+}
+
+{% endif %}  {# if not nunavut.support.omit #}
+
+{% for f in t.fields_except_padding %}
+{% if t.inner_type is UnionType %}
+/// Mark option "{{ f.name }}" active without initializing it. Does nothing if @param obj is {{ valuetoken_null }}.
+static inline void {{ t | full_reference_name }}_select_{{ f.name }}_{# -#}
+                  ({{ t | full_reference_name }}* const obj)
+{
+    if (obj != {{valuetoken_null}})
+    {
+        obj->_tag_ = {{ loop.index0 }};
+    }
+}
+
+/// Check if option "{{ f.name }}" is active. Returns false if @param obj is {{ valuetoken_null }}.
+static inline {{ typename_boolean }} {{ t | full_reference_name }}_is_{{ f.name }}_{# -#}
+                              (const {{ t | full_reference_name }}* const obj)
+{
+    return ((obj != {{ valuetoken_null }}) && (obj->_tag_ == {{ loop.index0 }}));
+}
+{% endif %}
+{% endfor %}
+{% endmacro %}

@@ -163,7 +163,9 @@ def test_language_option_defaults(gen_paths: typing.Any, run_nnvg: typing.Callab
     run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
     with open(expected_output, 'r') as generated:
         generated_results = json.load(generated)
-        assert generated_results['target_endianness'] == 'little'
+        assert generated_results['target_endianness'] == 'any'
+        assert not generated_results['omit_float_serialization_support']
+        assert not generated_results['enable_serialization_asserts']
 
 
 @pytest.mark.parametrize('target_endianness_override', ['any', 'big', 'little'])
@@ -201,6 +203,46 @@ def test_language_option_target_endianness_illegal_option(gen_paths: typing.Any,
 
     with pytest.raises(subprocess.CalledProcessError):
         run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+
+
+def test_language_option_omit_floatingpoint(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+        Verifies that the --omit-float-serialization-support option is wired up in nnvg.
+    """
+
+    expected_output = str(gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp'))
+
+    nnvg_args = ['--templates', str(gen_paths.templates_dir),
+                 '-O', str(gen_paths.out_dir),
+                 '--target-language', 'cpp',
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 '--omit-float-serialization-support',
+                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    with open(expected_output, 'r') as generated:
+        generated_results = json.load(generated)
+        assert generated_results['omit_float_serialization_support']
+
+
+def test_language_option_generate_asserts(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+        Verifies that the --enable-serialization-asserts option is wired up in nnvg.
+    """
+
+    expected_output = str(gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp'))
+
+    nnvg_args = ['--templates', str(gen_paths.templates_dir),
+                 '-O', str(gen_paths.out_dir),
+                 '--target-language', 'cpp',
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 '--enable-serialization-asserts',
+                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    with open(expected_output, 'r') as generated:
+        generated_results = json.load(generated)
+        assert generated_results['enable_serialization_asserts']
 
 
 def test_issue_73(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:

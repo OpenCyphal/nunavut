@@ -4,3 +4,6 @@
 [submodule "submodules/public_regulated_data_types"]
 	path = submodules/public_regulated_data_types
 	url = https://github.com/UAVCAN/public_regulated_data_types.git
+[submodule "submodules/unity"]
+	path = submodules/unity
+	url = https://github.com/ThrowTheSwitch/Unity.git

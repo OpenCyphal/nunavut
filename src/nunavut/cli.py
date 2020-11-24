@@ -71,6 +71,8 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
         language_options = dict()
         if args.target_endianness is not None:
             language_options['target_endianness'] = args.target_endianness
+        language_options['omit_float_serialization_support'] = args.omit_float_serialization_support
+        language_options['enable_serialization_asserts'] = args.enable_serialization_asserts
 
     language_context = nunavut.lang.LanguageContext(
         args.target_language,
@@ -442,6 +444,30 @@ def _make_parser() -> argparse.ArgumentParser:
 
         Specify the endianness of the target hardware. This allows serialization
         logic to be optimized for different CPU architectures.
+
+    ''').lstrip())
+
+    ln_opt_group.add_argument('--omit-float-serialization-support',
+                              action='store_true',
+                              help=textwrap.dedent('''
+
+        Instruct support header generators to omit support for floating point operations
+        in serialization routines. This will result in errors if floating point types are used,
+        however; if you are working on a platform without IEEE754 support and do not use floating
+        point types in your message definitions this option will avoid dead code or compiler
+        errors in generated serialization logic.
+
+    ''').lstrip())
+
+    ln_opt_group.add_argument('--enable-serialization-asserts',
+                              action='store_true',
+                              help=textwrap.dedent('''
+
+        Instruct support header generators to generate language-specific assert statements as part
+        of serialization routines. By default the serialization logic generated may make assumptions
+        based on documented requirements for calling logic that could expose a system to undefined
+        behaviour. The alternative, for langauges that do not support exception handling, is to
+        use assertions designed to halt a program rather than execute undefined logic.
 
     ''').lstrip())
 

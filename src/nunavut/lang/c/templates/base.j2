@@ -1,0 +1,62 @@
+{#-
+ # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2020  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+ # Authors: David Lenfesty, Scott Dixon <dixonsco@amazon.com>, Pavel Kirienko <pavel@uavcan.org>,
+ #          Peter van der Perk <peter.vanderperk@nxp.com>
+-#}
+
+// This is an AUTO-GENERATED UAVCAN DSDL data type implementation. Curious? See https://uavcan.org.
+// You shouldn't attempt to edit this file.
+//
+// Checking this file under version control is not recommended unless it is used as part of a high-SIL
+// safety-critical codebase. The typical usage scenario is to generate it as part of the build process.
+//
+// To avoid conflicts with definitions given in the source DSDL file, all entities created by the code generator
+// are named with an underscore at the end, like foo_bar_().
+//
+// Generator:     nunavut-{{ nunavut.version }} (serialization was {{ 'not ' * nunavut.support.omit }}enabled)
+// Source file:   {{ T.source_file_path }}
+// Generated at:  {{ now_utc }} UTC
+// Is deprecated: {{ T.deprecated and 'yes' or 'no' }}
+// Fixed port-ID: {{ T.fixed_port_id }}
+// Full name:     {{ T.full_name }}
+// Version:       {{ T.version.major }}.{{ T.version.minor }}
+{%- if T.deprecated %}
+{#- Courtesy http://patorjk.com/software/taag/#p=display&f=Big&t=DEPRECATED #}
+{#- In C there is no standard way of marking definitions deprecated. #}
+//           _____  ______ _____  _____  ______ _____       _______ ______ _____
+//          |  __ `|  ____|  __ `|  __ `|  ____/ ____|   /`|__   __|  ____|  __ `
+//          | |  | | |__  | |__) | |__) | |__ | |       /  `  | |  | |__  | |  | |
+//          | |  | |  __| |  ___/|  _  /|  __|| |      / /` ` | |  |  __| | |  | |
+//          | |__| | |____| |    | | ` `| |___| |____ / ____ `| |  | |____| |__| |
+//          |_____/|______|_|    |_|  `_`______`_____/_/    `_`_|  |______|_____/
+//
+// WARNING: this data type is deprecated and is nearing the end of its life cycle. Seek replacement.
+{%- endif %}
+
+{% set include_guard -%}{{T.full_name | c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED_{%- endset -%}
+#ifndef {{ include_guard }}
+#define {{ include_guard }}
+
+{% for n in T | includes -%}
+#include {{ n }}
+{% endfor %}
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+{% if T.has_fixed_port_id %}
+#define {{ T | full_reference_name }}_HAS_FIXED_PORT_ID_ true
+#define {{ T | full_reference_name }}_FIXED_PORT_ID_     {{ T.fixed_port_id }}U
+{% else %}
+/// This type does not have a fixed port-ID. See https://forum.uavcan.org/t/choosing-message-and-service-ids/889
+#define {{ T | full_reference_name }}_HAS_FIXED_PORT_ID_ false
+{% endif %}
+
+{% block contents %}{% endblock %}
+
+#ifdef __cplusplus
+}
+#endif
+#endif // {{ include_guard }}

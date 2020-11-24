@@ -8,7 +8,7 @@ set(GOOGLETEST_SUBMODULE "${NUNAVUT_SUBMODULES_ROOT}/googletest")
 if(EXISTS "${GOOGLETEST_SUBMODULE}/googletest")
     set(GTEST_FOUND ON)
 else()
-    message(FATAL_ERROR "Couldn't find Googletest. Did you forget to git submodule --init?")
+    message(FATAL_ERROR "Couldn't find Googletest. Did you forget to git submodule update --init?")
 endif()
 
 include_directories(
@@ -32,6 +32,8 @@ target_compile_options(gmock_main PUBLIC
                        "-Wno-zero-as-null-pointer-constant"
                        "-Wno-missing-declarations"
                        "-Wno-sign-conversion"
+                       "-DGTEST_HAS_PTHREAD=0"
+                       "${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS}"
                        )
 
 include(FindPackageHandleStandardArgs)

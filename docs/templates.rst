@@ -121,7 +121,7 @@ Named Values by Language
 --------------------------------------------------
 
 +--------------------+--------------------------------+
-| Type name          | Language(s)                    |
+| Value name         | Language(s)                    |
 +====================+================================+
 | valuetoken_true    | C, C++, Python, JavaScript     |
 +--------------------+--------------------------------+
@@ -177,18 +177,25 @@ Language Options with Built-in Defaults
 The following options have built-in defaults for certain languages. These options will
 always be defined in templates targeting their languages.
 
-+-----------------------------+--------------------------------+
-| Type name                   | Language(s)                    |
-+=============================+================================+
-| option_target_endianness    | C, C++                         |
-+-----------------------------+--------------------------------+
+option_target_endianness
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This option is currently defined for C and C++; the possible values are as follows:
+
+- ``any`` --- generate endianness-agnostic code that is compatible with big-endian and little-endian machines alike.
+
+- ``big`` --- generate code optimized for big-endian platforms only.
+  Implementations may treat this option like ``any`` when no such optimizations are possible.
+
+- ``little`` --- generate code optimized for little-endian platforms only.
+  Little-endian optimizations are made possible by the fact that DSDL is a little-endian format.
 
 .. code-block:: python
 
    template = '{{ option_target_endianness }}'
 
    # then
-   rendered = 'little'
+   rendered = 'any'
 
 .. invisible-code-block: python
 
@@ -200,19 +207,21 @@ Filters
 Common Filters
 -------------------------------------------------
 
-.. autofunction:: nunavut.jinja.Generator.filter_yamlfy
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_yamlfy
    :noindex:
-.. autofunction:: nunavut.jinja.Generator.filter_type_to_template
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_type_to_template
    :noindex:
-.. autofunction:: nunavut.jinja.Generator.filter_type_to_include_path
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_type_to_include_path
    :noindex:
-.. autofunction:: nunavut.jinja.Generator.filter_typename
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_typename
    :noindex:
-.. autofunction:: nunavut.jinja.Generator.filter_alignment_prefix
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_alignment_prefix
    :noindex:
-.. autofunction:: nunavut.jinja.Generator.filter_bit_length_set
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_bit_length_set
    :noindex:
-.. autofunction:: nunavut.jinja.Generator.filter_remove_blank_lines
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_remove_blank_lines
+   :noindex:
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_bits2bytes_ceil
    :noindex:
 
 C Filters
@@ -226,17 +235,23 @@ C Filters
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_to_snake_case
    :noindex:
+.. autofunction:: nunavut.lang.c.filter_to_screaming_snake_case
+   :noindex:
 .. autofunction:: nunavut.lang.c.filter_to_template_unique_name
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_short_reference_name
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_includes
    :noindex:
-.. autofunction:: nunavut.lang.c.filter_declaration
-   :noindex:
 .. autofunction:: nunavut.lang.c.filter_constant_value
    :noindex:
+.. autofunction:: nunavut.lang.c.filter_literal
+   :noindex:
 .. autofunction:: nunavut.lang.c.filter_full_reference_name
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_to_standard_bit_length
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_is_zero_cost_primitive
    :noindex:
 
 C++ Filters

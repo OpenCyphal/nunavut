@@ -3,7 +3,6 @@
         "name": "native-gcc-cpp",
         "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/gcc-native.cmake",
         "cmakeSettings": {
-            "NUNAVUT_FLAG_SET": "native",
             "NUNAVUT_VERIFICATION_LANG": "cpp"
         }
     },
@@ -11,7 +10,6 @@
         "name": "native-clang-cpp",
         "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/clang-native.cmake",
         "cmakeSettings": {
-            "NUNAVUT_FLAG_SET": "native",
             "NUNAVUT_VERIFICATION_LANG": "cpp"
         }
     },
@@ -19,7 +17,6 @@
         "name": "native-gcc-c",
         "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/gcc-native.cmake",
         "cmakeSettings": {
-            "NUNAVUT_FLAG_SET": "native",
             "NUNAVUT_VERIFICATION_LANG": "c"
         }
     },
@@ -27,7 +24,6 @@
         "name": "native-clang-c",
         "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/clang-native.cmake",
         "cmakeSettings": {
-            "NUNAVUT_FLAG_SET": "native",
             "NUNAVUT_VERIFICATION_LANG": "c"
         }
     }

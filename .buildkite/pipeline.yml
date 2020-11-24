@@ -3,7 +3,7 @@ steps:
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
     id: toxic-docker-build
     command: "tox"
-    artifact_paths: 
+    artifact_paths:
       - ".tox/report/tmp/*"
       - ".tox/mypy/tmp/*"
       - ".tox/flake8/tmp/*"
@@ -21,30 +21,48 @@ steps:
             - "BUILDKITE_BUILD_NUMBER"
     agents:
       queue: 'default'
-    timeout_in_minutes: 15
-  - label: ':cpp::hammer: verification build'
+    timeout_in_minutes: 40
+  - label: ':cpp::hammer: verification build, c, gcc, amd64'
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
-    id: cpp-docker-verify
-    command: "./.buildkite/verify.sh"
-    skip: true
-    artifact_paths: 
-      - "verification/cpp/build/suite/coverage/all/*"
+    id: c-gcc-docker-verify-amd64
+    command: ".buildkite/verify_c_amd64.sh"
+    artifact_paths:
+      - "verification/build_c/coverage_all.zip"
+      - "verification/build_cpp/coverage_all.zip"
     plugins:
       - docker#v3.3.0:
           workdir: /repo
-          image: "uavcan/libuavcan:1.0"
+          image: "uavcan/c_cpp:ubuntu-18.04"
           propagate-environment: true
           environment:
             - "BUILDKITE"
             - "BUILDKITE_BUILD_NUMBER"
     agents:
       queue: 'default'
-    timeout_in_minutes: 15
+  - label: ':cpp::hammer: verification build, c, gcc, x86'
+    if: build.branch == "master" && pipeline.slug == "nunavut-release"
+    id: c-gcc-docker-verify-x86
+    command: ".buildkite/verify_c_x86.sh"
+    artifact_paths:
+      - "verification/build_c/coverage_all.zip"
+      - "verification/build_cpp/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
   - wait
   - label: ':python::amazon-s3::sonarqube: release'
     if: build.branch == "master" && pipeline.slug == "nunavut-release"
     id: toxic-docker-release
     command: "./.buildkite/release.sh"
+    concurrency_group: nunavut/release
+    concurrency: 1
     plugins:
       - docker#v3.3.0:
           workdir: /repo
