@@ -20,9 +20,60 @@ Nunavut: DSDL template engine
 | community/support              | |badge_forum|_                    |
 +--------------------------------+-----------------------------------+
 
-Nunavut is a `UAVCAN`_ DSDL template engine that exposes a `pydsdl`_ abstract
+Nunavut is a source-to-source compiler (transpiler) that automatically converts `UAVCAN`_ DSDL definitions
+into source code in a specified target programming language.
+It is constructed as a template engine that exposes a `PyDSDL`_ abstract
 syntax tree to `Jinja2`_ templates allowing authors to generate code, schemas, metadata,
 documentation, etc.
+
+Nunavut is named after the `Canadian territory`_. We chose the name because it
+is a beautiful word to say and read. Also, the name fits with a theme of "places
+in Canada" started with the `Yukon`_ project.
+
+.. image:: /docs/static/images/nunavut_pipeline.svg
+   :width: 1000px
+
+Nunavut ships with built-in support for some programming languages,
+and it can be used to generate code for other languages if custom templates (and some glue logic) are provided.
+Currently, the following languages are supported out of the box:
+
+- **C11** (generates header-only libraries)
+
+The following languages are currently on the roadmap:
+
+- **Python** (already supported in `PyUAVCAN`_, pending
+  `transplantation into Nunavut <https://github.com/UAVCAN/pyuavcan/issues/110>`_)
+- **C++11** (generates header-only libraries; `work-in-progress <https://github.com/UAVCAN/nunavut/issues/91>`_)
+
+************************************************
+Installation
+************************************************
+
+Nunavut depends on `PyDSDL`_.
+
+Install from PIP::
+
+    pip install -U nunavut
+
+************************************************
+Examples
+************************************************
+
+The examples do not replace the documentation, please do endeavor to read it.
+
+Generate C headers using the command-line tool
+----------------------------------------------
+
+This example assumes that the public regulated namespace directories ``reg`` and ``uavcan`` reside under
+``public_regulated_data_types/``.
+Nunavut is invoked to generate code for the former.
+
+.. code-block:: shell
+
+    nnvg --target-language c --target-endianness=little --enable-serialization-asserts public_regulated_data_types/reg --lookup-dir public_regulated_data_types/uavcan
+
+Use custom templates
+--------------------
 
 Partial example: generating a C struct
 
@@ -66,20 +117,14 @@ Partial example: generating a C struct
 
         #endif // {{T.full_name | c.macrofy}}
 
+More examples
+-------------
 
-Nunavut is named after the `Canadian territory`_. We chose the name because it
-is a beautiful word to say and read. Also, the name fits with a theme of "places
-in Canada" started with the `Yukon`_ project.
+Where to find more examples to get started:
 
-************************************************
-Installation
-************************************************
+1. See built-in templates under ``nunavut.lang.LANGUAGE.templates``.
 
-Nunavut requires Python 3.5 or newer and depends on `pydsdl`_.
-
-Install from PIP::
-
-    pip install nunavut
+2. API usage examples can be found in the `PyUAVCAN`_ library.
 
 ************************************************
 Bundled third-party software
@@ -114,7 +159,8 @@ Nunavut is part of the UAVCAN project:
 .. _`UAVCAN forum`: https://forum.uavcan.org
 .. _`nunavut`: https://nunavut.readthedocs.io/en/latest/docs/api/modules.html
 .. _`nnvg`: https://nunavut.readthedocs.io/en/latest/docs/cli.html
-.. _`pydsdl`: https://pypi.org/project/pydsdl
+.. _`PyDSDL`: https://github.com/UAVCAN/pydsdl
+.. _`PyUAVCAN`: https://github.com/UAVCAN/pyuavcan
 .. _`nunavut template guide`: https://nunavut.readthedocs.io/en/latest/docs/templates.html
 .. _`nunavut contributors guide`: https://nunavut.readthedocs.io/en/latest/docs/dev.html
 .. _`nunavut licenses`: https://nunavut.readthedocs.io/en/latest/docs/appendix.html#licence
