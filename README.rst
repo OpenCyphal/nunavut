@@ -26,12 +26,10 @@ It is constructed as a template engine that exposes a `PyDSDL`_ abstract
 syntax tree to `Jinja2`_ templates allowing authors to generate code, schemas, metadata,
 documentation, etc.
 
-Nunavut is named after the `Canadian territory`_. We chose the name because it
-is a beautiful word to say and read. Also, the name fits with a theme of "places
-in Canada" started with the `Yukon`_ project.
-
-.. image:: /docs/static/images/nunavut_pipeline.svg
+.. figure:: /docs/static/images/nunavut_pipeline.svg
    :width: 1000px
+
+   Nunavut DSDL transcompilation pipeline.
 
 Nunavut ships with built-in support for some programming languages,
 and it can be used to generate code for other languages if custom templates (and some glue logic) are provided.
@@ -44,6 +42,10 @@ The following languages are currently on the roadmap:
 - **Python** (already supported in `PyUAVCAN`_, pending
   `transplantation into Nunavut <https://github.com/UAVCAN/pyuavcan/issues/110>`_)
 - **C++11** (generates header-only libraries; `work-in-progress <https://github.com/UAVCAN/nunavut/issues/91>`_)
+
+Nunavut is named after the `Canadian territory`_. We chose the name because it
+is a beautiful word to say and read. Also, the name fits with a theme of "places
+in Canada" started with the `Yukon`_ project.
 
 ************************************************
 Installation
