@@ -39,7 +39,7 @@ class IncludeGenerator(DependencyBuilder):
             namespace_path = pathlib.Path('')
             for namespace_part in self._language.support_namespace:
                 namespace_path = namespace_path / pathlib.Path(namespace_part)
-            path_list += [str(namespace_path / pathlib.Path(p.name).with_suffix(output_extension))
+            path_list += [(namespace_path / pathlib.Path(p.name).with_suffix(output_extension)).as_posix()
                           for p in self._language.support_files]
 
         prefer_system_includes = bool(self._language.get_config_value_as_bool('prefer_system_includes', False))
