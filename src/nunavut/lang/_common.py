@@ -98,7 +98,7 @@ class IncludeGenerator(DependencyBuilder):
     def _make_path(self, dt: pydsdl.CompositeType, output_extension: str) -> str:
         short_name = self._short_reference_name_filter(self._language, dt)
         ns_path = pathlib.Path(*self._make_ns_list(dt)) / pathlib.Path(short_name).with_suffix(output_extension)
-        return str(ns_path)
+        return ns_path.as_posix()
 
     def _make_ns_list(self, dt: pydsdl.SerializableType) -> typing.List[str]:
         if self._language.enable_stropping:
