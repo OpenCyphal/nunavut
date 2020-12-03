@@ -165,8 +165,9 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
     TEMPLATE_SUFFIX = ".j2"  #: The suffix expected for Jinja templates.
 
     @staticmethod
-    def __augment_post_processors_with_ln_limit_empty_lines(post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']],
-                                                            limit_empty_lines: int) -> \
+    def __augment_post_processors_with_ln_limit_empty_lines(
+        post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']],
+        limit_empty_lines: int) -> \
             typing.List['nunavut.postprocessors.PostProcessor']:
         """
         Subroutine of _handle_post_processors method.
@@ -184,9 +185,9 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
                 post_processors.append(LimitEmptyLines(limit_empty_lines))
         return post_processors
 
-
     @staticmethod
-    def __augment_post_processors_with_ln_trim_trailing_whitespace(post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']]) -> \
+    def __augment_post_processors_with_ln_trim_trailing_whitespace(
+        post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']]) -> \
             typing.List['nunavut.postprocessors.PostProcessor']:
         """
         Subroutine of _handle_post_processors method.
@@ -204,11 +205,10 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
                 post_processors.append(TrimTrailingWhitespace())
         return post_processors
 
-
     @classmethod
     def _handle_post_processors(cls,
-                                 post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']],
-                                 target_language: typing.Optional['nunavut.lang.Language']) -> \
+                                post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']],
+                                target_language: typing.Optional['nunavut.lang.Language']) -> \
             typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']]:
         """
         Used by constructor to process an optional list of post-processors and to augment or create this list
