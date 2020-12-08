@@ -18,13 +18,37 @@ import nunavut.postprocessors
 from nunavut.lang import LanguageContext
 
 
-def _test_common_namespace(gen_paths, target_language: str = 'js', extension: str = '.json'):  # type: ignore
+def _test_common_namespace(gen_paths,  # type: ignore
+                           target_language: str = 'js',
+                           extension: str = '.json',
+                           additional_config: typing.Optional[typing.Mapping[str, str]] = None):
     root_namespace_dir = gen_paths.dsdl_dir / pathlib.Path("uavcan")
     root_namespace = str(root_namespace_dir)
+    lctx = LanguageContext(target_language, extension=extension)
+    if additional_config is not None:
+        ln_package_name = 'nunavut.lang.{}'.format(target_language)
+        for name, value in additional_config.items():
+            lctx.config.set(ln_package_name, name, value)
     return nunavut.build_namespace_tree(pydsdl.read_namespace(root_namespace, []),
                                         root_namespace_dir,
                                         gen_paths.out_dir,
-                                        LanguageContext(target_language, extension=extension))
+                                        lctx)
+
+
+def _assert_no_empty_lines(outfile):  # type: ignore
+    with open(str(outfile), 'r') as json_file:
+        for line in json_file:
+            line_end_match = re.search(r'\n|\r\n', line)
+            if line_end_match is not None:
+                assert len(line) > line_end_match.end() - line_end_match.start()
+            else:
+                assert len(line) > 0
+
+
+def _assert_no_trailing_whitespace(outfile):  # type: ignore
+    with open(str(outfile), 'r') as json_file:
+        for line in json_file:
+            assert re.search(r' +$', line) is None
 
 
 def _test_common_post_condition(gen_paths, namespace):  # type: ignore
@@ -260,9 +284,18 @@ def test_trim_trailing_ws(gen_paths):  # type: ignore
     generator.generate_all(False, True)
     outfile = _test_common_post_condition(gen_paths, namespace)
 
-    with open(str(outfile), 'r') as json_file:
-        for line in json_file:
-            assert re.search(r' +$', line) is None
+    _assert_no_trailing_whitespace(outfile)
+
+
+def test_trim_trailing_ws_ln_config(gen_paths):  # type: ignore
+    namespace = _test_common_namespace(gen_paths,
+                                       additional_config={'trim_trailing_whitespace': 'True'})
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
+                                                templates_dir=gen_paths.templates_dir)
+    generator.generate_all(False, True)
+    outfile = _test_common_post_condition(gen_paths, namespace)
+
+    _assert_no_trailing_whitespace(outfile)
 
 
 def test_limit_empty_lines(gen_paths):  # type: ignore
@@ -271,15 +304,28 @@ def test_limit_empty_lines(gen_paths):  # type: ignore
                                                 templates_dir=gen_paths.templates_dir,
                                                 post_processors=[nunavut.postprocessors.LimitEmptyLines(0)])
     generator.generate_all(False, True)
-    outfile = _test_common_post_condition(gen_paths, namespace)
+    _assert_no_empty_lines(_test_common_post_condition(gen_paths, namespace))
 
-    with open(str(outfile), 'r') as json_file:
-        for line in json_file:
-            line_end_match = re.search(r'\n|\r\n', line)
-            if line_end_match is not None:
-                assert len(line) > line_end_match.end() - line_end_match.start()
-            else:
-                assert len(line) > 0
+
+def test_limit_empty_lines_by_ln_config_cmd_line_none(gen_paths):  # type: ignore
+    namespace = _test_common_namespace(gen_paths,
+                                       additional_config={'limit_empty_lines': '0'})
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
+                                                templates_dir=gen_paths.templates_dir)
+    generator.generate_all(False, True)
+
+    _assert_no_empty_lines(_test_common_post_condition(gen_paths, namespace))
+
+
+def test_limit_empty_lines_by_ln_config_cmd_line_less(gen_paths):  # type: ignore
+    namespace = _test_common_namespace(gen_paths,
+                                       additional_config={'limit_empty_lines': '1'})
+    generator = nunavut.jinja.DSDLCodeGenerator(namespace,
+                                                templates_dir=gen_paths.templates_dir,
+                                                post_processors=[nunavut.postprocessors.LimitEmptyLines(0)])
+    generator.generate_all(False, True)
+
+    _assert_no_empty_lines(_test_common_post_condition(gen_paths, namespace))
 
 
 def test_pp_trim_trailing_whitespace(gen_paths, run_nnvg):  # type: ignore

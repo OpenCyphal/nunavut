@@ -164,6 +164,70 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
 
     TEMPLATE_SUFFIX = ".j2"  #: The suffix expected for Jinja templates.
 
+    @staticmethod
+    def __augment_post_processors_with_ln_limit_empty_lines(
+        post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']],
+        limit_empty_lines: int) -> \
+            typing.List['nunavut.postprocessors.PostProcessor']:
+        """
+        Subroutine of _handle_post_processors method.
+        """
+        from nunavut.postprocessors import LimitEmptyLines
+        if post_processors is None:
+            post_processors = [LimitEmptyLines(limit_empty_lines)]
+        else:
+            found_pp = False
+            for pp in post_processors:
+                if isinstance(pp, LimitEmptyLines):
+                    found_pp = True
+                    break
+            if not found_pp:
+                post_processors.append(LimitEmptyLines(limit_empty_lines))
+        return post_processors
+
+    @staticmethod
+    def __augment_post_processors_with_ln_trim_trailing_whitespace(
+        post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']]) -> \
+            typing.List['nunavut.postprocessors.PostProcessor']:
+        """
+        Subroutine of _handle_post_processors method.
+        """
+        from nunavut.postprocessors import TrimTrailingWhitespace
+        if post_processors is None:
+            post_processors = [TrimTrailingWhitespace()]
+        else:
+            found_pp = False
+            for pp in post_processors:
+                if isinstance(pp, TrimTrailingWhitespace):
+                    found_pp = True
+                    break
+            if not found_pp:
+                post_processors.append(TrimTrailingWhitespace())
+        return post_processors
+
+    @classmethod
+    def _handle_post_processors(cls,
+                                post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']],
+                                target_language: typing.Optional['nunavut.lang.Language']) -> \
+            typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']]:
+        """
+        Used by constructor to process an optional list of post-processors and to augment or create this list
+        if needed to support language options.
+        """
+        if target_language is not None:
+
+            limit_empty_lines_maybe = target_language.get_config_value('limit_empty_lines', None)
+            if limit_empty_lines_maybe is not None and isinstance(limit_empty_lines_maybe, str):
+                post_processors = cls.__augment_post_processors_with_ln_limit_empty_lines(
+                    post_processors,
+                    int(limit_empty_lines_maybe))
+
+            if target_language.get_config_value_as_bool('trim_trailing_whitespace'):
+                post_processors = cls.__augment_post_processors_with_ln_trim_trailing_whitespace(
+                    post_processors)
+
+        return post_processors
+
     def __init__(self,
                  namespace: nunavut.Namespace,
                  generate_namespace_types: nunavut.YesNoDefault = nunavut.YesNoDefault.DEFAULT,
@@ -179,8 +243,6 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
 
         super().__init__(namespace,
                          generate_namespace_types)
-
-        self._post_processors = post_processors
 
         if templates_dir is None:
             templates_dirs = []  # type: typing.List[pathlib.Path]
@@ -214,6 +276,8 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
             ])  # type: 'nunavut.jinja.jinja2.loaders.BaseLoader'
         else:
             template_loader = fs_loader
+
+        self._post_processors = self._handle_post_processors(post_processors, target_language)
 
         self._env = CodeGenEnvironment(loader=template_loader,
                                        lstrip_blocks=lstrip_blocks,
