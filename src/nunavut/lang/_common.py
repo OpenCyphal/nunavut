@@ -39,7 +39,7 @@ class IncludeGenerator(DependencyBuilder):
             namespace_path = pathlib.Path('')
             for namespace_part in self._language.support_namespace:
                 namespace_path = namespace_path / pathlib.Path(namespace_part)
-            path_list += [str(namespace_path / pathlib.Path(p.name).with_suffix(output_extension))
+            path_list += [(namespace_path / pathlib.Path(p.name).with_suffix(output_extension)).as_posix()
                           for p in self._language.support_files]
 
         prefer_system_includes = bool(self._language.get_config_value_as_bool('prefer_system_includes', False))
@@ -98,7 +98,7 @@ class IncludeGenerator(DependencyBuilder):
     def _make_path(self, dt: pydsdl.CompositeType, output_extension: str) -> str:
         short_name = self._short_reference_name_filter(self._language, dt)
         ns_path = pathlib.Path(*self._make_ns_list(dt)) / pathlib.Path(short_name).with_suffix(output_extension)
-        return str(ns_path)
+        return ns_path.as_posix()
 
     def _make_ns_list(self, dt: pydsdl.SerializableType) -> typing.List[str]:
         if self._language.enable_stropping:
