@@ -65,14 +65,11 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
         # a valid target language.
         setattr(args, 'output_extension', '.tmp')
 
-    language_options = None
-
-    if args.target_language is not None:
-        language_options = dict()
-        if args.target_endianness is not None:
-            language_options['target_endianness'] = args.target_endianness
-        language_options['omit_float_serialization_support'] = args.omit_float_serialization_support
-        language_options['enable_serialization_asserts'] = args.enable_serialization_asserts
+    language_options = dict()
+    if args.target_endianness is not None:
+        language_options['target_endianness'] = args.target_endianness
+    language_options['omit_float_serialization_support'] = args.omit_float_serialization_support
+    language_options['enable_serialization_asserts'] = args.enable_serialization_asserts
 
     language_context = nunavut.lang.LanguageContext(
         args.target_language,
