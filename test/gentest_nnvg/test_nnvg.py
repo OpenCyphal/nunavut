@@ -137,6 +137,7 @@ def test_target_language(gen_paths: typing.Any, run_nnvg: typing.Callable) -> No
     nnvg_args = ['--templates', str(gen_paths.templates_dir),
                  '-O', str(gen_paths.out_dir),
                  '--target-language', 'cpp',
+                 '--experimental-language', 'cpp',
                  '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
                  '--list-outputs',
                  '--omit-serialization-support',
@@ -157,6 +158,7 @@ def test_language_option_defaults(gen_paths: typing.Any, run_nnvg: typing.Callab
     nnvg_args = ['--templates', str(gen_paths.templates_dir),
                  '-O', str(gen_paths.out_dir),
                  '--target-language', 'cpp',
+                 '--experimental-language', 'cpp',
                  '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
@@ -179,6 +181,7 @@ def test_language_option_overrides(target_endianness_override: str, gen_paths: t
     nnvg_args = ['--templates', str(gen_paths.templates_dir),
                  '-O', str(gen_paths.out_dir),
                  '--target-language', 'cpp',
+                 '--experimental-language', 'cpp',
                  '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
                  '--target-endianness', target_endianness_override,
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
@@ -197,6 +200,7 @@ def test_language_option_target_endianness_illegal_option(gen_paths: typing.Any,
     nnvg_args = ['--templates', str(gen_paths.templates_dir),
                  '-O', str(gen_paths.out_dir),
                  '--target-language', 'cpp',
+                 '--experimental-language', 'cpp',
                  '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
                  '--target-endianness', 'mixed',
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
@@ -215,6 +219,7 @@ def test_language_option_omit_floatingpoint(gen_paths: typing.Any, run_nnvg: typ
     nnvg_args = ['--templates', str(gen_paths.templates_dir),
                  '-O', str(gen_paths.out_dir),
                  '--target-language', 'cpp',
+                 '--experimental-language', 'cpp',
                  '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
                  '--omit-float-serialization-support',
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
@@ -235,6 +240,7 @@ def test_language_option_generate_asserts(gen_paths: typing.Any, run_nnvg: typin
     nnvg_args = ['--templates', str(gen_paths.templates_dir),
                  '-O', str(gen_paths.out_dir),
                  '--target-language', 'cpp',
+                 '--experimental-language', 'cpp',
                  '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
                  '--enable-serialization-asserts',
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
@@ -307,6 +313,7 @@ def test_language_allow_unregulated_fixed_portid(gen_paths: typing.Any, run_nnvg
     nnvg_args = ['--templates', str(gen_paths.templates_dir),
                  '-O', str(gen_paths.out_dir),
                  '--target-language', 'cpp',
+                 '--experimental-language', 'cpp',
                  '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
                  '--list-outputs',
                  '--allow-unregulated-fixed-port-id',

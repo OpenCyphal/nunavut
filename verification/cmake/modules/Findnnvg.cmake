@@ -49,6 +49,10 @@ function (create_dsdl_target ARG_TARGET_NAME
 
     list(APPEND NNVG_CMD_ARGS --target-language)
     list(APPEND NNVG_CMD_ARGS ${ARG_OUTPUT_LANGUAGE})
+    # For verification suite purposes we don't care if the language support is
+    # experimental or not, so specify that it can be used regardless
+    list(APPEND NNVG_CMD_ARGS --experimental-language)
+    list(APPEND NNVG_CMD_ARGS ${ARG_OUTPUT_LANGUAGE})
     list(APPEND NNVG_CMD_ARGS  -O)
     list(APPEND NNVG_CMD_ARGS ${ARG_OUTPUT_FOLDER})
     list(APPEND NNVG_CMD_ARGS ${ARG_DSDL_ROOT_DIR})
