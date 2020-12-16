@@ -271,7 +271,7 @@ def _make_parser() -> argparse.ArgumentParser:
 
     ''').lstrip())
 
-    parser.add_argument('--experimental-language', '-Xlang', nargs='*',
+    parser.add_argument('--experimental-language', '-Xlang', nargs='*', default=[],
                         help=textwrap.dedent('''
 
         Enable support for the given target language for this invocation of
