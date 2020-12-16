@@ -76,7 +76,8 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
         args.output_extension,
         args.namespace_output_stem,
         omit_serialization_support_for_target=args.omit_serialization_support,
-        language_options=language_options)
+        language_options=language_options,
+        allow_experimental_support=(args.target_language in args.experimental_language))
 
     #
     # nunavut: inferred target language from extension
@@ -98,7 +99,8 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
                 args.output_extension,
                 args.namespace_output_stem,
                 omit_serialization_support_for_target=args.omit_serialization_support,
-                language_options=language_options)
+                language_options=language_options,
+                allow_experimental_support=(args.target_language in args.experimental_language))
         elif args.templates is None:
             logging.warn(
                 textwrap.dedent('''
@@ -266,6 +268,20 @@ def _make_parser() -> argparse.ArgumentParser:
 
         If provided then the output extension (--e) can be inferred otherwise the output
         extension must be provided.
+
+    ''').lstrip())
+
+    parser.add_argument('--experimental-language', '-Xlang', nargs='*',
+                        help=textwrap.dedent('''
+
+        Enable support for the given target language for this invocation of
+        nunavut, even if still experimental.  This option may be specified
+        multiple times, once per language, to simplify scripted invocations.
+
+        By default, target languages where support is not finalised are not
+        enabled when running nunavut, to make it clear that the code output
+        may change in a non-backwards-compatible way in future versions, or
+        simply might not be complete and working yet.
 
     ''').lstrip())
 

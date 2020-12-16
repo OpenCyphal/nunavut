@@ -398,8 +398,10 @@ class LanguageContext:
         serialization routines, types, or support libraries for the target language.
     :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
                 target :class:`nunavut.lang.Language` object.
+    :param typing.Optional[typing.Iterable[str]] allow_experimental_support: If True then object creation is allowed to
+        continue even if support for target_language is still experimental.
     :raises ValueError: If extension is None and no target language was provided.
-    :raises KeyError: If the target language is not known.
+    :raises KeyError: If the target language is not known, or is experimental while experimental support is not allowed.
     """
 
     @classmethod
@@ -422,7 +424,8 @@ class LanguageContext:
                  namespace_output_stem: typing.Optional[str] = None,
                  additional_config_files: typing.List[pathlib.Path] = [],
                  omit_serialization_support_for_target: bool = True,
-                 language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None):
+                 language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+                 allow_experimental_support: bool = False):
         self._extension = extension
         self._namespace_output_stem = namespace_output_stem
         self._config = self._load_config(*additional_config_files)
@@ -437,6 +440,13 @@ class LanguageContext:
                                                  language_options=language_options)
             except ImportError:
                 raise KeyError('{} is not a supported language'.format(target_language))
+
+            # Assume a language's support is experimental unless explicitly configured otherwise
+            language_is_experimental = self._config.get('nunavut.lang.{}', 'experimental', fallback=True)
+            if language_is_experimental and not allow_experimental_support:
+                raise KeyError('Target language support for {} is still experimental, '
+                               'so its use must be explicitly enabled'.format(target_language))
+
             if namespace_output_stem is not None:
                 self._config.set('nunavut.lang.{}'.format(target_language),
                                  'namespace_file_stem',
