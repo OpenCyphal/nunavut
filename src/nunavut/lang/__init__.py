@@ -442,7 +442,7 @@ class LanguageContext:
                 raise KeyError('{} is not a supported language'.format(target_language))
 
             # Assume a language's support is experimental unless explicitly configured otherwise
-            language_is_experimental = self._config.get('nunavut.lang.{}', 'experimental', fallback=True)
+            language_is_experimental = self._config.get('nunavut.lang.{}', 'experimental_support', fallback=True)
             if language_is_experimental and not allow_experimental_support:
                 raise KeyError('Target language support for {} is still experimental, '
                                'so its use must be explicitly enabled'.format(target_language))
