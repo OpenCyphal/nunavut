@@ -185,6 +185,13 @@ class Language:
         return self._config.getboolean(self._section, 'has_standard_namespace_files')
 
     @property
+    def support_is_experimental(self) -> bool:
+        """
+        Whether support for this language is still only experimental.
+        """
+        return self._config.getboolean(self._section, 'experimental_support', fallback=True)
+
+    @property
     def omit_serialization_support(self) -> bool:
         """
         If True then generators should not include serialization routines, types,
@@ -441,9 +448,7 @@ class LanguageContext:
             except ImportError:
                 raise KeyError('{} is not a supported language'.format(target_language))
 
-            # Assume a language's support is experimental unless explicitly configured otherwise
-            language_is_experimental = self._config.get('nunavut.lang.{}', 'experimental_support', fallback=True)
-            if language_is_experimental and not allow_experimental_support:
+            if self._target_language.support_is_experimental and not allow_experimental_support:
                 raise KeyError('Target language support for {} is still experimental, '
                                'so its use must be explicitly enabled'.format(target_language))
 
