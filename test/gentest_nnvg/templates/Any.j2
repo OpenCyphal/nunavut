@@ -1,12 +1,12 @@
 {
      "name": "{{ T }}"
-{%- if option_target_endianness is defined %},
-     "target_endianness": "{{ option_target_endianness }}"
+{%- if options.target_endianness is defined %},
+     "target_endianness": "{{ options.target_endianness }}"
 {% endif %}
-{%- if option_omit_float_serialization_support is defined %},
-     "omit_float_serialization_support": {{ option_omit_float_serialization_support | js.to_true_or_false }}
+{%- if options.omit_float_serialization_support is defined %},
+     "omit_float_serialization_support": {{ options.omit_float_serialization_support | ln.js.to_true_or_false }}
 {% endif %}
-{%- if option_enable_serialization_asserts is defined %},
-     "enable_serialization_asserts": {{ option_enable_serialization_asserts | js.to_true_or_false }}
+{%- if options.enable_serialization_asserts is defined %},
+     "enable_serialization_asserts": {{ options.enable_serialization_asserts | ln.js.to_true_or_false }}
 {% endif %}
 }

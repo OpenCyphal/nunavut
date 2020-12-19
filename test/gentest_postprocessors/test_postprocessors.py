@@ -167,7 +167,7 @@ def test_no_overwrite_arg(gen_paths, run_nnvg):  # type: ignore
     nnvg_cmd.append('--no-overwrite')
 
     with pytest.raises(subprocess.CalledProcessError):
-        run_nnvg(gen_paths, nnvg_cmd)
+        run_nnvg(gen_paths, nnvg_cmd, raise_called_process_error=True)
 
 
 def test_file_mode(gen_paths, run_nnvg):  # type: ignore
@@ -488,4 +488,4 @@ def test_pp_run_program_w_arg(gen_paths, run_nnvg):  # type: ignore
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     with pytest.raises(subprocess.CalledProcessError):
-        run_nnvg(gen_paths, nnvg_args0)
+        run_nnvg(gen_paths, nnvg_args0, raise_called_process_error=True)

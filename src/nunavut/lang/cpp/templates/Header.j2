@@ -25,12 +25,12 @@
  *
  */
 
-#ifndef {{T.full_name | c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED
-#define {{T.full_name | c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED
+#ifndef {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED
+#define {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED
 {% for n in T | includes -%}
 #include {{ n }}
 {% endfor %}
 {{T.full_namespace | open_namespace}}
 {%- block object -%}{%- endblock -%}
 {{T.full_namespace | close_namespace}}
-#endif // {{T.full_name | c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED
+#endif // {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED

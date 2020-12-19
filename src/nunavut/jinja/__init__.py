@@ -17,12 +17,12 @@ import pathlib
 import re
 import shutil
 import typing
-
-import pydsdl
+from argparse import Namespace as ApNamespace
 
 import nunavut.generators
 import nunavut.lang
 import nunavut.postprocessors
+import pydsdl
 from nunavut.jinja.jinja2 import (BaseLoader, ChoiceLoader, Environment,
                                   FileSystemLoader, PackageLoader,
                                   StrictUndefined, Template,
@@ -33,6 +33,20 @@ from nunavut.jinja.jinja2.parser import Parser
 from nunavut.templates import LANGUAGE_FILTER_ATTRIBUTE_NAME
 
 logger = logging.getLogger(__name__)
+
+
+class _LanguageTemplateNamespace(ApNamespace):
+    """
+    Generic namespace object used to create 'ln' namespaces in templates.
+    """
+
+    def update(self, update_from: typing.Mapping[str, typing.Any]) -> None:
+        for key, value in update_from.items():
+            setattr(self, key, value)
+
+    def items(self) -> typing.ItemsView[str, typing.Any]:
+        return self.__dict__.items()
+
 
 # +---------------------------------------------------------------------------+
 # | JINJA : Extensions
@@ -115,6 +129,8 @@ class CodeGenEnvironment(Environment):
                          trim_blocks=trim_blocks,
                          auto_reload=False,
                          cache_size=0)
+        self.globals['options'] = _LanguageTemplateNamespace()
+        self.globals['ln'] = _LanguageTemplateNamespace()
 
 
 # +---------------------------------------------------------------------------+
@@ -306,7 +322,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
         if filter_namespace is None:
             self._env.filters[filter_name] = resolved_filter
         else:
-            self._env.filters['{}.{}'.format(filter_namespace, filter_name)] = resolved_filter
+            self._env.filters['ln.{}.{}'.format(filter_namespace, filter_name)] = resolved_filter
 
     # +-----------------------------------------------------------------------+
     # | AbstractGenerator
@@ -386,14 +402,23 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
     def _add_language_support(self) -> None:
         target_language = self.language_context.get_target_language()
         if target_language is not None:
-            for key, value in target_language.get_filters().items():
-                self.add_filter_to_environment(key, value)
+            for filter_name, filter in target_language.get_filters().items():
+                self.add_filter_to_environment(filter_name, filter)
             self._env.globals.update(target_language.get_globals())
+            self._env.globals['options'].update(target_language.get_options())
 
+        ln_globals = self._env.globals['ln']
         for supported_language in self.language_context.get_supported_languages().values():
-            for key, value in supported_language.get_filters().items():
-                self.add_filter_to_environment(key, value, supported_language.name)
-            self._env.globals[supported_language.name] = supported_language
+            for filter_name, filter in supported_language.get_filters().items():
+                self.add_filter_to_environment(filter_name, filter, supported_language.name)
+            if supported_language.name not in ln_globals:
+                setattr(ln_globals,
+                        supported_language.name,
+                        _LanguageTemplateNamespace(options=_LanguageTemplateNamespace()))
+            ln_globals_ns = getattr(ln_globals, supported_language.name)
+            ln_globals_ns.update(supported_language.get_globals())
+            ln_globals_options_ns = getattr(ln_globals_ns, 'options')
+            ln_globals_options_ns.update(supported_language.get_options())
 
     @staticmethod
     def _filter_and_write_line(line_and_lineend: typing.Tuple[str, str],

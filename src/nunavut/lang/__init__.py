@@ -372,10 +372,17 @@ class Language:
                 globals_map['typename_{}'.format(key)] = value
             for key, value in self.get_named_values().items():
                 globals_map['valuetoken_{}'.format(key)] = value
-            for key, value in self._language_options.items():
-                globals_map['option_{}'.format(key)] = value
+
             self._globals = globals_map
         return self._globals
+
+    def get_options(self) -> typing.Mapping[str, typing.Any]:
+        """
+        Get all language options for this Language.
+
+        :returns: A mapping of option names to option values.
+        """
+        return self._language_options
 
 
 class LanguageContext:
