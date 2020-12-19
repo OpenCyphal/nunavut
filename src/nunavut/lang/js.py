@@ -18,7 +18,7 @@ def filter_to_true_or_false(value: str) -> str:
 
     Example::
 
-        "deprecated": {{ T.deprecated | js.to_true_or_false }},
+        "deprecated": {{ T.deprecated | ln.js.to_true_or_false }},
 
     Results Example::
 

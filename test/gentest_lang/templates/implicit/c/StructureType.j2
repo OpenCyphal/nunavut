@@ -10,7 +10,8 @@ lang_c = {
     'unique_name_0': '{{ "nAME" | to_template_unique_name }}',
     'unique_name_1': '{{ "NAME" | to_template_unique_name }}',
     'unique_name_2': '{{ "naME" | to_template_unique_name }}',
-    'unique_name_3': '{{ "" | to_template_unique_name }}'
+    'unique_name_3': '{{ "" | to_template_unique_name }}',
+    'target_endianness': '{{ options.target_endianness }}'
 }
 
 tests = {'lang_c': lang_c, 'lang_any': lang_any}

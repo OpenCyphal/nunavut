@@ -89,11 +89,11 @@ Partial example: generating a C struct
         * Source file: {{T.source_file_path}}
         */
 
-        #ifndef {{T.full_name | c.macrofy}}
-        #define {{T.full_name | c.macrofy}}
+        #ifndef {{T.full_name | ln.c.macrofy}}
+        #define {{T.full_name | ln.c.macrofy}}
 
         {%- for constant in T.constants %}
-        #define {{ T | c.macrofy }}_{{ constant.name | c.macrofy }} {{ constant | constant_value }}
+        #define {{ T | ln.c.macrofy }}_{{ constant.name | ln.c.macrofy }} {{ constant | constant_value }}
         {%- endfor %}
 
         typedef struct
@@ -117,7 +117,7 @@ Partial example: generating a C struct
 
         } {{ T | full_reference_name }};
 
-        #endif // {{T.full_name | c.macrofy}}
+        #endif // {{T.full_name | ln.c.macrofy}}
 
 More examples
 -------------

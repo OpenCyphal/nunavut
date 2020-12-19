@@ -1,29 +1,30 @@
 
 lang_c = {
     'namespace': '{{ T.full_namespace }}',
-    'namespace_macrofy': '{{ T.full_namespace | c.macrofy }}',
+    'namespace_macrofy': '{{ T.full_namespace | ln.c.macrofy }}',
 {%- for attribute in T.attributes %}
-    'ctype {{ attribute.data_type }}': '{{ attribute.data_type | c.type_from_primitive }}',
+    'ctype {{ attribute.data_type }}': '{{ attribute.data_type | ln.c.type_from_primitive }}',
 {%- endfor %}
-    'unique_name_0': '{{ "nAME" | c.to_template_unique_name }}',
-    'unique_name_1': '{{ "NAME" | c.to_template_unique_name }}',
-    'unique_name_2': '{{ "naME" | c.to_template_unique_name }}',
-    'unique_name_3': '{{ "" | c.to_template_unique_name }}'
+    'unique_name_0': '{{ "nAME" | ln.c.to_template_unique_name }}',
+    'unique_name_1': '{{ "NAME" | ln.c.to_template_unique_name }}',
+    'unique_name_2': '{{ "naME" | ln.c.to_template_unique_name }}',
+    'unique_name_3': '{{ "" | ln.c.to_template_unique_name }}',
+    'target_endianness': '{{ ln.c.options.target_endianness }}'
 }
 
 lang_cpp = {
     'namespace': '{{ T.full_namespace }}',
-    'namespace_open': r'''{{ T.full_namespace | cpp.open_namespace }}''',
-    'namespace_open_wo_nl': r'''{{ T.full_namespace | cpp.open_namespace(False) }}''',
-    'namespace_close': r'''{{ T.full_namespace | cpp.close_namespace(True) }}''',
-    'namespace_close_w_comments': r'''{{ T.full_namespace | cpp.close_namespace }}'''
+    'namespace_open': r'''{{ T.full_namespace | ln.cpp.open_namespace }}''',
+    'namespace_open_wo_nl': r'''{{ T.full_namespace | ln.cpp.open_namespace(False) }}''',
+    'namespace_close': r'''{{ T.full_namespace | ln.cpp.close_namespace(True) }}''',
+    'namespace_close_w_comments': r'''{{ T.full_namespace | ln.cpp.close_namespace }}'''
 }
 
 lang_py = {
-    'unique_name_0': '{{ "NAME" | py.to_template_unique_name }}',
-    'unique_name_1': '{{ "NAME" | py.to_template_unique_name }}',
-    'unique_name_2': '{{ "name" | py.to_template_unique_name }}',
-    'id_0': '{{ "identifier zero" | py.id }}'
+    'unique_name_0': '{{ "NAME" | ln.py.to_template_unique_name }}',
+    'unique_name_1': '{{ "NAME" | ln.py.to_template_unique_name }}',
+    'unique_name_2': '{{ "name" | ln.py.to_template_unique_name }}',
+    'id_0': '{{ "identifier zero" | ln.py.id }}'
 }
 
 tests = {'lang_c': lang_c, 'lang_cpp': lang_cpp, 'lang_py': lang_py}

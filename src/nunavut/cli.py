@@ -17,6 +17,13 @@ import textwrap
 import typing
 
 
+def _should_generate_support(args: argparse.Namespace) -> bool:
+    if args.generate_support == 'as-needed':
+        return (args.omit_serialization_support is None or not args.omit_serialization_support)
+    else:
+        return bool(args.generate_support == 'always' or args.generate_support == 'only')
+
+
 def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # noqa: C901
     '''
         Post command-line setup and parsing logic to execute nunavut
@@ -59,12 +66,6 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
     #
     # nunavut: language context.
     #
-    if args.list_inputs is not None and args.target_language is None and args.output_extension is None:
-        # This is a special case where we know we'll never actually use the output extension since
-        # we are only listing the input files. All other cases require either an output extension or
-        # a valid target language.
-        setattr(args, 'output_extension', '.tmp')
-
     language_options = dict()
     if args.target_endianness is not None:
         language_options['target_endianness'] = args.target_endianness
@@ -115,9 +116,12 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
     #
     # nunavut : parse
     #
-    type_map = pydsdl.read_namespace(args.root_namespace,
-                                     extra_includes,
-                                     allow_unregulated_fixed_port_id=args.allow_unregulated_fixed_port_id)
+    if args.generate_support != 'only':
+        type_map = pydsdl.read_namespace(args.root_namespace,
+                                         extra_includes,
+                                         allow_unregulated_fixed_port_id=args.allow_unregulated_fixed_port_id)
+    else:
+        type_map = []
 
     root_namespace = nunavut.build_namespace_tree(
         type_map,
@@ -143,37 +147,44 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
     generator, support_generator = create_generators(root_namespace, **generator_args)
 
     if args.list_outputs:
-        for output_path in generator.generate_all(is_dryrun=True):
-            sys.stdout.write(str(output_path))
-            sys.stdout.write(';')
-        for output_path in support_generator.generate_all(is_dryrun=True):
-            sys.stdout.write(str(output_path))
-            sys.stdout.write(';')
+        if args.generate_support != 'only':
+            for output_path in generator.generate_all(is_dryrun=True):
+                sys.stdout.write(str(output_path))
+                sys.stdout.write(';')
+
+        if _should_generate_support(args):
+            for output_path in support_generator.generate_all(is_dryrun=True):
+                sys.stdout.write(str(output_path))
+                sys.stdout.write(';')
         return 0
 
     if args.list_inputs:
-        for input_path in generator.get_templates():
-            sys.stdout.write(str(input_path.resolve()))
-            sys.stdout.write(';')
-        for input_path in support_generator.get_templates():
-            sys.stdout.write(str(input_path.resolve()))
-            sys.stdout.write(';')
-        if generator.generate_namespace_types:
-            for output_type, _ in root_namespace.get_all_types():
-                sys.stdout.write(str(output_type.source_file_path))
+        if args.generate_support != 'only':
+            for input_path in generator.get_templates():
+                sys.stdout.write(str(input_path.resolve()))
                 sys.stdout.write(';')
-        else:
-            for output_type, _ in root_namespace.get_all_datatypes():
-                sys.stdout.write(str(output_type.source_file_path))
+        if _should_generate_support(args):
+            for input_path in support_generator.get_templates():
+                sys.stdout.write(str(input_path.resolve()))
                 sys.stdout.write(';')
+        if args.generate_support != 'only':
+            if generator.generate_namespace_types:
+                for output_type, _ in root_namespace.get_all_types():
+                    sys.stdout.write(str(output_type.source_file_path))
+                    sys.stdout.write(';')
+            else:
+                for output_type, _ in root_namespace.get_all_datatypes():
+                    sys.stdout.write(str(output_type.source_file_path))
+                    sys.stdout.write(';')
         return 0
 
-    if args.omit_serialization_support is None or not args.omit_serialization_support:
+    if _should_generate_support(args):
         support_generator.generate_all(is_dryrun=args.dry_run,
                                        allow_overwrite=not args.no_overwrite)
 
-    generator.generate_all(is_dryrun=args.dry_run,
-                           allow_overwrite=not args.no_overwrite)
+    if args.generate_support != 'only':
+        generator.generate_all(is_dryrun=args.dry_run,
+                               allow_overwrite=not args.no_overwrite)
     return 0
 
 
@@ -191,6 +202,37 @@ class _LazyVersionAction(argparse._VersionAction):
         from nunavut.version import __version__
         parser._print_message(__version__, sys.stdout)
         parser.exit()
+
+
+class _NunavutArgumentParser(argparse.ArgumentParser):
+    """
+    Specialization of argparse.ArgumentParser to encapuslate inter-argument rules.
+    """
+
+    def parse_known_args(self,
+                         args: typing.Optional[typing.Sequence[str]] = None,
+                         namespace: typing.Optional[argparse.Namespace] = None) \
+            -> typing.Tuple[argparse.Namespace, typing.List[str]]:
+        parsed_args, argv = super().parse_known_args(args, namespace)
+        self._post_process_args(parsed_args)
+        return (parsed_args, argv)
+
+    def _post_process_args(self, args: argparse.Namespace) -> None:
+        """
+        Applies rules between different arguments and handles other special cases.
+        """
+        if args.list_inputs is not None and args.target_language is None and args.output_extension is None:
+            # This is a special case where we know we'll never actually use the output extension since
+            # we are only listing the input files. All other cases require either an output extension or
+            # a valid target language.
+            setattr(args, 'output_extension', '.tmp')
+
+        if args.omit_serialization_support and args.generate_support == 'always':
+            self.error(textwrap.dedent('''
+                Logic error: use of --omit-serialization-support and --generate-support=always
+
+                You cannot both omit serialization support and require generation of support code.
+            ''').lstrip())
 
 
 def _make_parser() -> argparse.ArgumentParser:
@@ -211,12 +253,14 @@ def _make_parser() -> argparse.ArgumentParser:
 
     ''')
 
-    parser = argparse.ArgumentParser(
+    parser = _NunavutArgumentParser(
         description='Generate code from UAVCAN DSDL using pydsdl and jinja2',
         epilog=epilog,
         formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('root_namespace',
+                        default='.',
+                        nargs='?',
                         help='A source directory with DSDL definitions.')
 
     parser.add_argument('--lookup-dir', '-I', default=[], action='append',
@@ -299,6 +343,18 @@ def _make_parser() -> argparse.ArgumentParser:
         This command is useful for integrating with CMake and other build
         systems that need a list of targets to determine if a rebuild is
         necessary.
+
+    ''').lstrip())
+
+    parser.add_argument('--generate-support', choices=['always', 'never', 'as-needed', 'only'],
+                        default='as-needed',
+                        help=textwrap.dedent('''
+        Change the criteria used to enable or disable support code generation.
+
+        as-needed (default) - generate support code if serialization is enabled.
+        always - always generate support code.
+        never - never generate support code.
+        only - only generate support code.
 
     ''').lstrip())
 

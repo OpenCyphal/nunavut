@@ -23,6 +23,8 @@
 # :param str ARG_SER_ENDIANNESS:            One of 'any', 'big', or 'little' to pass as the value of the
 #                                           nnvg `--target-endianness` argument. Set to an empty string
 #                                           to omit this argument.
+# :param str ARG_GENERATE_SUPPORT:          value for the nnvg --generate-support argument. See
+#                                           nnvg --help for documentation
 # :param ...:                               A list of paths to use when looking up dependent DSDL types.
 # :returns: Sets a variable "ARG_TARGET_NAME"-OUTPUT in the parent scope to the list of files the target
 #           will generate. For example, if ARG_TARGET_NAME == 'foo-bar' then after calling this function
@@ -35,13 +37,14 @@ function (create_dsdl_target ARG_TARGET_NAME
                              ARG_ENABLE_CLANG_FORMAT
                              ARG_ENABLE_SER_ASSERT
                              ARG_DISABLE_SER_FP
-                             ARG_SER_ENDIANNESS)
+                             ARG_SER_ENDIANNESS
+                             ARG_GENERATE_SUPPORT)
 
     separate_arguments(NNVG_CMD_ARGS UNIX_COMMAND "${NNVG_FLAGS}")
 
-    if (${ARGC} GREATER 8)
+    if (${ARGC} GREATER 9)
         MATH(EXPR ARG_N_LAST "${ARGC}-1")
-        foreach(ARG_N RANGE 8 ${ARG_N_LAST})
+        foreach(ARG_N RANGE 9 ${ARG_N_LAST})
             list(APPEND NNVG_CMD_ARGS "-I")
             list(APPEND NNVG_CMD_ARGS "${ARGV${ARG_N}}")
         endforeach(ARG_N)
@@ -71,7 +74,7 @@ function (create_dsdl_target ARG_TARGET_NAME
         message(STATUS "Disabling floating point seralization routines in generated support code.")
     endif()
 
-    execute_process(COMMAND ${NNVG} --list-outputs ${NNVG_CMD_ARGS}
+    execute_process(COMMAND ${NNVG} --generate-support=${ARG_GENERATE_SUPPORT} --list-outputs ${NNVG_CMD_ARGS}
                     OUTPUT_VARIABLE OUTPUT_FILES
                     RESULT_VARIABLE LIST_OUTPUTS_RESULT)
 
@@ -81,7 +84,7 @@ function (create_dsdl_target ARG_TARGET_NAME
                             " (${NNVG})")
     endif()
 
-    execute_process(COMMAND ${NNVG} --list-inputs ${NNVG_CMD_ARGS}
+    execute_process(COMMAND ${NNVG} --generate-support=${ARG_GENERATE_SUPPORT} --list-inputs ${NNVG_CMD_ARGS}
                     OUTPUT_VARIABLE INPUT_FILES
                     RESULT_VARIABLE LIST_INPUTS_RESULT)
 
@@ -98,7 +101,7 @@ function (create_dsdl_target ARG_TARGET_NAME
     endif()
 
     add_custom_command(OUTPUT ${OUTPUT_FILES}
-                       COMMAND ${NNVG} ${CLANG_FORMAT_ARGS} ${NNVG_CMD_ARGS}
+                       COMMAND ${NNVG} --generate-support=${ARG_GENERATE_SUPPORT} ${CLANG_FORMAT_ARGS} ${NNVG_CMD_ARGS}
                        DEPENDS ${INPUT_FILES}
                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                        COMMENT "Running nnvg")
@@ -131,7 +134,6 @@ function (create_dsdl_target ARG_TARGET_NAME
     set(${ARG_TARGET_NAME}-OUTPUT ${OUTPUT_FILES} PARENT_SCOPE)
 
 endfunction(create_dsdl_target)
-
 
 # +---------------------------------------------------------------------------+
 # | CONFIGURE: PYTHON ENVIRONMENT

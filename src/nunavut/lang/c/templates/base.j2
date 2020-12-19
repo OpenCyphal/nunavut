@@ -22,6 +22,11 @@
 // Fixed port-ID: {{ T.fixed_port_id }}
 // Full name:     {{ T.full_name }}
 // Version:       {{ T.version.major }}.{{ T.version.minor }}
+//
+// Language Options
+{% for key, value in options.items() -%}
+//     {{ key }}:  {{ value}}
+{% endfor %}
 {%- if T.deprecated %}
 {#- Courtesy http://patorjk.com/software/taag/#p=display&f=Big&t=DEPRECATED #}
 {#- In C there is no standard way of marking definitions deprecated. #}
@@ -35,12 +40,17 @@
 // WARNING: this data type is deprecated and is nearing the end of its life cycle. Seek replacement.
 {%- endif %}
 
-{% set include_guard -%}{{T.full_name | c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED_{%- endset -%}
+{% set include_guard -%}{{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED_{%- endset -%}
 #ifndef {{ include_guard }}
 #define {{ include_guard }}
 
 {% for n in T | includes -%}
 #include {{ n }}
+{% endfor %}
+{% for key, value in options.items() -%}
+static_assert( {{ "NUNAVUT_SUPPORT_LANGUAGE_OPTION_{}".format(key) | ln.c.macrofy }} == {{ value | to_static_assertion_value }},
+              "{{ T.source_file_path }} is trying to use a serialization library that was compiled with "
+              "different language options. This is dangerous and therefore not allowed." );
 {% endfor %}
 #ifdef __cplusplus
 extern "C" {

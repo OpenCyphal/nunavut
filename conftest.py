@@ -36,7 +36,8 @@ def run_nnvg(request):  # type: ignore
     def _run_nnvg(gen_paths: typing.Any,
                   args: typing.List[str],
                   check_result: bool = True,
-                  env: typing.Optional[typing.Dict[str, str]] = None) -> subprocess.CompletedProcess:
+                  env: typing.Optional[typing.Dict[str, str]] = None,
+                  raise_called_process_error: bool = False) -> subprocess.CompletedProcess:
         """
         Helper to invoke nnvg for unit testing within the proper python coverage wrapper.
         """
@@ -44,11 +45,18 @@ def run_nnvg(request):  # type: ignore
         this_env = os.environ.copy()
         if env is not None:
             this_env.update(env)
-        return subprocess.run(coverage_args + args,
-                              check=check_result,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE,
-                              env=this_env)
+        try:
+            return subprocess.run(coverage_args + args,
+                                check=check_result,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                env=this_env)
+        except subprocess.CalledProcessError as e:
+            if raise_called_process_error:
+                raise e
+            else:
+                raise AssertionError(e.stderr.decode('utf-8'))
+
     return _run_nnvg
 
 
@@ -330,6 +338,7 @@ def jinja_filter_tester(request):  # type: ignore
         target_language_resolved = lctx.get_target_language()
         if target_language_resolved is not None:
             e.globals.update(target_language_resolved.get_globals())
+            e.globals['options'].update(target_language_resolved.get_options())
 
         rendered = str(e.get_template('test').render())
         if expected != rendered:

@@ -64,6 +64,12 @@ The time UTC as a Python :code:`datetime.datetime` object. This is the system ti
 the file generation step for the current template began. This will be the same time for included
 templates and parent templates.
 
+ln
+=================================================
+
+Options and other language-specific facilities for all supported languages. This namespace
+provides access to other languages that are *not* the target language for the current template.
+This allows the development of mixed language templates.
 
 Filters and Tests
 =================================================
@@ -137,8 +143,8 @@ Language Options
 The target language for a template contributes options to the template globals. These options
 can be invented by users of the Nunavut library but a built-in set of defaults exists.
 
-All language options are made available as globals with the `option_` prefix. For example,
-a language option "target_arch" would be available as the "option_target_arch" global in
+All language options are made available as globals within the `options` namespace. For example,
+a language option "target_arch" would be available as the "options.target_arch" global in
 templates.
 
 For options that do not come with built-in defaults you'll need to test if the option is
@@ -147,7 +153,7 @@ available before you use it. For example:
 .. code-block:: python
 
    # This will throw an exception
-   template = '{% if option_foo %}bar{% endif %}'
+   template = '{% if options.foo %}bar{% endif %}'
 
 .. invisible-code-block: python
 
@@ -165,7 +171,7 @@ Use the built-in test |jinja2_builtin_test_defined|_ to avoid these exceptions:
 .. code-block:: python
 
    # Avoid the exception
-   template = '{% if option_foo is defined and option_foo %}bar{% endif %}'
+   template = '{% if options.foo is defined and options.foo %}bar{% endif %}'
 
 .. invisible-code-block: python
 
@@ -177,7 +183,7 @@ Language Options with Built-in Defaults
 The following options have built-in defaults for certain languages. These options will
 always be defined in templates targeting their languages.
 
-option_target_endianness
+options.target_endianness
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This option is currently defined for C and C++; the possible values are as follows:
@@ -192,7 +198,7 @@ This option is currently defined for C and C++; the possible values are as follo
 
 .. code-block:: python
 
-   template = '{{ option_target_endianness }}'
+   template = '{{ options.target_endianness }}'
 
    # then
    rendered = 'any'
@@ -242,6 +248,8 @@ C Filters
 .. autofunction:: nunavut.lang.c.filter_short_reference_name
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_includes
+   :noindex:
+.. autofunction:: nunavut.lang.c.filter_to_static_assertion_value
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_constant_value
    :noindex:
@@ -341,12 +349,12 @@ given a template ``common_header.j2``::
     * full_namespace: {{T.full_namespace}}
     */
 
-    #ifndef {{T.full_name | c.macrofy}}
-    #define {{T.full_name | c.macrofy}}
+    #ifndef {{T.full_name | ln.c.macrofy}}
+    #define {{T.full_name | ln.c.macrofy}}
 
     {%- block contents %}{% endblock -%}
 
-    #endif // {{T.full_name | c.macrofy}}
+    #endif // {{T.full_name | ln.c.macrofy}}
 
     /*
     {{ T | yamlfy }}
