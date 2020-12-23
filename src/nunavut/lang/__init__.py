@@ -185,6 +185,13 @@ class Language:
         return self._config.getboolean(self._section, 'has_standard_namespace_files')
 
     @property
+    def stable_support(self) -> bool:
+        """
+        Whether support for this language is designated 'stable', and not experimental.
+        """
+        return self._config.getboolean(self._section, 'stable_support', fallback=False)
+
+    @property
     def omit_serialization_support(self) -> bool:
         """
         If True then generators should not include serialization routines, types,
@@ -398,6 +405,7 @@ class LanguageContext:
         serialization routines, types, or support libraries for the target language.
     :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
                 target :class:`nunavut.lang.Language` object.
+    :param bool include_experimental_languages: If True, expose languages with experimental (non-stable) support.
     :raises ValueError: If extension is None and no target language was provided.
     :raises KeyError: If the target language is not known.
     """
@@ -422,7 +430,8 @@ class LanguageContext:
                  namespace_output_stem: typing.Optional[str] = None,
                  additional_config_files: typing.List[pathlib.Path] = [],
                  omit_serialization_support_for_target: bool = True,
-                 language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None):
+                 language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+                 include_experimental_languages: bool = True):
         self._extension = extension
         self._namespace_output_stem = namespace_output_stem
         self._config = self._load_config(*additional_config_files)
@@ -437,6 +446,8 @@ class LanguageContext:
                                                  language_options=language_options)
             except ImportError:
                 raise KeyError('{} is not a supported language'.format(target_language))
+            if not (self._target_language.stable_support or include_experimental_languages):
+                raise ValueError('{} support is only experimental, but experimental language support is not enabled')
             if namespace_output_stem is not None:
                 self._config.set('nunavut.lang.{}'.format(target_language),
                                  'namespace_file_stem',
@@ -453,7 +464,9 @@ class LanguageContext:
                 self._languages[language_name] = self._target_language
             else:
                 try:
-                    self._languages[language_name] = Language(language_name, self._config, False)
+                    lang = Language(language_name, self._config, False)
+                    if lang.stable_support or include_experimental_languages:
+                        self._languages[language_name] = lang
                 except ImportError:
                     raise KeyError('{} is not a supported language'.format(language_name))
 
