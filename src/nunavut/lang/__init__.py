@@ -456,15 +456,18 @@ class LanguageContext:
                 self._config.set('nunavut.lang.{}'.format(target_language),
                                  'extension',
                                  extension)
-
             self._languages[target_language] = self._target_language
 
         # create remaining languages
         remaining_languages = set(self.get_supported_language_names()) - set((target_language,))
-        for language_name in remaining_languages:
+        self._populate_languages(remaining_languages, include_experimental_languages)
+
+    def _populate_languages(self, language_names: typing.Iterable[str],
+                            include_experimental: bool) -> None:
+        for language_name in language_names:
             try:
                 lang = Language(language_name, self._config, False)
-                if lang.stable_support or include_experimental_languages:
+                if lang.stable_support or include_experimental:
                     self._languages[language_name] = lang
             except ImportError:
                 raise KeyError('{} is not a supported language'.format(language_name))
