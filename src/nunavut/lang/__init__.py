@@ -435,11 +435,11 @@ class LanguageContext:
         self._extension = extension
         self._namespace_output_stem = namespace_output_stem
         self._config = self._load_config(*additional_config_files)
+        self._languages = dict()  # type: typing.Dict[str, Language]
 
         # create target language, if there is one.
-        if target_language is None:
-            self._target_language = None
-        else:
+        self._target_language = None
+        if target_language is not None:
             try:
                 self._target_language = Language(target_language, self._config,
                                                  omit_serialization_support_for_target,
@@ -457,18 +457,17 @@ class LanguageContext:
                                  'extension',
                                  extension)
 
+            self._languages[target_language] = self._target_language
+
         # create remaining languages
-        self._languages = dict()  # type: typing.Dict[str, Language]
-        for language_name in self.get_supported_language_names():
-            if self._target_language is not None and self._target_language.name == language_name:
-                self._languages[language_name] = self._target_language
-            else:
-                try:
-                    lang = Language(language_name, self._config, False)
-                    if lang.stable_support or include_experimental_languages:
-                        self._languages[language_name] = lang
-                except ImportError:
-                    raise KeyError('{} is not a supported language'.format(language_name))
+        remaining_languages = set(self.get_supported_language_names()) - set((target_language,))
+        for language_name in remaining_languages:
+            try:
+                lang = Language(language_name, self._config, False)
+                if lang.stable_support or include_experimental_languages:
+                    self._languages[language_name] = lang
+            except ImportError:
+                raise KeyError('{} is not a supported language'.format(language_name))
 
     def get_language(self, key_or_modulename: str) -> Language:
         """
