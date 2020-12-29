@@ -185,6 +185,13 @@ class Language:
         return self._config.getboolean(self._section, 'has_standard_namespace_files')
 
     @property
+    def stable_support(self) -> bool:
+        """
+        Whether support for this language is designated 'stable', and not experimental.
+        """
+        return self._config.getboolean(self._section, 'stable_support', fallback=False)
+
+    @property
     def omit_serialization_support(self) -> bool:
         """
         If True then generators should not include serialization routines, types,
@@ -398,6 +405,7 @@ class LanguageContext:
         serialization routines, types, or support libraries for the target language.
     :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
                 target :class:`nunavut.lang.Language` object.
+    :param bool include_experimental_languages: If True, expose languages with experimental (non-stable) support.
     :raises ValueError: If extension is None and no target language was provided.
     :raises KeyError: If the target language is not known.
     """
@@ -422,21 +430,24 @@ class LanguageContext:
                  namespace_output_stem: typing.Optional[str] = None,
                  additional_config_files: typing.List[pathlib.Path] = [],
                  omit_serialization_support_for_target: bool = True,
-                 language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None):
+                 language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+                 include_experimental_languages: bool = True):
         self._extension = extension
         self._namespace_output_stem = namespace_output_stem
         self._config = self._load_config(*additional_config_files)
+        self._languages = dict()  # type: typing.Dict[str, Language]
 
         # create target language, if there is one.
-        if target_language is None:
-            self._target_language = None
-        else:
+        self._target_language = None
+        if target_language is not None:
             try:
                 self._target_language = Language(target_language, self._config,
                                                  omit_serialization_support_for_target,
                                                  language_options=language_options)
             except ImportError:
                 raise KeyError('{} is not a supported language'.format(target_language))
+            if not (self._target_language.stable_support or include_experimental_languages):
+                raise ValueError('{} support is only experimental, but experimental language support is not enabled')
             if namespace_output_stem is not None:
                 self._config.set('nunavut.lang.{}'.format(target_language),
                                  'namespace_file_stem',
@@ -445,17 +456,21 @@ class LanguageContext:
                 self._config.set('nunavut.lang.{}'.format(target_language),
                                  'extension',
                                  extension)
+            self._languages[target_language] = self._target_language
 
         # create remaining languages
-        self._languages = dict()  # type: typing.Dict[str, Language]
-        for language_name in self.get_supported_language_names():
-            if self._target_language is not None and self._target_language.name == language_name:
-                self._languages[language_name] = self._target_language
-            else:
-                try:
-                    self._languages[language_name] = Language(language_name, self._config, False)
-                except ImportError:
-                    raise KeyError('{} is not a supported language'.format(language_name))
+        remaining_languages = set(self.get_supported_language_names()) - set((target_language,))
+        self._populate_languages(remaining_languages, include_experimental_languages)
+
+    def _populate_languages(self, language_names: typing.Iterable[str],
+                            include_experimental: bool) -> None:
+        for language_name in language_names:
+            try:
+                lang = Language(language_name, self._config, False)
+                if lang.stable_support or include_experimental:
+                    self._languages[language_name] = lang
+            except ImportError:
+                raise KeyError('{} is not a supported language'.format(language_name))
 
     def get_language(self, key_or_modulename: str) -> Language:
         """

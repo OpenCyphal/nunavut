@@ -76,7 +76,8 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
         args.output_extension,
         args.namespace_output_stem,
         omit_serialization_support_for_target=args.omit_serialization_support,
-        language_options=language_options)
+        language_options=language_options,
+        include_experimental_languages=args.experimental_languages)
 
     #
     # nunavut: inferred target language from extension
@@ -266,6 +267,19 @@ def _make_parser() -> argparse.ArgumentParser:
 
         If provided then the output extension (--e) can be inferred otherwise the output
         extension must be provided.
+
+    ''').lstrip())
+
+    parser.add_argument('--experimental-languages', '-Xlang',
+                        action='store_true',
+                        help=textwrap.dedent('''
+
+        Activate languages with unstable, experimental support.
+
+        By default, target languages where support is not finalised are not
+        enabled when running nunavut, to make it clear that the code output
+        may change in a non-backwards-compatible way in future versions, or
+        that it might not even work yet.
 
     ''').lstrip())
 
