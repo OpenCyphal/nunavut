@@ -6,9 +6,9 @@
  #          Peter van der Perk <peter.vanderperk@nxp.com>
 -#}
 
-{% if option_target_endianness == 'little' %}
+{% if options.target_endianness == 'little' %}
     {% set LITTLE_ENDIAN = True %}
-{% elif option_target_endianness in ('any', 'big') %}
+{% elif options.target_endianness in ('any', 'big') %}
     {% set LITTLE_ENDIAN = False %}
 {% else %}{% assert False %}
 {% endif %}
@@ -71,7 +71,7 @@ static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {%- macro assert(expression) -%}
-    {%- if option_enable_serialization_asserts -%}
+    {%- if options.enable_serialization_asserts -%}
     NUNAVUT_ASSERT({{ expression }});
     {%- endif -%}
 {%- endmacro -%}

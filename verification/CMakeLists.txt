@@ -137,6 +137,19 @@ add_definitions(-DUNITY_SUPPORT_64=1
 find_package(nnvg REQUIRED)
 
 #
+# Generate serialization support headers
+#
+create_dsdl_target(nunavut-support
+                   ${NUNAVUT_VERIFICATION_LANG}
+                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
+                   ""
+                   OFF
+                   ${NUNAVUT_VERIFICATION_SER_ASSERT}
+                   ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
+                   "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
+                   "only")
+
+#
 # Generate types for the UAVCAN v1 public_regulated_data_types set.
 #
 create_dsdl_target(dsdl-regulated
@@ -146,7 +159,10 @@ create_dsdl_target(dsdl-regulated
                    OFF
                    ${NUNAVUT_VERIFICATION_SER_ASSERT}
                    ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
-                   "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}")
+                   "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
+                   "never")
+
+add_dependencies(dsdl-regulated nunavut-support)
 
 #
 # Generate additional types for verification
@@ -159,7 +175,10 @@ create_dsdl_target(dsdl-test
                    ${NUNAVUT_VERIFICATION_SER_ASSERT}
                    ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
                    "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
+                   "never"
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
+
+add_dependencies(dsdl-test nunavut-support)
 
 # +---------------------------------------------------------------------------+
 # | FLAG SETS

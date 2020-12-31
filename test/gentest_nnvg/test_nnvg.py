@@ -25,7 +25,7 @@ def test_UAVCAN_DSDL_INCLUDE_PATH(gen_paths: typing.Any, run_nnvg: typing.Callab
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     with pytest.raises(subprocess.CalledProcessError):
-        run_nnvg(gen_paths, nnvg_args0)
+        run_nnvg(gen_paths, nnvg_args0, raise_called_process_error=True)
 
     scotec_path = str(gen_paths.dsdl_dir / pathlib.Path('scotec'))
     herringtec_path = str(gen_paths.dsdl_dir / pathlib.Path('herringtec'))
@@ -119,6 +119,69 @@ def test_list_outputs(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     assert expected_output == sorted(completed_wo_empty)
 
 
+def test_list_support_outputs_builtin(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+        Verifies nnvg's --list-output mode for internal language support.
+    """
+    support_path = gen_paths.out_dir / pathlib.Path('nunavut') / pathlib.Path('support')
+    expected_output = sorted([
+        str(support_path / pathlib.Path('serialization').with_suffix('.h'))
+    ])
+
+    nnvg_args = ['-O', str(gen_paths.out_dir),
+                 '-e', '.h',
+                 '--list-outputs',
+                 '--generate-support=only',
+                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    completed_wo_empty = sorted([i for i in completed if len(i) > 0])
+    assert expected_output == sorted(completed_wo_empty)
+
+
+def test_list_outputs_builtin(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+        Verifies nnvg's --list-output mode for internal language support.
+    """
+    support_path = gen_paths.out_dir / pathlib.Path('nunavut') / pathlib.Path('support')
+    test_path = gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test')
+    expected_output = sorted([
+        str(support_path / pathlib.Path('serialization').with_suffix('.h')),
+        str(test_path / pathlib.Path('TestType_0_8').with_suffix('.h')),
+    ])
+
+    nnvg_args = ['-O', str(gen_paths.out_dir),
+                 '-e', '.h',
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 '--list-outputs',
+                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    completed_wo_empty = sorted([i for i in completed if len(i) > 0])
+    assert expected_output == sorted(completed_wo_empty)
+
+
+def test_list_outputs_builtin_pod(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+        Verifies nnvg's --list-output mode for internal language support.
+    """
+    test_path = gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test')
+    expected_output = sorted([
+        str(test_path / pathlib.Path('TestType_0_8').with_suffix('.h')),
+    ])
+
+    nnvg_args = ['-O', str(gen_paths.out_dir),
+                 '-e', '.h',
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 '--list-outputs',
+                 '--omit-serialization-support',
+                 str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
+
+    completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    completed_wo_empty = sorted([i for i in completed if len(i) > 0])
+    assert expected_output == sorted(completed_wo_empty)
+
+
 def test_version(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """
         Verifies nnvg's --version
@@ -156,7 +219,8 @@ def test_language_option_defaults(gen_paths: typing.Any, run_nnvg: typing.Callab
         Verifies expected language option defaults are available.
     """
 
-    expected_output = str(gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp'))
+    expected_output = str(gen_paths.out_dir / pathlib.Path('uavcan') /
+                          pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp'))
 
     nnvg_args = ['--templates', str(gen_paths.templates_dir),
                  '-O', str(gen_paths.out_dir),
@@ -179,7 +243,8 @@ def test_language_option_overrides(target_endianness_override: str, gen_paths: t
         Verifies expected language option defaults can be overridden.
     """
 
-    expected_output = str(gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp'))
+    expected_output = str(gen_paths.out_dir / pathlib.Path('uavcan') /
+                          pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp'))
 
     nnvg_args = ['--templates', str(gen_paths.templates_dir),
                  '-O', str(gen_paths.out_dir),
@@ -209,7 +274,7 @@ def test_language_option_target_endianness_illegal_option(gen_paths: typing.Any,
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     with pytest.raises(subprocess.CalledProcessError):
-        run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+        run_nnvg(gen_paths, nnvg_args, raise_called_process_error=True).stdout.decode("utf-8").split(';')
 
 
 def test_language_option_omit_floatingpoint(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
@@ -217,7 +282,8 @@ def test_language_option_omit_floatingpoint(gen_paths: typing.Any, run_nnvg: typ
         Verifies that the --omit-float-serialization-support option is wired up in nnvg.
     """
 
-    expected_output = str(gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp'))
+    expected_output = str(gen_paths.out_dir / pathlib.Path('uavcan') /
+                          pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp'))
 
     nnvg_args = ['--templates', str(gen_paths.templates_dir),
                  '-O', str(gen_paths.out_dir),
@@ -238,7 +304,8 @@ def test_language_option_generate_asserts(gen_paths: typing.Any, run_nnvg: typin
         Verifies that the --enable-serialization-asserts option is wired up in nnvg.
     """
 
-    expected_output = str(gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp'))
+    expected_output = str(gen_paths.out_dir / pathlib.Path('uavcan') /
+                          pathlib.Path('test') / pathlib.Path('TestType_0_8.hpp'))
 
     nnvg_args = ['--templates', str(gen_paths.templates_dir),
                  '-O', str(gen_paths.out_dir),
@@ -252,6 +319,75 @@ def test_language_option_generate_asserts(gen_paths: typing.Any, run_nnvg: typin
     with open(expected_output, 'r') as generated:
         generated_results = json.load(generated)
         assert generated_results['enable_serialization_asserts']
+
+
+def test_generate_support_only(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+        Verifies expected language option defaults can be overridden.
+    """
+    support_path = gen_paths.out_dir / pathlib.Path('nunavut') / pathlib.Path('support')
+    expected_output = sorted([
+        support_path / pathlib.Path('serialization').with_suffix('.h')
+    ])
+
+    nnvg_args = ['-O', str(gen_paths.out_dir),
+                 '--target-language', 'c',
+                 '--generate-support=only']
+
+    run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+    for expected_output_path in expected_output:
+        assert support_path.exists()
+
+
+@pytest.mark.parametrize('generate_support', ['as-needed', 'never', 'always', 'only'])
+@pytest.mark.parametrize('omit_serialization', [True, False])
+def test_generate_support(generate_support: str,
+                          omit_serialization: bool,
+                          gen_paths: typing.Any,
+                          run_nnvg: typing.Callable) -> None:
+    """
+        Verifies expected language option defaults can be overridden.
+    """
+    support_path = gen_paths.out_dir / pathlib.Path('nunavut') / pathlib.Path('support')
+    test_type_path = gen_paths.out_dir / pathlib.Path('uavcan') / pathlib.Path('test')
+    support_output = [
+        support_path / pathlib.Path('serialization').with_suffix('.h')
+    ]
+    type_output = [
+        test_type_path / pathlib.Path('TestType_0_8.h')
+    ]
+
+    nnvg_args = ['-O', str(gen_paths.out_dir),
+                 '--target-language', 'c',
+                 '-I', str(gen_paths.dsdl_dir / pathlib.Path('scotec')),
+                 '--generate-support={}'.format(generate_support)]
+
+    if omit_serialization:
+        nnvg_args.append('--omit-serialization-support')
+
+    nnvg_args.append(str(gen_paths.dsdl_dir / pathlib.Path("uavcan")))
+
+    if omit_serialization and generate_support == 'always':
+        # special case where the combination of arguments is illogical
+        with pytest.raises(subprocess.CalledProcessError):
+            run_nnvg(gen_paths, nnvg_args, raise_called_process_error=True)
+    else:
+        run_nnvg(gen_paths, nnvg_args)
+        for support_output_path in support_output:
+            if generate_support == 'always':
+                assert support_output_path.exists()
+            elif generate_support == 'never':
+                assert not support_output_path.exists()
+            elif not omit_serialization:
+                assert support_output_path.exists()
+            else:
+                assert not support_output_path.exists()
+
+        for type_output_path in type_output:
+            if generate_support != 'only':
+                assert type_output_path.exists()
+            else:
+                assert not type_output_path.exists()
 
 
 def test_issue_73(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
@@ -298,7 +434,7 @@ def test_issue_116(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
                  str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     try:
-        run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(';')
+        run_nnvg(gen_paths, nnvg_args, raise_called_process_error=True).stdout.decode("utf-8").split(';')
         pytest.fail('nnvg completed normally when it should have failed to find a template.')
     except subprocess.CalledProcessError as e:
         error_output = e.stderr.decode('UTF-8')

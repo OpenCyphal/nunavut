@@ -9,8 +9,8 @@
         "type": "{{ T | typename }}",
         "source" : "{{ T.source_file_path }}",
         "fixed_port_id": {{ T.fixed_port_id }},
-        "deprecated": {{ T.deprecated | js.to_true_or_false }},
-        "version": 
+        "deprecated": {{ T.deprecated | ln.js.to_true_or_false }},
+        "version":
         {
           "major" : {{ T.version.major }},
           "minor" : {{ T.version.minor }}

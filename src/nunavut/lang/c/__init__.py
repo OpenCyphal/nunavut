@@ -657,6 +657,72 @@ def filter_includes(language: Language,
     return include_gen.generate_include_filepart_list(language.extension, sort)
 
 
+def filter_to_static_assertion_value(obj: typing.Any) -> int:
+    """
+    Tries to convert a Python object into a value compatible with static comparisons in C. This allows stable comparison
+    of static values in headers to promote consistency and version compatibility in generated code.
+
+    Will raise a ValueError if the object provided does not (yet) have an available conversion in this function.
+
+    Currently supported types are string:
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.c import filter_to_static_assertion_value
+
+    .. code-block:: python
+
+         # given
+        template = '{{ "Any" | to_static_assertion_value }}'
+
+        # then
+        rendered = '1556001108'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_static_assertion_value, template, rendered, 'c')
+
+    int:
+
+    .. code-block:: python
+
+         # given
+        template = '{{ 123 | to_static_assertion_value }}'
+
+        # then
+        rendered = '123'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_static_assertion_value, template, rendered, 'c')
+
+    and bool:
+
+    .. code-block:: python
+
+         # given
+        template = '{{ True | to_static_assertion_value }}'
+
+        # then
+        rendered = '1'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_static_assertion_value, template, rendered, 'c')
+
+    """
+
+    if isinstance(obj, bool):
+        return (1 if obj else 0)
+    if isinstance(obj, int):
+        return obj
+    if isinstance(obj, str):
+        from zlib import crc32
+        return crc32(bytearray(obj, 'utf-8'))
+
+    raise ValueError('Cannot convert object of type {} into an integer in a stable manner.'.format(type(obj)))
+
+
 @template_language_filter(__name__)
 def filter_constant_value(language: Language,
                           constant: pydsdl.Constant) -> str:
