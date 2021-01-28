@@ -5,7 +5,7 @@
         "ms-azuretools.vscode-docker",
         "uavcan.dsdl",
         "wholroyd.jinja",
-        "streetsidesoftware.code-spell-checker",
+        "ban.spellright",
         "ms-python.python",
         "lextudio.restructuredtext",
         "ms-vscode.cpptools",
