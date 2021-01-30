@@ -11,6 +11,8 @@
         "ms-vscode.cpptools",
         "twxs.cmake",
         "ms-vscode.cmake-tools",
-        "xaver.clang-format"
+        "xaver.clang-format",
+        "hbenl.vscode-test-explorer",
+        "matepek.vscode-catch2-test-adapter"
     ]
 }

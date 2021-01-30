@@ -35,7 +35,9 @@
     "cmake.buildBeforeRun": true,
     "cmake.copyCompileCommands": "${workspaceFolder}/.vscode/compile_commands.json",
     "cmake.generator": "Unix Makefiles",
-    "cmake.configureArgs": ["-DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE"],
+    "cmake.configureArgs": [
+        "-DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE"
+    ],
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "C_Cpp.configurationWarnings": "Disabled",
     "files.associations": {
@@ -150,4 +152,29 @@
         "python",
         "cpp"
     ],
+    "testMate.cpp.test.advancedExecutables": [
+        {
+            "pattern": "verification/build_vscode/**/suite/{test,Test,TEST}_*",
+            "cwd": "${workspaceFolder}"
+        }
+    ],
+    "testMate.cpp.debug.configTemplate": {
+        "type": "cppdbg",
+        "linux": {
+            "MIMode": "gdb"
+        },
+        "osx": {
+            "MIMode": "lldb",
+            "externalConsole": false
+        },
+        "windows": {
+            "type": "cppvsdbg"
+        },
+        "program": "${exec}",
+        "args": "${argsArray}",
+        "cwd": "${workspaceFolder}",
+        "env": "",
+        "environment": "",
+        "sourceFileMap": "${sourceFileMapObj}"
+    }
 }

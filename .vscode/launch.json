@@ -35,6 +35,13 @@
             "cwd": "${workspaceFolder}"
         },
         {
+            "name": "Verification: test_constant",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_constant",
+            "cwd": "${workspaceFolder}"
+        },
+        {
             "name": "Verification: test_support",
             "type": "cppdbg",
             "request": "launch",
@@ -49,32 +56,37 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "Verification (lldb): test_initialization",
-            "type": "lldb",
+            "name": "Verification(clang): test_constant",
+            "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_initialization",
-            "cwd": "${workspaceFolder}"
+            "program": "${workspaceRoot}/verification/build_vscode/native-clang-c/suite/test_constant",
+            "cwd": "${workspaceFolder}",
+            "osx": {
+                "MIMode": "lldb",
+                "externalConsole": false
+            }
         },
         {
-            "name": "Verification(lldb): test_support",
-            "type": "lldb",
+            "name": "Verification(clang): test_support",
+            "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/verification/build_vscode/native-clang-c/suite/test_support",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "osx": {
+                "MIMode": "lldb",
+                "externalConsole": false
+            }
         },
         {
-            "name": "Verification (lldb): test_serialization",
-            "type": "lldb",
+            "name": "Verification (clang): test_serialization",
+            "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_serialization",
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "name": "Verification (lldb): test_initialization",
-            "type": "lldb",
-            "request": "launch",
-            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_initialization",
-            "cwd": "${workspaceFolder}"
+            "program": "${workspaceRoot}/verification/build_vscode/native-clang-c/suite/test_serialization",
+            "cwd": "${workspaceFolder}",
+            "osx": {
+                "MIMode": "lldb",
+                "externalConsole": false
+            }
         }
     ]
 }
