@@ -26,5 +26,13 @@
         "cmakeSettings": {
             "NUNAVUT_VERIFICATION_LANG": "c"
         }
+    },
+    {
+        "name": "native32-gcc-c",
+        "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/gcc-native.cmake",
+        "cmakeSettings": {
+            "NUNAVUT_VERIFICATION_LANG": "c",
+            "NUNAVUT_VERIFICATION_TARGET_PLATFORM": "native32"
+        }
     }
 ]

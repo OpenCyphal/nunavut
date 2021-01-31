@@ -18,11 +18,28 @@
         {
             "label": "tox build",
             "type": "shell",
-            "command":"tox",
+            "command": "tox",
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "verify c native32",
+            "type": "shell",
+            "command": "${workspaceFolder}/.buildkite/verify.py",
+            "args": [
+                "--verbose",
+                "--force",
+                "--language", "c",
+                "--endianness", "any",
+                "--platform", "native32",
+                "--build-type", "Debug"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
         }
     ]
 }

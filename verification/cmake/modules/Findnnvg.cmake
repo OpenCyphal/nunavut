@@ -1,6 +1,6 @@
 #
 # Find nnvg and setup python environment to generate C++ from DSDL.
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 
 # +---------------------------------------------------------------------------+
@@ -20,6 +20,8 @@
 # :param bool ARG_ENABLE_SER_ASSERT:        Generates code with serialization asserts enabled
 # :param bool ARG_DISABLE_SER_FP:           Generates code with floating point support removed from
 #                                           serialization logic.
+# :param bool ARG_ENABLE_EXPERIMENTAL:      If true then nnvg is invoked with support for experimental
+#                                           languages.
 # :param str ARG_SER_ENDIANNESS:            One of 'any', 'big', or 'little' to pass as the value of the
 #                                           nnvg `--target-endianness` argument. Set to an empty string
 #                                           to omit this argument.
@@ -37,14 +39,15 @@ function (create_dsdl_target ARG_TARGET_NAME
                              ARG_ENABLE_CLANG_FORMAT
                              ARG_ENABLE_SER_ASSERT
                              ARG_DISABLE_SER_FP
+                             ARG_ENABLE_EXPERIMENTAL
                              ARG_SER_ENDIANNESS
                              ARG_GENERATE_SUPPORT)
 
     separate_arguments(NNVG_CMD_ARGS UNIX_COMMAND "${NNVG_FLAGS}")
 
-    if (${ARGC} GREATER 9)
+    if (${ARGC} GREATER 10)
         MATH(EXPR ARG_N_LAST "${ARGC}-1")
-        foreach(ARG_N RANGE 9 ${ARG_N_LAST})
+        foreach(ARG_N RANGE 10 ${ARG_N_LAST})
             list(APPEND NNVG_CMD_ARGS "-I")
             list(APPEND NNVG_CMD_ARGS "${ARGV${ARG_N}}")
         endforeach(ARG_N)
@@ -72,6 +75,11 @@ function (create_dsdl_target ARG_TARGET_NAME
     if (ARG_DISABLE_SER_FP)
         list(APPEND NNVG_CMD_ARGS "--omit-float-serialization-support")
         message(STATUS "Disabling floating point seralization routines in generated support code.")
+    endif()
+
+    if (ARG_ENABLE_EXPERIMENTAL)
+        list(APPEND NNVG_CMD_ARGS "--experimental-languages")
+        message(STATUS "Enabling support for experimental languages.")
     endif()
 
     execute_process(COMMAND ${NNVG} --generate-support=${ARG_GENERATE_SUPPORT} --list-outputs ${NNVG_CMD_ARGS}

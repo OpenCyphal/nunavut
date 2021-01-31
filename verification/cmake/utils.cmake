@@ -93,10 +93,12 @@ function(define_native_unit_test
 
     add_executable(${ARG_TEST_NAME} ${ARG_TEST_SOURCE})
 
+    string(REPLACE ";" " " LOCAL_${ARG_TEST_NAME}_COMPILE_FLAGS "${ARG_EXTRA_COMPILE_FLAGS}")
+
     set_source_files_properties(${ARG_TEST_SOURCE}
                                 PROPERTIES
                                 COMPILE_FLAGS
-                                    "${ARG_EXTRA_COMPILE_FLAGS}"
+                                    ${LOCAL_${ARG_TEST_NAME}_COMPILE_FLAGS}
     )
 
     set(LOCAL_${ARG_TEST_NAME}_LINK_LIBS "")
