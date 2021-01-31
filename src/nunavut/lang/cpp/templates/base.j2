@@ -1,6 +1,6 @@
 {#-
- # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- # Copyright (C) 2020  UAVCAN Development Team  <uavcan.org>
+ # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
  # This software is distributed under the terms of the MIT License.
  # Authors: David Lenfesty, Scott Dixon <dixonsco@amazon.com>, Pavel Kirienko <pavel@uavcan.org>,
  #          Peter van der Perk <peter.vanderperk@nxp.com>
@@ -27,9 +27,9 @@
 {% for key, value in options.items() -%}
 //     {{ key }}:  {{ value}}
 {% endfor %}
-{%- if T.deprecated %}
+{%- if T.deprecated and options.std < 14 %}
 {#- Courtesy http://patorjk.com/software/taag/#p=display&f=Big&t=DEPRECATED #}
-{#- In C there is no standard way of marking definitions deprecated. #}
+{#- [[deprecated]] becomes available in c++14 #}
 //           _____  ______ _____  _____  ______ _____       _______ ______ _____
 //          |  __ `|  ____|  __ `|  __ `|  ____/ ____|   /`|__   __|  ____|  __ `
 //          | |  | | |__  | |__) | |__) | |__ | |       /  `  | |  | |__  | |  | |
@@ -41,32 +41,24 @@
 {%- endif %}
 
 {% set include_guard -%}{{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED_{%- endset -%}
-#ifndef {{ include_guard }}
-#define {{ include_guard }}
-
+#ifndef {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_HPP_INCLUDED
+#define {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_HPP_INCLUDED
 {% for n in T | includes -%}
 #include {{ n }}
 {% endfor %}
+{{T.full_namespace | open_namespace}}
 {% for key, value in options.items() -%}
 static_assert( {{ "NUNAVUT_SUPPORT_LANGUAGE_OPTION_{}".format(key) | ln.c.macrofy }} == {{ value | to_static_assertion_value }},
               "{{ T.source_file_path }} is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 {% endfor %}
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 {% if T.has_fixed_port_id %}
-#define {{ T | full_reference_name }}_HAS_FIXED_PORT_ID_ true
-#define {{ T | full_reference_name }}_FIXED_PORT_ID_     {{ T.fixed_port_id }}U
+constexpr bool {{ T | full_reference_name }}HasFixedPortId = true;
+constexpr {{ typename_unsigned_port }} {{ T | full_reference_name }}FixedPortId = {{ T.fixed_port_id }}U;
 {% else %}
 /// This type does not have a fixed port-ID. See https://forum.uavcan.org/t/choosing-message-and-service-ids/889
-#define {{ T | full_reference_name }}_HAS_FIXED_PORT_ID_ false
+constexpr bool {{ T | full_reference_name }}HasFixedPortId = false;
 {% endif %}
-
 {% block contents %}{% endblock %}
-
-#ifdef __cplusplus
-}
-#endif
-#endif // {{ include_guard }}
+{{T.full_namespace | close_namespace}}
+#endif // {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_HPP_INCLUDED

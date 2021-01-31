@@ -11,8 +11,8 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro deserialize(t) %}
-    if ((out_obj == {{ valuetoken_null }}) || (buffer == {{ valuetoken_null }}) || {# -#}
-        (inout_buffer_size_bytes == {{ valuetoken_null }}))
+    if ((out_obj == nullptr) || (buffer == nullptr ) || {# -#}
+        (inout_buffer_size_bytes == nullptr))
     {
         return -NUNAVUT_ERROR_INVALID_ARGUMENT;
     }

@@ -1,6 +1,6 @@
 {#-
- # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- # Copyright (C) 2020  UAVCAN Development Team  <uavcan.org>
+ # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
  # This software is distributed under the terms of the MIT License.
  # Authors: David Lenfesty, Scott Dixon <dixonsco@amazon.com>, Pavel Kirienko <pavel@uavcan.org>,
  #          Peter van der Perk <peter.vanderperk@nxp.com>
@@ -31,29 +31,17 @@
 //     {{ key }}:  {{ value }}
 {% endfor %}
 
-#ifndef NUNAVUT_SUPPORT_SERIALIZATION_H_INCLUDED
-#define NUNAVUT_SUPPORT_SERIALIZATION_H_INCLUDED
+#ifndef NUNAVUT_SUPPORT_SERIALIZATION_HPP_INCLUDED
+#define NUNAVUT_SUPPORT_SERIALIZATION_HPP_INCLUDED
 
-#ifdef __cplusplus
-#   if (__cplusplus < 201100L)
-#       error "Unsupported language: ISO C11, C++11, or a newer version of either is required."
-#   endif
-extern "C"
-{
-#else
-#   if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
-#       error "Unsupported language: ISO C11 or a newer version is required."
-#   endif
-#endif
+static_assert(__cplusplus < 201100L,
+              "Unsupported language: ISO C11, C++11, or a newer version of either is required.");
 
-#include <string.h>
+#include <cstring> // for std::size_t
 {%- if not options.omit_float_serialization_support %}
-#include <float.h>
-#include <math.h>  // For isfinite().
+#include <cmath>  // For isfinite().
 {% endif -%}
-#include <stdbool.h>
-#include <stdint.h>
-#include <assert.h>  // For static_assert (C11) and assert() if NUNAVUT_ASSERT is used.
+#include <stdint>
 
 static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_unsigned_length }}),
     "The bit-length type used by Nunavut, {{ typename_unsigned_bit_length }}, "
@@ -63,7 +51,7 @@ static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_u
     "unsigned_bit_length type specified.");
 
 {% for key, value in options.items() -%}
-#define {{ "NUNAVUT_SUPPORT_LANGUAGE_OPTION_{}".format(key) | ln.c.macrofy }} {{ value | to_static_assertion_value }}
+constexpr define {{ "NUNAVUT_SUPPORT_LANGUAGE_OPTION_{}".format(key) | ln.c.macrofy }} {{ value | to_static_assertion_value }}
 {% endfor %}
 
 /// Nunavut returns 0 for success and < 0 for any failure. It is always adequate to check that error_value < 0
@@ -652,8 +640,4 @@ static inline {{typename_float_64}} nunavutGetF64(
 
 {% endif -%}
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif // NUNAVUT_SUPPORT_SERIALIZATION_H_INCLUDED
+#endif // NUNAVUT_SUPPORT_SERIALIZATION_HPP_INCLUDED
