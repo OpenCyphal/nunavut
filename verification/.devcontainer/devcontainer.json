@@ -2,7 +2,7 @@
     "name": "C/C++ verification environment",
     "dockerFile": "native.Dockerfile",
     "context": "../..",
-    "settings": { 
+    "settings": {
         "terminal.integrated.shell.linux": "/bin/bash"
     },
     "workspaceFolder": "/workspace",
@@ -14,13 +14,15 @@
     "extensions": [
         "uavcan.dsdl",
         "wholroyd.jinja",
-        "streetsidesoftware.code-spell-checker",
+        "ban.spellright",
         "ms-python.python",
         "lextudio.restructuredtext",
         "ms-vscode.cpptools",
         "twxs.cmake",
         "ms-vscode.cmake-tools",
-        "xaver.clang-format"
+        "xaver.clang-format",
+        "hbenl.vscode-test-explorer",
+        "matepek.vscode-catch2-test-adapter"
     ],
     "postCreateCommand": "git submodule update --init --recursive && tox -e local"
 }

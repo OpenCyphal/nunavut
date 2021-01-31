@@ -2,7 +2,7 @@
     "name": "Python dev environment",
     "dockerFile": "python.Dockerfile",
     "context": "..",
-    "settings": { 
+    "settings": {
         "terminal.integrated.shell.linux": "/bin/bash"
     },
     "workspaceFolder": "/workspace",
@@ -14,9 +14,9 @@
     "extensions": [
         "uavcan.dsdl",
         "wholroyd.jinja",
-        "streetsidesoftware.code-spell-checker",
+        "ban.spellright",
         "ms-python.python",
-        "lextudio.restructuredtext",
+        "lextudio.restructuredtext"
     ],
     "postCreateCommand": "git submodule update --init --recursive && tox -e local"
 }
