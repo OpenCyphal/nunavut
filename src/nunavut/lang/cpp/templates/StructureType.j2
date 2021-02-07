@@ -1,16 +1,10 @@
 {#-
- # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- # Copyright (C) 2020  UAVCAN Development Team  <uavcan.org>
+ # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
  # This software is distributed under the terms of the MIT License.
- # Authors: David Lenfesty, Scott Dixon <dixonsco@amazon.com>, Pavel Kirienko <pavel@uavcan.org>
- #          Peter van der Perk <peter.vanderperk@nxp.com>
 -#}
-
 {% extends "base.j2" %}
-{% block contents %}
-
-{% from 'definitions.j2' import generate_composite %}
-
-{{ generate_composite(T) }}
-
-{% endblock %}
+{%- block object -%}
+{% set composite_type = T -%}
+{% include '_composite_type.j2' %}
+{% endblock -%}

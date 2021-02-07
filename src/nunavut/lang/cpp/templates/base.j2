@@ -48,7 +48,7 @@
 {% endfor %}
 {{T.full_namespace | open_namespace}}
 {% for key, value in options.items() -%}
-static_assert( {{ "NUNAVUT_SUPPORT_LANGUAGE_OPTION_{}".format(key) | ln.c.macrofy }} == {{ value | to_static_assertion_value }},
+static_assert( nunavut::support::options::{{ key | id }} == {{ value | literal }},
               "{{ T.source_file_path }} is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 {% endfor %}

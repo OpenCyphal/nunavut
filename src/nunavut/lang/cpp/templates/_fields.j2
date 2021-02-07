@@ -3,8 +3,8 @@
  # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
  # This software is distributed under the terms of the MIT License.
 -#}
-{% extends "base.j2" %}
-{%- block object -%}
-{% set composite_type = T -%}
-{% include '_composite_type.j2' %}
-{% endblock -%}
+{% for field in composite_type.fields -%}
+{%- if field is not padding %}
+    {{ field.data_type | declaration }} {{ field | id }};
+{%- endif -%}
+{%- endfor %}

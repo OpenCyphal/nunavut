@@ -119,14 +119,14 @@ def filter_is_zero_cost_primitive(t: pydsdl.PrimitiveType) -> bool:
 
 
 @template_language_filter(__name__)
-def filter_constant_value(language: Language,
-                          constant: pydsdl.Constant) -> str:
+def filter_literal(language: Language,
+                   value: typing.Union[pydsdl.Any, bool, int, str]) -> str:
     """
-    Renders the specified constant as a literal. This is a shorthand for :func:`filter_literal`.
+    Renders the specified constant as a literal.
 
     .. invisible-code-block: python
 
-        from nunavut.lang.c import filter_constant_value
+        from nunavut.lang.c import filter_literal
         from unittest.mock import MagicMock
         import pydsdl
 
@@ -136,14 +136,14 @@ def filter_constant_value(language: Language,
     .. code-block:: python
 
          # given
-        template = '{{ my_true_constant | constant_value }}'
+        template = '{{ my_true_constant | literal }}'
 
         # then
         rendered = 'true'
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_constant_value, template, rendered, 'c', my_true_constant=my_true_constant)
+        jinja_filter_tester(filter_literal, template, rendered, 'c', my_true_constant=my_true_constant)
 
     Language configuration can control the output of some constant tokens. For example, to use
     non-standard true and false values in c:
@@ -151,7 +151,7 @@ def filter_constant_value(language: Language,
     .. code-block:: python
 
          # given
-        template = '{{ my_true_constant | constant_value }}'
+        template = '{{ my_true_constant | literal }}'
 
         # then, if true = 'NUNAVUT_TRUE' in the named_values for nunavut.lang.c
         rendered = 'NUNAVUT_TRUE'
@@ -160,36 +160,36 @@ def filter_constant_value(language: Language,
 
         config_overrides = {'nunavut.lang.c': {'named_values': {'true': 'NUNAVUT_TRUE'}}}
         lctx = configurable_language_context_factory(config_overrides, 'c')
-        jinja_filter_tester(filter_constant_value, template, rendered, lctx, my_true_constant=my_true_constant)
+        jinja_filter_tester(filter_literal, template, rendered, lctx, my_true_constant=my_true_constant)
 
     """
-    return filter_literal(language, constant.value.native_value, constant.data_type)
+    if isinstance(value, pydsdl.Any):
+        ty = value.data_type
+        nv = value.native_value
+    else:
+        ty = value
+        nv = value
 
-
-@template_language_filter(__name__)
-def filter_literal(language: Language,
-                   value: typing.Union[fractions.Fraction, bool],
-                   ty: pydsdl.Any) -> str:
-    """
-    Renders the specified value of the specified type as a literal.
-    """
-    if isinstance(ty, pydsdl.BooleanType):
-        return str(language.valuetoken_true if value else language.valuetoken_false)
+    if isinstance(ty, pydsdl.BooleanType) or isinstance(ty, bool):
+        return str('true' if nv else 'false')
 
     elif isinstance(ty, pydsdl.IntegerType):
-        out = str(value) + 'U' * isinstance(ty, pydsdl.UnsignedIntegerType) \
+        out = str(nv) + 'U' * isinstance(ty, pydsdl.UnsignedIntegerType) \
             + 'L' * (ty.bit_length > 16) + 'L' * (ty.bit_length > 32)
         assert isinstance(out, str)
         return out
 
     elif isinstance(ty, pydsdl.FloatType):
-        if value.denominator == 1:
-            expr = '{}.0'.format(value.numerator)
+        if nv.denominator == 1:
+            expr = '{}.0'.format(nv.numerator)
         else:
-            expr = '({}.0 / {}.0)'.format(value.numerator, value.denominator)
+            expr = '({}.0 / {}.0)'.format(nv.numerator, nv.denominator)
         cast = filter_type_from_primitive(language, ty)
         return '(({}) {})'.format(cast, expr)
-
+    elif isinstance(ty, int):
+        return str(value)
+    elif isinstance(ty, str):
+        return '"{}"'.format(value)
     else:
         raise ValueError('Cannot construct a C literal from an instance of {}'.format(type(ty).__name__))
 
@@ -272,71 +272,6 @@ def filter_id(language: Language,
                     reserved_identifiers,
                     CPP_RESERVED_PATTERNS)
     return CPP_NO_DOUBLE_DASH_RULE.sub('_' + vne.encode_character('_'), out)
-
-
-def filter_to_static_assertion_value(obj: typing.Any) -> str:
-    """
-    Tries to convert a Python object into a value compatible with static comparisons in C++. This allows stable
-    comparison of static values in headers to promote consistency and version compatibility in generated code.
-
-    Will raise a ValueError if the object provided does not (yet) have an available conversion in this function.
-
-    Currently supported types are string:
-
-    .. invisible-code-block: python
-
-        from nunavut.lang.cpp import filter_to_static_assertion_value
-
-    .. code-block:: python
-
-         # given
-        template = '{{ "Any" | to_static_assertion_value }}'
-
-        # then
-        rendered = '\"Any\"'
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_to_static_assertion_value, template, rendered, 'cpp')
-
-    int:
-
-    .. code-block:: python
-
-         # given
-        template = '{{ 123 | to_static_assertion_value }}'
-
-        # then
-        rendered = '123'
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_to_static_assertion_value, template, rendered, 'cpp')
-
-    and bool:
-
-    .. code-block:: python
-
-         # given
-        template = '{{ True | to_static_assertion_value }}'
-
-        # then
-        rendered = 'true'
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_to_static_assertion_value, template, rendered, 'cpp')
-
-    """
-
-    if isinstance(obj, bool):
-        return ("true" if obj else "false")
-    if isinstance(obj, int):
-        return str(obj)
-    if isinstance(obj, str):
-        return '"{}"'.format(obj)
-
-    raise ValueError('Cannot convert object of type {} into a C++ type in a stable manner.'.format(type(obj)))
 
 
 @template_language_filter(__name__)

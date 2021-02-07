@@ -13,7 +13,7 @@
             "args": ["--templates", "${workspaceFolder}/test/gentest_dsdl/templates",
                      "--generate-namespace-types",
                      "--verbose",
-                     "--outdir", "${workspaceFolder}/.vscode/nunavut_out",
+                     "--outdir", "${workspaceFolder}/nunavut_out",
                      "-l", "c",
                      "${workspaceFolder}/test/gentest_dsdl/dsdl/uavcan"]
         },
@@ -22,7 +22,10 @@
             "type": "python",
             "request": "launch",
             "module": "pytest",
-            "args": ["${file}"],
+            "args": [
+                "--keep-generated",
+                "${file}"
+            ],
             "console": "internalConsole",
             "cwd": "${workspaceFolder}"
         },

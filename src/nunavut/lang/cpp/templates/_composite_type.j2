@@ -1,0 +1,27 @@
+{#-
+ # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+-#}
+{{ composite_type | definition_begin }}
+{
+{%- for constant in composite_type.constants %}
+    static constexpr {{ constant.data_type | declaration }} {{ constant.name | id }} = {{ constant.value.native_value.numerator }} / {{ constant.value.native_value.denominator }};
+{%- endfor -%}
+{% if composite_type is UnionType %}
+{% include '_fields_as_union.j2' %}
+{% else %}
+{% include '_fields.j2' %}
+{% endif %}
+{%- if not nunavut.support.omit %}
+    {{ typename_unsigned_length }} serialize(
+        std::vector<{{ typename_byte }}>& inout_byte_buffer,
+        std::size_t bit_offset = 0)
+    {
+        (void)inout_byte_buffer;
+        (void)bit_offset;
+        // TODO: implement this routine
+        return 0;
+    }
+{%- endif %}
+}{{ composite_type | definition_end }}
