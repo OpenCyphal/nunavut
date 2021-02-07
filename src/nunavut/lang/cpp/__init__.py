@@ -336,7 +336,73 @@ def filter_to_static_assertion_value(obj: typing.Any) -> str:
     if isinstance(obj, str):
         return '"{}"'.format(obj)
 
-    raise ValueError('Cannot convert object of type {} into an integer in a stable manner.'.format(type(obj)))
+    raise ValueError('Cannot convert object of type {} into a C++ type in a stable manner.'.format(type(obj)))
+
+
+@template_language_filter(__name__)
+def filter_type(language: Language,
+                obj: typing.Any) -> str:
+    """
+    Tries to convert a Python object into a c++ typename.
+
+    Will raise a ValueError if the object provided does not (yet) have an available conversion in this function.
+
+    Currently supported types are string:
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_to_static_assertion_type
+
+    .. code-block:: python
+
+         # given
+        template = '{{ "Any" | to_static_assertion_type }}'
+
+        # then
+        rendered = "const char* const"
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_static_assertion_type, template, rendered, 'cpp')
+
+    int:
+
+    .. code-block:: python
+
+         # given
+        template = '{{ 123 | to_static_assertion_type }}'
+
+        # then
+        rendered = 'long long'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_static_assertion_type, template, rendered, 'cpp')
+
+    and bool:
+
+    .. code-block:: python
+
+         # given
+        template = '{{ True | to_static_assertion_type }}'
+
+        # then
+        rendered = 'bool'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_static_assertion_type, template, rendered, 'cpp')
+
+    """
+
+    if isinstance(obj, bool):
+        return "bool"
+    if isinstance(obj, int):
+        return "long long"
+    if isinstance(obj, str):
+        return "const char* const"
+
+    return filter_type_from_primitive(language, obj)
 
 
 @template_language_filter(__name__)

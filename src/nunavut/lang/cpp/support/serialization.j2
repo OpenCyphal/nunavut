@@ -34,6 +34,9 @@
 #ifndef NUNAVUT_SUPPORT_SERIALIZATION_HPP_INCLUDED
 #define NUNAVUT_SUPPORT_SERIALIZATION_HPP_INCLUDED
 
+namespace nunavut
+{
+
 static_assert(__cplusplus < 201100L,
               "Unsupported language: ISO C11, C++11, or a newer version of either is required.");
 
@@ -51,7 +54,7 @@ static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_u
     "unsigned_bit_length type specified.");
 
 {% for key, value in options.items() -%}
-constexpr define {{ "NUNAVUT_SUPPORT_LANGUAGE_OPTION_{}".format(key) | ln.c.macrofy }} {{ value | to_static_assertion_value }}
+constexpr {{ value | type }} {{ key | id }} = {{ value | value }};
 {% endfor %}
 
 /// Nunavut returns 0 for success and < 0 for any failure. It is always adequate to check that error_value < 0
@@ -61,14 +64,16 @@ constexpr define {{ "NUNAVUT_SUPPORT_LANGUAGE_OPTION_{}".format(key) | ln.c.macr
 /// (-128 is not used). Error code 1 is currently also not used to avoid conflicts with 3rd-party software.
 ///
 /// Return values > 0 for Nunavut serialization are undefined.
-#define NUNAVUT_SUCCESS 0
-// API usage errors:
-#define NUNAVUT_ERROR_INVALID_ARGUMENT                  2
-#define NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL    3
-// Invalid representation (caused by bad input data, not API misuse):
-#define NUNAVUT_ERROR_REPRESENTATION_BAD_ARRAY_LENGTH        10
-#define NUNAVUT_ERROR_REPRESENTATION_BAD_UNION_TAG           11
-#define NUNAVUT_ERROR_REPRESENTATION_BAD_DELIMITER_HEADER    12
+
+enum class Result : int
+{
+    Success = 0,
+    ErrorInvalidArgument = 2,
+    ErrorSerializationBufferTooSmall = 3,
+    ErrorRepresentationBadArrayLength = 10,
+    ErrorRepresentationBadUnionTag = 11,
+    ErrorRepresentationBadDelimiterHeader = 12
+};
 
 {% if not options.omit_float_serialization_support -%}
 /// Detect whether the target platform is compatible with IEEE 754.
@@ -82,9 +87,8 @@ constexpr define {{ "NUNAVUT_SUPPORT_LANGUAGE_OPTION_{}".format(key) | ln.c.macr
 #ifndef NUNAVUT_ASSERT
 // By default Nunavut does not generate assert statements since the logic to halt a program is platform
 // dependent and because this header requires an absolute minimum from a platform and from the C standard library.
-// Most platforms can simply define "NUNAVUT_ASSERT(x)=assert(x)" (<assert.h> is always included by Nunavut).
-#   error "You must either define NUNAVUT_ASSERT or you need to disable assertions" \
-          " when generating serialization support code using Nunavut language options"
+// Most platforms can simply define "NUNAVUT_ASSERT(x)=assert(x)".
+#   error "You must either define NUNAVUT_ASSERT or disable assertions."
 #endif
 {% endif -%}
 
@@ -117,7 +121,7 @@ static inline {{ typename_unsigned_bit_length }} nunavutChooseMin(const {{ typen
 ///         [--------------- fragment_offset_bits ---------------][--- fragment_length_bits ---]
 ///                                                               [-- out bits --]
 ///
-static inline {{ typename_unsigned_bit_length }} nunavutSaturateBufferFragmentBitLength(
+constexpr {{ typename_unsigned_bit_length }} nunavutSaturateBufferFragmentBitLength(
     const {{ typename_unsigned_length }} buffer_size_bytes, {# -#}
     const {{ typename_unsigned_bit_length }} fragment_offset_bits, {# -#}
     const {{ typename_unsigned_bit_length }} fragment_length_bits)
@@ -639,5 +643,7 @@ static inline {{typename_float_64}} nunavutGetF64(
 }
 
 {% endif -%}
+
+} // end namespace nunavut
 
 #endif // NUNAVUT_SUPPORT_SERIALIZATION_HPP_INCLUDED
