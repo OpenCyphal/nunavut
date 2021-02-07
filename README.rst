@@ -3,7 +3,7 @@ Nunavut: DSDL transpiler
 ################################################
 
 +--------------------------------+-----------------------------------+
-| tox build (master)             | |badge_build|_                    |
+| tox build (main)               | |badge_build|_                    |
 +--------------------------------+-----------------------------------+
 | static analysis                | |badge_analysis|_ |badge_issues|_ |
 +--------------------------------+-----------------------------------+
@@ -193,7 +193,7 @@ Nunavut is part of the UAVCAN project:
 
 .. |badge_github_license| image:: https://img.shields.io/badge/license-MIT-blue.svg
     :alt: MIT license
-.. _badge_github_license: https://github.com/UAVCAN/nunavut/blob/master/LICENSE.rst
+.. _badge_github_license: https://github.com/UAVCAN/nunavut/blob/main/LICENSE.rst
 
 .. |badge_analysis| image:: https://sonarcloud.io/api/project_badges/measure?project=UAVCAN_nunavut&metric=alert_status
     :alt: Sonarcloud Quality Gate
