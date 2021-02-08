@@ -454,7 +454,10 @@ class LanguageContext:
             except ImportError:
                 raise KeyError('{} is not a supported language'.format(target_language))
             if not (self._target_language.stable_support or include_experimental_languages):
-                raise ValueError('{} support is only experimental, but experimental language support is not enabled')
+                raise ValueError(
+                    '{} support is only experimental, but experimental language support is not enabled'
+                    .format(target_language)
+                )
             if namespace_output_stem is not None:
                 self._config.set('nunavut.lang.{}'.format(target_language),
                                  'namespace_file_stem',
