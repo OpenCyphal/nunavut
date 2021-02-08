@@ -47,7 +47,7 @@ extern "C"
 #endif
 
 #include <string.h>
-{%- if not options.omit_float_serialization_support %}
+{% if not options.omit_float_serialization_support %}
 #include <float.h>
 #include <math.h>  // For isfinite().
 {% endif -%}
