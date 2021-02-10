@@ -12,7 +12,7 @@ steps:
     plugins:
       - docker#v3.3.0:
           workdir: /repo
-          image: "uavcan/toxic:py35-py38-sq"
+          image: "uavcan/toxic:py35-py39-sq"
           propagate-environment: true
           environment:
             - "SONARQUBE_TOKEN"
@@ -66,7 +66,7 @@ steps:
     plugins:
       - docker#v3.3.0:
           workdir: /repo
-          image: "uavcan/toxic:py35-py38-sq"
+          image: "uavcan/toxic:py35-py39-sq"
           propagate-environment: true
           environment:
             - "SONARQUBE_TOKEN"

@@ -72,8 +72,8 @@ To run the full suite of `tox`_ tests locally you'll need docker. Once you have 
 and running do::
 
     git submodule update --init --recursive
-    docker pull uavcan/toxic:py35-py38-sq
-    docker run --rm -it -v $PWD:/repo uavcan/toxic:py35-py38-sq
+    docker pull uavcan/toxic:py35-py39-sq
+    docker run --rm -it -v $PWD:/repo uavcan/toxic:py35-py39-sq
     tox
 
 To run a limited suite using only locally available interpreters directly on your host machine,
@@ -183,7 +183,7 @@ Building The Docs
 We rely on `read the docs`_ to build our documentation from github but we also verify this build
 as part of our tox build. This means you can view a local copy after completing a full, successful
 test run (See `Running The Tests`_) or do
-:code:`docker run --rm -t -v $PWD:/repo uavcan/toxic:py35-py38-sq /bin/sh -c "tox -e docs"` to build
+:code:`docker run --rm -t -v $PWD:/repo uavcan/toxic:py35-py39-sq /bin/sh -c "tox -e docs"` to build
 the docs target. You can open the index.html under .tox/docs/tmp/index.html or run a local
 web-server::
 
