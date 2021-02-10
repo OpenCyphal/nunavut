@@ -1051,3 +1051,8 @@ def filter_minimum_required_capacity_bits(t: pydsdl.SerializableType) -> int:
     :returns: The minimum, required bits needed to store some values of the given type.
     """
     return typing.cast(int, min(t.bit_length_set))
+
+
+def filter_to_pascal_case(value: str) -> str:
+    if value is not None:
+        return ''.join([part.lower().capitalize() for part in value.split('_')])

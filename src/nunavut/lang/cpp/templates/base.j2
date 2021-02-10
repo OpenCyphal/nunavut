@@ -52,13 +52,6 @@ static_assert( nunavut::support::options::{{ key | id }} == {{ value | literal }
               "{{ T.source_file_path }} is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 {% endfor %}
-{% if T.has_fixed_port_id %}
-constexpr bool {{ T | full_reference_name }}HasFixedPortId = true;
-constexpr {{ typename_unsigned_port }} {{ T | full_reference_name }}FixedPortId = {{ T.fixed_port_id }}U;
-{% else %}
-/// This type does not have a fixed port-ID. See https://forum.uavcan.org/t/choosing-message-and-service-ids/889
-constexpr bool {{ T | full_reference_name }}HasFixedPortId = false;
-{% endif %}
-{% block contents %}{% endblock %}
+{% block object %}{% endblock %}
 {{T.full_namespace | close_namespace}}
 #endif // {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_HPP_INCLUDED
