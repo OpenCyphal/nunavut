@@ -8,18 +8,19 @@
     module will be available in the template's global namespace as ``cpp``.
 """
 
+import fractions
 import functools
 import io
 import re
+import textwrap
 import typing
-import fractions
 
 import pydsdl
 
-from .. import Language, _UniqueNameGenerator
-from .._common import IncludeGenerator
 from ...templates import (template_language_filter,
                           template_language_list_filter)
+from .. import Language, _UniqueNameGenerator
+from .._common import IncludeGenerator
 from ..c import C_RESERVED_PATTERNS, VariableNameEncoder, _CFit
 
 CPP_RESERVED_PATTERNS = frozenset([*C_RESERVED_PATTERNS])
@@ -390,7 +391,12 @@ def filter_open_namespace(language: Language,
     """
 
     with io.StringIO() as content:
+        first = True
         for name in full_namespace.split('.'):
+            if first:
+                first = False
+            else:
+                content.write(linesep)
             content.write('namespace ')
             if language.enable_stropping:
                 content.write(filter_id(language, name))
@@ -401,7 +407,6 @@ def filter_open_namespace(language: Language,
             else:
                 content.write(' ')
             content.write('{')
-            content.write(linesep)
         return content.getvalue()
 
 
@@ -447,7 +452,13 @@ def filter_close_namespace(language: Language,
     :returns: C++ namespace declarations with opening brackets.
     """
     with io.StringIO() as content:
+        first = True
         for name in reversed(full_namespace.split('.')):
+            if first:
+                first = False
+            else:
+                content.write(linesep)
+
             content.write('}')
             if not omit_comments:
                 content.write(' // namespace ')
@@ -455,7 +466,6 @@ def filter_close_namespace(language: Language,
                     content.write(filter_id(language, name))
                 else:
                     content.write(name)
-            content.write(linesep)
         return content.getvalue()
 
 

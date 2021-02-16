@@ -3,8 +3,13 @@
  # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
  # This software is distributed under the terms of the MIT License.
 -#}
-{% for field in composite_type.fields -%}
-{%- if field is not padding %}
+{%- for field in composite_type.fields %}
+    {% if loop.first %}
+    // +----------------------------------------------------------------------+
+    // | FIELDS
+    // +----------------------------------------------------------------------+
+    {% endif -%}
+    {%- if field is not padding -%}
     {{ field.data_type | declaration }} {{ field | id }};
-{%- endif -%}
-{%- endfor %}
+    {%- endif -%}
+{%- endfor -%}

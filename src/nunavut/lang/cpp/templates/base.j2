@@ -5,7 +5,7 @@
  # Authors: David Lenfesty, Scott Dixon <dixonsco@amazon.com>, Pavel Kirienko <pavel@uavcan.org>,
  #          Peter van der Perk <peter.vanderperk@nxp.com>
 -#}
-
+//
 // This is an AUTO-GENERATED UAVCAN DSDL data type implementation. Curious? See https://uavcan.org.
 // You shouldn't attempt to edit this file.
 //
@@ -24,9 +24,9 @@
 // Version:       {{ T.version.major }}.{{ T.version.minor }}
 //
 // Language Options
-{% for key, value in options.items() -%}
+{%- for key, value in options.items() %}
 //     {{ key }}:  {{ value}}
-{% endfor %}
+{%- endfor -%}
 {%- if T.deprecated and options.std < 14 %}
 {#- Courtesy http://patorjk.com/software/taag/#p=display&f=Big&t=DEPRECATED #}
 {#- [[deprecated]] becomes available in c++14 #}
@@ -39,19 +39,35 @@
 //
 // WARNING: this data type is deprecated and is nearing the end of its life cycle. Seek replacement.
 {%- endif %}
-
-{% set include_guard -%}{{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_INCLUDED_{%- endset -%}
 #ifndef {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_HPP_INCLUDED
 #define {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_HPP_INCLUDED
-{% for n in T | includes -%}
+{%- for n in T | includes %}
+{% if loop.first -%}
+
+{# Add newline before first include #}
+{% endif -%}
 #include {{ n }}
-{% endfor %}
+{%- endfor %}
+
 {{T.full_namespace | open_namespace}}
-{% for key, value in options.items() -%}
+{%- if not nunavut.support.omit %}{% for key, value in options.items() %}
+{% if loop.first -%}
+// +--------------------------------------------------------------------------+
+// | LANGUAGE OPTION ASSERTIONS
+// |    These static assertions ensure that the header is being used with
+// | Nunavut C++ serialization support that is compatible with the language
+// | options in effect when that support code was generated.
+// +--------------------------------------------------------------------------+
+{% endif -%}
 static_assert( nunavut::support::options::{{ key | id }} == {{ value | literal }},
-              "{{ T.source_file_path }} is trying to use a serialization library that was compiled with "
-              "different language options. This is dangerous and therefore not allowed." );
-{% endfor %}
+              "{{ T.source_file_path }} "
+              "is trying to use a serialization library that was compiled with "
+              "different language options. This is dangerous and therefore not "
+              "allowed." );
+{%- endfor %}{% endif %}
+
 {% block object %}{% endblock %}
+
 {{T.full_namespace | close_namespace}}
+
 #endif // {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_HPP_INCLUDED

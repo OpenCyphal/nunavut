@@ -3,13 +3,14 @@
  # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
  # This software is distributed under the terms of the MIT License.
 -#}
-{% extends "base.j2" %}
+{%- extends "base.j2" %}
 {%- block object -%}
 {{ T | definition_begin }}
 {
-{% set composite_type = T.request_type -%}
-{% include '_composite_type.j2' %}
-{% set composite_type = T.response_type -%}
-{% include '_composite_type.j2' %}
+
+{% set composite_type = T.request_type %}{% include '_composite_type.j2' %}
+
+{% set composite_type = T.response_type %}{% include '_composite_type.j2' %}
+
 }{{ T | definition_end }}
-{% endblock -%}
+{%- endblock -%}

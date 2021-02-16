@@ -5,30 +5,35 @@
 -#}
 {{ composite_type | definition_begin }}
 {
+    // +----------------------------------------------------------------------+
+    // | PORT IDENTIFIERS
+    // +----------------------------------------------------------------------+
 {%- if T.has_fixed_port_id %}
     static constexpr bool HasFixedPortId = true;
     static constexpr {{ typename_unsigned_port }} FixedPortId = {{ T.fixed_port_id }}U;
-{% else %}
+{%- else %}
     /// This type does not have a fixed port-ID. See https://forum.uavcan.org/t/choosing-message-and-service-ids/889
     static constexpr bool HasFixedPortId = false;
 {% endif -%}
 {%- for constant in composite_type.constants %}
+    {% if loop.first %}
+    // +----------------------------------------------------------------------+
+    // | CONSTANTS
+    // +----------------------------------------------------------------------+
+    {% endif -%}
     static constexpr {{ constant.data_type | declaration }} {{ constant.name | id | to_pascal_case }} = {{ constant.value.native_value.numerator }} / {{ constant.value.native_value.denominator }};
 {%- endfor -%}
-{% if composite_type is UnionType %}
+{%- if composite_type is UnionType -%}
 {% include '_fields_as_union.j2' %}
-{% else %}
+{%- else -%}
 {% include '_fields.j2' %}
-{% endif %}
+{%- endif -%}
 {%- if not nunavut.support.omit %}
-    {{ typename_unsigned_length }} serialize(
-        std::vector<{{ typename_byte }}>& inout_byte_buffer,
-        std::size_t bit_offset = 0)
+    {{ typename_unsigned_length }} serialize(std::size_t todo_ser = 0)
     {
-        (void)inout_byte_buffer;
-        (void)bit_offset;
         // TODO: implement this routine
         return 0;
     }
 {%- endif %}
-}{{ composite_type | definition_end }}
+
+}{{ composite_type | definition_end }}{#- -#}
