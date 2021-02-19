@@ -142,7 +142,7 @@ struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
     {%- if f.element_type is BooleanType %}
     {{ _define_bitpacked_array_field('bitpacked', f.capacity) | indent }};
     {%- else %}
-    {{ _define_field(t, f.element_type, 'elements', '[%s_%s_ARRAY_CAPACITY_]'|format(t | full_reference_name, name)) }};
+    {{ _define_field(t, f.element_type, 'elements', '[%s_%s_ARRAY_CAPACITY_]'|format(t|full_reference_name, name)) }};
     {%- endif %}
     {{ typename_unsigned_length }} count;
 } {{ name | id }}{{ suffix }}
