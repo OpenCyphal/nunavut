@@ -46,11 +46,13 @@ static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
 {%- endfor %}
 {% for f in t.fields_except_padding if f.data_type is ArrayType %}
 /// Array metadata for: {{ f }}
-{%- if f.data_type is VariableLengthArrayType %}
+{%- if options.enable_override_variable_array_capacity and f.data_type is VariableLengthArrayType %}
 #ifndef {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_
 {%- endif %}
 #define {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_           {{ f.data_type.capacity }}U
-{%- if f.data_type is VariableLengthArrayType %}
+{%- if options.enable_override_variable_array_capacity and f.data_type is VariableLengthArrayType %}
+#elif {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_ > {{ f.data_type.capacity }}U
+#error {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_ > {{ f.data_type.capacity }}U
 #endif
 {%- endif %}
 #define {{ t | full_reference_name }}_{{ f.name }}_ARRAY_IS_VARIABLE_LENGTH_ {# -#}

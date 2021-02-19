@@ -9,4 +9,7 @@
 {%- if options.enable_serialization_asserts is defined %},
      "enable_serialization_asserts": {{ options.enable_serialization_asserts | ln.js.to_true_or_false }}
 {% endif %}
+{%- if options.enable_override_variable_array_capacity is defined %},
+     "enable_override_variable_array_capacity": {{ options.enable_override_variable_array_capacity | ln.js.to_true_or_false }}
+{% endif %}
 }
