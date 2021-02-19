@@ -543,7 +543,7 @@ def _make_parser() -> argparse.ArgumentParser:
                               action='store_true',
                               help=textwrap.dedent('''
 
-        Instruct support header generators to add the possiblitiy to override max capacity of a 
+        Instruct support header generators to add the possiblitiy to override max capacity of a
         variable length array in serialization routines. This option will disable serialization
         buffer checks and add conditional compilation statements which violates MISRA.
 
