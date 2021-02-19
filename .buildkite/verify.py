@@ -55,6 +55,10 @@ def _make_parser() -> argparse.ArgumentParser:
                         action='store_true',
                         help='Set NUNAVUT_VERIFICATION_SER_FP_DISABLE=ON (default is OFF)')
 
+    parser.add_argument('--enable-override-variable-array-capacity',
+                        action='store_true',
+                        help='Set NUNAVUT_OVERRIDE_VARIABLE_ARRAY_CAPACITY_ENABLE=ON (default is OFF)')
+
     parser.add_argument('-v', '--verbose',
                         action='count',
                         default=0,

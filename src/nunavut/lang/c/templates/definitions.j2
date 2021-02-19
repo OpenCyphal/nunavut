@@ -51,8 +51,11 @@ static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
 {%- endif %}
 #define {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_           {{ f.data_type.capacity }}U
 {%- if options.enable_override_variable_array_capacity and f.data_type is VariableLengthArrayType %}
-#elif {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_ > {{ f.data_type.capacity }}U
-#error {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_ > {{ f.data_type.capacity }}U
+#elif !defined(reg_drone_service_battery_Status_0_2_DISABLE_SERIALIZATION_BUFFER_CHECK)
+#  define reg_drone_service_battery_Status_0_2_DISABLE_SERIALIZATION_BUFFER_CHECK
+#endif
+#if {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_ > {{ f.data_type.capacity }}U
+#  error {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_ > {{ f.data_type.capacity }}U
 #endif
 {%- endif %}
 #define {{ t | full_reference_name }}_{{ f.name }}_ARRAY_IS_VARIABLE_LENGTH_ {# -#}

@@ -18,6 +18,7 @@
 # :param Path ARG_DSDL_ROOT_DIR:            A directory containing the root namespace dsdl.
 # :param bool ARG_ENABLE_CLANG_FORMAT:      If ON then clang-format will be run on each generated file.
 # :param bool ARG_ENABLE_SER_ASSERT:        Generates code with serialization asserts enabled
+# :param bool ARG_ENABLE_OVR_VAR_ARRAY:     Generates code with variable array capacity override enabled
 # :param bool ARG_DISABLE_SER_FP:           Generates code with floating point support removed from
 #                                           serialization logic.
 # :param bool ARG_ENABLE_EXPERIMENTAL:      If true then nnvg is invoked with support for experimental
@@ -38,6 +39,7 @@ function (create_dsdl_target ARG_TARGET_NAME
                              ARG_DSDL_ROOT_DIR
                              ARG_ENABLE_CLANG_FORMAT
                              ARG_ENABLE_SER_ASSERT
+                             ARG_ENABLE_OVR_VAR_ARRAY
                              ARG_DISABLE_SER_FP
                              ARG_ENABLE_EXPERIMENTAL
                              ARG_SER_ENDIANNESS
@@ -70,6 +72,11 @@ function (create_dsdl_target ARG_TARGET_NAME
     if (ARG_ENABLE_SER_ASSERT)
         list(APPEND NNVG_CMD_ARGS "--enable-serialization-asserts")
         message(STATUS "Enabling seralization asserts in generated code.")
+    endif()
+
+    if (ARG_ENABLE_OVR_VAR_ARRAY)
+        list(APPEND NNVG_CMD_ARGS "--enable-override-variable-array-capacity")
+        message(STATUS "Enabling variable array capacity override option in generated code.")
     endif()
 
     if (ARG_DISABLE_SER_FP)
