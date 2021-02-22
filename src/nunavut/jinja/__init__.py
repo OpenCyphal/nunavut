@@ -76,7 +76,7 @@ class JinjaAssert(Extension):
         # This will be the macro name "assert"
         token = next(parser.stream)
 
-        # now we parse a single expression that must evalute to True
+        # now we parse a single expression that must evaluate to True
         args = [parser.parse_expression(),
                 nodes.Const(token.lineno),
                 nodes.Const(parser.name),
@@ -374,7 +374,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
 
     def _add_nunavut_globals(self) -> None:
         """
-        Add globals namespaced as 'nunavut'.
+        Add globals within the 'nunavut' namespace.
         """
         import nunavut.version
 
@@ -393,11 +393,35 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
 
         self._env.globals['nunavut'] = {
             'version': nunavut.version.__version__,
+            'platform_version': self._create_platform_version(),
             'support': {
                 'omit': omit_serialization_support,
                 'namespace': support_namespace
             }
         }
+
+    @classmethod
+    def _create_platform_version(cls) -> typing.Dict[str, typing.Any]:
+        import platform
+        import sys
+
+        platform_version = {}  # type: typing.Dict[str, typing.Any]
+
+        platform_version['python_implementation'] = platform.python_implementation()
+        platform_version['python_version'] = platform.python_version()
+        platform_version['python_release_level'] = sys.version_info[3]
+        platform_version['python_build'] = platform.python_build()
+        platform_version['python_compiler'] = platform.python_compiler()
+        platform_version['python_revision'] = platform.python_revision()
+
+        try:
+            platform_version['python_xoptions'] = sys._xoptions
+        except AttributeError:  # pragma: no cover
+            platform_version['python_xoptions'] = {}
+
+        platform_version['runtime_platform'] = platform.platform()
+
+        return platform_version
 
     def _add_language_support(self) -> None:
         target_language = self.language_context.get_target_language()
@@ -623,7 +647,7 @@ class DSDLCodeGenerator(CodeGenerator):
 
         :param typing.Any value: The type to emit an include for.
         :param bool resolve: If True the path returned will be absolute else the path will
-                             be relative to the folder of the root namepace.
+                             be relative to the folder of the root namespace.
         :returns: A string path to output file for the type.
         """
 

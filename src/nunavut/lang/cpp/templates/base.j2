@@ -21,11 +21,14 @@
 // Is deprecated: {{ T.deprecated and 'yes' or 'no' }}
 // Fixed port-ID: {{ T.fixed_port_id }}
 // Full name:     {{ T.full_name }}
-// Version:       {{ T.version.major }}.{{ T.version.minor }}
-//
+// Type Version:  {{ T.version.major }}.{{ T.version.minor }}
+// Platform
+{%- for key, value in nunavut.platform_version.items() %}
+//     {{ key }}:  {{ value }}
+{%- endfor %}
 // Language Options
 {%- for key, value in options.items() %}
-//     {{ key }}:  {{ value}}
+//     {{ key }}:  {{ value }}
 {%- endfor -%}
 {%- if T.deprecated and options.std < 14 %}
 {#- Courtesy http://patorjk.com/software/taag/#p=display&f=Big&t=DEPRECATED #}
@@ -59,7 +62,7 @@
 // | options in effect when that support code was generated.
 // +--------------------------------------------------------------------------+
 {% endif -%}
-static_assert( nunavut::support::options::{{ key | id }} == {{ value | literal }},
+static_assert( nunavut::support::options::{{ key | id }} == {{ value | ln.c.to_static_assertion_value }},
               "{{ T.source_file_path }} "
               "is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not "

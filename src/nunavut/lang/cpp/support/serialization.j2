@@ -39,7 +39,7 @@ namespace nunavut
 namespace support
 {
 
-static_assert(__cplusplus < 201100L,
+static_assert(__cplusplus >= 201100L,
               "Unsupported language: ISO C11, C++11, or a newer version of either is required.");
 
 #include <cstring> // for std::size_t
@@ -58,7 +58,7 @@ static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_u
 namespace options
 {
 {% for key, value in options.items() -%}
-constexpr {{ value | type }} {{ key | id }} = {{ value | literal }};
+constexpr std::uint32_t {{ key | id }} = {{ value | ln.c.to_static_assertion_value }};
 {% endfor %}
 } // end namespace options
 } // end namespace support
