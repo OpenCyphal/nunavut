@@ -46,7 +46,7 @@ static_assert(__cplusplus < 201100L,
 {% if not options.omit_float_serialization_support %}
 #include <cmath>  // For isfinite().
 {% endif -%}
-#include <stdint>
+#include <cstdint>
 
 static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_unsigned_length }}),
     "The bit-length type used by Nunavut, {{ typename_unsigned_bit_length }}, "

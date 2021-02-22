@@ -42,7 +42,11 @@ class Language:
                 pass
             if value.lower() == 'true' or value.lower() == 'false':
                 return bool(value)
-            return str(value)
+            strvalue = str(value)
+            if strvalue.startswith('"') and strvalue.endswith('"'):
+                return strvalue[1:-1]
+            else:
+                return strvalue
 
         value_as_dict = dict()
         value_pairs = value.strip().split('\n')

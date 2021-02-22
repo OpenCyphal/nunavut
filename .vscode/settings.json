@@ -128,7 +128,8 @@
         "utility": "cpp",
         "valarray": "cpp",
         "vector": "cpp",
-        "serialization.h": "c"
+        "serialization.h": "c",
+        "struct__0_1.h": "c"
     },
     "python.linting.mypyArgs": [
         "--config-file=${workspaceFolder}/tox.ini"
