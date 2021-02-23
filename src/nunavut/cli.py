@@ -539,7 +539,7 @@ def _make_parser() -> argparse.ArgumentParser:
 
     ''').lstrip())
 
-    ln_opt_group.add_argument('--enable_override_variable_array_capacity',
+    ln_opt_group.add_argument('--enable-override-variable-array-capacity',
                               action='store_true',
                               help=textwrap.dedent('''
 
