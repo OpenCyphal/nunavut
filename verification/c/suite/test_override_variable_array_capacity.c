@@ -17,6 +17,7 @@
 static void testPrimitiveArrayVariableOverride(void)
 {
     regulated_basics_PrimitiveArrayVariable_0_1 ref;
+    uint8_t buf[regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_ - 1];
 
 #if NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 1
     TEST_ASSERT_EQUAL(sizeof(ref.a_u64.elements[0]) * OVERRIDE_SIZE, sizeof(ref.a_u64.elements));
@@ -28,6 +29,16 @@ static void testPrimitiveArrayVariableOverride(void)
     TEST_ASSERT_EQUAL(sizeof(ref.n_f64.elements[0]) *
                       regulated_basics_PrimitiveArrayVariable_0_1_n_f32_ARRAY_CAPACITY_,
                       sizeof(ref.n_f64.elements));
+#endif
+
+    size_t size = sizeof(buf);
+
+#if NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 1
+    TEST_ASSERT_EQUAL(NUNAVUT_SUCCESS,
+                      regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], &size));
+#else
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL,
+                      regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], &size));
 #endif
 }
 

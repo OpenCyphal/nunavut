@@ -29,7 +29,7 @@
 {% macro _serialize_impl(t) %}
     const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
 {%- if options.enable_override_variable_array_capacity %}
-#ifndef reg_drone_service_battery_Status_0_2_DISABLE_SERIALIZATION_BUFFER_CHECK
+#ifndef {{ t | full_reference_name }}_DISABLE_SERIALIZATION_BUFFER_CHECK_
 {% endif %}
     if ((8U * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.inner_type.bit_length_set|max }}UL)
     {
