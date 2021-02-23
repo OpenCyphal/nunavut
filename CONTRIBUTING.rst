@@ -79,14 +79,14 @@ and running do::
 To run a limited suite using only locally available interpreters directly on your host machine,
 skip the docker invocations and use ``tox -s``.
 
-To run the language verification build you'll need to use a different docker container:
+To run the language verification build you'll need to use a different docker container::
 
     docker pull uavcan/c_cpp:ubuntu-18.04
     docker run --rm -it -v $PWD:/repo uavcan/c_cpp:ubuntu-18.04
     ./.buildkite/verify.py -l c
     ./.buildkite/verify.py -l cpp
 
-The verify.py script is a simple commandline generator for our cmake scripts. Use help for details:
+The verify.py script is a simple commandline generator for our cmake scripts. Use help for details::
 
     ./.buildkite/verify.py --help
 
