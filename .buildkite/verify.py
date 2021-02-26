@@ -55,6 +55,10 @@ def _make_parser() -> argparse.ArgumentParser:
                         action='store_true',
                         help='Set NUNAVUT_VERIFICATION_SER_FP_DISABLE=ON (default is OFF)')
 
+    parser.add_argument('--enable-ovr-var-array',
+                        action='store_true',
+                        help='Set NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE=ON (default is OFF)')
+
     parser.add_argument('-v', '--verbose',
                         action='count',
                         default=0,
@@ -172,6 +176,9 @@ def _cmake_configure(args: argparse.Namespace, cmake_args: typing.List[str], cma
 
         if args.disable_fp:
             cmake_configure_args.append('-DNUNAVUT_VERIFICATION_SER_FP_DISABLE:BOOL=ON')
+
+        if args.enable_ovr_var_array:
+            cmake_configure_args.append('-NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE:BOOL=ON')
 
         if args.verbose > 0:
             cmake_configure_args.append('-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON')

@@ -50,6 +50,10 @@ if(NOT DEFINED NUNAVUT_VERIFICATION_SER_FP_DISABLE)
      set(NUNAVUT_VERIFICATION_SER_FP_DISABLE OFF CACHE BOOL "Enable or disable floating point support in generated support code.")
 endif()
 
+if(NOT DEFINED NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE)
+     set(NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE OFF CACHE BOOL "Enable or disable override variable array capacity in generated support code.")
+endif()
+
 if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp")
     set(NUNAVUT_VERIFICATION_ROOT "${CMAKE_SOURCE_DIR}/cpp")
     message(STATUS "NUNAVUT_VERIFICATION_LANG is C++ (${NUNAVUT_VERIFICATION_LANG})")
@@ -148,6 +152,7 @@ create_dsdl_target(nunavut-support
                    OFF
                    ${NUNAVUT_VERIFICATION_SER_ASSERT}
                    ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
+                   ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
                    ON
                    "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
                    "only")
@@ -162,6 +167,7 @@ create_dsdl_target(dsdl-regulated
                    OFF
                    ${NUNAVUT_VERIFICATION_SER_ASSERT}
                    ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
+                   ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
                    ON
                    "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
                    "never")
@@ -178,6 +184,7 @@ create_dsdl_target(dsdl-test
                    OFF
                    ${NUNAVUT_VERIFICATION_SER_ASSERT}
                    ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
+                   ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
                    ON
                    "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
                    "never"

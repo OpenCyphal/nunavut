@@ -46,7 +46,18 @@ static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
 {%- endfor %}
 {% for f in t.fields_except_padding if f.data_type is ArrayType %}
 /// Array metadata for: {{ f }}
+{%- if options.enable_override_variable_array_capacity and f.data_type is VariableLengthArrayType %}
+#ifndef {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_
+{%- endif %}
 #define {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_           {{ f.data_type.capacity }}U
+{%- if options.enable_override_variable_array_capacity and f.data_type is VariableLengthArrayType %}
+#elif !defined({{ t | full_reference_name }}_DISABLE_SERIALIZATION_BUFFER_CHECK_)
+#  define {{ t | full_reference_name }}_DISABLE_SERIALIZATION_BUFFER_CHECK_
+#endif
+#if {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_ > {{ f.data_type.capacity }}U
+#  error {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_ > {{ f.data_type.capacity }}U
+#endif
+{%- endif %}
 #define {{ t | full_reference_name }}_{{ f.name }}_ARRAY_IS_VARIABLE_LENGTH_ {# -#}
         {{ valuetoken_true if f.data_type is VariableLengthArrayType else valuetoken_false }}
 {%- endfor %}
@@ -87,7 +98,7 @@ typedef struct
         {# Blank line between fields. #}
     {%- endif %}
     /// {{ f }}
-    {{ _define_field(f.data_type, f.name) | indent }};
+    {{ _define_field(t, f.data_type, f.name) | indent }};
 {%- else %}{#- To maintain consistency between C and C++ we define any empty composite type with a dummy byte. #}
     {{ typename_byte }} _dummy_;
 {%- endfor %}
@@ -107,7 +118,7 @@ typedef struct
             {# Blank line between fields. #}
         {%- endif %}
         /// {{ f }}
-        {{ _define_field(f.data_type, f.name) | indent | indent }};
+        {{ _define_field(t, f.data_type, f.name) | indent | indent }};
     {%- endfor %}
     };
     {{ t.tag_field_type | type_from_primitive }} _tag_;
@@ -116,27 +127,27 @@ typedef struct
 
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
-{% macro _define_field(t, name, suffix='') %}
-{%- if t is PrimitiveType -%}
-{{ t | type_from_primitive }} {{ name | id }}{{ suffix }}
+{% macro _define_field(t, f, name, suffix='') %}
+{%- if f is PrimitiveType -%}
+{{ f | type_from_primitive }} {{ name | id }}{{ suffix }}
 
-{%- elif t is CompositeType -%}
-{{ t | full_reference_name }} {{ name | id }}{{ suffix }}
+{%- elif f is CompositeType -%}
+{{ f | full_reference_name }} {{ name | id }}{{ suffix }}
 
-{%- elif t is FixedLengthArrayType -%}
-    {%- if t.element_type is BooleanType -%}
-{{ _define_bitpacked_array_field(name + '_bitpacked_', t.capacity) }}{{ suffix }}
+{%- elif f is FixedLengthArrayType -%}
+    {%- if f.element_type is BooleanType -%}
+{{ _define_bitpacked_array_field(name + '_bitpacked_', f.capacity) }}{{ suffix }}
     {%- else -%}
-{{ _define_field(t.element_type, name, '[%s]'|format(t.capacity)) }}{{ suffix }}
+{{ _define_field(t, f.element_type, name, '[%s]'|format(f.capacity)) }}{{ suffix }}
     {%- endif -%}
 
-{%- elif t is VariableLengthArrayType -%}
+{%- elif f is VariableLengthArrayType -%}
 struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
 {
-    {%- if t.element_type is BooleanType %}
-    {{ _define_bitpacked_array_field('bitpacked', t.capacity) | indent }};
+    {%- if f.element_type is BooleanType %}
+    {{ _define_bitpacked_array_field('bitpacked', f.capacity) | indent }};
     {%- else %}
-    {{ _define_field(t.element_type, 'elements', '[%s]'|format(t.capacity)) }};
+    {{ _define_field(t, f.element_type, 'elements', '[%s_%s_ARRAY_CAPACITY_]'|format(t|full_reference_name, name)) }};
     {%- endif %}
     {{ typename_unsigned_length }} count;
 } {{ name | id }}{{ suffix }}

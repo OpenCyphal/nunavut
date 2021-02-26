@@ -20,6 +20,7 @@
 # :param bool ARG_ENABLE_SER_ASSERT:        Generates code with serialization asserts enabled
 # :param bool ARG_DISABLE_SER_FP:           Generates code with floating point support removed from
 #                                           serialization logic.
+# :param bool ARG_ENABLE_OVR_VAR_ARRAY:     Generates code with variable array capacity override enabled
 # :param bool ARG_ENABLE_EXPERIMENTAL:      If true then nnvg is invoked with support for experimental
 #                                           languages.
 # :param str ARG_SER_ENDIANNESS:            One of 'any', 'big', or 'little' to pass as the value of the
@@ -39,15 +40,16 @@ function (create_dsdl_target ARG_TARGET_NAME
                              ARG_ENABLE_CLANG_FORMAT
                              ARG_ENABLE_SER_ASSERT
                              ARG_DISABLE_SER_FP
+                             ARG_ENABLE_OVR_VAR_ARRAY
                              ARG_ENABLE_EXPERIMENTAL
                              ARG_SER_ENDIANNESS
                              ARG_GENERATE_SUPPORT)
 
     separate_arguments(NNVG_CMD_ARGS UNIX_COMMAND "${NNVG_FLAGS}")
 
-    if (${ARGC} GREATER 10)
+    if (${ARGC} GREATER 11)
         MATH(EXPR ARG_N_LAST "${ARGC}-1")
-        foreach(ARG_N RANGE 10 ${ARG_N_LAST})
+        foreach(ARG_N RANGE 11 ${ARG_N_LAST})
             list(APPEND NNVG_CMD_ARGS "-I")
             list(APPEND NNVG_CMD_ARGS "${ARGV${ARG_N}}")
         endforeach(ARG_N)
@@ -75,6 +77,11 @@ function (create_dsdl_target ARG_TARGET_NAME
     if (ARG_DISABLE_SER_FP)
         list(APPEND NNVG_CMD_ARGS "--omit-float-serialization-support")
         message(STATUS "Disabling floating point seralization routines in generated support code.")
+    endif()
+
+    if (ARG_ENABLE_OVR_VAR_ARRAY)
+        list(APPEND NNVG_CMD_ARGS "--enable-override-variable-array-capacity")
+        message(STATUS "Enabling variable array capacity override option in generated code.")
     endif()
 
     if (ARG_ENABLE_EXPERIMENTAL)

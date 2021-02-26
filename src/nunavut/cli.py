@@ -71,6 +71,7 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
         language_options['target_endianness'] = args.target_endianness
     language_options['omit_float_serialization_support'] = args.omit_float_serialization_support
     language_options['enable_serialization_asserts'] = args.enable_serialization_asserts
+    language_options['enable_override_variable_array_capacity'] = args.enable_override_variable_array_capacity
 
     language_context = nunavut.lang.LanguageContext(
         args.target_language,
@@ -535,6 +536,16 @@ def _make_parser() -> argparse.ArgumentParser:
         based on documented requirements for calling logic that could expose a system to undefined
         behaviour. The alternative, for langauges that do not support exception handling, is to
         use assertions designed to halt a program rather than execute undefined logic.
+
+    ''').lstrip())
+
+    ln_opt_group.add_argument('--enable-override-variable-array-capacity',
+                              action='store_true',
+                              help=textwrap.dedent('''
+
+        Instruct support header generators to add the possiblitiy to override max capacity of a
+        variable length array in serialization routines. This option will disable serialization
+        buffer checks and add conditional compilation statements which violates MISRA.
 
     ''').lstrip())
 
