@@ -38,11 +38,15 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "Verification: test_constant",
+            "name": "Verification: test_var_len_arr",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_constant",
-            "cwd": "${workspaceFolder}"
+            "program": "${workspaceRoot}/verification/build_vscode/native-gcc-cpp/suite/test_var_len_arr",
+            "cwd": "${workspaceFolder}",
+            "osx": {
+                "MIMode": "lldb",
+                "externalConsole": false
+            }
         },
         {
             "name": "Verification: test_support",

@@ -130,7 +130,11 @@
         "vector": "cpp",
         "serialization.h": "c",
         "struct__0_1.h": "c",
-        "memory_resource": "cpp"
+        "memory_resource": "cpp",
+        "__functional_03": "cpp",
+        "any": "cpp",
+        "span": "cpp",
+        "variant": "cpp"
     },
     "python.linting.mypyArgs": [
         "--config-file=${workspaceFolder}/tox.ini"

@@ -143,6 +143,11 @@ add_definitions(-DUNITY_SUPPORT_64=1
 find_package(nnvg REQUIRED)
 
 #
+# Pull in some stuff we need for testing C++
+#
+find_package(o1heap REQUIRED)
+
+#
 # Generate serialization support headers
 #
 create_dsdl_target(nunavut-support
@@ -252,7 +257,8 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
                             ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
                             "${${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS}"
                             dsdl-regulated
-                            dsdl-test)
+                            dsdl-test
+                            o1heap)
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
     define_natve_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
