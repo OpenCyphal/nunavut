@@ -45,6 +45,16 @@ public:
         return data_;
     }
 
+    constexpr const T& operator[](std::size_t i) const
+    {
+        return data_[i];
+    }
+
+    constexpr T& operator[](std::size_t i)
+    {
+        return data_[i];
+    }
+
     // +----------------------------------------------------------------------+
     // | CAPACITY
     // +----------------------------------------------------------------------+
@@ -72,31 +82,34 @@ public:
         const std::size_t no_shrink_capacity = (clamped_capacity > old_data_size) ? clamped_capacity : old_data_size;
         T* new_data = alloc_.allocate(no_shrink_capacity);
 
-        if (old_data_size < 0 && new_data != old_data)
+        if (new_data != nullptr)
         {
-            // The allocator returned new memory. Copy any initialized objects in the old region to the new one.
-            // Check for memory overlap.
-            const std::size_t old_data_size_bytes = (old_data_size * sizeof(T));
-            if (
-                (old_data + old_data_size_bytes < new_data)
-                    ||
-                (new_data + old_data_size_bytes < old_data)
-               )
+            if (old_data_size > 0 && new_data != old_data)
             {
-                // Initialized regions do not overlap. Use memcpy.
-                std::memcpy(new_data, old_data, old_data_size_bytes);
+                // The allocator returned new memory. Copy any initialized objects in the old region to the new one.
+                // Check for memory overlap.
+                const std::size_t old_data_size_bytes = (old_data_size * sizeof(T));
+                if (
+                    (old_data + old_data_size_bytes < new_data)
+                        ||
+                    (new_data + old_data_size_bytes < old_data)
+                )
+                {
+                    // Initialized regions do not overlap. Use memcpy.
+                    std::memcpy(new_data, old_data, old_data_size_bytes);
+                }
+                else
+                {
+                    // Initialized regions overlap. Use memmove.
+                    std::memmove(new_data, old_data, old_data_size_bytes);
+                }
             }
-            else
-            {
-                // Initialized regions overlap. Use memmove.
-                std::memmove(new_data, old_data, old_data_size_bytes);
-            }
+
+            data_ = new_data;
+            capacity_ = no_shrink_capacity;
         }
 
-        data_ = new_data;
-        capacity_ = no_shrink_capacity;
-
-        return no_shrink_capacity;
+        return capacity_;
     }
 
 
