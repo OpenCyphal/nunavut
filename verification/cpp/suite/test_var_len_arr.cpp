@@ -11,6 +11,40 @@
 #include <limits>
 #include "o1heap/o1heap.h"
 #include <string>
+#include <array>
+
+/**
+ * Used to test that destructors were called.
+ */
+class Doomed
+{
+public:
+    Doomed(int* out_signal_dtor)
+        : out_signal_dtor_(out_signal_dtor)
+        , moved_(false)
+    {}
+    Doomed(Doomed&& from) noexcept
+        : out_signal_dtor_(from.out_signal_dtor_)
+        , moved_(false)
+    {
+        from.moved_ = true;
+    }
+    Doomed(const Doomed&) = delete;
+    Doomed& operator=(const Doomed&) = delete;
+    Doomed& operator=(Doomed&&) = delete;
+
+    ~Doomed()
+    {
+        if (!moved_)
+        {
+            (*out_signal_dtor_) += 1;
+        }
+    }
+
+private:
+    int* out_signal_dtor_;
+    bool moved_;
+};
 
 /**
  * Pavel's O(1) Heap Allocator wrapped in an std::allocator concept.
@@ -50,15 +84,29 @@ class JunkyStaticAllocator
 {
 public:
     using value_type = T;
+    using array_constref_type = const T(&)[SizeCount];
 
     JunkyStaticAllocator()
         : data_()
+        , alloc_count_(0)
+        , last_alloc_size_(0)
+        , last_dealloc_size_(0)
     {}
+
+    JunkyStaticAllocator(const JunkyStaticAllocator& rhs)
+        : data_()
+        , alloc_count_(rhs.alloc_count_)
+        , last_alloc_size_(rhs.last_alloc_size_)
+        , last_dealloc_size_(rhs.last_dealloc_size_)
+    {
+    }
 
     T* allocate(std::size_t n)
     {
-        if (n < SizeCount)
+        if (n <= SizeCount)
         {
+            ++alloc_count_;
+            last_alloc_size_ = n;
             return reinterpret_cast<T*>(&data_[0]);
         }
         else
@@ -70,12 +118,36 @@ public:
     constexpr void deallocate(T* p, std::size_t n)
     {
         // This allocator is junk.
-        (void) p;
-        (void) n;
+        if (p == reinterpret_cast<T*>(&data_[0]))
+        {
+            last_dealloc_size_ = n;
+        }
     }
 
+    std::size_t get_last_alloc_size() const
+    {
+        return last_alloc_size_;
+    }
+
+    std::size_t get_alloc_count() const
+    {
+        return alloc_count_;
+    }
+
+    std::size_t get_last_dealloc_size() const
+    {
+        return last_dealloc_size_;
+    }
+
+    operator array_constref_type() const
+    {
+        return data_;
+    }
 private:
-    typename std::aligned_storage<sizeof(T), alignof(T)>::type data_[SizeCount];
+    T data_[SizeCount];
+    std::size_t alloc_count_;
+    std::size_t last_alloc_size_;
+    std::size_t last_dealloc_size_;
 };
 
 // +----------------------------------------------------------------------+
@@ -97,13 +169,13 @@ TYPED_TEST(VLATestsGeneric, TestReserve)
     nunavut::support::VariableLengthArray<typename TypeParam::value_type, TypeParam, 10> subject;
     ASSERT_EQ(0U, subject.capacity());
     ASSERT_EQ(0U, subject.size());
-    ASSERT_EQ(10U, subject.max_size());
+    ASSERT_EQ(10U, subject.max_size);
 
     ASSERT_EQ(1U, subject.reserve(1));
 
     ASSERT_EQ(1U, subject.capacity());
     ASSERT_EQ(0U, subject.size());
-    ASSERT_EQ(10U, subject.max_size());
+    ASSERT_EQ(10U, subject.max_size);
 }
 
 TYPED_TEST(VLATestsGeneric, TestPush)
@@ -116,7 +188,7 @@ TYPED_TEST(VLATestsGeneric, TestPush)
 
     ASSERT_EQ(10U, subject.capacity());
     ASSERT_EQ(0U, subject.size());
-    ASSERT_EQ(20U, subject.max_size());
+    ASSERT_EQ(20U, subject.max_size);
     const typename TypeParam::value_type* const pushed = subject.push_back_no_alloc(1);
     ASSERT_NE(nullptr, pushed);
     ASSERT_EQ(*pushed, 1);
@@ -223,22 +295,43 @@ TYPED_TEST(VLATestsStatic, TestOverMaxSize)
 
 TEST(VLATestsNonTrivial, TestDeallocSize)
 {
-    // TODO: be sure that the dealloc method is called with the same size
-    // used for alloc
+    nunavut::support::VariableLengthArray<int, JunkyStaticAllocator<int, 10>, 10> subject;
+    ASSERT_EQ(0U, subject.get_allocator().get_alloc_count());
+    subject.reserve(10);
+    ASSERT_EQ(1U, subject.get_allocator().get_alloc_count());
+    ASSERT_EQ(10U, subject.get_allocator().get_last_alloc_size());
+    ASSERT_EQ(0U, subject.get_allocator().get_last_dealloc_size());
+    subject.pop_back();
+    subject.shrink_to_fit();
+    ASSERT_EQ(10U, subject.get_allocator().get_last_dealloc_size());
 }
 
 TEST(VLATestsNonTrivial, TestDestroy)
 {
-    // TODO: ensure data item destructors are called if container is deleted.
+    int dtor_called = 0;
+
+    auto subject = std::make_shared<nunavut::support::VariableLengthArray<Doomed, std::allocator<Doomed>, 10>>();
+
+    ASSERT_EQ(10U, subject->reserve(10));
+    ASSERT_NE(nullptr, subject->push_back_no_alloc(Doomed(&dtor_called)));
+    ASSERT_NE(nullptr, subject->push_back_no_alloc(Doomed(&dtor_called)));
+    ASSERT_EQ(0, dtor_called);
+    subject.reset();
+    ASSERT_EQ(2, dtor_called);
 }
 
-TEST(VLATestsNonTrival, TestNonFunamental)
+TEST(VLATestsNonTrivial, TestNonFunamental)
 {
-    nunavut::support::VariableLengthArray<std::string, std::allocator<std::string>, 10> subject;
+    int dtor_called = 0;
+
+    nunavut::support::VariableLengthArray<Doomed, std::allocator<Doomed>, 10> subject;
     ASSERT_EQ(10U, subject.reserve(10));
+    ASSERT_NE(nullptr, subject.push_back_no_alloc(Doomed(&dtor_called)));
+    subject.pop_back();
+    ASSERT_EQ(1, dtor_called);
 }
 
-TEST(VLATestsNonTrival, TestNotMovable)
+TEST(VLATestsNonTrivial, TestNotMovable)
 {
     class NotMovable
     {
@@ -247,10 +340,58 @@ TEST(VLATestsNonTrival, TestNotMovable)
         NotMovable(NotMovable&&) = delete;
         NotMovable(const NotMovable& rhs) noexcept
         {
-            (void)rhs;
+            (void) rhs;
         }
     };
     nunavut::support::VariableLengthArray<NotMovable, std::allocator<NotMovable>, 10> subject;
     ASSERT_EQ(10U, subject.reserve(10));
-    ASSERT_NE(nullptr, subject.push_back_no_alloc(NotMovable()));
+    NotMovable source;
+    ASSERT_NE(nullptr, subject.push_back_no_alloc(source));
+}
+
+TEST(VLATestsNonTrivial, TestMovable)
+{
+    class Movable
+    {
+    public:
+        Movable(int data)
+            : data_(data)
+        {}
+        Movable(const Movable&) = delete;
+        Movable(Movable&& move_from) noexcept
+            : data_(move_from.data_)
+        {
+            move_from.data_ = 0;
+        }
+        int get_data() const
+        {
+            return data_;
+        }
+
+    private:
+        int data_;
+    };
+    nunavut::support::VariableLengthArray<Movable, std::allocator<Movable>, 10> subject;
+    ASSERT_EQ(10U, subject.reserve(10));
+    Movable* pushed = subject.push_back_no_alloc(Movable(1));
+    ASSERT_NE(nullptr, pushed);
+    ASSERT_EQ(1, pushed->get_data());
+}
+
+/**
+ * Just remember that this is a possible pattern (unfortunately).
+ */
+TEST(VLATestsNonTrivial, TestMoveToVector)
+{
+    nunavut::support::VariableLengthArray<std::size_t, std::allocator<std::size_t>, 10> subject;
+    ASSERT_EQ(decltype(subject)::max_size, subject.reserve(decltype(subject)::max_size));
+    for (std::size_t i = 0; i < decltype(subject)::max_size; ++i)
+    {
+        ASSERT_NE(nullptr, subject.push_back_no_alloc(i));
+    }
+    std::vector<std::size_t> a(subject.data(), subject.data() + subject.size());
+    for (std::size_t i = 0; i < decltype(subject)::max_size; ++i)
+    {
+        ASSERT_EQ(i, a[i]);
+    }
 }

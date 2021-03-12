@@ -13,8 +13,6 @@ set(C_AND_CXX_FLAG_SET "")
 # Diagnostics for C and C++
 #
 list(APPEND C_AND_CXX_FLAG_SET
-                "-fprofile-arcs"
-                "-ftest-coverage"
                 "-pedantic"
                 "-Wall"
                 "-Wextra"
