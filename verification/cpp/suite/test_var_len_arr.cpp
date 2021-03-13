@@ -1,7 +1,7 @@
 /*
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
- * Sanity tests.
+ * Validates the VariableLengthArray container type using various allocators.
  */
 
 #include "gmock/gmock.h"

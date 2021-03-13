@@ -32,7 +32,7 @@ class VariableLengthArray
 {
 public:
 
-    VariableLengthArray() noexcept(noexcept(Allocator()))
+    VariableLengthArray() noexcept(std::is_nothrow_constructible<Allocator>::value)
         : data_(nullptr)
         , capacity_(0)
         , size_(0)
@@ -192,7 +192,15 @@ public:
      * @param  desired_capacity The number of elements to allocate, but not initialize, memory for.
      * @return The new (or unchanged) capacity of this object.
      */
-    std::size_t reserve(const std::size_t desired_capacity) noexcept(noexcept(allocator_type()))
+    std::size_t reserve(const std::size_t desired_capacity) noexcept(
+        noexcept(
+            allocator_type().allocate(0)
+        )
+        &&
+        noexcept(
+            move_and_free<T>(nullptr, nullptr, 0, 0, std::declval<Allocator&>())
+        )
+    )
     {
         const std::size_t clamped_capacity   = (desired_capacity > MaxSize) ? MaxSize : desired_capacity;
         const std::size_t no_shrink_capacity = (clamped_capacity > size_) ? clamped_capacity : size_;
@@ -231,6 +239,14 @@ public:
     bool shrink_to_fit() noexcept(
         noexcept(
             allocator_type().deallocate(nullptr, 0)
+        )
+        &&
+        noexcept(
+            allocator_type().allocate(0)
+        )
+        &&
+        noexcept(
+            move_and_free<T>(nullptr, nullptr, 0, 0, std::declval<Allocator&>())
         )
     )
     {
@@ -341,7 +357,7 @@ private:
                                           Allocator&        alloc,
                                           typename std::enable_if<std::is_trivially_destructible<U>::value>::type* = 0)
                                             noexcept(
-                                                        noexcept(std::declval<Allocator>().deallocate(nullptr, 0))
+                                                        noexcept(allocator_type().deallocate(nullptr, 0))
                                                     )
     {
         (void) src_size_count;
@@ -361,7 +377,7 @@ private:
             noexcept(
                         std::is_nothrow_destructible<U>::value
                         &&
-                        noexcept(std::declval<Allocator>().deallocate(nullptr,0))
+                        noexcept(allocator_type().deallocate(nullptr,0))
                     )
     {
         std::size_t dtor_iterator = src_size_count;
@@ -383,7 +399,7 @@ private:
                                         Allocator&  alloc,
                                         typename std::enable_if<std::is_fundamental<U>::value>::type* = 0)
                                             noexcept(
-                                                        noexcept(std::declval<Allocator>().deallocate(nullptr, 0))
+                                                        noexcept(fast_deallocate<U>(nullptr, 0, 0, std::declval<Allocator&>()))
                                                     )
     {
         if (src_len_count > 0)
@@ -415,9 +431,7 @@ private:
                                                         std::is_nothrow_copy_constructible<U>::value
                                                     )
                                                     &&
-                                                    noexcept(std::declval<Allocator>().deallocate(nullptr, 0))
-                                                    &&
-                                                    std::is_nothrow_destructible<U>::value
+                                                    noexcept(fast_deallocate<U>(nullptr, 0, 0, std::declval<Allocator&>()))
                                                 )
     {
         if (src_len_count > 0)
@@ -431,6 +445,9 @@ private:
         fast_deallocate(src, src_len_count, src_capacity_count, alloc);
     }
 
+    // +----------------------------------------------------------------------+
+    // | DATA MEMBERS
+    // +----------------------------------------------------------------------+
     T*          data_;
     std::size_t capacity_;
     std::size_t size_;
