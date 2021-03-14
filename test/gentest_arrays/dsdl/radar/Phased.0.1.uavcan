@@ -1,0 +1,6 @@
+
+float32[<=2677] antennae_per_bank
+uint16 stride
+float32[3] bank_normal_rads
+
+@sealed

@@ -8,11 +8,9 @@
     module will be available in the template's global namespace as ``cpp``.
 """
 
-import fractions
 import functools
 import io
 import re
-import textwrap
 import typing
 
 import pydsdl
@@ -26,6 +24,8 @@ from ..c import C_RESERVED_PATTERNS, VariableNameEncoder, _CFit
 CPP_RESERVED_PATTERNS = frozenset([*C_RESERVED_PATTERNS])
 
 CPP_NO_DOUBLE_DASH_RULE = re.compile(r'(__)')
+
+DEFAULT_ARRAY_TYPE = 'std::array<{TYPE},{MAX_SIZE}>'
 
 
 def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
@@ -193,7 +193,6 @@ def filter_literal(language: Language,
         return '"{}"'.format(value)
     else:
         raise ValueError('Cannot construct a C literal from an instance of {}'.format(type(ty).__name__))
-
 
 
 @template_language_filter(__name__)
@@ -590,11 +589,17 @@ def filter_declaration(language: Language,
     if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.VoidType):
         return filter_type_from_primitive(language, instance)
     elif isinstance(instance, pydsdl.VariableLengthArrayType):
-        return 'std::vector<{}>'.format(filter_declaration(language, instance.element_type))
+        variable_array_type = language.get_option('variable_array_type', DEFAULT_ARRAY_TYPE)
+
+        if not isinstance(variable_array_type, str):
+            raise RuntimeError('variable_array_type language option was missing or invalid.')
+        return variable_array_type.format(
+            TYPE=filter_declaration(language, instance.element_type),
+            MAX_SIZE=instance.capacity)
     elif isinstance(instance, pydsdl.ArrayType):
-        return 'std::array<{},{}>'.format(
-            filter_declaration(language, instance.element_type),
-            instance.capacity)
+        return DEFAULT_ARRAY_TYPE.format(
+            TYPE=filter_declaration(language, instance.element_type),
+            MAX_SIZE=instance.capacity)
     else:
         return filter_full_reference_name(language, instance)
 

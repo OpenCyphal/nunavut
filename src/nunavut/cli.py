@@ -48,7 +48,7 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
     def _build_post_processor_list_from_args(args: argparse.Namespace) \
             -> typing.List[nunavut.postprocessors.PostProcessor]:
         '''
-        Return a list of post processors setup based on the provided commandline arguments. This
+        Return a list of post processors setup based on the provided command-line arguments. This
         list may be empty but the function will not return None.
         '''
         post_processors = []  # type: typing.List[nunavut.postprocessors.PostProcessor]
@@ -207,7 +207,7 @@ class _LazyVersionAction(argparse._VersionAction):
 
 class _NunavutArgumentParser(argparse.ArgumentParser):
     """
-    Specialization of argparse.ArgumentParser to encapuslate inter-argument rules.
+    Specialization of argparse.ArgumentParser to encapsulate inter-argument rules.
     """
 
     def parse_known_args(self,
@@ -321,7 +321,7 @@ def _make_parser() -> argparse.ArgumentParser:
 
         Activate languages with unstable, experimental support.
 
-        By default, target languages where support is not finalised are not
+        By default, target languages where support is not finalized are not
         enabled when running nunavut, to make it clear that the code output
         may change in a non-backwards-compatible way in future versions, or
         that it might not even work yet.
@@ -412,7 +412,7 @@ def _make_parser() -> argparse.ArgumentParser:
                         type=lambda value: int(value, 0),
                         help=textwrap.dedent('''
 
-        The filemode each generated file is set to after it is created.
+        The file-mode each generated file is set to after it is created.
         Note that this value is interpreted using python auto base detection.
         Because of this, to provide an octal value, you'll need to prefix your
         literal with '0o' (e.g. --file-mode 0o664).
@@ -534,7 +534,7 @@ def _make_parser() -> argparse.ArgumentParser:
         Instruct support header generators to generate language-specific assert statements as part
         of serialization routines. By default the serialization logic generated may make assumptions
         based on documented requirements for calling logic that could expose a system to undefined
-        behaviour. The alternative, for langauges that do not support exception handling, is to
+        behavior. The alternative, for languages that do not support exception handling, is to
         use assertions designed to halt a program rather than execute undefined logic.
 
     ''').lstrip())
@@ -543,7 +543,7 @@ def _make_parser() -> argparse.ArgumentParser:
                               action='store_true',
                               help=textwrap.dedent('''
 
-        Instruct support header generators to add the possiblitiy to override max capacity of a
+        Instruct support header generators to add the possibility to override max capacity of a
         variable length array in serialization routines. This option will disable serialization
         buffer checks and add conditional compilation statements which violates MISRA.
 
