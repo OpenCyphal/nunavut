@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": ".tox/local/bin/python3",
+    "python.pythonPath": ".tox/local/bin/python",
     "restructuredtext.sphinxBuildPath": "sphinx-build",
     "restructuredtext.confPath": "${workspaceFolder}",
     "restructuredtext.linter.extraArgs": [

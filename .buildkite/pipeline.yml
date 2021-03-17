@@ -56,6 +56,40 @@ steps:
             - "BUILDKITE_BUILD_NUMBER"
     agents:
       queue: 'default'
+  - label: ':cpp::hammer: verification build, cpp, gcc, amd64'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: cpp-gcc-docker-verify-amd64
+    command: ".buildkite/verify_cpp_amd64.sh"
+    artifact_paths:
+      - "verification/build_c/coverage_all.zip"
+      - "verification/build_cpp/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+  - label: ':cpp::hammer: verification build, cpp, gcc, x86'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: cpp-gcc-docker-verify-x86
+    command: ".buildkite/verify_cpp_x86.sh"
+    artifact_paths:
+      - "verification/build_c/coverage_all.zip"
+      - "verification/build_cpp/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
   - wait
   - label: ':python::amazon-s3::sonarqube: release'
     if: build.branch == "main" && pipeline.slug == "nunavut-release"

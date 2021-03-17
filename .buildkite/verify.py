@@ -89,7 +89,6 @@ def _make_parser() -> argparse.ArgumentParser:
                         help='Disables generation of test coverage data. This is enabled by default.')
 
     parser.add_argument('-j', '--jobs',
-                        default=os.cpu_count(),
                         type=int,
                         help='The number of concurrent build jobs to request. '
                              'Defaults to the number of logical CPUs on the local machine.')
@@ -99,6 +98,22 @@ def _make_parser() -> argparse.ArgumentParser:
 
     parser.add_argument('--cxx',
                         help='The value to set CXX to (e.g. /usr/bin/clang++)')
+
+    parser.add_argument('--verification-dir',
+                        default='verification',
+                        help='Path to the verification directory.')
+
+    parser.add_argument('--use-default-generator',
+                        action='store_true',
+                        help=textwrap.dedent('''
+        We use Ninja by default. Set this flag to omit the explicit generator override
+        and use whatever the default is for cmake (i.e. normally make)
+    '''.lstrip()))
+
+    parser.add_argument('--toolchain-family',
+                        choices=['gcc', 'clang'],
+                        default='gcc',
+                        help='Select the toolchain family to use.')
 
     return parser
 
@@ -114,9 +129,10 @@ def _cmake_run(cmake_args: typing.List[str],
 
     *****************************************************************
     About to run command: {}
+    in directory        : {}
     *****************************************************************
 
-    ''').format(' '.join(cmake_args)))
+    ''').format(' '.join(cmake_args), str(cmake_dir)))
 
     copy_of_env: typing.Dict = {}
     copy_of_env.update(os.environ)
@@ -183,6 +199,25 @@ def _cmake_configure(args: argparse.Namespace, cmake_args: typing.List[str], cma
         if args.verbose > 0:
             cmake_configure_args.append('-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON')
 
+        flag_set_dir =  pathlib.Path('cmake') / pathlib.Path('compiler_flag_sets')
+        if args.no_coverage:
+            flagset_file = (flag_set_dir / pathlib.Path('native')).with_suffix('.cmake')
+        else:
+            flagset_file = (flag_set_dir / pathlib.Path('native_w_cov')).with_suffix('.cmake')
+
+        cmake_configure_args.append('-DNUNAVUT_FLAGSET={}'.format(str(flagset_file)))
+
+        toolchain_dir = pathlib.Path('cmake') / pathlib.Path('toolchains')
+        if args.toolchain_family == 'clang':
+            toolchain_file = toolchain_dir / pathlib.Path('clang-native').with_suffix('.cmake')
+        else:
+            toolchain_file = toolchain_dir / pathlib.Path('gcc-native').with_suffix('.cmake')
+
+        cmake_configure_args.append('-DCMAKE_TOOLCHAIN_FILE={}'.format(str(toolchain_file)))
+
+        if not args.use_default_generator:
+            cmake_configure_args.append('-DCMAKE_GENERATOR=Ninja')
+
         env: typing.Optional[typing.Dict] = None
 
         if args.cc is not None:
@@ -214,7 +249,7 @@ def _cmake_build(args: argparse.Namespace, cmake_args: typing.List[str], cmake_d
                              '--target',
                              'all']
 
-        if args.jobs > 0:
+        if args.jobs is not None and args.jobs > 0:
             cmake_build_args += ['--', '-j{}'.format(args.jobs)]
 
         return _cmake_run(cmake_build_args, cmake_dir)
@@ -274,7 +309,7 @@ def main() -> int:
 
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging_level)
 
-    verification_dir = pathlib.Path.cwd() / pathlib.Path('verification')
+    verification_dir = pathlib.Path.cwd() / pathlib.Path(args.verification_dir)
     cmake_dir = verification_dir / pathlib.Path(_create_build_dir_name(args))
     cmake_args = ['cmake']
 

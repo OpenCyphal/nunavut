@@ -8,9 +8,13 @@
 # Flags for C and C++
 #
 
-include(${CMAKE_SOURCE_DIR}/cmake/compiler_flag_sets/native.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 
 list(APPEND C_AND_CXX_FLAG_SET
         "-fprofile-arcs"
         "-ftest-coverage"
 )
+
+list(APPEND C_FLAG_SET ${C_AND_CXX_FLAG_SET})
+list(APPEND CXX_FLAG_SET ${C_AND_CXX_FLAG_SET})
+list(APPEND ASM_FLAG_SET ${C_AND_CXX_FLAG_SET})
