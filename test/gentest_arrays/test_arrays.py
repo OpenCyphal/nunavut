@@ -14,7 +14,7 @@ from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import LanguageContext
 
 
-def assert_pattern_match_in_file(file: typing.Optional[Path], * patterns: re.Pattern) -> None:
+def assert_pattern_match_in_file(file: typing.Optional[Path], * patterns: 're.Pattern') -> None:
     """
     Assert that a given pattern is found within a given file at least once. The pattern
     is matched for each line in the file (i.e. multi-line matches are not supported).
