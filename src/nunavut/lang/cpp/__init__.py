@@ -120,82 +120,6 @@ def filter_is_zero_cost_primitive(t: pydsdl.PrimitiveType) -> bool:
 
 
 @template_language_filter(__name__)
-def filter_literal(language: Language,
-                   value: typing.Union[pydsdl.Any, bool, int, str]) -> str:
-    """
-    Renders the specified constant as a literal.
-
-    .. invisible-code-block: python
-
-        from nunavut.lang.c import filter_literal
-        from unittest.mock import MagicMock
-        import pydsdl
-
-        my_true_constant = MagicMock()
-        my_true_constant.data_type = MagicMock(spec=pydsdl.BooleanType)
-
-    .. code-block:: python
-
-         # given
-        template = '{{ my_true_constant | literal }}'
-
-        # then
-        rendered = 'true'
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_literal, template, rendered, 'c', my_true_constant=my_true_constant)
-
-    Language configuration can control the output of some constant tokens. For example, to use
-    non-standard true and false values in c:
-
-    .. code-block:: python
-
-         # given
-        template = '{{ my_true_constant | literal }}'
-
-        # then, if true = 'NUNAVUT_TRUE' in the named_values for nunavut.lang.c
-        rendered = 'NUNAVUT_TRUE'
-
-    .. invisible-code-block: python
-
-        config_overrides = {'nunavut.lang.c': {'named_values': {'true': 'NUNAVUT_TRUE'}}}
-        lctx = configurable_language_context_factory(config_overrides, 'c')
-        jinja_filter_tester(filter_literal, template, rendered, lctx, my_true_constant=my_true_constant)
-
-    """
-    if isinstance(value, pydsdl.Any):
-        ty = value.data_type
-        nv = value.native_value
-    else:
-        ty = value
-        nv = value
-
-    if isinstance(ty, pydsdl.BooleanType) or isinstance(ty, bool):
-        return str('true' if nv else 'false')
-
-    elif isinstance(ty, pydsdl.IntegerType):
-        out = str(nv) + 'U' * isinstance(ty, pydsdl.UnsignedIntegerType) \
-            + 'L' * (ty.bit_length > 16) + 'L' * (ty.bit_length > 32)
-        assert isinstance(out, str)
-        return out
-
-    elif isinstance(ty, pydsdl.FloatType):
-        if nv.denominator == 1:
-            expr = '{}.0'.format(nv.numerator)
-        else:
-            expr = '({}.0 / {}.0)'.format(nv.numerator, nv.denominator)
-        cast = filter_type_from_primitive(language, ty)
-        return '(({}) {})'.format(cast, expr)
-    elif isinstance(ty, int):
-        return str(value)
-    elif isinstance(ty, str):
-        return '"{}"'.format(value)
-    else:
-        raise ValueError('Cannot construct a C literal from an instance of {}'.format(type(ty).__name__))
-
-
-@template_language_filter(__name__)
 def filter_id(language: Language,
               instance: typing.Any) -> str:
     """
@@ -286,47 +210,47 @@ def filter_type(language: Language,
 
     .. invisible-code-block: python
 
-        from nunavut.lang.cpp import filter_to_static_assertion_type
+        from nunavut.lang.cpp import filter_type
 
     .. code-block:: python
 
          # given
-        template = '{{ "Any" | to_static_assertion_type }}'
+        template = '{{ "Any" | type }}'
 
         # then
         rendered = "const char* const"
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_to_static_assertion_type, template, rendered, 'cpp')
+        jinja_filter_tester(filter_type, template, rendered, 'cpp')
 
     int:
 
     .. code-block:: python
 
          # given
-        template = '{{ 123 | to_static_assertion_type }}'
+        template = '{{ 123 | type }}'
 
         # then
         rendered = 'long long'
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_to_static_assertion_type, template, rendered, 'cpp')
+        jinja_filter_tester(filter_type, template, rendered, 'cpp')
 
     and bool:
 
     .. code-block:: python
 
          # given
-        template = '{{ True | to_static_assertion_type }}'
+        template = '{{ True | type }}'
 
         # then
         rendered = 'bool'
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_to_static_assertion_type, template, rendered, 'cpp')
+        jinja_filter_tester(filter_type, template, rendered, 'cpp')
 
     """
 
@@ -367,8 +291,7 @@ def filter_open_namespace(language: Language,
         rendered = '''namespace uavcan
         {
         namespace foo
-        {
-        '''
+        {'''
 
     .. invisible-code-block: python
 
@@ -434,8 +357,7 @@ def filter_close_namespace(language: Language,
 
         # then
         rendered = '''} // namespace foo
-        } // namespace uavcan
-        '''
+        } // namespace uavcan'''
 
     .. invisible-code-block: python
 
