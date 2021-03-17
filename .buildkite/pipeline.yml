@@ -22,7 +22,7 @@ steps:
     agents:
       queue: 'default'
     timeout_in_minutes: 40
-  - label: ':cpp::hammer: verification build, c, gcc, amd64'
+  - label: ':linux::hammer: verification build, c, gcc, amd64'
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: c-gcc-docker-verify-amd64
     command: ".buildkite/verify_c_amd64.sh"
@@ -39,7 +39,7 @@ steps:
             - "BUILDKITE_BUILD_NUMBER"
     agents:
       queue: 'default'
-  - label: ':cpp::hammer: verification build, c, gcc, x86'
+  - label: ':linux::hammer: verification build, c, gcc, x86'
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: c-gcc-docker-verify-x86
     command: ".buildkite/verify_c_x86.sh"
