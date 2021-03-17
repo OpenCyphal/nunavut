@@ -240,6 +240,10 @@ select individual steps to speed things up::
 
     bk local run --filter="verification build"
 
+Make sure you are in the nunavut root directory when you run these commands. Use the :code:`--debug` flag if you run
+into problems::
+
+    bk --debug local run
 
 Administrating Buildkite on AWS
 ================================================
@@ -254,7 +258,7 @@ our Buildkite `AWS CloudFormation`_ stack and of our PyPI UAVCAN organization.
 
         aws s3 cp --acl private --sse aws:kms ~/Downloads/env "s3://buildkite-managedsecretsbucket-xxxxxxxx/nunavut-release/env"
 
-    4. Back in the PyPI keys list delete any keys that are older than the one previously in use. You can keep the key
+    4. Back in the PyPI keys list, delete any keys that are older than the one previously in use. You can keep the key
        you just rotated until you rotate the new key.
 
 
