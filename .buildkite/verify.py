@@ -152,88 +152,87 @@ def _cmake_configure(args: argparse.Namespace, cmake_args: typing.List[str], cma
     logic.
     """
 
-    if not args.build_only and not args.test_only:
+    if args.build_only or args.test_only:
+        return 0
 
-        cmake_logging_level = 'NOTICE'
+    cmake_logging_level = 'NOTICE'
 
-        if args.verbose == 1:
-            cmake_logging_level = 'STATUS'
-        elif args.verbose == 2:
-            cmake_logging_level = 'VERBOSE'
-        elif args.verbose == 3:
-            cmake_logging_level = 'DEBUG'
-        elif args.verbose > 3:
-            cmake_logging_level = 'TRACE'
+    if args.verbose == 1:
+        cmake_logging_level = 'STATUS'
+    elif args.verbose == 2:
+        cmake_logging_level = 'VERBOSE'
+    elif args.verbose == 3:
+        cmake_logging_level = 'DEBUG'
+    elif args.verbose > 3:
+        cmake_logging_level = 'TRACE'
 
-        try:
-            cmake_dir.mkdir(exist_ok=False)
-        except FileExistsError:
-            if not args.force:
-                raise
-            shutil.rmtree(cmake_dir)
-            cmake_dir.mkdir()
+    try:
+        cmake_dir.mkdir(exist_ok=False)
+    except FileExistsError:
+        if not args.force:
+            raise
+        shutil.rmtree(cmake_dir)
+        cmake_dir.mkdir()
 
-        cmake_configure_args = cmake_args.copy()
+    cmake_configure_args = cmake_args.copy()
 
-        cmake_configure_args.append('--log-level={}'.format(cmake_logging_level))
-        cmake_configure_args.append('-DNUNAVUT_VERIFICATION_LANG={}'.format(args.language))
+    cmake_configure_args.append('--log-level={}'.format(cmake_logging_level))
+    cmake_configure_args.append('-DNUNAVUT_VERIFICATION_LANG={}'.format(args.language))
 
-        if args.build_type is not None:
-            cmake_configure_args.append('-DCMAKE_BUILD_TYPE={}'.format(args.build_type))
+    if args.build_type is not None:
+        cmake_configure_args.append('-DCMAKE_BUILD_TYPE={}'.format(args.build_type))
 
-        if args.endianness is not None:
-            cmake_configure_args.append('-DNUNAVUT_VERIFICATION_TARGET_ENDIANNESS={}'.format(args.endianness))
+    if args.endianness is not None:
+        cmake_configure_args.append('-DNUNAVUT_VERIFICATION_TARGET_ENDIANNESS={}'.format(args.endianness))
 
-        if args.platform is not None:
-            cmake_configure_args.append('-DNUNAVUT_VERIFICATION_TARGET_PLATFORM={}'.format(args.platform))
+    if args.platform is not None:
+        cmake_configure_args.append('-DNUNAVUT_VERIFICATION_TARGET_PLATFORM={}'.format(args.platform))
 
-        if args.disable_asserts:
-            cmake_configure_args.append('-DNUNAVUT_VERIFICATION_SER_ASSERT:BOOL=OFF')
+    if args.disable_asserts:
+        cmake_configure_args.append('-DNUNAVUT_VERIFICATION_SER_ASSERT:BOOL=OFF')
 
-        if args.disable_fp:
-            cmake_configure_args.append('-DNUNAVUT_VERIFICATION_SER_FP_DISABLE:BOOL=ON')
+    if args.disable_fp:
+        cmake_configure_args.append('-DNUNAVUT_VERIFICATION_SER_FP_DISABLE:BOOL=ON')
 
-        if args.enable_ovr_var_array:
-            cmake_configure_args.append('-NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE:BOOL=ON')
+    if args.enable_ovr_var_array:
+        cmake_configure_args.append('-NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE:BOOL=ON')
 
-        if args.verbose > 0:
-            cmake_configure_args.append('-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON')
+    if args.verbose > 0:
+        cmake_configure_args.append('-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON')
 
-        flag_set_dir =  pathlib.Path('cmake') / pathlib.Path('compiler_flag_sets')
-        if args.no_coverage:
-            flagset_file = (flag_set_dir / pathlib.Path('native')).with_suffix('.cmake')
-        else:
-            flagset_file = (flag_set_dir / pathlib.Path('native_w_cov')).with_suffix('.cmake')
+    flag_set_dir = pathlib.Path('cmake') / pathlib.Path('compiler_flag_sets')
+    if args.no_coverage:
+        flagset_file = (flag_set_dir / pathlib.Path('native')).with_suffix('.cmake')
+    else:
+        flagset_file = (flag_set_dir / pathlib.Path('native_w_cov')).with_suffix('.cmake')
 
-        cmake_configure_args.append('-DNUNAVUT_FLAGSET={}'.format(str(flagset_file)))
+    cmake_configure_args.append('-DNUNAVUT_FLAGSET={}'.format(str(flagset_file)))
 
-        toolchain_dir = pathlib.Path('cmake') / pathlib.Path('toolchains')
-        if args.toolchain_family == 'clang':
-            toolchain_file = toolchain_dir / pathlib.Path('clang-native').with_suffix('.cmake')
-        else:
-            toolchain_file = toolchain_dir / pathlib.Path('gcc-native').with_suffix('.cmake')
+    toolchain_dir = pathlib.Path('cmake') / pathlib.Path('toolchains')
+    if args.toolchain_family == 'clang':
+        toolchain_file = toolchain_dir / pathlib.Path('clang-native').with_suffix('.cmake')
+    else:
+        toolchain_file = toolchain_dir / pathlib.Path('gcc-native').with_suffix('.cmake')
 
-        cmake_configure_args.append('-DCMAKE_TOOLCHAIN_FILE={}'.format(str(toolchain_file)))
+    cmake_configure_args.append('-DCMAKE_TOOLCHAIN_FILE={}'.format(str(toolchain_file)))
 
-        if not args.use_default_generator:
-            cmake_configure_args.append('-DCMAKE_GENERATOR=Ninja')
+    if not args.use_default_generator:
+        cmake_configure_args.append('-DCMAKE_GENERATOR=Ninja')
 
-        env: typing.Optional[typing.Dict] = None
+    env: typing.Optional[typing.Dict] = None
 
-        if args.cc is not None:
+    if args.cc is not None:
+        env = {}
+        env['CC'] = args.cc
+
+    if args.cxx is not None:
+        if env is None:
             env = {}
-            env['CC'] = args.cc
+        env['CXX'] = args.cxx
 
-        if args.cxx is not None:
-            if env is None:
-                env = {}
-            env['CXX'] = args.cxx
+    cmake_configure_args.append('..')
 
-        cmake_configure_args.append('..')
-
-        return _cmake_run(cmake_configure_args, cmake_dir, env)
-
-    return 0
+    return _cmake_run(cmake_configure_args, cmake_dir, env)
 
 
 def _cmake_build(args: argparse.Namespace, cmake_args: typing.List[str], cmake_dir: pathlib.Path) -> int:
@@ -290,6 +289,8 @@ def _create_build_dir_name(args: argparse.Namespace) -> str:
 
     if args.endianness is not None:
         name += '_{}'.format(args.endianness)
+
+    name += '_{}'.format(args.toolchain_family)
 
     return name
 

@@ -34,7 +34,7 @@
     "cmake.sourceDirectory": "${workspaceFolder}/verification",
     "cmake.buildBeforeRun": true,
     "cmake.copyCompileCommands": "${workspaceFolder}/.vscode/compile_commands.json",
-    "cmake.generator": "Unix Makefiles",
+    "cmake.generator": "Ninja",
     "cmake.configureArgs": [
         "-DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE"
     ],

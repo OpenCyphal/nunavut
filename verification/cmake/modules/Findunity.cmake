@@ -28,6 +28,7 @@ target_compile_options(unity_core PUBLIC
                         "-Wno-float-equal"
                         "-Wno-double-promotion"
                         "-Wno-switch-enum"
+                        "-Wno-conversion"
                         "-DUNITY_INCLUDE_DOUBLE"
                         "${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS}"
                        )

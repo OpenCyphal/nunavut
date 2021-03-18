@@ -25,10 +25,9 @@ steps:
   - label: ':linux::hammer: verification build, c, gcc, amd64'
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: c-gcc-docker-verify-amd64
-    command: ".buildkite/verify_c_amd64.sh"
+    command: ".buildkite/verify_c_amd64_gcc.sh"
     artifact_paths:
-      - "verification/build_c/coverage_all.zip"
-      - "verification/build_cpp/coverage_all.zip"
+      - "verification/build_*/coverage_all.zip"
     plugins:
       - docker#v3.3.0:
           workdir: /repo
@@ -42,10 +41,9 @@ steps:
   - label: ':linux::hammer: verification build, c, gcc, x86'
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: c-gcc-docker-verify-x86
-    command: ".buildkite/verify_c_x86.sh"
+    command: ".buildkite/verify_c_x86_gcc.sh"
     artifact_paths:
-      - "verification/build_c/coverage_all.zip"
-      - "verification/build_cpp/coverage_all.zip"
+      - "verification/build_*/coverage_all.zip"
     plugins:
       - docker#v3.3.0:
           workdir: /repo
@@ -59,10 +57,9 @@ steps:
   - label: ':cpp::hammer: verification build, cpp, gcc, amd64'
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: cpp-gcc-docker-verify-amd64
-    command: ".buildkite/verify_cpp_amd64.sh"
+    command: ".buildkite/verify_cpp_amd64_gcc.sh"
     artifact_paths:
-      - "verification/build_c/coverage_all.zip"
-      - "verification/build_cpp/coverage_all.zip"
+      - "verification/build_*/coverage_all.zip"
     plugins:
       - docker#v3.3.0:
           workdir: /repo
@@ -76,10 +73,73 @@ steps:
   - label: ':cpp::hammer: verification build, cpp, gcc, x86'
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: cpp-gcc-docker-verify-x86
-    command: ".buildkite/verify_cpp_x86.sh"
+    command: ".buildkite/verify_cpp_x86_gcc.sh"
     artifact_paths:
-      - "verification/build_c/coverage_all.zip"
-      - "verification/build_cpp/coverage_all.zip"
+      - "verification/build_*/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+  - label: ':linux::hammer: verification build, c, clang, amd64'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: c-clang-docker-verify-amd64
+    command: ".buildkite/verify_c_amd64_clang.sh"
+    artifact_paths:
+      - "verification/build_*/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+  - label: ':linux::hammer: verification build, c, clang, x86'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: c-clang-docker-verify-x86
+    command: ".buildkite/verify_c_x86_clang.sh"
+    artifact_paths:
+      - "verification/build_*/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+  - label: ':cpp::hammer: verification build, cpp, clang, amd64'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: cpp-clang-docker-verify-amd64
+    command: ".buildkite/verify_cpp_amd64_clang.sh"
+    artifact_paths:
+      - "verification/build_*/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+  - label: ':cpp::hammer: verification build, cpp, clang, x86'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: cpp-clang-docker-verify-x86
+    command: ".buildkite/verify_cpp_x86_clang.sh"
+    artifact_paths:
+      - "verification/build_*/coverage_all.zip"
     plugins:
       - docker#v3.3.0:
           workdir: /repo
