@@ -1,6 +1,6 @@
 steps:
   - label: ':python::hammer: tox build, test, and report'
-    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    if: build.branch != "master"
     id: toxic-docker-build
     command: "tox"
     artifact_paths:
@@ -23,7 +23,7 @@ steps:
       queue: 'default'
     timeout_in_minutes: 40
   - label: ':linux::hammer: verification build, c, gcc, amd64'
-    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    if: build.branch != "master"
     id: c-gcc-docker-verify-amd64
     command: ".buildkite/verify_c_amd64_gcc.sh"
     artifact_paths:
@@ -39,7 +39,7 @@ steps:
     agents:
       queue: 'default'
   - label: ':linux::hammer: verification build, c, gcc, x86'
-    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    if: build.branch != "master"
     id: c-gcc-docker-verify-x86
     command: ".buildkite/verify_c_x86_gcc.sh"
     artifact_paths:
@@ -55,7 +55,7 @@ steps:
     agents:
       queue: 'default'
   - label: ':cpp::hammer: verification build, cpp, gcc, amd64'
-    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    if: build.branch != "master"
     id: cpp-gcc-docker-verify-amd64
     command: ".buildkite/verify_cpp_amd64_gcc.sh"
     artifact_paths:
@@ -71,7 +71,7 @@ steps:
     agents:
       queue: 'default'
   - label: ':cpp::hammer: verification build, cpp, gcc, x86'
-    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    if: build.branch != "master"
     id: cpp-gcc-docker-verify-x86
     command: ".buildkite/verify_cpp_x86_gcc.sh"
     artifact_paths:
@@ -87,7 +87,7 @@ steps:
     agents:
       queue: 'default'
   - label: ':linux::hammer: verification build, c, clang, amd64'
-    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    if: build.branch != "master"
     id: c-clang-docker-verify-amd64
     command: ".buildkite/verify_c_amd64_clang.sh"
     artifact_paths:
@@ -103,7 +103,7 @@ steps:
     agents:
       queue: 'default'
   - label: ':linux::hammer: verification build, c, clang, x86'
-    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    if: build.branch != "master"
     id: c-clang-docker-verify-x86
     command: ".buildkite/verify_c_x86_clang.sh"
     artifact_paths:
@@ -119,7 +119,7 @@ steps:
     agents:
       queue: 'default'
   - label: ':cpp::hammer: verification build, cpp, clang, amd64'
-    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    if: build.branch != "master"
     id: cpp-clang-docker-verify-amd64
     command: ".buildkite/verify_cpp_amd64_clang.sh"
     artifact_paths:
@@ -135,7 +135,7 @@ steps:
     agents:
       queue: 'default'
   - label: ':cpp::hammer: verification build, cpp, clang, x86'
-    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    if: build.branch != "master"
     id: cpp-clang-docker-verify-x86
     command: ".buildkite/verify_cpp_x86_clang.sh"
     artifact_paths:
@@ -152,7 +152,7 @@ steps:
       queue: 'default'
   - wait
   - label: ':python::amazon-s3::sonarqube: release'
-    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    if: build.branch != "master"
     id: toxic-docker-release
     command: "./.buildkite/release.sh"
     concurrency_group: nunavut/release

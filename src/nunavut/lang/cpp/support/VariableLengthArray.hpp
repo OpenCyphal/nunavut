@@ -48,7 +48,7 @@ public:
 
     ~VariableLengthArray() noexcept(
             noexcept(
-                        fast_deallocate<T>(nullptr, 0, 0, std::declval<Allocator&>())
+                        VariableLengthArray<T, Allocator, MaxSize>::template fast_deallocate<T>(nullptr, 0, 0, std::declval<Allocator&>())
                     )
         )
     {
@@ -198,7 +198,7 @@ public:
         )
         &&
         noexcept(
-            move_and_free<T>(nullptr, nullptr, 0, 0, std::declval<Allocator&>())
+            VariableLengthArray<T, Allocator, MaxSize>::template move_and_free<T>(nullptr, nullptr, 0, 0, std::declval<Allocator&>())
         )
     )
     {
@@ -246,7 +246,7 @@ public:
         )
         &&
         noexcept(
-            move_and_free<T>(nullptr, nullptr, 0, 0, std::declval<Allocator&>())
+            VariableLengthArray<T, Allocator, MaxSize>::template move_and_free<T>(nullptr, nullptr, 0, 0, std::declval<Allocator&>())
         )
     )
     {

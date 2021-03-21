@@ -5,7 +5,7 @@ cd "${0%/*}/.."
 
 function run()
 {
-    .buildkite/verify.py --verbose --force --language cpp --platform native32 --toolchain-family clang --no-coverage $*
+    .buildkite/verify.py --verbose --remove-first --force --language cpp --platform native32 --toolchain-family clang --no-coverage $*
 }
 
 run  --endianness any --build-type Debug
