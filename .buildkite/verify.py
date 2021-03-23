@@ -35,95 +35,6 @@ def _make_parser() -> argparse.ArgumentParser:
         epilog=epilog,
         formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('-l', '--language',
-                        default='c',
-                        help='Value for NUNAVUT_VERIFICATION_LANG (defaults to c)')
-
-    parser.add_argument('--build-type',
-                        help='Value for CMAKE_BUILD_TYPE')
-
-    parser.add_argument('--endianness',
-                        help='Value for NUNAVUT_VERIFICATION_TARGET_ENDIANNESS')
-
-    parser.add_argument('--platform',
-                        help='Value for NUNAVUT_VERIFICATION_TARGET_PLATFORM')
-
-    parser.add_argument('--disable-asserts',
-                        action='store_true',
-                        help='Set NUNAVUT_VERIFICATION_SER_ASSERT=OFF (default is ON)')
-
-    parser.add_argument('--disable-fp',
-                        action='store_true',
-                        help='Set NUNAVUT_VERIFICATION_SER_FP_DISABLE=ON (default is OFF)')
-
-    parser.add_argument('--enable-ovr-var-array',
-                        action='store_true',
-                        help='Set NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE=ON (default is OFF)')
-
-    parser.add_argument('-v', '--verbose',
-                        action='count',
-                        default=0,
-                        help='Set output verbosity.')
-
-    parser.add_argument('-f', '--force',
-                        action='store_true',
-                        help=textwrap.dedent('''
-        Force recreation of verification directory if it already exists.
-
-        ** WARNING ** This will delete the cmake build directory!
-
-    '''[1:]))
-
-    parser.add_argument('-c', '--configure-only',
-                        action='store_true',
-                        help='Configure but do not build.')
-
-    parser.add_argument('-b', '--build-only',
-                        action='store_true',
-                        help='Try to build without configuring. Do not try to run tests.')
-
-    parser.add_argument('-t', '--test-only',
-                        action='store_true',
-                        help='Only try to run tests. Don\'t configure or build.')
-
-    parser.add_argument('-x', '--no-coverage',
-                        action='store_true',
-                        help='Disables generation of test coverage data. This is enabled by default.')
-
-    parser.add_argument('-j', '--jobs',
-                        type=int,
-                        help='The number of concurrent build jobs to request. '
-                             'Defaults to the number of logical CPUs on the local machine.')
-
-    parser.add_argument('--verification-dir',
-                        default='verification',
-                        help='Path to the verification directory.')
-
-    parser.add_argument('--use-default-generator',
-                        action='store_true',
-                        help=textwrap.dedent('''
-        We use Ninja by default. Set this flag to omit the explicit generator override
-        and use whatever the default is for cmake (i.e. normally make)
-    '''[1:]))
-
-    parser.add_argument('--toolchain-family',
-                        choices=['gcc', 'clang', 'none'],
-                        default='gcc',
-                        help=textwrap.dedent('''
-        Select the toolchain family to use. Use "none" to get the toolchain
-        from the environment (i.e. set CC and CXX environment variables).
-                        '''[1:]))
-
-    parser.add_argument('-rm', '--remove-first',
-                        action='store_true',
-                        help=textwrap.dedent('''
-        If specified, any existing build directory will be deleted first. Use
-        -f to skip the user prompt.
-
-        Note: This only applies to the configure step. If you do a build-only this
-        argument has no effect.
-    '''[1:]))
-
     parser.add_argument('--overrides',
                         help=textwrap.dedent('''
         Optional configuration file to provide override values for verification arguments.
@@ -143,6 +54,108 @@ def _make_parser() -> argparse.ArgumentParser:
             platform: native32
             toolchain-family: gcc
 
+    '''[1:]))
+
+    build_args = parser.add_argument_group(title='build options', description=textwrap.dedent('''
+        Arguments that can be used in parallel builds. Each of these will change
+        the name of the build directory created for the build.
+    '''[1:]))
+
+    build_args.add_argument('-l', '--language',
+                            default='c',
+                            help='Value for NUNAVUT_VERIFICATION_LANG (defaults to c)')
+
+    build_args.add_argument('--build-type',
+                            help='Value for CMAKE_BUILD_TYPE')
+
+    build_args.add_argument('--endianness',
+                            help='Value for NUNAVUT_VERIFICATION_TARGET_ENDIANNESS')
+
+    build_args.add_argument('--platform',
+                            help='Value for NUNAVUT_VERIFICATION_TARGET_PLATFORM')
+
+    build_args.add_argument('--disable-asserts',
+                            action='store_true',
+                            help='Set NUNAVUT_VERIFICATION_SER_ASSERT=OFF (default is ON)')
+
+    build_args.add_argument('--disable-fp',
+                            action='store_true',
+                            help='Set NUNAVUT_VERIFICATION_SER_FP_DISABLE=ON (default is OFF)')
+
+    build_args.add_argument('--enable-ovr-var-array',
+                            action='store_true',
+                            help='Set NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE=ON (default is OFF)')
+
+    build_args.add_argument('--toolchain-family',
+                            choices=['gcc', 'clang', 'none'],
+                            default='gcc',
+                            help=textwrap.dedent('''
+        Select the toolchain family to use. Use "none" to get the toolchain
+        from the environment (i.e. set CC and CXX environment variables).
+                        '''[1:]))
+
+    action_args = parser.add_argument_group(title='behavioral options', description=textwrap.dedent('''
+        Arguments that change the actions taken by the build.
+    '''[1:]))
+
+    action_args.add_argument('-v', '--verbose',
+                             action='count',
+                             default=0,
+                             help='Set output verbosity.')
+
+    action_args.add_argument('-f', '--force',
+                             action='store_true',
+                             help=textwrap.dedent('''
+        Force recreation of verification directory if it already exists.
+
+        ** WARNING ** This will delete the cmake build directory!
+
+    '''[1:]))
+
+    action_args.add_argument('-c', '--configure-only',
+                             action='store_true',
+                             help='Configure but do not build.')
+
+    action_args.add_argument('-b', '--build-only',
+                             action='store_true',
+                             help='Try to build without configuring. Do not try to run tests.')
+
+    action_args.add_argument('-t', '--test-only',
+                             action='store_true',
+                             help='Only try to run tests. Don\'t configure or build.')
+
+    action_args.add_argument('-x', '--no-coverage',
+                             action='store_true',
+                             help='Disables generation of test coverage data. This is enabled by default.')
+
+    action_args.add_argument('-rm', '--remove-first',
+                             action='store_true',
+                             help=textwrap.dedent('''
+        If specified, any existing build directory will be deleted first. Use
+        -f to skip the user prompt.
+
+        Note: This only applies to the configure step. If you do a build-only this
+        argument has no effect.
+    '''[1:]))
+
+    other_options = parser.add_argument_group(title='extra build options', description=textwrap.dedent('''
+        Additional arguments for modifying how the build runs but which are used less frequently.
+    '''[1:]))
+
+    other_options.add_argument('-j', '--jobs',
+                               type=int,
+                               help='The number of concurrent build jobs to request. '
+                               'Defaults to the number of logical CPUs on the local machine.')
+
+    other_options.add_argument('--verification-dir',
+                               default='verification',
+                               help='Path to the verification directory.')
+
+    other_options.add_argument('--use-default-generator',
+                               action='store_true',
+                               help=textwrap.dedent('''
+        We use Ninja by default. Set this flag to omit the explicit generator override
+        and use whatever the default is for cmake (i.e. normally make)
     '''[1:]))
 
     return parser
@@ -347,16 +360,25 @@ def _cmake_test(args: argparse.Namespace, cmake_args: typing.List[str], cmake_di
 def _create_build_dir_name(args: argparse.Namespace) -> str:
     name = 'build_{}'.format(args.language)
 
-    if args.build_type is not None:
-        name += '_{}'.format(args.build_type)
+    name += '_{}'.format(args.toolchain_family)
 
     if args.platform is not None:
         name += '_{}'.format(args.platform)
 
+    if args.build_type is not None:
+        name += '_{}'.format(args.build_type)
+
     if args.endianness is not None:
         name += '_{}'.format(args.endianness)
 
-    name += '_{}'.format(args.toolchain_family)
+    if args.disable_asserts:
+        name += '_noassert'
+
+    if args.disable_fp:
+        name += '_nofp'
+
+    if args.enable_ovr_var_array:
+        name += '_wovervararray'
 
     return name
 

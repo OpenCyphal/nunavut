@@ -429,8 +429,7 @@ C
 =================================================
 
 .. note::
-   TODO, provide documentation on the generated C structures and serialization routines.
-   C is a fully-supported language. We just haven't provided much documentation yet. Sorry.
+   Documentation is provided in the generated source.
 
 
 
