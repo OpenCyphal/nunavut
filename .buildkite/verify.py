@@ -9,6 +9,7 @@
 """
 
 import argparse
+import configparser
 import logging
 import os
 import pathlib
@@ -35,8 +36,8 @@ def _make_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('-l', '--language',
-                        required=True,
-                        help='Value for NUNAVUT_VERIFICATION_LANG')
+                        default='c',
+                        help='Value for NUNAVUT_VERIFICATION_LANG (defaults to c)')
 
     parser.add_argument('--build-type',
                         help='Value for CMAKE_BUILD_TYPE')
@@ -123,7 +124,38 @@ def _make_parser() -> argparse.ArgumentParser:
         argument has no effect.
     '''[1:]))
 
+    parser.add_argument('--overrides',
+                        help=textwrap.dedent('''
+        Optional configuration file to provide override values for verification arguments.
+        Use this to configure common CI options without creating long CI command lines.
+
+        This file uses the python configparser syntax and expects a single section called 'overrides'.
+        See https://docs.python.org/3/library/configparser.html for more information.
+
+        Example ini file:
+
+            [overrides]
+            verbose: True
+            remove-first: True
+            force: True
+            endianness: any
+            language: cpp
+            platform: native32
+            toolchain-family: gcc
+
+    '''[1:]))
+
     return parser
+
+
+def _apply_overrides(args: argparse.Namespace) -> argparse.Namespace:
+    if args.overrides is not None:
+        overrides = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
+        overrides.read(args.overrides)
+        for key, value in overrides.items():
+            setattr(args, key, value)
+
+    return args
 
 
 def _cmake_run(cmake_args: typing.List[str],
@@ -333,7 +365,7 @@ def main() -> int:
     """
     Main method to execute when this package/script is invoked as a command.
     """
-    args = _make_parser().parse_args()
+    args = _apply_overrides(_make_parser().parse_args())
 
     logging_level = logging.WARN
 
