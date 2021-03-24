@@ -35,10 +35,14 @@ def _make_parser() -> argparse.ArgumentParser:
         epilog=epilog,
         formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('--overrides',
+    parser.add_argument('--override',
+                        action='append',
+                        nargs='*',
                         help=textwrap.dedent('''
-        Optional configuration file to provide override values for verification arguments.
-        Use this to configure common CI options without creating long CI command lines.
+        Optional configuration files to provide override values for verification arguments.
+        Use this to configure common CI options without creating long CI command lines. Multiple
+        overrides can be specified with the order being an ascending priority (i.e. the next override
+        will overwrite any previous overrides).
 
         This file uses the python configparser syntax and expects a single section called 'overrides'.
         See https://docs.python.org/3/library/configparser.html for more information.
@@ -124,6 +128,13 @@ def _make_parser() -> argparse.ArgumentParser:
                              action='store_true',
                              help='Only try to run tests. Don\'t configure or build.')
 
+    action_args.add_argument('--dry-run',
+                             action='store_true',
+                             help=textwrap.dedent('''
+        Don't actually do anything. Just log what this script would have done.
+        Combine with --verbose to ensure you actually see the script's log output.
+    '''[1:]))
+
     action_args.add_argument('-x', '--no-coverage',
                              action='store_true',
                              help='Disables generation of test coverage data. This is enabled by default.')
@@ -162,11 +173,28 @@ def _make_parser() -> argparse.ArgumentParser:
 
 
 def _apply_overrides(args: argparse.Namespace) -> argparse.Namespace:
-    if args.overrides is not None:
-        overrides = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
-        overrides.read(args.overrides)
-        for key, value in overrides.items():
-            setattr(args, key, value)
+    if args.override is not None:
+        for override in args.override:
+            print(
+                textwrap.dedent('''
+            *****************************************************************
+            About to apply override file : {}
+            *****************************************************************
+            ''').format(str(override)))
+
+            overrides = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
+            overrides.read(override)
+            if 'overrides' not in overrides:
+                raise RuntimeError('ini file "{}" did not contain an overrides section.'.format(str(override)))
+            for key, value in overrides['overrides'].items():
+                corrected_key = key.replace('-', '_')
+                if value.lower() == 'true' or value.lower() == 'false':
+                    setattr(args, corrected_key, bool(value))
+                else:
+                    try:
+                        setattr(args, corrected_key, int(value))
+                    except ValueError:
+                        setattr(args, corrected_key, value)
 
     return args
 
@@ -174,6 +202,7 @@ def _apply_overrides(args: argparse.Namespace) -> argparse.Namespace:
 def _cmake_run(cmake_args: typing.List[str],
                cmake_dir: pathlib.Path,
                verbose: int,
+               dry_run: bool,
                env: typing.Optional[typing.Dict] = None) -> int:
     """
     Simple wrapper around cmake execution logic
@@ -201,11 +230,14 @@ def _cmake_run(cmake_args: typing.List[str],
             logging.debug('            {} = {}{}'.format(key, value, (' (override)' if overridden else '')))
         logging.debug('        *****************************************************************\n')
 
-    return subprocess.run(
-        cmake_args,
-        cwd=cmake_dir,
-        env=copy_of_env
-    ).returncode
+    if not dry_run:
+        return subprocess.run(
+            cmake_args,
+            cwd=cmake_dir,
+            env=copy_of_env
+        ).returncode
+    else:
+        return 0
 
 
 def _handle_build_dir(args: argparse.Namespace, cmake_dir: pathlib.Path) -> None:
@@ -225,8 +257,11 @@ def _handle_build_dir(args: argparse.Namespace, cmake_dir: pathlib.Path) -> None
             okay_to_remove = True
 
         if okay_to_remove:
-            logging.info('Removing directory {}'.format(cmake_dir))
-            shutil.rmtree(cmake_dir)
+            if not args.dry_run:
+                logging.info('Removing directory {}'.format(cmake_dir))
+                shutil.rmtree(cmake_dir)
+            else:
+                logging.info('Is dry-run. Would have removed directory {}'.format(cmake_dir))
         else:
             raise RuntimeError('''
                 Build directory {} already exists, -rm or --remove-first was specified,
@@ -235,8 +270,11 @@ def _handle_build_dir(args: argparse.Namespace, cmake_dir: pathlib.Path) -> None
                 skip user prompts).'''.lstrip().format(cmake_dir))
 
     if not cmake_dir.exists():
-        logging.info('Creating build directory at {}'.format(cmake_dir))
-        cmake_dir.mkdir()
+        if not args.dry_run:
+            logging.info('Creating build directory at {}'.format(cmake_dir))
+            cmake_dir.mkdir()
+        else:
+            logging.info('Dry run: Would have created build directory at {}'.format(cmake_dir))
     else:
         logging.info('Using existing build directory at {}'.format(cmake_dir))
 
@@ -311,7 +349,7 @@ def _cmake_configure(args: argparse.Namespace, cmake_args: typing.List[str], cma
 
     cmake_configure_args.append('..')
 
-    return _cmake_run(cmake_configure_args, cmake_dir, args.verbose)
+    return _cmake_run(cmake_configure_args, cmake_dir, args.verbose, args.dry_run)
 
 
 def _cmake_build(args: argparse.Namespace, cmake_args: typing.List[str], cmake_dir: pathlib.Path) -> int:
@@ -330,7 +368,7 @@ def _cmake_build(args: argparse.Namespace, cmake_args: typing.List[str], cmake_d
         if args.jobs is not None and args.jobs > 0:
             cmake_build_args += ['--', '-j{}'.format(args.jobs)]
 
-        return _cmake_run(cmake_build_args, cmake_dir, args.verbose)
+        return _cmake_run(cmake_build_args, cmake_dir, args.verbose, args.dry_run)
 
     return 0
 
@@ -352,7 +390,7 @@ def _cmake_test(args: argparse.Namespace, cmake_args: typing.List[str], cmake_di
         else:
             cmake_test_args.append('cov_all_archive')
 
-        return _cmake_run(cmake_test_args, cmake_dir, args.verbose)
+        return _cmake_run(cmake_test_args, cmake_dir, args.verbose, args.dry_run)
 
     return 0
 
@@ -397,6 +435,17 @@ def main() -> int:
         logging_level = logging.DEBUG
 
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging_level)
+
+    logging.debug(
+        textwrap.dedent('''
+
+    *****************************************************************
+    Commandline Arguments to {}:
+
+    {}
+    *****************************************************************
+
+    ''').format(os.path.basename(__file__), str(args)))
 
     verification_dir = pathlib.Path.cwd() / pathlib.Path(args.verification_dir)
     cmake_dir = verification_dir / pathlib.Path(_create_build_dir_name(args))

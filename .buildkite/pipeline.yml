@@ -51,12 +51,12 @@ steps:
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: c-gcc-docker-verify-amd64
     commands:
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_gcc_native64.ini --build-type Debug"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_gcc_native64.ini --build-type Release"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_gcc_native64.ini --build-type MinSizeRel  --disable-asserts"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_gcc_native64.ini --build-type Debug       --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_gcc_native64.ini --build-type Release     --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_gcc_native64.ini --build-type MinSizeRel  --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native64.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native64.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native64.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native64.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native64.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native64.ini --build-type MinSizeRel  --enable-ovr-var-array"
     parallelism: 3
     artifact_paths:
       - "verification/build_*/coverage_all.zip"
@@ -74,12 +74,12 @@ steps:
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: c-gcc-docker-verify-x86
     commands:
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_gcc_native32.ini --build-type Debug"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_gcc_native32.ini --build-type Release"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_gcc_native32.ini --build-type MinSizeRel  --disable-asserts"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_gcc_native32.ini --build-type Debug       --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_gcc_native32.ini --build-type Release     --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_gcc_native32.ini --build-type MinSizeRel  --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native32.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native32.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native32.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native32.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native32.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native32.ini --build-type MinSizeRel  --enable-ovr-var-array"
     parallelism: 3
     artifact_paths:
       - "verification/build_*/coverage_all.zip"
@@ -97,12 +97,12 @@ steps:
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: c-clang-docker-verify-amd64
     commands:
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_clang_native64.ini --build-type Debug"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_clang_native64.ini --build-type Release"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_clang_native64.ini --build-type MinSizeRel  --disable-asserts"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_clang_native64.ini --build-type Debug       --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_clang_native64.ini --build-type Release     --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_clang_native64.ini --build-type MinSizeRel  --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native64.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native64.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native64.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native64.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native64.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native64.ini --build-type MinSizeRel  --enable-ovr-var-array"
     parallelism: 3
     artifact_paths:
       - "verification/build_*/coverage_all.zip"
@@ -120,12 +120,12 @@ steps:
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: c-clang-docker-verify-x86
     commands:
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_clang_native32.ini --build-type Debug"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_clang_native32.ini --build-type Release"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_clang_native32.ini --build-type MinSizeRel  --disable-asserts"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_clang_native32.ini --build-type Debug       --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_clang_native32.ini --build-type Release     --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_c_clang_native32.ini --build-type MinSizeRel  --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native32.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native32.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native32.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native32.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native32.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native32.ini --build-type MinSizeRel  --enable-ovr-var-array"
     parallelism: 3
     artifact_paths:
       - "verification/build_*/coverage_all.zip"
@@ -143,12 +143,12 @@ steps:
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: cpp-gcc-docker-verify-amd64
     commands:
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_gcc_native64.ini --build-type Debug"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_gcc_native64.ini --build-type Release"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_gcc_native64.ini --build-type MinSizeRel  --disable-asserts"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_gcc_native64.ini --build-type Debug       --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_gcc_native64.ini --build-type Release     --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_gcc_native64.ini --build-type MinSizeRel  --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native64.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native64.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native64.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native64.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native64.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native64.ini --build-type MinSizeRel  --enable-ovr-var-array"
     parallelism: 3
     artifact_paths:
       - "verification/build_*/coverage_all.zip"
@@ -166,12 +166,12 @@ steps:
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: cpp-gcc-docker-verify-x86
     commands:
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_gcc_native32.ini --build-type Debug"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_gcc_native32.ini --build-type Release"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_gcc_native32.ini --build-type MinSizeRel  --disable-asserts"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_gcc_native32.ini --build-type Debug       --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_gcc_native32.ini --build-type Release     --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_gcc_native32.ini --build-type MinSizeRel  --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native32.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native32.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native32.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native32.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native32.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native32.ini --build-type MinSizeRel  --enable-ovr-var-array"
     parallelism: 3
     artifact_paths:
       - "verification/build_*/coverage_all.zip"
@@ -189,12 +189,12 @@ steps:
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: cpp-clang-docker-verify-amd64
     commands:
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_clang_native64.ini --build-type Debug"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_clang_native64.ini --build-type Release"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_clang_native64.ini --build-type MinSizeRel  --disable-asserts"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_clang_native64.ini --build-type Debug       --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_clang_native64.ini --build-type Release     --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_clang_native64.ini --build-type MinSizeRel  --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native64.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native64.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native64.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native64.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native64.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native64.ini --build-type MinSizeRel  --enable-ovr-var-array"
     parallelism: 3
     artifact_paths:
       - "verification/build_*/coverage_all.zip"
@@ -212,12 +212,12 @@ steps:
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: cpp-clang-docker-verify-x86
     commands:
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_clang_native32.ini --build-type Debug"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_clang_native32.ini --build-type Release"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_clang_native32.ini --build-type MinSizeRel  --disable-asserts"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_clang_native32.ini --build-type Debug       --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_clang_native32.ini --build-type Release     --enable-ovr-var-array"
-      - ".buildkite/verify.py --overrides .buildkite/verify_cpp_clang_native32.ini --build-type MinSizeRel  --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native32.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native32.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native32.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native32.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native32.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native32.ini --build-type MinSizeRel  --enable-ovr-var-array"
     parallelism: 3
     artifact_paths:
       - "verification/build_*/coverage_all.zip"
