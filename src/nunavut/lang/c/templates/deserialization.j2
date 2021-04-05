@@ -16,7 +16,7 @@
     {
         return -NUNAVUT_ERROR_INVALID_ARGUMENT;
     }
-{% if t.inner_type.bit_length_set|max > 0 %}
+{% if t.inner_type.bit_length_set.max > 0 %}
     {{ _deserialize_impl(t) }}
 {% else %}
     *inout_buffer_size_bytes = 0U;
@@ -46,7 +46,7 @@
     {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
     {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == out_obj->_tag_)  // {{ f }}
     {
-        {%- assert f.data_type.alignment_requirement <= (offset|min) %}
+        {%- assert f.data_type.alignment_requirement <= (offset.min) %}
         {{ _deserialize_any(f.data_type, 'out_obj->' + (f|id), offset)|trim|remove_blank_lines|indent }}
     }
     {%- endfor %}
@@ -195,10 +195,9 @@
 
 {# COMPUTE THE ARRAY ELEMENT OFFSETS #}
 {# NOTICE: The offset is no longer valid at this point because we just emitted the array length prefix. #}
-{# TODO:   The following transformations are computationally taxing; see https://github.com/UAVCAN/pydsdl/issues/23 #}
 {% set element_offset = offset + t.bit_length_set %}
 {% set first_element_offset = offset + t.length_field_type.bit_length %}
-{% assert (element_offset|min) == (first_element_offset|min) %}
+{% assert (element_offset.min) == (first_element_offset.min) %}
 {% if first_element_offset.is_aligned_at_byte() %}
     {{ assert('offset_bits % 8U == 0U') }}
 {% endif %}
