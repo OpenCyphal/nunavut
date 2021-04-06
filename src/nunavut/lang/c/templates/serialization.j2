@@ -42,7 +42,7 @@
     // in the serialization buffer up to the next byte boundary. This is by design and is guaranteed to be safe.
     {{ typename_unsigned_bit_length }} offset_bits = 0U;
 {% if t.inner_type is StructureType %}
-    {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
         {% if loop.first %}
             {% assert f.data_type.alignment_requirement <= t.inner_type.alignment_requirement %}
         {% else %}
@@ -59,7 +59,7 @@
            |trim|remove_blank_lines|indent
         }}
     }
-    {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
     {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == obj->_tag_)  // {{ f }}
     {
         {%- assert f.data_type.alignment_requirement <= (offset.min) %}

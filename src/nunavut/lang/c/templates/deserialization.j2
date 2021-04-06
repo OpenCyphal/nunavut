@@ -31,7 +31,7 @@
     const {{ typename_unsigned_bit_length }} capacity_bits = capacity_bytes * ({{ typename_unsigned_bit_length }}) 8U;
     {{ typename_unsigned_bit_length }} offset_bits = 0U;
 {% if t.inner_type is StructureType %}
-    {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
         {% if loop.first %}
             {% assert f.data_type.alignment_requirement <= t.inner_type.alignment_requirement %}
         {% else %}
@@ -43,7 +43,7 @@
 {% elif t.inner_type is UnionType %}
     // Union tag field: {{ t.inner_type.tag_field_type }}
     {{ _deserialize_integer(t.inner_type.tag_field_type, 'out_obj->_tag_', 0|bit_length_set)|trim|remove_blank_lines }}
-    {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
     {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == out_obj->_tag_)  // {{ f }}
     {
         {%- assert f.data_type.alignment_requirement <= (offset.min) %}
