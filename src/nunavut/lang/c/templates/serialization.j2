@@ -306,11 +306,16 @@
 {% else %}
     {% set ref_origin_offset = 'origin'|to_template_unique_name %}
     const {{ typename_unsigned_bit_length }} {{ ref_origin_offset }} = offset_bits;
-    {% for index, element_offset in t.enumerate_elements_with_offsets(offset) %}
-    {   // Array element #{{ index }}
-        {{ _serialize_any(t.element_type, reference + ('[%d]'|format(index)), element_offset)|trim|indent }}
+    {# Element offset is the superposition of each individual element offset plus the array's own offset.
+     # For example, an array like uint8[3] offset by 16 bits would have its element_offset = {16, 24, 32}.
+     # We can also unroll element deserialization for small arrays (e.g., below ~10 elements) to take advantage of
+     # spurious alignment of elements but the benefit of such optimization is believed to be negligible. #}
+    {% set element_offset = offset + t.element_type.bit_length_set.repeat_range(t.capacity - 1) %}
+    {% set ref_index = 'index'|to_template_unique_name %}
+    for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ t.capacity }}UL; ++{{ ref_index }})
+    {
+        {{ _serialize_any(t.element_type, reference + ('[%s]'|format(ref_index)), element_offset)|trim|indent }}
     }
-    {% endfor %}
     // It is assumed that we know the exact type of the serialized entity, hence we expect the size to match.
     {% if not t.bit_length_set.fixed_length %}
     {{ assert('(offset_bits - %s) >= %sULL'|format(ref_origin_offset, t.bit_length_set.min)) }}
@@ -335,7 +340,6 @@
 
 {# COMPUTE THE ARRAY ELEMENT OFFSETS #}
 {# NOTICE: The offset is no longer valid at this point because we just emitted the array length prefix. #}
-{# TODO:   The following transformations are computationally taxing; see https://github.com/UAVCAN/pydsdl/issues/23 #}
 {% set element_offset = offset + t.bit_length_set %}
 {% set first_element_offset = offset + t.length_field_type.bit_length %}
 {% assert (element_offset.min) == (first_element_offset.min) %}

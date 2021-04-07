@@ -175,10 +175,17 @@
 
 {# GENERAL CASE #}
 {% else %}
-    {% for index, element_offset in t.enumerate_elements_with_offsets(offset) %}
-    // Array element #{{ index }}
-    {{ _deserialize_any(t.element_type, reference + ('[%d]'|format(index)), element_offset)|trim }}
-    {% endfor %}
+    {# Element offset is the superposition of each individual element offset plus the array's own offset.
+     # For example, an array like uint8[3] offset by 16 bits would have its element_offset = {16, 24, 32}.
+     # We can also unroll element deserialization for small arrays (e.g., below ~10 elements) to take advantage of
+     # spurious alignment of elements but the benefit of such optimization is believed to be negligible. #}
+    {% set element_offset = offset + t.element_type.bit_length_set.repeat_range(t.capacity - 1) %}
+    {% set ref_index = 'index'|to_template_unique_name %}
+    for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ t.capacity }}UL; ++{{ ref_index }})
+    {
+        {{ _deserialize_any(t.element_type, reference + ('[%s]'|format(ref_index)), element_offset)|trim|indent }}
+    }
+    {# Size cannot be checked here because if implicit zero extension rule is applied it won't match. #}
 {% endif %}
 {% endmacro %}
 
