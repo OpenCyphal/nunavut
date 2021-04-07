@@ -16,7 +16,7 @@
     {
         return -NUNAVUT_ERROR_INVALID_ARGUMENT;
     }
-{% if t.inner_type.bit_length_set|max > 0 %}
+{% if t.inner_type.bit_length_set.max > 0 %}
     {{ _deserialize_impl(t) }}
 {% else %}
     *inout_buffer_size_bytes = 0U;
@@ -31,7 +31,7 @@
     const {{ typename_unsigned_bit_length }} capacity_bits = capacity_bytes * ({{ typename_unsigned_bit_length }}) 8U;
     {{ typename_unsigned_bit_length }} offset_bits = 0U;
 {% if t.inner_type is StructureType %}
-    {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
         {% if loop.first %}
             {% assert f.data_type.alignment_requirement <= t.inner_type.alignment_requirement %}
         {% else %}
@@ -43,10 +43,10 @@
 {% elif t.inner_type is UnionType %}
     // Union tag field: {{ t.inner_type.tag_field_type }}
     {{ _deserialize_integer(t.inner_type.tag_field_type, 'out_obj->_tag_', 0|bit_length_set)|trim|remove_blank_lines }}
-    {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
     {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == out_obj->_tag_)  // {{ f }}
     {
-        {%- assert f.data_type.alignment_requirement <= (offset|min) %}
+        {%- assert f.data_type.alignment_requirement <= (offset.min) %}
         {{ _deserialize_any(f.data_type, 'out_obj->' + (f|id), offset)|trim|remove_blank_lines|indent }}
     }
     {%- endfor %}
@@ -175,10 +175,17 @@
 
 {# GENERAL CASE #}
 {% else %}
-    {% for index, element_offset in t.enumerate_elements_with_offsets(offset) %}
-    // Array element #{{ index }}
-    {{ _deserialize_any(t.element_type, reference + ('[%d]'|format(index)), element_offset)|trim }}
-    {% endfor %}
+    {# Element offset is the superposition of each individual element offset plus the array's own offset.
+     # For example, an array like uint8[3] offset by 16 bits would have its element_offset = {16, 24, 32}.
+     # We can also unroll element deserialization for small arrays (e.g., below ~10 elements) to take advantage of
+     # spurious alignment of elements but the benefit of such optimization is believed to be negligible. #}
+    {% set element_offset = offset + t.element_type.bit_length_set.repeat_range(t.capacity - 1) %}
+    {% set ref_index = 'index'|to_template_unique_name %}
+    for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ t.capacity }}UL; ++{{ ref_index }})
+    {
+        {{ _deserialize_any(t.element_type, reference + ('[%s]'|format(ref_index)), element_offset)|trim|indent }}
+    }
+    {# Size cannot be checked here because if implicit zero extension rule is applied it won't match. #}
 {% endif %}
 {% endmacro %}
 
@@ -195,10 +202,9 @@
 
 {# COMPUTE THE ARRAY ELEMENT OFFSETS #}
 {# NOTICE: The offset is no longer valid at this point because we just emitted the array length prefix. #}
-{# TODO:   The following transformations are computationally taxing; see https://github.com/UAVCAN/pydsdl/issues/23 #}
 {% set element_offset = offset + t.bit_length_set %}
 {% set first_element_offset = offset + t.length_field_type.bit_length %}
-{% assert (element_offset|min) == (first_element_offset|min) %}
+{% assert (element_offset.min) == (first_element_offset.min) %}
 {% if first_element_offset.is_aligned_at_byte() %}
     {{ assert('offset_bits % 8U == 0U') }}
 {% endif %}

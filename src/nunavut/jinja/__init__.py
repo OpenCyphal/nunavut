@@ -387,7 +387,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
             omit_serialization_support = target_language.omit_serialization_support
             support_namespace = target_language.support_namespace
         else:
-            # If there is no target language then we cannot generate serialization support.
+            logger.debug("There is no target language so we cannot generate serialization support")
             omit_serialization_support = True
             support_namespace = []
 
@@ -490,6 +490,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
                     file_pps.append(pp)
                 else:
                     raise ValueError('PostProcessor type {} is unknown.'.format(type(pp)))
+        logger.debug("Using post-processors: %r %r", line_pps, file_pps)
 
         if output_path.exists():
             if allow_overwrite:
@@ -895,16 +896,12 @@ class DSDLCodeGenerator(CodeGenerator):
                      allow_overwrite: bool = True) \
             -> typing.Iterable[pathlib.Path]:
         generated = []  # type: typing.List[pathlib.Path]
-        if self.generate_namespace_types:
-            for (parsed_type, output_path) in self.namespace.get_all_types():
-                generated.append(
-                    self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite)
-                )
-        else:
-            for (parsed_type, output_path) in self.namespace.get_all_datatypes():
-                generated.append(
-                    self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite)
-                )
+        provider = self.namespace.get_all_types if self.generate_namespace_types else self.namespace.get_all_datatypes
+        for (parsed_type, output_path) in provider():
+            logger.info("Generating: %s", parsed_type)
+            generated.append(
+                self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite)
+            )
         return generated
 
     # +-----------------------------------------------------------------------+
@@ -991,7 +988,7 @@ class SupportGenerator(CodeGenerator):
             -> typing.Iterable[pathlib.Path]:
         target_language = self.language_context.get_target_language()
         if self._sub_folders is None or target_language is None:
-            # No target language, therefore, no support headers.
+            logger.info("No target language, therefore, no support headers")
             return []
         else:
             target_path = pathlib.Path(self.namespace.get_support_output_folder()) / self._sub_folders
@@ -999,6 +996,7 @@ class SupportGenerator(CodeGenerator):
             generated = []  # type: typing.List[pathlib.Path]
             for resource in self.get_templates():
                 target = (target_path / resource.name).with_suffix(target_language.extension)
+                logger.info("Generating support file: %s", target)
                 if not self._support_enabled:
                     self._remove_header(target, is_dryrun, allow_overwrite)
                 elif resource.suffix == self.TEMPLATE_SUFFIX:

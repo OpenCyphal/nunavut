@@ -16,7 +16,7 @@
     {
         return -NUNAVUT_ERROR_INVALID_ARGUMENT;
     }
-{% if t.inner_type.bit_length_set|max > 0 %}
+{% if t.inner_type.bit_length_set.max > 0 %}
     {{ _serialize_impl(t) }}
 {% else %}
     *inout_buffer_size_bytes = 0U;
@@ -31,7 +31,7 @@
 {%- if options.enable_override_variable_array_capacity %}
 #ifndef {{ t | full_reference_name }}_DISABLE_SERIALIZATION_BUFFER_CHECK_
 {% endif %}
-    if ((8U * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.inner_type.bit_length_set|max }}UL)
+    if ((8U * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.inner_type.bit_length_set.max }}UL)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
@@ -42,7 +42,7 @@
     // in the serialization buffer up to the next byte boundary. This is by design and is guaranteed to be safe.
     {{ typename_unsigned_bit_length }} offset_bits = 0U;
 {% if t.inner_type is StructureType %}
-    {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
         {% if loop.first %}
             {% assert f.data_type.alignment_requirement <= t.inner_type.alignment_requirement %}
         {% else %}
@@ -59,10 +59,10 @@
            |trim|remove_blank_lines|indent
         }}
     }
-    {% for f, offset in t.inner_type.iterate_fields_with_offsets(0) %}
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
     {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == obj->_tag_)  // {{ f }}
     {
-        {%- assert f.data_type.alignment_requirement <= (offset|min) %}
+        {%- assert f.data_type.alignment_requirement <= (offset.min) %}
         {{ _serialize_any(f.data_type, 'obj->' + (f|id), offset)|trim|remove_blank_lines|indent }}
     }
     {%- endfor %}
@@ -74,11 +74,11 @@
 {% endif %}
     {{ _pad_to_alignment(t.inner_type.alignment_requirement)|trim|remove_blank_lines }}
     // It is assumed that we know the exact type of the serialized entity, hence we expect the size to match.
-{% if t.inner_type.bit_length_set|length > 1 %}
-    {{ assert('offset_bits >= %sULL'|format(t.inner_type.bit_length_set|min)) }}
-    {{ assert('offset_bits <= %sULL'|format(t.inner_type.bit_length_set|max)) }}
+{% if not t.inner_type.bit_length_set.fixed_length %}
+    {{ assert('offset_bits >= %sULL'|format(t.inner_type.bit_length_set.min)) }}
+    {{ assert('offset_bits <= %sULL'|format(t.inner_type.bit_length_set.max)) }}
 {% else %}
-    {{ assert('offset_bits == %sULL'|format(t.inner_type.bit_length_set|sum)) }}
+    {{ assert('offset_bits == %sULL'|format(t.inner_type.bit_length_set.max)) }}
 {% endif %}
     {{ assert('offset_bits % 8U == 0U') }}
     *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (offset_bits / 8U);
@@ -117,7 +117,7 @@
 {% endif %}
     {# NOTICE: If this is a delimited type, we will be requiring the buffer to be at least extent-sized.
      # This is a bit wasteful because when serializing we can often use a smaller buffer. #}
-    {{ assert('(offset_bits + %dULL) <= (capacity_bytes * 8U)'|format(t.bit_length_set|max)) }}
+    {{ assert('(offset_bits + %dULL) <= (capacity_bytes * 8U)'|format(t.bit_length_set.max)) }}
 
 {%   if t is VoidType %}                {{- _serialize_void(t, offset) }}
 {% elif t is BooleanType %}             {{- _serialize_boolean(t, reference, offset) }}
@@ -306,17 +306,22 @@
 {% else %}
     {% set ref_origin_offset = 'origin'|to_template_unique_name %}
     const {{ typename_unsigned_bit_length }} {{ ref_origin_offset }} = offset_bits;
-    {% for index, element_offset in t.enumerate_elements_with_offsets(offset) %}
-    {   // Array element #{{ index }}
-        {{ _serialize_any(t.element_type, reference + ('[%d]'|format(index)), element_offset)|trim|indent }}
+    {# Element offset is the superposition of each individual element offset plus the array's own offset.
+     # For example, an array like uint8[3] offset by 16 bits would have its element_offset = {16, 24, 32}.
+     # We can also unroll element deserialization for small arrays (e.g., below ~10 elements) to take advantage of
+     # spurious alignment of elements but the benefit of such optimization is believed to be negligible. #}
+    {% set element_offset = offset + t.element_type.bit_length_set.repeat_range(t.capacity - 1) %}
+    {% set ref_index = 'index'|to_template_unique_name %}
+    for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ t.capacity }}UL; ++{{ ref_index }})
+    {
+        {{ _serialize_any(t.element_type, reference + ('[%s]'|format(ref_index)), element_offset)|trim|indent }}
     }
-    {% endfor %}
     // It is assumed that we know the exact type of the serialized entity, hence we expect the size to match.
-    {% if t.bit_length_set|length > 1 %}
-    {{ assert('(offset_bits - %s) >= %sULL'|format(ref_origin_offset, t.bit_length_set|min)) }}
-    {{ assert('(offset_bits - %s) <= %sULL'|format(ref_origin_offset, t.bit_length_set|max)) }}
+    {% if not t.bit_length_set.fixed_length %}
+    {{ assert('(offset_bits - %s) >= %sULL'|format(ref_origin_offset, t.bit_length_set.min)) }}
+    {{ assert('(offset_bits - %s) <= %sULL'|format(ref_origin_offset, t.bit_length_set.max)) }}
     {% else %}
-    {{ assert('(offset_bits - %s) == %sULL'|format(ref_origin_offset, t.bit_length_set|sum)) }}
+    {{ assert('(offset_bits - %s) == %sULL'|format(ref_origin_offset, t.bit_length_set.max)) }}
     {% endif %}
     (void) {{ ref_origin_offset }};
 {% endif %}
@@ -335,10 +340,9 @@
 
 {# COMPUTE THE ARRAY ELEMENT OFFSETS #}
 {# NOTICE: The offset is no longer valid at this point because we just emitted the array length prefix. #}
-{# TODO:   The following transformations are computationally taxing; see https://github.com/UAVCAN/pydsdl/issues/23 #}
 {% set element_offset = offset + t.bit_length_set %}
 {% set first_element_offset = offset + t.length_field_type.bit_length %}
-{% assert (element_offset|min) == (first_element_offset|min) %}
+{% assert (element_offset.min) == (first_element_offset.min) %}
 {% if first_element_offset.is_aligned_at_byte() %}
     {{ assert('offset_bits % 8U == 0U') }}
 {% endif %}
@@ -394,8 +398,8 @@
 {% macro _serialize_composite(t, reference, offset) %}
 {% set ref_err              = 'err'        |to_template_unique_name %}
 {% set ref_size_bytes       = 'size_bytes' |to_template_unique_name %}
-{% set is_variable_size     = (t.inner_type.bit_length_set|length) > 1 %}
-{% set size_bytes           = t.inner_type.bit_length_set|max|bits2bytes_ceil %}
+{% set is_variable_size     = not t.inner_type.bit_length_set.fixed_length %}
+{% set size_bytes           = t.inner_type.bit_length_set.max|bits2bytes_ceil %}
     {{ typename_unsigned_length }} {{ ref_size_bytes }} = {{ size_bytes }}UL;  // Nested object (max) size, in bytes.
 
 {# PROLOGUE #}
@@ -403,7 +407,7 @@
     {% if is_variable_size %}
     offset_bits += {{ t.delimiter_header_type.bit_length }}U;  // Reserve space for the delimiter header.
     {% else %}
-        {% assert size_bytes * 8 == (t.inner_type.bit_length_set|min) == (t.inner_type.bit_length_set|max) %}
+        {% assert size_bytes * 8 == (t.inner_type.bit_length_set.min) == (t.inner_type.bit_length_set.max) %}
     // Constant delimiter header can be written ahead of the nested object.
     {{ _serialize_integer(t.delimiter_header_type, ref_size_bytes, offset)|trim }}
     {% endif %}
@@ -419,11 +423,11 @@
         return {{ ref_err }};
     }
     // It is assumed that we know the exact type of the serialized entity, hence we expect the size to match.
-{% if t.inner_type.bit_length_set|length > 1 %}
-    {{ assert('(%s * 8U) >= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set|min)) }}
-    {{ assert('(%s * 8U) <= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set|max)) }}
+{% if not t.inner_type.bit_length_set.fixed_length %}
+    {{ assert('(%s * 8U) >= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set.min)) }}
+    {{ assert('(%s * 8U) <= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set.max)) }}
 {% else %}
-    {{ assert('(%s * 8U) == %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set|sum)) }}
+    {{ assert('(%s * 8U) == %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set.max)) }}
 {% endif %}
 
 {# EPILOGUE #}
