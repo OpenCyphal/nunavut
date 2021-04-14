@@ -1,4 +1,4 @@
-{% macro generate_type_info(t) %}
+{% macro generate_type_info(t, attr_name) %}
 <p>
 <a
       data-bs-toggle="collapse"
@@ -7,20 +7,35 @@
       aria-expanded="false"
       aria-controls="{{ t.full_name.replace(".", "_") }}_{{t.version[0]}}_{{t.version[1]}}"
       >+</a>
-{{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}})
+{{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}}) {{ attr_name }}
+{% if not t | is_service %}
+<span style="color: green">[extent {{ t | extent }} bytes]</span>
+{% endif %}
+{% if t.has_fixed_port_id %}
+<span style="color: orange">[fixed port-ID {{ t.fixed_port_id }}]</span>
+{% endif %}
 </p>
 <div class="collapse" id="{{ t.full_name.replace(".", "_") }}_{{t.version[0]}}_{{t.version[1]}}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
+    {% if t.doc %}
     <pre>{{ t.doc }}</pre>
-    {% for attr in t.attributes %}
-    {{ t.TYPE_NAME }}
-    <!-- TODO: find better way of telling whether compositetype -->
-    {% if False %}
-    {{ generate_type_info(attr) }}
+    {% endif %}
+    {% if t.attributes | length == 0 %}
+    <p>(data type is empty)</p>
     {% else %}
-    <p class="mb-0">{{ attr }}</p>
+    {% for attr in t.attributes %}
+    {% if attr.data_type | is_composite %}
+    {{ generate_type_info(attr.data_type, attr.name) }}
+    {% else %}
+    <p class="mb-0">
+    {{ attr }}
+    {% if attr | is_field %}
+    <span style="color: green">[extent {{ attr.data_type | extent }} bytes]</span>
+    {% endif %}
+    </p>
     {% endif %}
     <pre>{{ attr.doc }}</pre>
     {% endfor %}
+    {% endif %}
 </div>
 {% endmacro %}
 
@@ -37,7 +52,7 @@
 </p>
 <div class="collapse" id="{{ t.full_name.replace(".", "_") }}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
     {% for type, _ in t.get_nested_types() %}
-    {{ generate_type_info(type) }}
+    {{ generate_type_info(type, "") }}
     {% endfor %}
     {% for type in t.get_nested_namespaces() %}
     {{ generate_namespace_info(type) }}
@@ -58,6 +73,16 @@
         .py-2 {
             padding-top: 2rem;
             padding-bottom: 2rem;
+        }
+
+        pre {
+            font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            "Roboto",
+            "Helvetica Neue", Arial, sans-serif,
+            "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
         }
         </style>
         <!-- Bootstrap-->
