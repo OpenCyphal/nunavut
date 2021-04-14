@@ -1,0 +1,90 @@
+{% macro generate_type_info(t) %}
+<p>
+<a
+      data-bs-toggle="collapse"
+      href="#{{ t.full_name.replace(".", "_") }}_{{t.version[0]}}_{{t.version[1]}}"
+      role="button"
+      aria-expanded="false"
+      aria-controls="{{ t.full_name.replace(".", "_") }}_{{t.version[0]}}_{{t.version[1]}}"
+      >+</a>
+{{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}})
+</p>
+<div class="collapse" id="{{ t.full_name.replace(".", "_") }}_{{t.version[0]}}_{{t.version[1]}}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
+    <pre>{{ t.doc }}</pre>
+    {% for attr in t.attributes %}
+    {{ t.TYPE_NAME }}
+    <!-- TODO: find better way of telling whether compositetype -->
+    {% if False %}
+    {{ generate_type_info(attr) }}
+    {% else %}
+    <p class="mb-0">{{ attr }}</p>
+    {% endif %}
+    <pre>{{ attr.doc }}</pre>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro generate_namespace_info(t) %}
+<p>
+<a
+      data-bs-toggle="collapse"
+      href="#{{ t.full_name.replace(".", "_") }}"
+      role="button"
+      aria-expanded="false"
+      aria-controls="{{ t.full_name.replace(".", "_") }}"
+      >+</a>
+{{ t.full_name }}
+</p>
+<div class="collapse" id="{{ t.full_name.replace(".", "_") }}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
+    {% for type, _ in t.get_nested_types() %}
+    {{ generate_type_info(type) }}
+    {% endfor %}
+    {% for type in t.get_nested_namespaces() %}
+    {{ generate_namespace_info(type) }}
+    {% endfor %}
+</div>
+{% endmacro %}
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{ T.full_name }}</title>
+        <style>
+        .row {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .py-2 {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        </style>
+        <!-- Bootstrap-->
+        <style>
+        {% include "assets/bootstrap.min.css" %}
+        </style>
+        <script>
+        {% include "assets/bootstrap.bundle.min.js" %}
+        </script>
+    </head>
+    <body>
+        <div style="padding: 2rem;">
+            {{ generate_namespace_info(T) }}
+        </div>
+        <script>
+            function showCollapse(collapse) {
+                collapse.classList.add("show");
+                console.log(collapse);
+                if (collapse.parentNode != null && collapse.classList.contains("collapse")) {
+                    showCollapse(collapse.parentNode);
+                }
+            }
+
+            if (window.location.hash != null && window.location.hash != "") {
+                const collapse = document.querySelector(window.location.hash);
+                showCollapse(collapse);
+            }
+        </script>
+    </body>
+</html>
