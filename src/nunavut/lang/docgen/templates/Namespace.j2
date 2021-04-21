@@ -1,13 +1,23 @@
-{% macro generate_type_info(t, attr_name) %}
+{% macro generate_type_info(t, attr_name, nested=False) %}
+{% set type_tag_id = t | tag_id %}
+{% if nested %}
+{% set type_tag_id = type_tag_id | add_uuid %}
+{% endif %}
 <p>
 <a
       data-bs-toggle="collapse"
-      href="#{{ t.full_name.replace(".", "_") }}_{{t.version[0]}}_{{t.version[1]}}"
+      href="#{{ type_tag_id }}"
       role="button"
       aria-expanded="false"
-      aria-controls="{{ t.full_name.replace(".", "_") }}_{{t.version[0]}}_{{t.version[1]}}"
+      aria-controls="{{ type_tag_id }}"
       >+</a>
+{% if nested %}
+<a href="{{ t | url_from_type }}">
 {{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}}) {{ attr_name }}
+</a>
+{% else %}
+{{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}}) {{ attr_name }}
+{% endif %}
 {% if not t | is_service %}
 <span style="color: green">[extent {{ t | extent }} bytes]</span>
 {% endif %}
@@ -15,7 +25,7 @@
 <span style="color: orange">[fixed port-ID {{ t.fixed_port_id }}]</span>
 {% endif %}
 </p>
-<div class="collapse" id="{{ t.full_name.replace(".", "_") }}_{{t.version[0]}}_{{t.version[1]}}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
+<div class="collapse" id="{{ type_tag_id }}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
     {% if t.doc %}
     <pre>{{ t.doc }}</pre>
     {% endif %}
@@ -24,7 +34,7 @@
     {% else %}
     {% for attr in t.attributes %}
     {% if attr.data_type | is_composite %}
-    {{ generate_type_info(attr.data_type, attr.name) }}
+    {{ generate_type_info(attr.data_type, attr.name, True) }}
     {% else %}
     <p class="mb-0">
     {{ attr }}

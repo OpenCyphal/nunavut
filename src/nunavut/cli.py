@@ -186,6 +186,17 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
     if args.generate_support != 'only':
         generator.generate_all(is_dryrun=args.dry_run,
                                allow_overwrite=not args.no_overwrite)
+
+    # If docgen selected, warn about linked namespaces
+    if len(extra_includes) > 0:
+        print("""
+W: Other lookup namespaces are linked in these generated docs.
+If you do not generate docs for these other namespaces as well, links to external
+data types could be broken (expansion will still work).
+
+If you want to turn off these links, use --no-external-links.
+""")
+
     return 0
 
 

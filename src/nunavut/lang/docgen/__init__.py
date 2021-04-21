@@ -8,6 +8,8 @@
     module will be available in the template's global namespace as ``docgen``.
 """
 
+import string
+import random
 import enum
 import functools
 import fractions
@@ -43,3 +45,18 @@ def filter_extent(language: Language, instance: typing.Any) -> str:
     except TypeError:
         print(instance)
         return "unknown"
+
+@template_language_filter(__name__)
+def filter_tag_id(language: Language, instance: typing.Any) -> str:
+    return f"{instance.full_name.replace('.', '_')}_{instance.version[0]}_{instance.version[1]}"
+
+
+@template_language_filter(__name__)
+def filter_url_from_type(language: Language, instance: typing.Any) -> str:
+    root_ns = instance.root_namespace
+    tag_id = f"{instance.full_name.replace('.', '_')}_{instance.version[0]}_{instance.version[1]}"
+    return f"/{root_ns}/Namespace.html#{tag_id}"
+
+@template_language_filter(__name__)
+def filter_add_uuid(language: Language, instance: typing.Any) -> str:
+    return instance + ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
