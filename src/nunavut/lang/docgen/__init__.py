@@ -48,7 +48,10 @@ def filter_extent(language: Language, instance: typing.Any) -> str:
 
 @template_language_filter(__name__)
 def filter_tag_id(language: Language, instance: typing.Any) -> str:
-    return f"{instance.full_name.replace('.', '_')}_{instance.version[0]}_{instance.version[1]}"
+    if isinstance(instance, pydsdl.ArrayType):
+        return f"{str(instance.element_type).replace('.', '_').replace(' ', '_')}_array"
+    else:
+        return f"{instance.full_name.replace('.', '_')}_{instance.version[0]}_{instance.version[1]}"
 
 
 @template_language_filter(__name__)
@@ -60,3 +63,14 @@ def filter_url_from_type(language: Language, instance: typing.Any) -> str:
 @template_language_filter(__name__)
 def filter_add_uuid(language: Language, instance: typing.Any) -> str:
     return instance + ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
+
+@template_language_filter(__name__)
+def filter_get_nsdoctype(language: Language, instance: typing.Any) -> str:
+    for dsdl_type, _ in instance.get_nested_types():
+        if dsdl_type.short_name == "_":
+            return dsdl_type
+    return None
+
+@template_language_filter(__name__)
+def filter_tooltip(language: Language, instance: typing.Any) -> str:
+    pass
