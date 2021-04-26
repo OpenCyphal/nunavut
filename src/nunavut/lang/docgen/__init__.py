@@ -74,3 +74,11 @@ def filter_get_nsdoctype(language: Language, instance: typing.Any) -> str:
 @template_language_filter(__name__)
 def filter_tooltip(language: Language, instance: typing.Any) -> str:
     pass
+
+@template_language_filter(__name__)
+def filter_namespace_doc(language: Language, instance: typing.Any) -> str:
+    for t, _ in instance.get_nested_types():
+        print(t.short_name, t.short_name == "_")
+        if t.short_name == "_":
+            return t.doc
+    return ""

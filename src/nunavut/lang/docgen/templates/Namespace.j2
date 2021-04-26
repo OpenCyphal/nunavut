@@ -77,8 +77,13 @@
 {{ t.full_name }}
 </p>
 <div class="collapse" id="{{ t.full_name.replace(".", "_") }}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
+    {% if t | namespace_doc %}
+    <pre>{{ t | namespace_doc }}</pre>
+    {% endif %}
     {% for type, _ in t.get_nested_types() %}
+    {% if type.full_name != "_" %}
     {{ generate_type_info(type, "") }}
+    {% endif %}
     {% endfor %}
     {% for type in t.get_nested_namespaces() %}
     {{ generate_namespace_info(type) }}
