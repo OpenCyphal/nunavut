@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{ T.full_name }}</title>
+        <style>
+        .row {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .py-2 {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+
+        pre {
+            text-overflow: wrap !important;
+        }
+
+        .highlight {
+            background-color: yellow;
+            transition: background-color 200ms;
+        }
+
+        </style>
+        <!-- Bootstrap-->
+        <style>
+        {% include "assets/bootstrap.min.css" %}
+        </style>
+        <script>
+        {% include "assets/bootstrap.bundle.min.js" %}
+        </script>
+    </head>
+    <body class="font-monospace p-5">
+        <a href="/reg/Namespace.html">&larr; {{ T.full_namespace }}</a>
+        <h2 class="mt-2 mb-4">{{ T.full_name }} (v{{ T.version[0] }}.{{ T.version[1] }})</h2>
+        <p class="mb-0" style="color: green" data-toggle="tooltip" data-placement="top" title="This message has a maximum size of 300 bytes.">extent: 300 bytes</p>
+        <p style="color: orange" data-toggle="tooltip" data-placement="top" title="This port ID is reserved for this message.">fixed port-id: 417</p>
+        <pre>{{ T.doc }}</pre>
+        <div style="width: 200px; height: 100px">
+        </div>
+    </body>
+</html>

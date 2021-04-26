@@ -194,7 +194,6 @@ W: Other lookup namespaces are linked in these generated docs.
 If you do not generate docs for these other namespaces as well, links to external
 data types could be broken (expansion will still work).
 
-If you want to turn off these links, use --no-external-links.
 """)
 
     return 0
