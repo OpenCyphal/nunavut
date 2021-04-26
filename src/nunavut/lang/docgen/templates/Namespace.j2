@@ -13,9 +13,8 @@
       >+</a>
 {% if not t | is_array %}
 {% if nested %}
-<a href="{{ t | url_from_type }}">
-{{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}}) {{ attr_name }}
-</a>
+<a href="{{ t | url_from_type }}">{{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}})</a>
+{{ attr_name }}
 {% else %}
 {{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}}) {{ attr_name }}
 {% endif %}
@@ -81,7 +80,7 @@
     <pre>{{ t | namespace_doc }}</pre>
     {% endif %}
     {% for type, _ in t.get_nested_types() %}
-    {% if type.full_name != "_" %}
+    {% if type.short_name != "_" %}
     {{ generate_type_info(type, "") }}
     {% endif %}
     {% endfor %}
@@ -145,7 +144,7 @@
                     collapse.classList.remove("highlight");
                 }, 2000);
             } else {
-                const collapse = document.querySelector("#uavcan");
+                const collapse = document.querySelector("#{{ T.full_name }}");
                 showCollapse(collapse);
             }
 
