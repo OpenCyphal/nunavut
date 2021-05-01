@@ -38,7 +38,8 @@
     <p class="fw-bold mb-0">{{ t.element_type }}</p>
     {% endif %}
     {% else %}
-    {% if t.doc %}
+    {# We don't want to show the service docs in both the service and the request #}
+    {% if t.doc and not t | is_service_req %}
     <pre>{{ t.doc }}</pre>
     {% endif %}
     {% if t.attributes | length == 0 %}

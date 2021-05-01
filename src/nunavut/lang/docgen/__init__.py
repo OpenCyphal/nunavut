@@ -35,6 +35,10 @@ def filter_is_service(language: Language, instance: typing.Any) -> bool:
     return isinstance(instance, pydsdl.ServiceType)
 
 @template_language_filter(__name__)
+def filter_is_service_req(language: Language, instance: typing.Any) -> bool:
+    return instance.has_parent_service and instance.full_name.split(".")[-1] == "Request"
+
+@template_language_filter(__name__)
 def filter_is_field(language: Language, instance: typing.Any) -> bool:
     return isinstance(instance, pydsdl.Field)
 
