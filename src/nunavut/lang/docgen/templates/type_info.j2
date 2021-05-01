@@ -3,7 +3,7 @@
 {% if nested %}
 {% set type_tag_id = type_tag_id | add_uuid %}
 {% endif %}
-<p data-toggle="tooltip" data-placement="top" title="{{ t | tooltip }}">
+<p class="fw-bold" data-toggle="tooltip" data-placement="top" title="{{ t | tooltip }}">
 <a
       data-bs-toggle="collapse"
       href="#{{ type_tag_id }}"
@@ -35,7 +35,7 @@
     {% if t.element_type | is_composite %}
     {{ generate_type_info(t.element_type, "", True) }}
     {% else %}
-    <p class="mb-0">{{ t.element_type }}</p>
+    <p class="fw-bold mb-0">{{ t.element_type }}</p>
     {% endif %}
     {% else %}
     {% if t.doc %}
@@ -50,10 +50,14 @@
     {% elif attr.data_type | is_composite %}
     {{ generate_type_info(attr.data_type, attr.name, True) }}
     {% else %}
-    <p class="mb-0">
+    <p class="fw-bold mb-0">
     {{ attr }}
     {% if attr | is_field %}
-    <span style="color: green">[extent {{ attr.data_type | extent }} bytes]</span>
+    {% if attr.data_type | extent % 8 == 0 %}
+    <span style="color: green">[extent {{ attr.data_type | extent / 8 }} bytes]</span>
+    {% else %}
+    <span style="color: green">[extent {{ attr.data_type | extent }} bits]</span>
+    {% endif %}
     {% endif %}
     </p>
     {% endif %}
