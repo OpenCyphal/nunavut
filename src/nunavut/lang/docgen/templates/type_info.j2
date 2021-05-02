@@ -27,7 +27,7 @@
 <span style="color: orange">[fixed port-ID {{ t.fixed_port_id }}]</span>
 {% endif %}
 {% else %}
-{{ t }}
+{{ t | display_type }} {{ attr_name }}
 {% endif %}
 </p>
 <div class="collapse" id="{{ type_tag_id }}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
@@ -47,12 +47,12 @@
     {% else %}
     {% for attr in t.attributes %}
     {% if attr.data_type | is_array %}
-    {{ generate_type_info(attr.data_type, "", True) }}
+    {{ generate_type_info(attr.data_type, attr.name, True) }}
     {% elif attr.data_type | is_composite %}
     {{ generate_type_info(attr.data_type, attr.name, True) }}
     {% else %}
     <p class="fw-bold mb-0">
-    {{ attr }}
+    {{ attr | display_type }}
     {% if attr | is_field %}
     {% if attr.data_type | extent % 8 == 0 %}
     <span style="color: green">[extent {{ attr.data_type | extent / 8 }} bytes]</span>

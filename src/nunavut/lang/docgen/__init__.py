@@ -85,3 +85,30 @@ def filter_namespace_doc(language: Language, instance: typing.Any) -> str:
         if t.short_name == "_":
             return t.doc
     return ""
+
+@template_language_filter(__name__)
+def filter_display_type(language: Language, instance: typing.Any) -> str:
+    if isinstance(instance, pydsdl.FixedLengthArrayType):
+        capacity = f'<span style="color: green">[{instance.capacity}]</span>'
+        return filter_display_type(language, instance.element_type) + capacity
+    elif isinstance(instance, pydsdl.VariableLengthArrayType):
+        capacity = f'<span style="color: green">[<={instance.capacity}]</span>'
+        return filter_display_type(language, instance.element_type) + capacity
+    elif isinstance(instance, pydsdl.PaddingField):
+        return f'<span style="color: gray">{instance}</span>'
+    elif isinstance(instance, pydsdl.Field):
+        return f"{filter_display_type(language, instance.data_type)} {instance.name}"
+    elif isinstance(instance, pydsdl.Constant):
+        name = f'<span style="color: darkmagenta">{instance.name}</span>'
+        value = f'<span style="color: darkcyan">{instance.value}</span>'
+        return f"{filter_display_type(language, instance.data_type)} {name} = {value}"
+    elif isinstance(instance, pydsdl.PrimitiveType):
+        if instance.cast_mode == instance.cast_mode.SATURATED:
+            is_saturated = " "
+        else:
+            is_saturated = '<span style="color: orange">truncated</span> '
+        type_name = \
+            f'<span style="color: green">{str(instance).split()[-1]}</span>'
+        return f"{is_saturated}{type_name}"
+    else:
+        return str(instance)
