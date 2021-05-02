@@ -3,7 +3,9 @@
 <p class="fst-italic">
 <a
       data-bs-toggle="collapse"
-      href="#{{ t.full_name.replace(".", "_") }}"
+      href="javascript:void(0);"
+      data-target="#{{ t.full_name.replace(".", "_") }}"
+      onclick="toggleCollapse(event)"
       role="button"
       aria-expanded="false"
       aria-controls="{{ t.full_name.replace(".", "_") }}"

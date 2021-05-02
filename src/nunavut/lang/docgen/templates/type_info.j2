@@ -6,7 +6,9 @@
 <p class="fw-bold" data-toggle="tooltip" data-placement="top" title="{{ t | tooltip }}">
 <a
       data-bs-toggle="collapse"
-      href="#{{ type_tag_id }}"
+      href="javascript:void(0);"
+      data-target="#{{ type_tag_id }}"
+      onclick="toggleCollapse(event)"
       role="button"
       aria-expanded="false"
       aria-controls="{{ type_tag_id }}"

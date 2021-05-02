@@ -32,6 +32,9 @@
         <script>
         {% include "assets/bootstrap.bundle.min.js" %}
         </script>
+        <script>
+        {% include "namespace_base.js" %}
+        </script>
     </head>
     <body class="font-monospace p-5">
         <h2>Documentation for namespace {{ T }}</h2>
@@ -39,14 +42,6 @@
             {{ generate_namespace_info(T) }}
         </div>
         <script>
-            function showCollapse(collapse) {
-                collapse.classList.add("show");
-                if (collapse.parentNode != null && collapse.classList.contains("collapse")) {
-                    showCollapse(collapse.parentNode);
-                }
-            }
-
-
             if (window.location.hash != null && window.location.hash != "") {
                 const collapse = document.querySelector(window.location.hash);
                 showCollapse(collapse);
