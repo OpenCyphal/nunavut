@@ -128,7 +128,7 @@ class CodeGenEnvironment(Environment):
                          lstrip_blocks=lstrip_blocks,
                          trim_blocks=trim_blocks,
                          auto_reload=False,
-                         cache_size=0)
+                         cache_size=400)
         self.globals['options'] = _LanguageTemplateNamespace()
         self.globals['ln'] = _LanguageTemplateNamespace()
 

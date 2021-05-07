@@ -16,8 +16,6 @@ complex.Nested.1.0[4] thirteen
 basic.Basic.1.0[3] fourteen
 complex.NestedNested.1.0[2] fifteen
 complex.NestedUnionWComplexArray.1.0 sixteen
-# Manually tested this and it worked. Run it as part of the build
-# when we fix the exponential runtime inside pydsdl.
-# complex.NestedUnionWComplexArray.1.0[2] seventeen
+complex.NestedUnionWComplexArray.1.0[2] seventeen
 
 @sealed
