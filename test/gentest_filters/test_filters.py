@@ -322,3 +322,31 @@ def test_filter_full_reference_name(gen_paths, language_name, stropping, namespa
     assert test_subject_module.filter_full_reference_name(
         ln, service_response_type) == '{}.getting.tired.of.Python_0_1'.format(top_level_name)\
         .replace('.', namespace_separator)
+
+
+@typing.no_type_check
+def test_filter_to_template_unique(gen_paths):
+    """
+    Cover issue #88
+    """
+    root_path = str(gen_paths.dsdl_dir / Path("one"))
+    output_path = gen_paths.out_dir / 'to_unique'
+    compound_types = read_namespace(root_path, [])
+    language_context = LanguageContext(target_language='c')
+    namespace = build_namespace_tree(compound_types,
+                                     root_path,
+                                     output_path,
+                                     language_context)
+    template_path = gen_paths.templates_dir / Path('to_unique')
+    generator = DSDLCodeGenerator(namespace, templates_dir=template_path)
+    generator.generate_all()
+    outfile = gen_paths.find_outfile_in_namespace("one.foo", namespace)
+
+    assert (outfile is not None)
+
+    expected = '_f0_\n_f1_\n_f2_\n_f3_\n\n_f4_\n_f5_\n_f6_\n_f7_\n\n_f8_\n_f9_\n_f10_\n_f11_\n'
+
+    with open(str(outfile), 'r') as foo_file:
+        actual = foo_file.read()
+
+    assert expected == actual
