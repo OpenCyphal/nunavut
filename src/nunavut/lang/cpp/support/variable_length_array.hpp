@@ -19,8 +19,8 @@ namespace nunavut
 namespace support
 {
 /**
- * Minimal, generic container for storing UAVCAN dynamic arrays. One property that is unique
- * for dynamic arrays is that they have a maximum bound which this implementation enforces.
+ * Minimal, generic container for storing UAVCAN variable-length arrays. One property that is unique
+ * for variable-length arrays is that they have a maximum bound which this implementation enforces.
  * This allows use of an allocator that is backed by statically allocated memory.
  *
  * @tparam  T           The type of elements in the array.
