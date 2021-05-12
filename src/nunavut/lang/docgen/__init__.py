@@ -104,7 +104,7 @@ def filter_display_type(language: Language, instance: typing.Any) -> str:
         return f"{filter_display_type(language, instance.data_type)} {name} = {value}"
     elif isinstance(instance, pydsdl.PrimitiveType):
         if instance.cast_mode == instance.cast_mode.SATURATED:
-            is_saturated = " "
+            is_saturated = '<span style="color: gray">saturated</span> '
         else:
             is_saturated = '<span style="color: orange">truncated</span> '
         type_name = \
@@ -112,3 +112,12 @@ def filter_display_type(language: Language, instance: typing.Any) -> str:
         return f"{is_saturated}{type_name}"
     else:
         return str(instance)
+
+@template_language_filter(__name__)
+def filter_is_deprecated(language: Language, instance: typing.Any) -> bool:
+    if isinstance(instance, pydsdl.CompositeType):
+        return instance.deprecated
+    elif isinstance(instance, pydsdl.ArrayType) and isinstance(instance.element_type, pydsdl.CompositeType):
+        return instance.element_type.deprecated
+    else:
+        return False

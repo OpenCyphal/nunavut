@@ -3,7 +3,7 @@
 {% if nested %}
 {% set type_tag_id = type_tag_id | add_uuid %}
 {% endif %}
-<p class="fw-bold" data-toggle="tooltip" data-placement="top" title="{{ t | tooltip }}">
+<p class="fw-bold" style="{{ 'color: gray' if t | is_deprecated else '' }}" data-toggle="tooltip" data-placement="top" title="{{ t | tooltip }}">
 <a
       data-bs-toggle="collapse"
       href="javascript:void(0);"
@@ -27,6 +27,9 @@
 {% endif %}
 {% if t.has_fixed_port_id %}
 <span style="color: orange">[fixed port-ID {{ t.fixed_port_id }}]</span>
+{% endif %}
+{% if t | is_deprecated %}
+<span style="color: red">[deprecated]</span>
 {% endif %}
 {% else %}
 {{ t | display_type }} {{ attr_name }}
