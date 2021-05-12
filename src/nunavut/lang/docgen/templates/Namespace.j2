@@ -37,9 +37,14 @@
         </script>
     </head>
     <body class="font-monospace p-5">
-        <h2>Documentation for namespace {{ T }}</h2>
-        <div>
-            {{ generate_namespace_info(T) }}
+        <div class="row" style="max-height: 100vh">
+            <div class="col-lg-3 px-4" style="overflow-y: auto; height: 100%">
+                {% include 'sidebar.j2' %}
+            </div>
+            <div class="col-lg-9 px-4" style="overflow-y: auto; height: 100%">
+                <h2>Documentation for namespace {{ T }}</h2>
+                {{ generate_namespace_info(T) }}
+            </div>
         </div>
         </div>
         <script>

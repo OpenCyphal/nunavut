@@ -8,7 +8,10 @@ function collapseOff(collapse) {
 
 function showCollapse(collapse) {
   collapseOn(collapse);
-  linkFromCollapse(collapse).innerText = "-";
+  if (linkFromCollapse(collapse)) {
+    linkFromCollapse(collapse).innerText = "-";
+  }
+
   if (collapse.parentNode != null && collapse.classList.contains("collapse")) {
     showCollapse(collapse.parentNode);
   }

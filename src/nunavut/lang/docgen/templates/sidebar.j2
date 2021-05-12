@@ -1,0 +1,73 @@
+{% macro generate_sidebar_view(T) %}
+{% endmacro %}
+
+<aside>
+    <div>
+        <input class="form-control" type="search" placeholder="Search types..." aria-label="Search Types">
+        <div class="row py-4">
+            <div class="col-sm">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="hideDeprecated" checked>
+                    <label class="form-check-label" for="hideDeprecated">
+                        Hide deprecated datatypes
+                    </label>
+                </div>
+            </div>
+            <div class="col-sm">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showExtent" checked>
+                    <label class="form-check-label" for="showExtent">
+                        Show Extent
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showDocs" checked>
+                    <label class="form-check-label" for="showDocs">
+                        Show documentation comments
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div>
+        {{ generate_sidebar_view(T) }}
+    </div>
+</aside>
+<script>
+    document.getElementById("hideDeprecated").addEventListener("change", function(e) {
+        if (e.target.checked) {
+            for (let el of document.querySelectorAll(".deprecated")) {
+                el.classList.add("d-none");
+            }
+        } else {
+            for (let el of document.querySelectorAll(".deprecated")) {
+                el.classList.remove("d-none");
+            }
+        }
+    });
+
+    document.getElementById("showExtent").addEventListener("change", function(e) {
+        if (e.target.checked) {
+            for (let el of document.querySelectorAll(".extent")) {
+                el.classList.remove("d-none");
+            }
+        } else {
+            for (let el of document.querySelectorAll(".extent")) {
+                el.classList.add("d-none");
+            }
+        }
+    });
+
+    document.getElementById("showDocs").addEventListener("change", function(e) {
+        if (e.target.checked) {
+            for (let el of document.querySelectorAll(".docs")) {
+                el.classList.remove("d-none");
+            }
+        } else {
+            for (let el of document.querySelectorAll(".docs")) {
+                el.classList.add("d-none");
+            }
+        }
+    });
+</script>

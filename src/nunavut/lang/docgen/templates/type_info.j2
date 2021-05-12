@@ -3,7 +3,7 @@
 {% if nested %}
 {% set type_tag_id = type_tag_id | add_uuid %}
 {% endif %}
-<p class="fw-bold" style="{{ 'color: gray' if t | is_deprecated else '' }}" data-toggle="tooltip" data-placement="top" title="{{ t | tooltip }}">
+<p class="fw-bold {{ 'deprecated d-none' if t | is_deprecated else '' }}" style="{{ 'color: gray'  if t | is_deprecated else '' }}" data-toggle="tooltip" data-placement="top" title="{{ t | tooltip }}">
 <a
       data-bs-toggle="collapse"
       href="javascript:void(0);"
@@ -21,12 +21,12 @@
 {{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}}) {{ attr_name }}
 {% endif %}
 {% if not t | is_service %}
-<span style="color: green">[extent {{ t | extent }} bytes]</span>
+<span class="extent" style="color: green">[extent {{ t | extent }} bytes]</span>
 {% else %}
-<span style="color: blue">[service]</span>
+<span class="service" style="color: blue">[service]</span>
 {% endif %}
 {% if t.has_fixed_port_id %}
-<span style="color: orange">[fixed port-ID {{ t.fixed_port_id }}]</span>
+<span class="portID" style="color: orange">[fixed port-ID {{ t.fixed_port_id }}]</span>
 {% endif %}
 {% if t | is_deprecated %}
 <span style="color: red">[deprecated]</span>
@@ -45,7 +45,7 @@
     {% else %}
     {# We don't want to show the service docs in both the service and the request #}
     {% if t.doc and not t | is_service_req %}
-    <pre>{{ t.doc }}</pre>
+    <pre class="docs">{{ t.doc }}</pre>
     {% endif %}
     {% if t.attributes | length == 0 %}
     <p>(data type is empty)</p>
@@ -67,7 +67,7 @@
     {% endif %}
     </p>
     {% endif %}
-    <pre>{{ attr.doc }}</pre>
+    <pre class="docs">{{ attr.doc }}</pre>
     {% endfor %}
     {% endif %}
     {% endif %}
