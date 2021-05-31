@@ -111,7 +111,7 @@ def filter_id(language: Language,
               instance: typing.Any) -> str:
     """
     Filter that produces a valid C identifier for a given object. The encoding may not
-    be reversable.
+    be reversible.
 
     .. invisible-code-block: python
 
@@ -773,7 +773,7 @@ def filter_constant_value(language: Language,
 
 @template_language_filter(__name__)
 def filter_literal(language: Language,
-                   value: typing.Union[fractions.Fraction, bool],
+                   value: typing.Union[fractions.Fraction, bool, int],
                    ty: pydsdl.Any) -> str:
     """
     Renders the specified value of the specified type as a literal.
@@ -796,7 +796,7 @@ def filter_literal(language: Language,
         return '(({}) {})'.format(cast, expr)
 
     else:
-        raise ValueError('Cannot construct a C literal from an instance of {}'.format(type(ty).__name__))
+        raise ValueError('Cannot construct a literal from an instance of {}'.format(type(ty).__name__))
 
 
 @template_language_filter(__name__)

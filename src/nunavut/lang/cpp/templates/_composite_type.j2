@@ -21,7 +21,7 @@
     // | CONSTANTS
     // +----------------------------------------------------------------------+
     {% endif -%}
-    static constexpr {{ constant.data_type | declaration }} {{ constant.name | id }} = {{ constant.value | literal }};
+    static constexpr {{ constant.data_type | declaration }} {{ constant.name | id }} = {{ constant | constant_value }};
 {%- endfor -%}
 {%- if composite_type is UnionType -%}
 {% include '_fields_as_union.j2' %}

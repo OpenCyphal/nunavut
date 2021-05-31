@@ -5,7 +5,7 @@
  */
 
 #include "gmock/gmock.h"
-#include "nunavut/support/VariableLengthArray.hpp"
+#include "nunavut/support/variable_length_array.hpp"
 #include <memory>
 #include <type_traits>
 #include <limits>

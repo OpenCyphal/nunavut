@@ -6,7 +6,7 @@
  */
 
 #include "gmock/gmock.h"
-#include "nunavut/support/VariableLengthArray.hpp"
+#include "nunavut/support/variable_length_array.hpp"
 
 
 template <typename T, std::size_t SizeCount>

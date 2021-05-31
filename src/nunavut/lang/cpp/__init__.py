@@ -20,12 +20,22 @@ from ...templates import (template_language_filter,
 from .. import Language, _UniqueNameGenerator
 from .._common import IncludeGenerator
 from ..c import C_RESERVED_PATTERNS, VariableNameEncoder, _CFit
+from ..c import filter_literal as c_filter_literal
 
 CPP_RESERVED_PATTERNS = frozenset([*C_RESERVED_PATTERNS])
 
 CPP_NO_DOUBLE_DASH_RULE = re.compile(r'(__)')
 
 DEFAULT_ARRAY_TYPE = 'std::array<{TYPE},{MAX_SIZE}>'
+
+
+@template_language_filter(__name__)
+def filter_constant_value(language: Language,
+                          constant: pydsdl.Constant) -> str:
+    """
+    Renders the specified value of the specified type as a literal.
+    """
+    return c_filter_literal(language, constant.value.native_value, constant.data_type)
 
 
 def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
