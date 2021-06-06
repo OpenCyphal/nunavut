@@ -34,11 +34,6 @@
 #ifndef NUNAVUT_SUPPORT_SERIALIZATION_HPP_INCLUDED
 #define NUNAVUT_SUPPORT_SERIALIZATION_HPP_INCLUDED
 
-namespace nunavut
-{
-namespace support
-{
-
 static_assert(__cplusplus >= 201100L,
               "Unsupported language: ISO C11, C++11, or a newer version of either is required.");
 
@@ -54,6 +49,11 @@ static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_u
     "Nunavut serialization relies on {{ typename_unsigned_length }} to {{ typename_unsigned_bit_length }} conversions "
     "that do not lose data. You will need to regenerate Nunavut serialization support with a larger "
     "unsigned_bit_length type specified.");
+
+namespace nunavut
+{
+namespace support
+{
 
 namespace options
 {

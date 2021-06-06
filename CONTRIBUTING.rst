@@ -231,7 +231,8 @@ At the end of the mypy run we generate the following summaries:
 Buildkite
 ************************************************
 
-If you have Docker installed and running you'll be able to use the `Buildkite cli`_ to run local builds. For example::
+If you have Docker, the `Buildkite agent`_, and the Buildkite CLI installed you'll be able to use the `Buildkite cli`_ to
+run local builds. For example::
 
     bk local run
 
@@ -366,3 +367,4 @@ json and we can get rid of this ugly hack. Sorry.
 .. _`AWS CloudFormation`: https://aws.amazon.com/cloudformation/
 .. _`VSCode Remote Containers`: https://code.visualstudio.com/docs/remote/containers
 .. _`Buildkite cli`: https://github.com/buildkite/cli
+.. _`Buildkite agent`: https://github.com/buildkite/agent

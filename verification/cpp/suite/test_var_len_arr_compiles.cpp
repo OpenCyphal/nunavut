@@ -97,9 +97,6 @@ TEST(VLATestsStatic, TestNoThrowAllocator)
     static_assert(std::is_nothrow_constructible<decltype(subject)>::value,
         "VariableLengthArray must be no-throw default constructible if the allocator is.");
 
-    static_assert(std::is_nothrow_copy_constructible<decltype(subject)>::value,
-        "VariableLengthArray must be no-throw copy constructible if the allocator is.");
-
     static_assert(std::is_nothrow_destructible<decltype(subject)>::value,
         "VariableLengthArray must be no-throw destructible if the allocator is.");
 
@@ -127,11 +124,6 @@ TEST(VLATestsStatic, TestThrowingAllocator)
                     &&
                  !std::is_nothrow_constructible<decltype(subject)>::value,
         "VariableLengthArray must allow exceptions from the constructor if the allocator does.");
-
-    static_assert(std::is_copy_constructible<decltype(subject)>::value
-                    &&
-                 !std::is_nothrow_copy_constructible<decltype(subject)>::value,
-        "VariableLengthArray must allow exceptions from the copy constructor if the allocator does.");
 
     static_assert(!std::is_nothrow_destructible<decltype(subject)>::value,
         "VariableLengthArray must be allow exceptions from the destructor if the allocator does.");
