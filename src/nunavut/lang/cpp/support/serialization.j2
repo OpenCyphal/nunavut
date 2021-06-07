@@ -12,14 +12,6 @@
     {%- endif -%}
 {%- endmacro -%}
 
-{%- macro float32_union() -%}
-    typedef union  // NOSONAR
-    {
-        uint32_t bits;
-        {{typename_float_32}} real;
-    } Float32Bits;
-{%- endmacro -%}
-
 // UAVCAN common serialization support routines.                                                             +-+ +-+
 // This file is based on canard_dsdl.h, which is part of Libcanard.                                          | | | |
 //                                                                                                           \  -  /
