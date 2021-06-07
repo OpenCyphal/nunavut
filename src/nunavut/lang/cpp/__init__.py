@@ -521,7 +521,7 @@ def filter_declaration(language: Language,
     if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.VoidType):
         return filter_type_from_primitive(language, instance)
     elif isinstance(instance, pydsdl.VariableLengthArrayType):
-        variable_array_type = language.get_option('variable_array_type', DEFAULT_ARRAY_TYPE)
+        variable_array_type = language.get_option('variable_array_type')
 
         if not isinstance(variable_array_type, str):
             raise RuntimeError('variable_array_type language option was missing or invalid.')
