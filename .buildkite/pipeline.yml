@@ -2,7 +2,13 @@ steps:
   - label: ':python::hammer: tox build, test, and report'
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: toxic-docker-build
-    command: "tox"
+    commands:
+      - "tox -e lint,mypy,docs"
+      - "tox -e py38-nnvg"
+      - "tox -e py39-test,py39-nnvg,py39-doctest,py39-rstdoctest"
+      - "tox -e noyaml"
+      - "tox -e report"
+    parallelism: 2
     artifact_paths:
       - ".tox/report/tmp/*"
       - ".tox/mypy/tmp/*"
@@ -12,7 +18,7 @@ steps:
     plugins:
       - docker#v3.3.0:
           workdir: /repo
-          image: "uavcan/toxic:py35-py38-sq"
+          image: "uavcan/toxic:py35-py39-sq"
           propagate-environment: true
           environment:
             - "SONARQUBE_TOKEN"
@@ -22,13 +28,38 @@ steps:
     agents:
       queue: 'default'
     timeout_in_minutes: 40
-  - label: ':cpp::hammer: verification build, c, gcc, amd64'
+  - label: ':python::hammer: python 35 - 37'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: toxic-docker-build-legacy
+    commands:
+      - "tox -e py35-test,py35-nnvg"
+      - "tox -e py36-nnvg"
+      - "tox -e py37-nnvg"
+    parallelism: 2
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/toxic:py35-py39-sq"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+    timeout_in_minutes: 40
+  - label: ':linux::hammer: verification build, c, gcc, amd64'
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: c-gcc-docker-verify-amd64
-    command: ".buildkite/verify_c_amd64.sh"
+    commands:
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native64.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native64.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native64.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native64.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native64.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native64.ini --build-type MinSizeRel  --enable-ovr-var-array"
+    parallelism: 3
     artifact_paths:
-      - "verification/build_c/coverage_all.zip"
-      - "verification/build_cpp/coverage_all.zip"
+      - "verification/build_*/coverage_all.zip"
     plugins:
       - docker#v3.3.0:
           workdir: /repo
@@ -39,13 +70,157 @@ steps:
             - "BUILDKITE_BUILD_NUMBER"
     agents:
       queue: 'default'
-  - label: ':cpp::hammer: verification build, c, gcc, x86'
+  - label: ':linux::hammer: verification build, c, gcc, x86'
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: c-gcc-docker-verify-x86
-    command: ".buildkite/verify_c_x86.sh"
+    commands:
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native32.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native32.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native32.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native32.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native32.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_gcc_native32.ini --build-type MinSizeRel  --enable-ovr-var-array"
+    parallelism: 3
     artifact_paths:
-      - "verification/build_c/coverage_all.zip"
-      - "verification/build_cpp/coverage_all.zip"
+      - "verification/build_*/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+  - label: ':linux::hammer: verification build, c, clang, amd64'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: c-clang-docker-verify-amd64
+    commands:
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native64.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native64.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native64.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native64.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native64.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native64.ini --build-type MinSizeRel  --enable-ovr-var-array"
+    parallelism: 3
+    artifact_paths:
+      - "verification/build_*/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+  - label: ':linux::hammer: verification build, c, clang, x86'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: c-clang-docker-verify-x86
+    commands:
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native32.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native32.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native32.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native32.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native32.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_c_clang_native32.ini --build-type MinSizeRel  --enable-ovr-var-array"
+    parallelism: 3
+    artifact_paths:
+      - "verification/build_*/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+  - label: ':cpp::hammer: verification build, cpp, gcc, amd64'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: cpp-gcc-docker-verify-amd64
+    commands:
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native64.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native64.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native64.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native64.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native64.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native64.ini --build-type MinSizeRel  --enable-ovr-var-array"
+    parallelism: 3
+    artifact_paths:
+      - "verification/build_*/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+  - label: ':cpp::hammer: verification build, cpp, gcc, x86'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: cpp-gcc-docker-verify-x86
+    commands:
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native32.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native32.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native32.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native32.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native32.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_gcc_native32.ini --build-type MinSizeRel  --enable-ovr-var-array"
+    parallelism: 3
+    artifact_paths:
+      - "verification/build_*/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+  - label: ':cpp::hammer: verification build, cpp, clang, amd64'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: cpp-clang-docker-verify-amd64
+    commands:
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native64.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native64.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native64.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native64.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native64.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native64.ini --build-type MinSizeRel  --enable-ovr-var-array"
+    parallelism: 3
+    artifact_paths:
+      - "verification/build_*/coverage_all.zip"
+    plugins:
+      - docker#v3.3.0:
+          workdir: /repo
+          image: "uavcan/c_cpp:ubuntu-18.04"
+          propagate-environment: true
+          environment:
+            - "BUILDKITE"
+            - "BUILDKITE_BUILD_NUMBER"
+    agents:
+      queue: 'default'
+  - label: ':cpp::hammer: verification build, cpp, clang, x86'
+    if: build.branch == "main" && pipeline.slug == "nunavut-release"
+    id: cpp-clang-docker-verify-x86
+    commands:
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native32.ini --build-type Debug"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native32.ini --build-type Release"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native32.ini --build-type MinSizeRel  --disable-asserts"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native32.ini --build-type Debug       --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native32.ini --build-type Release     --enable-ovr-var-array"
+      - ".buildkite/verify.py --override .buildkite/verify_global.ini --override .buildkite/verify_cpp_clang_native32.ini --build-type MinSizeRel  --enable-ovr-var-array"
+    parallelism: 3
+    artifact_paths:
+      - "verification/build_*/coverage_all.zip"
     plugins:
       - docker#v3.3.0:
           workdir: /repo
@@ -66,7 +241,7 @@ steps:
     plugins:
       - docker#v3.3.0:
           workdir: /repo
-          image: "uavcan/toxic:py35-py38-sq"
+          image: "uavcan/toxic:py35-py39-sq"
           propagate-environment: true
           environment:
             - "SONARQUBE_TOKEN"

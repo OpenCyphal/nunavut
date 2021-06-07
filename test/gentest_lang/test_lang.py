@@ -157,20 +157,16 @@ def ptest_lang_cpp(gen_paths, implicit):  # type: ignore
 namespace cpp
 {
 namespace ns
-{
-'''
+{'''
     assert lang_cpp_output["namespace_open_wo_nl"] == r'''namespace langtest {
 namespace cpp {
-namespace ns {
-'''
+namespace ns {'''
     assert lang_cpp_output["namespace_close"] == r'''}
 }
-}
-'''
+}'''
     assert lang_cpp_output["namespace_close_w_comments"] == r'''} // namespace ns
 } // namespace cpp
-} // namespace langtest
-'''
+} // namespace langtest'''
     return generated_values
 
 

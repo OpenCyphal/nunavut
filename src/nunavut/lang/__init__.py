@@ -33,11 +33,26 @@ class Language:
 
     @classmethod
     def _as_dict(cls, value: str) -> typing.Dict[str, typing.Any]:
+        def _narrow(value: str) -> typing.Any:
+            if value is None:
+                return None
+            try:
+                return int(value)
+            except ValueError:
+                pass
+            if value.lower() == 'true' or value.lower() == 'false':
+                return bool(value)
+            strvalue = str(value)
+            if strvalue.startswith('"') and strvalue.endswith('"'):
+                return strvalue[1:-1]
+            else:
+                return strvalue
+
         value_as_dict = dict()
         value_pairs = value.strip().split('\n')
         for pair in value_pairs:
             kv = pair.strip().split('=')
-            value_as_dict[kv[0].strip()] = kv[1].strip()
+            value_as_dict[kv[0].strip()] = _narrow(kv[1].strip())
         return value_as_dict
 
     @classmethod

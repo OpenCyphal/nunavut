@@ -13,7 +13,7 @@
             "args": ["--templates", "${workspaceFolder}/test/gentest_dsdl/templates",
                      "--generate-namespace-types",
                      "--verbose",
-                     "--outdir", "${workspaceFolder}/.vscode/nunavut_out",
+                     "--outdir", "${workspaceFolder}/nunavut_out",
                      "-l", "c",
                      "${workspaceFolder}/test/gentest_dsdl/dsdl/uavcan"]
         },
@@ -22,7 +22,10 @@
             "type": "python",
             "request": "launch",
             "module": "pytest",
-            "args": ["${file}"],
+            "args": [
+                "--keep-generated",
+                "${file}"
+            ],
             "console": "internalConsole",
             "cwd": "${workspaceFolder}"
         },
@@ -35,11 +38,15 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "Verification: test_constant",
+            "name": "Verification: test_var_len_arr",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_constant",
-            "cwd": "${workspaceFolder}"
+            "program": "${workspaceRoot}/verification/build_vscode/native-gcc-cpp/suite/test_var_len_arr",
+            "cwd": "${workspaceFolder}",
+            "osx": {
+                "MIMode": "lldb",
+                "externalConsole": false
+            }
         },
         {
             "name": "Verification: test_support",

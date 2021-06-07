@@ -407,3 +407,46 @@ Internals
 =================================================
 
 Nunavut reserves all global identifiers that start with `_nv_` as private internal globals.
+
+
+*************************************************
+Built-in Template Guide
+*************************************************
+
+This section will contain more information as the project matures about the build-in language support for generating
+code. Nunavut is both a framework that allows users to write their own dsdl transformation templates but also works,
+out-of-the-box, as a transplier for C, and C++. More languages may be added in the future.
+
+
+C++
+=================================================
+
+.. note::
+   C++ support is currently experimental. You can only use this by setting the :code:`--experimental-languages` flag
+   when invoking nnvg.
+
+C
+=================================================
+
+.. note::
+   Documentation is provided in the generated source.
+
+
+
+Manual Override of Array Capacity
+-------------------------------------------------
+
+By default, the C structures generated will utilize C arrays sized by the maximum size of a
+variable-length array. To override this behavior you can pre-define the :code:`_ARRAY_CAPACITY_` for individual
+fields. For example::
+
+    #include <stdio.h>
+
+    #define reg_drone_service_battery_Status_0_2_cell_voltages_ARRAY_CAPACITY_ 6
+    #include "inc/UAVCAN/reg/drone/service/battery/Status_0_2.h"
+
+    int main(int argc, char *argv[])
+    {
+        reg_drone_service_battery_Status_0_2 msg;
+        printf("Size of reg_drone_service_battery_Status_0_2 %li\n", sizeof(msg));
+    }

@@ -15,8 +15,7 @@
         "uavcan.dsdl",
         "wholroyd.jinja",
         "ban.spellright",
-        "ms-python.python",
-        "lextudio.restructuredtext"
+        "ms-python.python"
     ],
     "postCreateCommand": "git submodule update --init --recursive && tox -e local"
 }

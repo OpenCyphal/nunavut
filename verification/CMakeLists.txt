@@ -66,6 +66,16 @@ else()
     message(FATAL_ERROR "Unknown or no verification language (${NUNAVUT_VERIFICATION_LANG}). Try cmake -DNUNAVUT_VERIFICATION_LANG:string=[cpp|c]")
 endif()
 
+if(DEFINED ENV{NUNAVUT_FLAGSET})
+    set(NUNAVUT_FLAGSET "$ENV{NUNAVUT_FLAGSET}")
+    message(STATUS "Using ${NUNAVUT_FLAGSET} from environment for NUNAVUT_FLAGSET")
+elseif (DEFINED NUNAVUT_FLAGSET)
+     message(STATUS "Using override NUNAVUT_FLAGSET = ${NUNAVUT_FLAGSET}")
+else()
+    set(NUNAVUT_FLAGSET "${CMAKE_SOURCE_DIR}/cmake/compiler_flag_sets/native_w_cov.cmake")
+    message(STATUS "Setting (default) NUNAVUT_FLAGSET = ${NUNAVUT_FLAGSET}")
+endif()
+
 #
 # Tell cmake where to find our custom scripts.
 #
@@ -143,6 +153,11 @@ add_definitions(-DUNITY_SUPPORT_64=1
 find_package(nnvg REQUIRED)
 
 #
+# Pull in some stuff we need for testing C++
+#
+find_package(o1heap REQUIRED)
+
+#
 # Generate serialization support headers
 #
 create_dsdl_target(nunavut-support
@@ -198,7 +213,7 @@ add_dependencies(dsdl-test nunavut-support)
 #
 # Load all our compile flag sets into the appropriate places.
 #
-apply_flag_set("${CMAKE_SOURCE_DIR}/cmake/compiler_flag_sets/native.cmake")
+apply_flag_set("${NUNAVUT_FLAGSET}")
 
 
 # +---------------------------------------------------------------------------+
@@ -252,7 +267,8 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
                             ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
                             "${${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS}"
                             dsdl-regulated
-                            dsdl-test)
+                            dsdl-test
+                            o1heap)
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
     define_natve_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})

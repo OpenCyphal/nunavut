@@ -76,7 +76,7 @@ class JinjaAssert(Extension):
         # This will be the macro name "assert"
         token = next(parser.stream)
 
-        # now we parse a single expression that must evalute to True
+        # now we parse a single expression that must evaluate to True
         args = [parser.parse_expression(),
                 nodes.Const(token.lineno),
                 nodes.Const(parser.name),
@@ -325,6 +325,18 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
             self._env.filters['ln.{}.{}'.format(filter_namespace, filter_name)] = resolved_filter
 
     # +-----------------------------------------------------------------------+
+    # | PROTECTED
+    # +-----------------------------------------------------------------------+
+    def _handle_overwrite(self,
+                          output_path: pathlib.Path,
+                          allow_overwrite: bool) -> None:
+        if output_path.exists():
+            if allow_overwrite:
+                output_path.chmod(output_path.stat().st_mode | 0o220)
+            else:
+                raise PermissionError('{} exists and allow_overwrite is False.'.format(output_path))
+
+    # +-----------------------------------------------------------------------+
     # | AbstractGenerator
     # +-----------------------------------------------------------------------+
 
@@ -374,7 +386,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
 
     def _add_nunavut_globals(self) -> None:
         """
-        Add globals namespaced as 'nunavut'.
+        Add globals within the 'nunavut' namespace.
         """
         import nunavut.version
 
@@ -393,11 +405,35 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
 
         self._env.globals['nunavut'] = {
             'version': nunavut.version.__version__,
+            'platform_version': self._create_platform_version(),
             'support': {
                 'omit': omit_serialization_support,
                 'namespace': support_namespace
             }
         }
+
+    @classmethod
+    def _create_platform_version(cls) -> typing.Dict[str, typing.Any]:
+        import platform
+        import sys
+
+        platform_version = {}  # type: typing.Dict[str, typing.Any]
+
+        platform_version['python_implementation'] = platform.python_implementation()
+        platform_version['python_version'] = platform.python_version()
+        platform_version['python_release_level'] = sys.version_info[3]
+        platform_version['python_build'] = platform.python_build()
+        platform_version['python_compiler'] = platform.python_compiler()
+        platform_version['python_revision'] = platform.python_revision()
+
+        try:
+            platform_version['python_xoptions'] = sys._xoptions
+        except AttributeError:  # pragma: no cover
+            platform_version['python_xoptions'] = {}
+
+        platform_version['runtime_platform'] = platform.platform()
+
+        return platform_version
 
     def _add_language_support(self) -> None:
         target_language = self.language_context.get_target_language()
@@ -492,11 +528,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
                     raise ValueError('PostProcessor type {} is unknown.'.format(type(pp)))
         logger.debug("Using post-processors: %r %r", line_pps, file_pps)
 
-        if output_path.exists():
-            if allow_overwrite:
-                output_path.chmod(output_path.stat().st_mode | 0o220)
-            else:
-                raise PermissionError('{} exists and allow_overwrite is False.'.format(output_path))
+        self._handle_overwrite(output_path, allow_overwrite)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(str(output_path), "w") as output_file:
             if len(line_pps) > 0:
@@ -623,7 +655,7 @@ class DSDLCodeGenerator(CodeGenerator):
 
         :param typing.Any value: The type to emit an include for.
         :param bool resolve: If True the path returned will be absolute else the path will
-                             be relative to the folder of the root namepace.
+                             be relative to the folder of the root namespace.
         :returns: A string path to output file for the type.
         """
 
@@ -993,6 +1025,17 @@ class SupportGenerator(CodeGenerator):
         else:
             target_path = pathlib.Path(self.namespace.get_support_output_folder()) / self._sub_folders
 
+            line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']
+            file_pps = []  # type: typing.List['nunavut.postprocessors.FilePostProcessor']
+            if self._post_processors is not None:
+                for pp in self._post_processors:
+                    if isinstance(pp, nunavut.postprocessors.LinePostProcessor):
+                        line_pps.append(pp)
+                    elif isinstance(pp, nunavut.postprocessors.FilePostProcessor):
+                        file_pps.append(pp)
+                    else:
+                        raise ValueError('PostProcessor type {} is unknown.'.format(type(pp)))
+
             generated = []  # type: typing.List[pathlib.Path]
             for resource in self.get_templates():
                 target = (target_path / resource.name).with_suffix(target_language.extension)
@@ -1003,7 +1046,7 @@ class SupportGenerator(CodeGenerator):
                     self._generate_header(resource, target, is_dryrun, allow_overwrite)
                     generated.append(target)
                 else:
-                    self._copy_header(resource, target, is_dryrun, allow_overwrite)
+                    self._copy_header(resource, target, is_dryrun, allow_overwrite, line_pps, file_pps)
                     generated.append(target)
             return generated
 
@@ -1043,11 +1086,33 @@ class SupportGenerator(CodeGenerator):
                      resource: pathlib.Path,
                      target: pathlib.Path,
                      is_dryrun: bool,
-                     allow_overwrite: bool) -> pathlib.Path:
+                     allow_overwrite: bool,
+                     line_pps: typing.List['nunavut.postprocessors.LinePostProcessor'],
+                     file_pps: typing.List['nunavut.postprocessors.FilePostProcessor']) -> pathlib.Path:
 
         if not is_dryrun:
-            if not allow_overwrite and target.exists():
-                raise PermissionError('{} exists. Refusing to overwrite.'.format(str(target)))
+            self._handle_overwrite(target, allow_overwrite)
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy(str(resource), str(target))
+            if len(line_pps) == 0:
+                shutil.copy(str(resource), str(target))
+            else:
+                self._copy_header_using_line_pps(resource, target, line_pps)
+            for file_pp in file_pps:
+                target = file_pp(target)
         return target
+
+    def _copy_header_using_line_pps(self,
+                                    resource: pathlib.Path,
+                                    target: pathlib.Path,
+                                    line_pps: typing.List['nunavut.postprocessors.LinePostProcessor']) -> None:
+        with open(str(target), 'w') as target_file:
+            with open(str(resource), 'r') as resource_file:
+                for resource_line in resource_file:
+                    if len(resource_line) > 1 and resource_line[-2] == '\r':
+                        resource_line_tuple = (resource_line[0:-2], '\r\n')
+                    else:
+                        resource_line_tuple = (resource_line[0:-1], '\n')
+                    for line_pp in line_pps:
+                        resource_line_tuple = line_pp(resource_line_tuple)
+                    target_file.write(resource_line_tuple[0])
+                    target_file.write(resource_line_tuple[1])

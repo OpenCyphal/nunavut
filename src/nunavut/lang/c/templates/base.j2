@@ -23,6 +23,11 @@
 // Full name:     {{ T.full_name }}
 // Version:       {{ T.version.major }}.{{ T.version.minor }}
 //
+// Platform
+{%- for key, value in nunavut.platform_version.items() %}
+//     {{ key }}:  {{ value }}
+{%- endfor %}
+//
 // Language Options
 {% for key, value in options.items() -%}
 //     {{ key }}:  {{ value}}

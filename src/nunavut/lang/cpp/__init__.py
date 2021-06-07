@@ -15,15 +15,118 @@ import typing
 
 import pydsdl
 
-from .. import Language, _UniqueNameGenerator
-from .._common import IncludeGenerator
 from ...templates import (template_language_filter,
                           template_language_list_filter)
+from .. import Language, _UniqueNameGenerator
+from .._common import IncludeGenerator
 from ..c import C_RESERVED_PATTERNS, VariableNameEncoder, _CFit
+from ..c import filter_literal as c_filter_literal
 
 CPP_RESERVED_PATTERNS = frozenset([*C_RESERVED_PATTERNS])
 
 CPP_NO_DOUBLE_DASH_RULE = re.compile(r'(__)')
+
+DEFAULT_ARRAY_TYPE = 'std::array<{TYPE},{MAX_SIZE}>'
+
+
+@template_language_filter(__name__)
+def filter_constant_value(language: Language,
+                          constant: pydsdl.Constant) -> str:
+    """
+    Renders the specified value of the specified type as a literal.
+    """
+    return c_filter_literal(language, constant.value.native_value, constant.data_type)
+
+
+def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
+    """
+    Returns the nearest standard bit length of a type as an int.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_to_standard_bit_length
+        import pydsdl
+
+    .. code-block: python
+        # Given
+        I = pydsdl.UnsignedIntegerType(7, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+
+        # and
+        template = '{{ I | to_standard_bit_length }}'
+
+        # then
+        rendered = '8'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_to_standard_bit_length, template, rendered, 'c', I=I)
+
+    """
+    return int(_CFit.get_best_fit(t.bit_length).value)
+
+
+def filter_is_zero_cost_primitive(t: pydsdl.PrimitiveType) -> bool:
+    """
+    Assuming that the target platform is:
+
+    - little-endian
+    - IEEE754-conformant
+
+    ...detects whether the native in-memory representation of a value of the supplied primitive type is the same
+    as its on-the-wire representation defined by the DSDL Specification.
+
+    For instance, all conventional platforms (where stated assumptions hold) have compatible in-memory
+    representation of int8, int16, int32, int64, uint8, uint16, uint32, uint64, float32, float64.
+    Values of other primitive types typically require some transformations (e.g., float16).
+
+    It follows that arrays, certain composite types, and some other entities composed of zero-cost composites
+    are also zero-cost types, but such non-trivial conjectures are not recognized by this function.
+
+    Raises a :class:`TypeError` if the argument is not a value of type :class:`pydsdl.PrimitiveType`.
+
+    This filter should actually be a Jinja test, but language support modules currently can only export filters,
+    not tests. This may change in a later release.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_is_zero_cost_primitive
+        import pydsdl
+
+    .. code-block: python
+        # Given
+        i7  = pydsdl.SignedIntegerType(7, pydsdl.PrimitiveType.CastMode.SATURATED)
+        u32 = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+        f16 = pydsdl.FloatType(16, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+        f32 = pydsdl.FloatType(32, pydsdl.PrimitiveType.CastMode.SATURATED)
+
+        # and
+        template = (
+            '{{ i7  | is_zero_cost_primitive }} '
+            '{{ u32 | is_zero_cost_primitive }} '
+            '{{ f16 | is_zero_cost_primitive }} '
+            '{{ f32 | is_zero_cost_primitive }} '
+        )
+
+        # then
+        rendered = 'False True False True '
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_is_zero_cost_primitive, template, rendered, 'c', i7=i7, u32=u32, f16=f16, f32=f32)
+
+    """
+    if isinstance(t, pydsdl.IntegerType):
+        out = t.standard_bit_length
+        assert isinstance(out, bool)
+        return out
+
+    if isinstance(t, pydsdl.FloatType):
+        return t.bit_length in (32, 64)  # float16 is excluded
+
+    if isinstance(t, pydsdl.BooleanType):
+        return False
+
+    raise TypeError('Zero-cost predicate is not defined on ' + type(t).__name__)
 
 
 @template_language_filter(__name__)
@@ -31,7 +134,7 @@ def filter_id(language: Language,
               instance: typing.Any) -> str:
     """
     Filter that produces a valid C and/or C++ identifier for a given object. The encoding may not
-    be reversable.
+    be reversible.
 
     .. invisible-code-block: python
 
@@ -106,13 +209,79 @@ def filter_id(language: Language,
 
 
 @template_language_filter(__name__)
+def filter_type(language: Language,
+                obj: typing.Any) -> str:
+    """
+    Tries to convert a Python object into a c++ typename.
+
+    Will raise a ValueError if the object provided does not (yet) have an available conversion in this function.
+
+    Currently supported types are string:
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_type
+
+    .. code-block:: python
+
+         # given
+        template = '{{ "Any" | type }}'
+
+        # then
+        rendered = "const char* const"
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_type, template, rendered, 'cpp')
+
+    int:
+
+    .. code-block:: python
+
+         # given
+        template = '{{ 123 | type }}'
+
+        # then
+        rendered = 'long long'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_type, template, rendered, 'cpp')
+
+    and bool:
+
+    .. code-block:: python
+
+         # given
+        template = '{{ True | type }}'
+
+        # then
+        rendered = 'bool'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_type, template, rendered, 'cpp')
+
+    """
+
+    if isinstance(obj, bool):
+        return "bool"
+    if isinstance(obj, int):
+        return "long long"
+    if isinstance(obj, str):
+        return "const char* const"
+
+    return filter_type_from_primitive(language, obj)
+
+
+@template_language_filter(__name__)
 def filter_open_namespace(language: Language,
                           full_namespace: str,
                           bracket_on_next_line: bool = True,
                           linesep: str = '\n') -> str:
     """
-    Emits c++ opening namspace syntax parsed from a pydsdl "full_namespace",
-    dot-seperated  value.
+    Emits c++ opening namespace syntax parsed from a pydsdl "full_namespace",
+    dot-separated  value.
 
     .. invisible-code-block: python
 
@@ -132,8 +301,7 @@ def filter_open_namespace(language: Language,
         rendered = '''namespace uavcan
         {
         namespace foo
-        {
-        '''
+        {'''
 
     .. invisible-code-block: python
 
@@ -145,17 +313,22 @@ def filter_open_namespace(language: Language,
         lctx = configurable_language_context_factory({'nunavut.lang.cpp': {'enable_stropping': True}}, 'cpp')
         jinja_filter_tester(filter_open_namespace, template, rendered, lctx, T=T)
 
-    :param str full_namespace: A dot-seperated namespace string.
+    :param str full_namespace: A dot-separated namespace string.
     :param bool bracket_on_next_line: If True (the default) then the opening
         brackets are placed on a newline after the namespace keyword.
-    :param str linesep: The line-seperator to use when emitting new lines.
+    :param str linesep: The line-separator to use when emitting new lines.
                         By default this is ``\\n``.
 
     :returns: C++ namespace declarations with opening brackets.
     """
 
     with io.StringIO() as content:
+        first = True
         for name in full_namespace.split('.'):
+            if first:
+                first = False
+            else:
+                content.write(linesep)
             content.write('namespace ')
             if language.enable_stropping:
                 content.write(filter_id(language, name))
@@ -166,7 +339,6 @@ def filter_open_namespace(language: Language,
             else:
                 content.write(' ')
             content.write('{')
-            content.write(linesep)
         return content.getvalue()
 
 
@@ -176,8 +348,8 @@ def filter_close_namespace(language: Language,
                            omit_comments: bool = False,
                            linesep: str = '\n') -> str:
     """
-    Emits c++ closing namspace syntax parsed from a pydsdl "full_namespace",
-    dot-seperated  value.
+    Emits c++ closing namespace syntax parsed from a pydsdl "full_namespace",
+    dot-separated  value.
 
     .. invisible-code-block: python
 
@@ -195,24 +367,29 @@ def filter_close_namespace(language: Language,
 
         # then
         rendered = '''} // namespace foo
-        } // namespace uavcan
-        '''
+        } // namespace uavcan'''
 
     .. invisible-code-block: python
 
         jinja_filter_tester(filter_close_namespace, template, rendered, 'cpp', T=T)
 
 
-    :param str full_namespace: A dot-seperated namespace string.
+    :param str full_namespace: A dot-separated namespace string.
     :param bool omit_comments: If True then the comments following the closing
                                bracket are omitted.
-    :param str linesep: The line-seperator to use when emitting new lines.
+    :param str linesep: The line-separator to use when emitting new lines.
                         By default this is ``\\n``
 
     :returns: C++ namespace declarations with opening brackets.
     """
     with io.StringIO() as content:
+        first = True
         for name in reversed(full_namespace.split('.')):
+            if first:
+                first = False
+            else:
+                content.write(linesep)
+
             content.write('}')
             if not omit_comments:
                 content.write(' // namespace ')
@@ -220,7 +397,6 @@ def filter_close_namespace(language: Language,
                     content.write(filter_id(language, name))
                 else:
                     content.write(name)
-            content.write(linesep)
         return content.getvalue()
 
 
@@ -345,11 +521,17 @@ def filter_declaration(language: Language,
     if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.VoidType):
         return filter_type_from_primitive(language, instance)
     elif isinstance(instance, pydsdl.VariableLengthArrayType):
-        return 'std::vector<{}>'.format(filter_declaration(language, instance.element_type))
+        variable_array_type = language.get_option('variable_array_type')
+
+        if not isinstance(variable_array_type, str):
+            raise RuntimeError('variable_array_type language option was missing or invalid.')
+        return variable_array_type.format(
+            TYPE=filter_declaration(language, instance.element_type),
+            MAX_SIZE=instance.capacity)
     elif isinstance(instance, pydsdl.ArrayType):
-        return 'std::array<{},{}>'.format(
-            filter_declaration(language, instance.element_type),
-            instance.capacity)
+        return DEFAULT_ARRAY_TYPE.format(
+            TYPE=filter_declaration(language, instance.element_type),
+            MAX_SIZE=instance.capacity)
     else:
         return filter_full_reference_name(language, instance)
 
@@ -421,7 +603,7 @@ def filter_definition_begin(language: Language, instance: pydsdl.CompositeType) 
 
     .. code-block:: python
 
-        # Finally, given a pydsdl.Servicetype "my_service_type":
+        # Finally, given a pydsdl.ServiceType "my_service_type":
         my_service_type.short_name = 'Foo'
         my_service_type.version.major = 1
         my_service_type.version.minor = 0
@@ -559,7 +741,7 @@ def filter_type_from_primitive(language: Language,
 
 def filter_to_namespace_qualifier(namespace_list: typing.List[str]) -> str:
     """
-    Converts a list of namespace names into a qualifer string. For example:
+    Converts a list of namespace names into a qualifier string. For example:
 
     .. invisible-code-block: python
 

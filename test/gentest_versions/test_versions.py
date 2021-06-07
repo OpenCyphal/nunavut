@@ -16,7 +16,7 @@ from nunavut.lang import LanguageContext
 
 
 include_pattern_map = (
-    ['cpp', 'VIRUSES_COVID_{major}_{minor}_INCLUDED'],
+    ['cpp', 'VIRUSES_COVID_{major}_{minor}_HPP_INCLUDED'],
     ['c', 'VIRUSES_COVID_{major}_{minor}_INCLUDED_'],  # Due to the limitations of C, collisions are likely, hence '_'
 )
 

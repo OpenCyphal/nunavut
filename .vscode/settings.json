@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": ".tox/local/bin/python3",
+    "python.pythonPath": ".tox/local/bin/python",
     "restructuredtext.sphinxBuildPath": "sphinx-build",
     "restructuredtext.confPath": "${workspaceFolder}",
     "restructuredtext.linter.extraArgs": [
@@ -34,7 +34,7 @@
     "cmake.sourceDirectory": "${workspaceFolder}/verification",
     "cmake.buildBeforeRun": true,
     "cmake.copyCompileCommands": "${workspaceFolder}/.vscode/compile_commands.json",
-    "cmake.generator": "Unix Makefiles",
+    "cmake.generator": "Ninja",
     "cmake.configureArgs": [
         "-DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE"
     ],
@@ -128,7 +128,13 @@
         "utility": "cpp",
         "valarray": "cpp",
         "vector": "cpp",
-        "serialization.h": "c"
+        "serialization.h": "c",
+        "struct__0_1.h": "c",
+        "memory_resource": "cpp",
+        "__functional_03": "cpp",
+        "any": "cpp",
+        "span": "cpp",
+        "variant": "cpp"
     },
     "python.linting.mypyArgs": [
         "--config-file=${workspaceFolder}/tox.ini"

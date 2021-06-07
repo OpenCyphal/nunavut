@@ -34,5 +34,46 @@
             "NUNAVUT_VERIFICATION_LANG": "c",
             "NUNAVUT_VERIFICATION_TARGET_PLATFORM": "native32"
         }
+    },
+    {
+        "name": "native-gcc-cpp-nocov",
+        "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/gcc-native.cmake",
+        "cmakeSettings": {
+            "NUNAVUT_VERIFICATION_LANG": "cpp",
+            "NUNAVUT_FLAGSET": "${workspaceFolder}/verification/cmake/compiler_flag_sets/native.cmake"
+        }
+    },
+    {
+        "name": "native-clang-cpp-nocov",
+        "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/clang-native.cmake",
+        "cmakeSettings": {
+            "NUNAVUT_VERIFICATION_LANG": "cpp",
+            "NUNAVUT_FLAGSET": "${workspaceFolder}/verification/cmake/compiler_flag_sets/native.cmake"
+        }
+    },
+    {
+        "name": "native-gcc-c-nocov",
+        "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/gcc-native.cmake",
+        "cmakeSettings": {
+            "NUNAVUT_VERIFICATION_LANG": "c",
+            "NUNAVUT_FLAGSET": "${workspaceFolder}/verification/cmake/compiler_flag_sets/native.cmake"
+        }
+    },
+    {
+        "name": "native-clang-c-nocov",
+        "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/clang-native.cmake",
+        "cmakeSettings": {
+            "NUNAVUT_VERIFICATION_LANG": "c",
+            "NUNAVUT_FLAGSET": "${workspaceFolder}/verification/cmake/compiler_flag_sets/native.cmake"
+        }
+    },
+    {
+        "name": "native32-gcc-c-nocov",
+        "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/gcc-native.cmake",
+        "cmakeSettings": {
+            "NUNAVUT_VERIFICATION_LANG": "c",
+            "NUNAVUT_VERIFICATION_TARGET_PLATFORM": "native32",
+            "NUNAVUT_FLAGSET": "${workspaceFolder}/verification/cmake/compiler_flag_sets/native.cmake"
+        }
     }
 ]

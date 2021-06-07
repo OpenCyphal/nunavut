@@ -1,0 +1,71 @@
+{#-
+ # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+-#}
+//
+// This is an AUTO-GENERATED UAVCAN DSDL data type implementation. Curious? See https://uavcan.org.
+// You shouldn't attempt to edit this file.
+//
+// Checking this file under version control is not recommended unless it is used as part of a high-SIL
+// safety-critical codebase. The typical usage scenario is to generate it as part of the build process.
+//
+// Generator:     nunavut-{{ nunavut.version }} (serialization was {{ 'not ' * nunavut.support.omit }}enabled)
+// Source file:   {{ T.source_file_path }}
+// Generated at:  {{ now_utc }} UTC
+// Is deprecated: {{ T.deprecated and 'yes' or 'no' }}
+// Fixed port-ID: {{ T.fixed_port_id }}
+// Full name:     {{ T.full_name }}
+// Type Version:  {{ T.version.major }}.{{ T.version.minor }}
+// Platform
+{%- for key, value in nunavut.platform_version.items() %}
+//     {{ key }}:  {{ value }}
+{%- endfor %}
+// Language Options
+{%- for key, value in options.items() %}
+//     {{ key }}:  {{ value }}
+{%- endfor -%}
+{%- if T.deprecated and options.std < 14 %}
+{#- Courtesy http://patorjk.com/software/taag/#p=display&f=Big&t=DEPRECATED #}
+{#- [[deprecated]] becomes available in c++14 #}
+//           _____  ______ _____  _____  ______ _____       _______ ______ _____
+//          |  __ `|  ____|  __ `|  __ `|  ____/ ____|   /`|__   __|  ____|  __ `
+//          | |  | | |__  | |__) | |__) | |__ | |       /  `  | |  | |__  | |  | |
+//          | |  | |  __| |  ___/|  _  /|  __|| |      / /` ` | |  |  __| | |  | |
+//          | |__| | |____| |    | | ` `| |___| |____ / ____ `| |  | |____| |__| |
+//          |_____/|______|_|    |_|  `_`______`_____/_/    `_`_|  |______|_____/
+//
+// WARNING: this data type is deprecated and is nearing the end of its life cycle. Seek replacement.
+{%- endif %}
+#ifndef {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_HPP_INCLUDED
+#define {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_HPP_INCLUDED
+{%- for n in T | includes %}
+{% if loop.first -%}
+
+{# Add newline before first include #}
+{% endif -%}
+#include {{ n }}
+{%- endfor %}
+
+{{T.full_namespace | open_namespace}}
+{%- if not nunavut.support.omit %}{% for key, value in options.items() %}
+{% if loop.first -%}
+// +--------------------------------------------------------------------------+
+// | LANGUAGE OPTION ASSERTIONS
+// |    These static assertions ensure that the header is being used with
+// | Nunavut C++ serialization support that is compatible with the language
+// | options in effect when that support code was generated.
+// +--------------------------------------------------------------------------+
+{% endif -%}
+static_assert( nunavut::support::options::{{ key | id }} == {{ value | ln.c.to_static_assertion_value }},
+              "{{ T.source_file_path }} "
+              "is trying to use a serialization library that was compiled with "
+              "different language options. This is dangerous and therefore not "
+              "allowed." );
+{%- endfor %}{% endif %}
+
+{% block object %}{% endblock %}
+
+{{T.full_namespace | close_namespace}}
+
+#endif // {{T.full_name | ln.c.macrofy}}_{{T.version.major}}_{{T.version.minor}}_HPP_INCLUDED
