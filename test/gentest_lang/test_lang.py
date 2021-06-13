@@ -352,6 +352,9 @@ def test_language_object() -> None:
     filters = language.get_filters()
     assert 'id' in filters
 
+    tests = language.get_tests()
+    assert 'zero_cost_primitive' in tests
+
     assert language.omit_serialization_support
 
 

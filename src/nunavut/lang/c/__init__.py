@@ -17,7 +17,8 @@ import typing
 import pydsdl
 
 from ...templates import (SupportsTemplateContext, template_context_filter,
-                          template_language_filter, template_language_list_filter)
+                          template_language_filter, template_language_list_filter,
+                          template_language_test)
 from .. import Language, _UniqueNameGenerator
 from .._common import IncludeGenerator
 
@@ -40,8 +41,53 @@ C_RESERVED_PATTERNS = frozenset(map(functools.partial(re.compile, flags=0), [
 
 class VariableNameEncoder:
     '''
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.c import VariableNameEncoder
+        from nunavut.lang.c import C_RESERVED_PATTERNS
+
     One-way transform from an arbitrary string of unicode characters into a valid
     C identifier (without the use of digraphs).
+
+    :param str stropping_prefix:  prefix used by the stropping operation. For example:
+
+        .. code-block:: python
+
+            encoder = VariableNameEncoder('_','','%Z')
+            assert '_foo' == encoder.strop('foo',
+                                            {'foo'},
+                                            C_RESERVED_PATTERNS)
+
+    :param str stropping_suffix:  prefix used by the stropping operation. For example:
+
+        .. code-block:: python
+
+            encoder = VariableNameEncoder('','_','%Z')
+            assert 'foo_' == encoder.strop('foo',
+                                            {'foo'},
+                                            C_RESERVED_PATTERNS)
+
+    :param str encoding_prefix: The encoding prefix is used to create unique escape sequences.
+        For example, using '%Z' as the encoding prefix yields the following result:
+
+        .. code-block:: python
+
+            encoder = VariableNameEncoder('_','_','%Z')
+            assert '%Z0061' == encoder.encode_character('a')
+
+    :raises RuntimeError: If the encoding prefix conflicts with patterns reserved by
+        the C language. For example:
+
+        .. code-block:: python
+
+            try:
+                VariableNameEncoder('_','_','__')
+                assert False
+            except RuntimeError:
+                # double underscore is reserved and cannot be used as a prefix.
+                pass
+
     '''
     _token_pattern = re.compile(r'(^\d{1})|( +)|[^a-zA-Z0-9_]')  # type: typing.Pattern
 
@@ -77,7 +123,7 @@ class VariableNameEncoder:
             return '_{}'.format(self.encode_character('_'))
         elif m.group(2) is not None:
             return '_{}'.format(m.group(2)[1].lower())
-        else:
+        else:  # pragma: no cover
             raise RuntimeError('unknown match')
 
     @staticmethod
@@ -374,11 +420,67 @@ def filter_type_from_primitive(language: Language,
                             'c',
                             unsigned_int_32_type=test_type)
 
+    .. code-block:: python
+
+        # Given
+        template = '{{ int_64_type | type_from_primitive }}'
+
+        # then
+        rendered = 'int64_t'
+
+
+    .. invisible-code-block: python
+
+        test_type = pydsdl.SignedIntegerType(64, pydsdl.PrimitiveType.CastMode.SATURATED)
+        jinja_filter_tester(filter_type_from_primitive,
+                            template,
+                            rendered,
+                            'c',
+                            int_64_type=test_type)
+
     :param str value: The dsdl primitive to transform.
 
     :returns: A valid C99 type name.
 
-    :raises TemplateRuntimeError: If the primitive cannot be represented as a standard C type.
+    :raises RuntimeError: If the primitive cannot be represented as a standard C type.
+
+        .. invisible-code-block: python
+
+            template = '{{ unsigned_int_32_type | type_from_primitive }}'
+
+            class UnknownType(pydsdl.IntegerType):
+                def __init__(self, bit_length):
+                    super().__init__(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+                    self._bit_length = bit_length
+
+                @property
+                def inclusive_value_range(self):
+                    raise NotImplementedError
+
+                def __str__(self):
+                    return 'test dummy'
+
+            try:
+                jinja_filter_tester(filter_type_from_primitive,
+                            template,
+                            'foo',
+                            'c',
+                            unsigned_int_32_type=UnknownType(32))
+                assert False
+            except RuntimeError:
+                pass
+
+            try:
+                jinja_filter_tester(filter_type_from_primitive,
+                                template,
+                                'foo',
+                                'c',
+                                unsigned_int_32_type=UnknownType(128))
+                assert False
+            except RuntimeError:
+                pass
+
+
     """
     return _CFit.get_best_fit(value.bit_length).to_c_type(value, language)
 
@@ -635,7 +737,7 @@ def filter_includes(language: Language,
 
     .. code-block:: python
 
-        # You can surpress std includes by setting use_standard_types to False under
+        # You can suppress std includes by setting use_standard_types to False under
         # nunavut.lang.c
         rendered = ''
 
@@ -659,16 +761,27 @@ def filter_includes(language: Language,
 
 def filter_to_static_assertion_value(obj: typing.Any) -> int:
     """
+    .. invisible-code-block: python
+
+        from nunavut.lang.c import filter_to_static_assertion_value
+
     Tries to convert a Python object into a value compatible with static comparisons in C. This allows stable comparison
     of static values in headers to promote consistency and version compatibility in generated code.
 
     Will raise a ValueError if the object provided does not (yet) have an available conversion in this function.
 
-    Currently supported types are string:
-
     .. invisible-code-block: python
 
-        from nunavut.lang.c import filter_to_static_assertion_value
+        try:
+            jinja_filter_tester(filter_to_static_assertion_value,
+                                '{{ 3.14 | to_static_assertion_value }}',
+                                'foo',
+                                'c')
+            assert False
+        except ValueError:
+            pass
+
+    Currently supported types are string:
 
     .. code-block:: python
 
@@ -732,7 +845,8 @@ def filter_constant_value(language: Language,
     .. invisible-code-block: python
 
         from nunavut.lang.c import filter_constant_value
-        from unittest.mock import MagicMock
+        from unittest.mock import MagicMock, PropertyMock
+        import fractions
         import pydsdl
 
         my_true_constant = MagicMock()
@@ -766,6 +880,39 @@ def filter_constant_value(language: Language,
         config_overrides = {'nunavut.lang.c': {'named_values': {'true': 'NUNAVUT_TRUE'}}}
         lctx = configurable_language_context_factory(config_overrides, 'c')
         jinja_filter_tester(filter_constant_value, template, rendered, lctx, my_true_constant=my_true_constant)
+
+
+    Floating point values are converted as fractions to ensure no python-specific transformations are applied:
+
+    .. code-block:: python
+
+         # given a float value using a fraction of 355/113
+        template = '{{ almost_pi | constant_value }}'
+
+        # ...the rendered value with include that fraction as a division statement.
+        rendered = '((float) (355.0 / 113.0))'
+
+    .. invisible-code-block: python
+
+        almost_pi = pydsdl.Rational(fractions.Fraction('355/113'))
+        almost_pi_constant = pydsdl.Constant(pydsdl.FloatType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED),
+                                            'almost_pi',
+                                             almost_pi)
+
+        jinja_filter_tester(filter_constant_value, template, rendered, 'c', almost_pi=almost_pi_constant)
+
+
+        template = '{{ three | constant_value }}'
+
+        # ...the rendered value with include that fraction as a division statement.
+        rendered = '((float) 3.0)'
+
+        three = pydsdl.Rational(fractions.Fraction('3.0'))
+        three_constant = pydsdl.Constant(pydsdl.FloatType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED),
+                                         'three',
+                                         three)
+
+        jinja_filter_tester(filter_constant_value, template, rendered, 'c', three=three_constant)
 
     """
     return filter_literal(language, constant.value.native_value, constant.data_type)
@@ -854,7 +1001,8 @@ def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
         from nunavut.lang.c import filter_to_standard_bit_length
         import pydsdl
 
-    .. code-block: python
+    .. code-block:: python
+
         # Given
         I = pydsdl.UnsignedIntegerType(7, pydsdl.PrimitiveType.CastMode.TRUNCATED)
 
@@ -872,18 +1020,15 @@ def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
     return int(_CFit.get_best_fit(t.bit_length).value)
 
 
-def filter_is_zero_cost_primitive(t: pydsdl.PrimitiveType) -> bool:
+@template_language_test(__name__)
+def is_zero_cost_primitive(language: Language, t: pydsdl.PrimitiveType) -> bool:
     """
-    Assuming that the target platform is:
+    Assuming that the target platform is IEEE754-conformant detects whether the native in-memory representation of a
+    value of the supplied primitive type is the same as its on-the-wire representation defined by the DSDL
+    Specification.
 
-    - little-endian
-    - IEEE754-conformant
-
-    ...detects whether the native in-memory representation of a value of the supplied primitive type is the same
-    as its on-the-wire representation defined by the DSDL Specification.
-
-    For instance, all conventional platforms (where stated assumptions hold) have compatible in-memory
-    representation of int8, int16, int32, int64, uint8, uint16, uint32, uint64, float32, float64.
+    For instance; all little-endian, IEEE754-conformant platforms have compatible in-memory representations of
+    int8, int16, int32, int64, uint8, uint16, uint32, uint64, float32, float64.
     Values of other primitive types typically require some transformations (e.g., float16).
 
     It follows that arrays, certain composite types, and some other entities composed of zero-cost composites
@@ -891,37 +1036,58 @@ def filter_is_zero_cost_primitive(t: pydsdl.PrimitiveType) -> bool:
 
     Raises a :class:`TypeError` if the argument is not a value of type :class:`pydsdl.PrimitiveType`.
 
-    This filter should actually be a Jinja test, but language support modules currently can only export filters,
-    not tests. This may change in a later release.
-
     .. invisible-code-block: python
 
-        from nunavut.lang.c import filter_is_zero_cost_primitive
+        from nunavut.lang.c import is_zero_cost_primitive
         import pydsdl
 
-    .. code-block: python
+    .. code-block:: python
+
         # Given
         i7  = pydsdl.SignedIntegerType(7, pydsdl.PrimitiveType.CastMode.SATURATED)
         u32 = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
         f16 = pydsdl.FloatType(16, pydsdl.PrimitiveType.CastMode.TRUNCATED)
         f32 = pydsdl.FloatType(32, pydsdl.PrimitiveType.CastMode.SATURATED)
+        bl = pydsdl.BooleanType(pydsdl.PrimitiveType.CastMode.SATURATED)
 
         # and
         template = (
-            '{{ i7  | is_zero_cost_primitive }} '
-            '{{ u32 | is_zero_cost_primitive }} '
-            '{{ f16 | is_zero_cost_primitive }} '
-            '{{ f32 | is_zero_cost_primitive }} '
+            '{{ i7  is zero_cost_primitive }} '
+            '{{ u32 is zero_cost_primitive }} '
+            '{{ f16 is zero_cost_primitive }} '
+            '{{ f32 is zero_cost_primitive }} '
+            '{{ bl is zero_cost_primitive }}'
         )
 
         # then
-        rendered = 'False True False True '
+        rendered = 'False True False True False'
 
     .. invisible-code-block: python
+        config_overrides = {'nunavut.lang.c': {'options': 'target_endianness = little' }}
+        lctx = configurable_language_context_factory(config_overrides, 'c')
+        jinja_filter_tester(is_zero_cost_primitive, template, rendered, lctx, i7=i7, u32=u32, f16=f16, f32=f32, bl=bl)
 
-        jinja_filter_tester(filter_is_zero_cost_primitive, template, rendered, 'c', i7=i7, u32=u32, f16=f16, f32=f32)
+        # ensure unknown types given to test raise a TypeError
+        try:
+            jinja_filter_tester(is_zero_cost_primitive, template, 'True', lctx, u32=int(32))
+            assert False
+        except TypeError:
+            pass
+
+        # big endian is never zero cost.
+        config_overrides = {'nunavut.lang.c': {'options': 'target_endianness = big' }}
+        lctx = configurable_language_context_factory(config_overrides, 'c')
+        jinja_filter_tester(is_zero_cost_primitive,
+                            template,
+                            'False False False False False',
+                            lctx, i7=i7, u32=u32, f16=f16, f32=f32, bl=bl)
 
     """
+    if language.get_option('target_endianness') != 'little':
+        # We must explicitly target a little endian platform to get
+        # zero cost ser/des.
+        return False
+
     if isinstance(t, pydsdl.IntegerType):
         out = t.standard_bit_length
         assert isinstance(out, bool)
@@ -934,3 +1100,35 @@ def filter_is_zero_cost_primitive(t: pydsdl.PrimitiveType) -> bool:
         return False
 
     raise TypeError('Zero-cost predicate is not defined on ' + type(t).__name__)
+
+
+@template_language_filter(__name__)
+def filter_is_zero_cost_primitive(language: Language, t: pydsdl.PrimitiveType) -> str:
+    """
+    Deprecated as a filter. Please use test version.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.c import filter_is_zero_cost_primitive, is_zero_cost_primitive
+        import pydsdl
+
+        u32 = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
+
+    .. code-block: python
+
+        # Instead of this
+        deprecated_template = '{{ u32  | is_zero_cost_primitive }}'
+
+        # do this
+        correct_template = '{{ u32 is zero_cost_primitive }}'
+
+    .. invisible-code-block: python
+
+        config_overrides = {'nunavut.lang.c': {'options': 'target_endianness = little' }}
+        lctx = configurable_language_context_factory(config_overrides, 'c')
+
+        jinja_filter_tester(filter_is_zero_cost_primitive, deprecated_template, 'True', lctx, u32=u32)
+        jinja_filter_tester(is_zero_cost_primitive, correct_template, 'True', lctx, u32=u32)
+
+    """
+    return str(is_zero_cost_primitive(language, t))

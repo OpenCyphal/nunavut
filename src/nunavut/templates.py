@@ -24,7 +24,7 @@ instead of its current value you will be insulated from this.
 
 LANGUAGE_FILTER_ATTRIBUTE_NAME = 'nv_languagefilter'
 """
-Nunavut-specific attribute for filters that take their :class:`nunavut.lang.Language`
+Nunavut-specific attribute for filters or tests that take their :class:`nunavut.lang.Language`
 as the first argument.
 """
 
@@ -116,5 +116,13 @@ class template_language_int_filter(GenericTemplateLanguageFilter[int]):
     """
     Decorator for marking template filters that take a :class:`nunavut.lang.Language` object
     as the first argument and return an integer.
+    """
+    pass
+
+
+class template_language_test(GenericTemplateLanguageFilter[bool]):
+    """
+    Decorator for marking template tests that take a :class:`nunavut.lang.Language` object
+    as the first argument.
     """
     pass
