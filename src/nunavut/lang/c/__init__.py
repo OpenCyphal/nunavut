@@ -23,7 +23,6 @@ from .. import Language, _UniqueNameGenerator
 from .._common import IncludeGenerator
 
 # Taken from https://en.cppreference.com/w/c/language/identifier
-# cspell: disable
 C_RESERVED_PATTERNS = frozenset(map(functools.partial(re.compile, flags=0), [
     r'^(is|to|str|mem|wcs|atomic_|cnd_|mtx_|thrd_|tss_|memory_|memory_order_)[a-z]',
     r'^u?int[a-zA-Z_0-9]*_t',
@@ -36,7 +35,6 @@ C_RESERVED_PATTERNS = frozenset(map(functools.partial(re.compile, flags=0), [
     r'^TIME_[A-Z]',
     r'^ATOMIC_[A-Z]'
 ]))
-# cspell: enable
 
 
 class VariableNameEncoder:
