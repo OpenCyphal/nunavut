@@ -1,4 +1,33 @@
-{% macro generate_sidebar_view(T) %}
+{% macro generate_sidebar_view(t) %}
+<p class="text-nowrap">
+    <a
+          data-bs-toggle="collapse"
+          data-target="#{{ t.full_name.replace(".", "_") }}_sidebar"
+          onclick="toggleCollapse(event)"
+          role="button"
+          aria-expanded="false"
+          aria-controls="{{ t.full_name.replace(".", "_") }}_sidebar"
+    >+</a>
+    <a href="#{{ t.full_name.replace(".", "_") }}" class="text-decoration-none fst-italic">{{ t.full_name }}</a>
+</p>
+<div class="collapse" id="{{ t.full_name.replace(".", "_") }}_sidebar" style="padding-left: 1rem; border-left: 1px solid #AAA;">
+    {% if t | namespace_doc %}
+    <pre>{{ t | namespace_doc }}</pre>
+    {% endif %}
+    {% for type, _ in t.get_nested_types() %}
+    {% if type.short_name != "_" %}
+    {% set type_tag_id = type | tag_id %}
+    <p class="{{ 'deprecated d-none' if type | is_deprecated else '' }}">
+    <a id="{{ type_tag_id }}_sidebar" href="#{{ type_tag_id }}" class="text-decoration-none">
+    {{ type.full_name }} (v{{type.version[0]}}.{{type.version[1]}})
+    </a>
+    </p>
+    {% endif %}
+    {% endfor %}
+    {% for type in t.get_nested_namespaces() %}
+    {{ generate_sidebar_view(type) }}
+    {% endfor %}
+</div>
 {% endmacro %}
 
 <aside>
@@ -30,7 +59,7 @@
         </div>
     </div>
     <hr>
-    <div>
+    <div id="sidebar" style="overflow-y: auto; max-height: 60vh;">
         {{ generate_sidebar_view(T) }}
     </div>
 </aside>

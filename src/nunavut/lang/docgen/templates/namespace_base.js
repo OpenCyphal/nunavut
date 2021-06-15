@@ -17,7 +17,7 @@ function showCollapse(collapse) {
   }
 }
 
-function toggleCollapse(e) {
+function toggleCollapse(e, type_tag) {
   let collapse = document.querySelector(e.target.dataset.target);
   console.log(collapse, e)
   if (collapse.classList.contains("show")) {
@@ -33,8 +33,17 @@ function toggleCollapse(e) {
     showCollapse(collapse);
     e.target.innerText = "-";
   }
+
+  scrollSidebar(type_tag);
 }
 
 function linkFromCollapse(collapse) {
   return collapse.previousSibling.previousSibling.querySelector("a");
+}
+
+function scrollSidebar(type) {
+  let el = document.getElementById(`${type}_sidebar`);
+  console.log("scroll sidebar", el);
+  showCollapse(document.getElementById(`${type}_sidebar`));
+  el.scrollIntoView();
 }
