@@ -32,7 +32,7 @@
 
 <aside>
     <div>
-        <input class="form-control" type="search" placeholder="Search types..." aria-label="Search Types">
+        <input id="search" class="form-control" type="search" placeholder="Search types..." aria-label="Search Types">
         <div class="row py-4">
             <div class="col-sm">
                 <div class="form-check">
@@ -99,4 +99,8 @@
             }
         }
     });
+
+    document.getElementById("search").addEventListener("input", function(e) {
+        filterNamespaces(e);
+    })
 </script>

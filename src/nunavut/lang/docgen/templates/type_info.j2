@@ -35,7 +35,7 @@
 {{ t | display_type }} {{ attr_name }}
 {% endif %}
 </p>
-<div class="collapse" id="{{ type_tag_id }}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
+<div class="collapse type {{ 'nested' if nested else '' }}" id="{{ type_tag_id }}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
     {% if t | is_array %}
     {% if t.element_type | is_composite %}
     {{ generate_type_info(t.element_type, "", True) }}

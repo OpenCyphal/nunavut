@@ -12,7 +12,7 @@
       >+</a>
 {{ t.full_name }}
 </p>
-<div class="collapse" id="{{ t.full_name.replace(".", "_") }}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
+<div class="collapse namespace" id="{{ t.full_name.replace(".", "_") }}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
     {% if t | namespace_doc %}
     <pre>{{ t | namespace_doc }}</pre>
     {% endif %}
