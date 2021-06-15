@@ -52,9 +52,14 @@ function scrollSidebar(type) {
 
   if (el.nodeName === "div") {
     showCollapse(el);
-    linkFromCollapse(el).scrollIntoView();
+    linkFromCollapse(el).scrollIntoView({
+      behavior: "smooth",
+      inline: "start"
+    });
   } else {
     showCollapse(el.parentNode.parentNode);
-    el.scrollIntoView();
+    el.scrollIntoView({
+      behavior: "smooth"
+    });
   }
 }
