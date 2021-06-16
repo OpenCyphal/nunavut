@@ -287,7 +287,7 @@
     offset_bits += {{ t.capacity }}UL * 8U;
 
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
-{% elif t.element_type is PrimitiveType and LITTLE_ENDIAN and t.element_type is zero_cost_primitive %}
+{% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
     // Saturation code not emitted -- assume the native representation is conformant.
     {% if t.element_type is FloatType %}
     static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
@@ -364,7 +364,7 @@
     offset_bits += {{ reference }}.count * 8U;
 
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
-{% elif t.element_type is PrimitiveType and LITTLE_ENDIAN and t.element_type is zero_cost_primitive %}
+{% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
     // Saturation code not emitted -- assume the native representation is conformant.
     {% if t.element_type is FloatType %}
     static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");

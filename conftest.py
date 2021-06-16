@@ -81,6 +81,10 @@ class GenTestPaths:
         print('Paths for test "{}" under dir {}'.format(self.test_name, self.test_dir))
         print('(root directory: {})'.format(self.root_dir))
 
+    def test_path_finalizer(self) -> None:
+        if not self._keep_temp and self._out_dir is not None:
+            self._out_dir.cleanup()
+
     @property
     def out_dir(self) -> pathlib.Path:
         """
@@ -135,8 +139,10 @@ class GenTestPaths:
 
 
 @pytest.fixture(scope='function')
-def gen_paths(request):  # type: ignore
-    return GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
+def gen_paths(request: pytest.FixtureRequest):  # type: ignore
+    g = GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
+    request.addfinalizer(g.test_path_finalizer)
+    return g
 
 
 def pytest_addoption(parser):  # type: ignore
