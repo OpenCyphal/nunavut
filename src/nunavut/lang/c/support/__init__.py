@@ -4,7 +4,7 @@
 # This software is distributed under the terms of the MIT License.
 #
 """
-Contains supporting C++ headers to distribute with generated types.
+Contains supporting C headers to distribute with generated types.
 """
 import pathlib
 import typing

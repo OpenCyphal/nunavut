@@ -157,12 +157,12 @@
     offset_bits += {{ t.capacity }}UL;
 
 {# SPECIAL CASE: BYTES-LIKE ARRAY #}
-{% elif t.element_type is PrimitiveType and t.element_type.bit_length == 8 and t.element_type|is_zero_cost_primitive %}
+{% elif t.element_type is PrimitiveType and t.element_type.bit_length == 8 and t.element_type is zero_cost_primitive %}
     nunavutGetBits(&{{ reference }}[0], &buffer[0], capacity_bytes, offset_bits, {{ t.capacity }}UL * 8U);
     offset_bits += {{ t.capacity }}UL * 8U;
 
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
-{% elif t.element_type is PrimitiveType and LITTLE_ENDIAN and t.element_type|is_zero_cost_primitive %}
+{% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
     {% if t.element_type is FloatType %}
     static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
         {% if t.element_type.bit_length > 32 %}
@@ -215,12 +215,12 @@
     offset_bits += {{ reference }}.count;
 
 {# SPECIAL CASE: BYTES-LIKE ARRAY #}
-{% elif t.element_type is PrimitiveType and t.element_type.bit_length == 8 and t.element_type|is_zero_cost_primitive %}
+{% elif t.element_type is PrimitiveType and t.element_type.bit_length == 8 and t.element_type is zero_cost_primitive %}
     nunavutGetBits(&{{ reference }}.elements[0], &buffer[0], capacity_bytes, offset_bits, {{ reference }}.count * 8U);
     offset_bits += {{ reference }}.count * 8U;
 
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
-{% elif t.element_type is PrimitiveType and LITTLE_ENDIAN and t.element_type|is_zero_cost_primitive %}
+{% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
     {% if t.element_type is FloatType %}
     static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
         {% if t.element_type.bit_length > 32 %}

@@ -47,10 +47,10 @@ def run_nnvg(request):  # type: ignore
             this_env.update(env)
         try:
             return subprocess.run(coverage_args + args,
-                                check=check_result,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                env=this_env)
+                                  check=check_result,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE,
+                                  env=this_env)
         except subprocess.CalledProcessError as e:
             if raise_called_process_error:
                 raise e
@@ -80,6 +80,10 @@ class GenTestPaths:
         self._dsdl_dir = None  # type: typing.Optional[pathlib.Path]
         print('Paths for test "{}" under dir {}'.format(self.test_name, self.test_dir))
         print('(root directory: {})'.format(self.root_dir))
+
+    def test_path_finalizer(self) -> None:
+        if not self._keep_temp and self._out_dir is not None:
+            self._out_dir.cleanup()
 
     @property
     def out_dir(self) -> pathlib.Path:
@@ -117,7 +121,7 @@ class GenTestPaths:
                     # of the type we're looking for.
                 elif found_outfile is not None:
                     raise RuntimeError('Type {} had more than one version for this test but no type version argument was'
-                                   ' provided.'.format(typename))
+                                       ' provided.'.format(typename))
                 else:
                     found_outfile = str(outfile)
 
@@ -136,7 +140,9 @@ class GenTestPaths:
 
 @pytest.fixture(scope='function')
 def gen_paths(request):  # type: ignore
-    return GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
+    g = GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
+    request.addfinalizer(g.test_path_finalizer)
+    return g
 
 
 def pytest_addoption(parser):  # type: ignore
@@ -167,7 +173,7 @@ class _UniqueNameEvaluator:
 def unique_name_evaluator(request):  # type: ignore
     """
     Class that defined ``assert_is_expected_and_unique`` allowing assertion that a set of values
-    in a single test adhere to a provided pattern and are unique values (comparted to other values
+    in a single test adhere to a provided pattern and are unique values (compared to other values
     provided to this method).
 
     .. code-block:: python
@@ -267,7 +273,7 @@ def configurable_language_context_factory(request):  # type: ignore
 @pytest.fixture
 def jinja_filter_tester(request):  # type: ignore
     """
-    Use to create fluent but testable documentation for Jinja filters.
+    Use to create fluent but testable documentation for Jinja filters and tests
 
     Example:
 
@@ -298,13 +304,37 @@ def jinja_filter_tester(request):  # type: ignore
 
             jinja_filter_tester(filter_dummy, template, rendered, lctx, I=I)
     """
-    def _make_filter_test_template(filter_or_list: typing.Union[typing.Callable, typing.List[typing.Callable]],
+    def _make_filter_test_template(filter_or_test_or_list_of_either:
+                                   typing.Union[typing.Callable, typing.List[typing.Callable]],
                                    body: str,
                                    expected: str,
-                                   target_language_or_language_context: typing.Union[typing.Optional[str], LanguageContext],
+                                   target_language_or_language_context:
+                                   typing.Union[typing.Optional[str], LanguageContext],
                                    **globals: typing.Optional[typing.Dict[str, typing.Any]]) -> str:
         from nunavut.jinja import CodeGenEnvironment
         e = CodeGenEnvironment(loader=DictLoader({'test': body}))
+
+        def _add(name: str,
+                 filter_or_test: typing.Callable,
+                 collection: typing.Dict) -> None:
+            if hasattr(filter_or_test, ENVIRONMENT_FILTER_ATTRIBUTE_NAME) and \
+                    getattr(filter_or_test, ENVIRONMENT_FILTER_ATTRIBUTE_NAME):
+                collection[name] = functools.partial(filter_or_test, e)
+            else:
+                collection[name] = filter_or_test
+
+            if hasattr(filter_or_test, CONTEXT_FILTER_ATTRIBUTE_NAME) and \
+                    getattr(filter_or_test, CONTEXT_FILTER_ATTRIBUTE_NAME):
+                context = MagicMock()
+                collection[name] = functools.partial(filter_or_test, context)
+            else:
+                collection[name] = filter_or_test
+
+            if hasattr(filter_or_test, LANGUAGE_FILTER_ATTRIBUTE_NAME):
+                language_name = getattr(filter_or_test, LANGUAGE_FILTER_ATTRIBUTE_NAME)
+                collection[name] = functools.partial(filter_or_test, lctx.get_language(language_name))
+            else:
+                collection[name] = filter_or_test
 
         if globals is not None:
             e.globals.update(globals)
@@ -314,26 +344,15 @@ def jinja_filter_tester(request):  # type: ignore
         else:
             lctx = LanguageContext(target_language_or_language_context)
 
-        filters = (filter_or_list if isinstance(filter_or_list, list) else [filter_or_list])
-        for filter in filters:
-            filter_name = filter.__name__[7:]
-            if hasattr(filter, ENVIRONMENT_FILTER_ATTRIBUTE_NAME) and \
-                    getattr(filter, ENVIRONMENT_FILTER_ATTRIBUTE_NAME):
-                e.filters[filter_name] = functools.partial(filter, e)
+        filters_or_tests = (filter_or_test_or_list_of_either if isinstance(
+            filter_or_test_or_list_of_either, list) else [filter_or_test_or_list_of_either])
+        for filter_or_test in filters_or_tests:
+            if filter_or_test.__name__.startswith('filter_'):
+                _add(filter_or_test.__name__[7:], filter_or_test, e.filters)
+            elif filter_or_test.__name__.startswith('is_'):
+                _add(filter_or_test.__name__[3:], filter_or_test, e.tests)
             else:
-                e.filters[filter_name] = filter
-
-            if hasattr(filter, CONTEXT_FILTER_ATTRIBUTE_NAME) and getattr(filter, CONTEXT_FILTER_ATTRIBUTE_NAME):
-                context = MagicMock()
-                e.filters[filter_name] = functools.partial(filter, context)
-            else:
-                e.filters[filter_name] = filter
-
-            if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
-                language_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
-                e.filters[filter_name] = functools.partial(filter, lctx.get_language(language_name))
-            else:
-                e.filters[filter_name] = filter
+                raise RuntimeError('unknown filter or test type {} found in inputs.'.format(filter_or_test.__name__))
 
         target_language_resolved = lctx.get_target_language()
         if target_language_resolved is not None:

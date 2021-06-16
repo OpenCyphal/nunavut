@@ -60,17 +60,28 @@ class Language:
         return [r.strip() for r in value.split('\n')]
 
     @classmethod
-    def _find_filters_for_language(cls, language_name: str) -> typing.Mapping[str, typing.Callable]:
-        filter_map = dict()  # type: typing.Dict[str, typing.Callable]
+    def _find_callable_for_language(cls, language_name: str, callable_name_prefix: str) -> \
+            typing.Mapping[str, typing.Callable]:
+        callable_map = dict()  # type: typing.Dict[str, typing.Callable]
         lang_module = importlib.import_module('nunavut.lang.{}'.format(language_name))
-        filters = inspect.getmembers(lang_module, inspect.isfunction)
-        for function_tuple in filters:
+        callables = inspect.getmembers(lang_module, inspect.isfunction)
+        callable_name_prefix_len = len(callable_name_prefix)
+        for function_tuple in callables:
             function_name = function_tuple[0]
-            if len(function_name) > 7 and function_name[0:7] == "filter_":
-                filter_map[function_name[7:]] = function_tuple[1]
-                logging.debug("Adding filter {} for language {}".format(function_name[7:],
-                                                                        language_name))
-        return filter_map
+            if len(function_name) > callable_name_prefix_len and \
+                    function_name[0:callable_name_prefix_len] == callable_name_prefix:
+                callable_map[function_name[callable_name_prefix_len:]] = function_tuple[1]
+                logging.debug("Found callable {} for language {}".format(function_name[callable_name_prefix_len:],
+                                                                         language_name))
+        return callable_map
+
+    @classmethod
+    def _find_filters_for_language(cls, language_name: str) -> typing.Mapping[str, typing.Callable]:
+        return cls._find_callable_for_language(language_name, 'filter_')
+
+    @classmethod
+    def _find_tests_for_language(cls, language_name: str) -> typing.Mapping[str, typing.Callable]:
+        return cls._find_callable_for_language(language_name, 'is_')
 
     @classmethod
     def get_language_config_parser(cls) -> configparser.ConfigParser:
@@ -91,6 +102,7 @@ class Language:
         self._language_name = language_name
         self._section = 'nunavut.lang.{}'.format(language_name)
         self._filters = self._find_filters_for_language(language_name)
+        self._tests = self._find_tests_for_language(language_name)
         self._config = config
         self._omit_serialization_support = omit_serialization_support
         option_config = self._config.getdict(self._section, 'options', fallback=None)  # type: ignore
@@ -380,6 +392,15 @@ class Language:
         :returns: A mapping of filter names to filter functions.
         """
         return self._filters
+
+    def get_tests(self) -> typing.Mapping[str, typing.Callable]:
+        """
+        Inspect the language module for functions with a name starting with "is\\_" and return
+        a map of test names to the test callable.
+
+        :returns: A mapping of test names to test functions.
+        """
+        return self._tests
 
     def get_globals(self) -> typing.Mapping[str, typing.Any]:
         """

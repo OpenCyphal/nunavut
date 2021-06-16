@@ -310,9 +310,17 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
     def language_context(self) -> nunavut.lang.LanguageContext:
         return self._namespace.get_language_context()
 
-    def add_filter_to_environment(self, filter_name: str,
+    def add_filter_to_environment(self,
+                                  filter_name: str,
                                   filter: typing.Callable[..., str],
                                   filter_namespace: typing.Optional[str] = None) -> None:
+        """
+        Add a jinja filter to this environment.
+        :param str filter_name: The name of the filter to use in a template.
+        :param typing.Callable[..., str] filter: The filter method.
+        :param typing.Optional[str] filter_namespace: If provided the namespace to prefix to the filter name. If not \
+            provided the filter_name is added to the global namespace.
+        """
         if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
             language_name_or_module_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
             filter_language = self.language_context.get_language(language_name_or_module_name)
@@ -323,6 +331,28 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
             self._env.filters[filter_name] = resolved_filter
         else:
             self._env.filters['ln.{}.{}'.format(filter_namespace, filter_name)] = resolved_filter
+
+    def add_test_to_environment(self,
+                                test_name: str,
+                                test: typing.Callable[..., bool],
+                                test_namespace: typing.Optional[str] = None) -> None:
+        """
+        Add a jinja test to this environment.
+        :param str test_name: The name of the test to use in a template.
+        :param typing.Callable[..., bool] test: The test method.
+        :param typing.Optional[str] test_namespace: If provided the namespace to prefix to the test name. If not \
+                                                    provided the test_name is added to the global namespace.
+        """
+        if hasattr(test, LANGUAGE_FILTER_ATTRIBUTE_NAME):
+            language_name_or_module_name = getattr(test, LANGUAGE_FILTER_ATTRIBUTE_NAME)
+            test_language = self.language_context.get_language(language_name_or_module_name)
+            resolved_test = functools.partial(test, test_language)  # type: typing.Callable[..., bool]
+        else:
+            resolved_test = test
+        if test_namespace is None:
+            self._env.tests[test_name] = resolved_test
+        else:
+            self._env.tests['ln.{}.{}'.format(test_namespace, test_name)] = resolved_test
 
     # +-----------------------------------------------------------------------+
     # | PROTECTED
@@ -436,17 +466,28 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
         return platform_version
 
     def _add_language_support(self) -> None:
+
+        def _add_support_from_language(adder: typing.Callable[[str, typing.Callable, typing.Optional[str]], None],
+                                       items: typing.AbstractSet[typing.Tuple[str, typing.Callable]],
+                                       namespace: typing.Optional[str] = None) -> None:
+            for name, method in items:
+                adder(name, method, namespace)
+
         target_language = self.language_context.get_target_language()
         if target_language is not None:
-            for filter_name, filter in target_language.get_filters().items():
-                self.add_filter_to_environment(filter_name, filter)
+            _add_support_from_language(self.add_filter_to_environment, target_language.get_filters().items())
+            _add_support_from_language(self.add_test_to_environment, target_language.get_tests().items())
             self._env.globals.update(target_language.get_globals())
             self._env.globals['options'].update(target_language.get_options())
 
         ln_globals = self._env.globals['ln']
         for supported_language in self.language_context.get_supported_languages().values():
-            for filter_name, filter in supported_language.get_filters().items():
-                self.add_filter_to_environment(filter_name, filter, supported_language.name)
+            _add_support_from_language(self.add_filter_to_environment,
+                                       supported_language.get_filters().items(),
+                                       supported_language.name)
+            _add_support_from_language(self.add_test_to_environment,
+                                       supported_language.get_tests().items(),
+                                       supported_language.name)
             if supported_language.name not in ln_globals:
                 setattr(ln_globals,
                         supported_language.name,

@@ -259,7 +259,10 @@ C Filters
    :noindex:
 .. autofunction:: nunavut.lang.c.filter_to_standard_bit_length
    :noindex:
-.. autofunction:: nunavut.lang.c.filter_is_zero_cost_primitive
+
+C Tests
+-------------------------------------------------
+.. autofunction:: nunavut.lang.c.is_zero_cost_primitive
    :noindex:
 
 C++ Filters
