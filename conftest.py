@@ -139,7 +139,7 @@ class GenTestPaths:
 
 
 @pytest.fixture(scope='function')
-def gen_paths(request: pytest.FixtureRequest):  # type: ignore
+def gen_paths(request):  # type: ignore
     g = GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
     request.addfinalizer(g.test_path_finalizer)
     return g
@@ -173,7 +173,7 @@ class _UniqueNameEvaluator:
 def unique_name_evaluator(request):  # type: ignore
     """
     Class that defined ``assert_is_expected_and_unique`` allowing assertion that a set of values
-    in a single test adhere to a provided pattern and are unique values (comparted to other values
+    in a single test adhere to a provided pattern and are unique values (compared to other values
     provided to this method).
 
     .. code-block:: python
