@@ -224,7 +224,10 @@ class Language:
         If True then generators should not include serialization routines, types,
         or support libraries for this language.
         """
-        return self._omit_serialization_support
+        return self.get_option(
+            'omit_serialization_support',
+            self._omit_serialization_support
+        )
 
     @property
     def support_files(self) -> typing.Generator[pathlib.Path, None, None]:

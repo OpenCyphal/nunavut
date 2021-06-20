@@ -17,8 +17,13 @@ import textwrap
 import typing
 
 
-def _should_generate_support(args: argparse.Namespace) -> bool:
-    if args.generate_support == 'as-needed':
+def _should_generate_support(
+    args: argparse.Namespace,
+    language_context: 'nunavut.lang.LanguageContext'
+) -> bool:
+    if language_context.get_target_language().omit_serialization_support:
+        return False
+    elif args.generate_support == 'as-needed':
         return (args.omit_serialization_support is None or not args.omit_serialization_support)
     else:
         return bool(args.generate_support == 'always' or args.generate_support == 'only')
@@ -153,7 +158,7 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
                 sys.stdout.write(str(output_path))
                 sys.stdout.write(';')
 
-        if _should_generate_support(args):
+        if _should_generate_support(args, language_context):
             for output_path in support_generator.generate_all(is_dryrun=True):
                 sys.stdout.write(str(output_path))
                 sys.stdout.write(';')
@@ -164,7 +169,7 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
             for input_path in generator.get_templates():
                 sys.stdout.write(str(input_path.resolve()))
                 sys.stdout.write(';')
-        if _should_generate_support(args):
+        if _should_generate_support(args, language_context):
             for input_path in support_generator.get_templates():
                 sys.stdout.write(str(input_path.resolve()))
                 sys.stdout.write(';')
@@ -179,7 +184,7 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
                     sys.stdout.write(';')
         return 0
 
-    if _should_generate_support(args):
+    if _should_generate_support(args, language_context):
         support_generator.generate_all(is_dryrun=args.dry_run,
                                        allow_overwrite=not args.no_overwrite)
 
@@ -188,13 +193,13 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
                                allow_overwrite=not args.no_overwrite)
 
     # If docgen selected, warn about linked namespaces
-    if len(extra_includes) > 0:
-        print("""
-W: Other lookup namespaces are linked in these generated docs.
-If you do not generate docs for these other namespaces as well, links to external
-data types could be broken (expansion will still work).
-
-""")
+    if args.target_language == 'docgen':
+        if len(extra_includes) > 0:
+            print(textwrap.dedent("""
+                W: Other lookup namespaces are linked in these generated docs.
+                If you do not generate docs for these other namespaces as well, links to external
+                data types could be broken (expansion will still work).
+            """).lstrip())
 
     return 0
 
