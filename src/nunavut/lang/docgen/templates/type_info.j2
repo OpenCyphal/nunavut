@@ -3,12 +3,12 @@
 {% if nested %}
 {% set type_tag_id = type_tag_id | add_uuid %}
 {% endif %}
-<p class="fw-bold {{ 'deprecated d-none' if t | is_deprecated else '' }}" style="{{ 'color: gray'  if t | is_deprecated else '' }}" data-toggle="tooltip" data-placement="top" title="{{ t | tooltip }}">
+<p class="fw-bold {{ 'deprecated d-none' if t | is_deprecated else '' }}" style="{{ 'color: gray'  if t | is_deprecated else '' }}">
 <a
       data-bs-toggle="collapse"
-      href="javascript:void";
+      href="javascript:void"
       data-target="#{{ type_tag_id }}"
-      onclick="toggleCollapse(event, '{{ type_tag_id}}')"
+      onclick="toggleCollapse(event, '{{ type_tag_id }}')"
       role="button"
       aria-expanded="false"
       aria-controls="{{ type_tag_id }}"

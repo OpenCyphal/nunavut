@@ -10,37 +10,38 @@
 
 import string
 import random
-import enum
-import functools
-import fractions
-import re
 import typing
 
 import pydsdl
 
-from ...templates import (template_language_filter, template_language_list_filter)
-from .. import Language, _UniqueNameGenerator
-from .._common import IncludeGenerator
+from ...templates import template_language_filter
+from .. import Language
+
 
 @template_language_filter(__name__)
 def filter_is_composite(language: Language, instance: typing.Any) -> bool:
     return isinstance(instance, pydsdl.CompositeType)
 
+
 @template_language_filter(__name__)
 def filter_is_array(language: Language, instance: typing.Any) -> bool:
     return isinstance(instance, pydsdl.ArrayType)
+
 
 @template_language_filter(__name__)
 def filter_is_service(language: Language, instance: typing.Any) -> bool:
     return isinstance(instance, pydsdl.ServiceType)
 
+
 @template_language_filter(__name__)
 def filter_is_service_req(language: Language, instance: typing.Any) -> bool:
     return instance.has_parent_service and instance.full_name.split(".")[-1] == "Request"
 
+
 @template_language_filter(__name__)
 def filter_is_field(language: Language, instance: typing.Any) -> bool:
     return isinstance(instance, pydsdl.Field)
+
 
 @template_language_filter(__name__)
 def filter_extent(language: Language, instance: typing.Any) -> str:
@@ -49,6 +50,7 @@ def filter_extent(language: Language, instance: typing.Any) -> str:
     except TypeError:
         print(instance)
         return "unknown"
+
 
 @template_language_filter(__name__)
 def filter_tag_id(language: Language, instance: typing.Any) -> str:
@@ -64,9 +66,11 @@ def filter_url_from_type(language: Language, instance: typing.Any) -> str:
     tag_id = f"{instance.full_name.replace('.', '_')}_{instance.version[0]}_{instance.version[1]}"
     return f"../{root_ns}/Namespace.html#{tag_id}"
 
+
 @template_language_filter(__name__)
 def filter_add_uuid(language: Language, instance: typing.Any) -> str:
     return instance + ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
+
 
 @template_language_filter(__name__)
 def filter_get_nsdoctype(language: Language, instance: typing.Any) -> str:
@@ -75,9 +79,6 @@ def filter_get_nsdoctype(language: Language, instance: typing.Any) -> str:
             return dsdl_type
     return None
 
-@template_language_filter(__name__)
-def filter_tooltip(language: Language, instance: typing.Any) -> str:
-    pass
 
 @template_language_filter(__name__)
 def filter_namespace_doc(language: Language, instance: typing.Any) -> str:
@@ -85,6 +86,7 @@ def filter_namespace_doc(language: Language, instance: typing.Any) -> str:
         if t.short_name == "_":
             return t.doc
     return ""
+
 
 @template_language_filter(__name__)
 def filter_display_type(language: Language, instance: typing.Any) -> str:
@@ -112,6 +114,7 @@ def filter_display_type(language: Language, instance: typing.Any) -> str:
         return f"{is_saturated}{type_name}"
     else:
         return str(instance)
+
 
 @template_language_filter(__name__)
 def filter_is_deprecated(language: Language, instance: typing.Any) -> bool:

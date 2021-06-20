@@ -27,7 +27,6 @@ function showCollapse(collapse) {
 
 function toggleCollapse(e, type_tag) {
   let collapse = document.querySelector(e.target.dataset.target);
-  console.log(collapse, e)
   if (collapse.classList.contains("show")) {
     // collapse
     for (let el of collapse.querySelectorAll(".collapse.show")) {
@@ -41,7 +40,6 @@ function toggleCollapse(e, type_tag) {
     e.target.innerText = "-";
   }
 
-  console.log(type_tag)
   scrollSidebar(type_tag);
 }
 
@@ -55,7 +53,6 @@ function linkFromCollapse(collapse) {
 
 function scrollSidebar(type) {
   let el = document.getElementById(`${type}_sidebar`);
-  console.log("scroll sidebar", el);
 
   if (el.nodeName === "DIV") {
     showCollapse(el);
