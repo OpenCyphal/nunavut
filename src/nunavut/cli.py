@@ -15,6 +15,7 @@ import pathlib
 import sys
 import textwrap
 import typing
+import nunavut.lang
 
 
 def _should_generate_support(
@@ -40,7 +41,6 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
     import pydsdl
     import nunavut
     import nunavut.jinja
-    import nunavut.lang
 
     def _build_ext_program_postprocessor(program: str, args: argparse.Namespace) \
             -> nunavut.postprocessors.FilePostProcessor:

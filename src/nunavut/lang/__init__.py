@@ -224,10 +224,10 @@ class Language:
         If True then generators should not include serialization routines, types,
         or support libraries for this language.
         """
-        return self.get_option(
+        return bool(self.get_option(
             'omit_serialization_support',
-            self._omit_serialization_support
-        )
+            str(self._omit_serialization_support)
+        ))
 
     @property
     def support_files(self) -> typing.Generator[pathlib.Path, None, None]:
@@ -497,6 +497,8 @@ class LanguageContext:
                     '{} support is only experimental, but experimental language support is not enabled'
                     .format(target_language)
                 )
+            if namespace_output_stem is None:
+                namespace_output_stem = self._target_language.namespace_output_stem
             if namespace_output_stem is not None:
                 self._config.set('nunavut.lang.{}'.format(target_language),
                                  'namespace_file_stem',
