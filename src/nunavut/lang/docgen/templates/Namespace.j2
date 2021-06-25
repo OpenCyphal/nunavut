@@ -5,6 +5,9 @@
     <head>
         <title>{{ T.full_name }}</title>
         <style>
+        {% include "assets/bootstrap.min.css" %}
+        </style>
+        <style>
         .row {
             display: flex;
             flex-direction: row;
@@ -24,11 +27,25 @@
             transition: background-color 200ms;
         }
 
+        body {
+            line-height: 1.2;
+            tab-size: 16;
+        }
+
+        :root {
+            --bs-font-monospace:
+                "Ubuntu Mono",
+                SFMono-Regular,
+                Menlo,
+                Monaco,
+                Consolas,
+                "Liberation Mono",
+                "Courier New",
+                monospace;
+        }
+
         </style>
         <!-- Bootstrap-->
-        <style>
-        {% include "assets/bootstrap.min.css" %}
-        </style>
         <script>
         {% include "assets/bootstrap.bundle.min.js" %}
         </script>
