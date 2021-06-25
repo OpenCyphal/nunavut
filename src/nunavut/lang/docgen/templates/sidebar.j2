@@ -41,6 +41,12 @@
                         Hide deprecated datatypes
                     </label>
                 </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showBitLength" checked>
+                    <label class="form-check-label" for="showBitLength">
+                        Show Max Bit Lengths
+                    </label>
+                </div>
             </div>
             <div class="col-sm">
                 <div class="form-check">
@@ -83,6 +89,18 @@
             }
         } else {
             for (let el of document.querySelectorAll(".extent")) {
+                el.classList.add("d-none");
+            }
+        }
+    });
+
+    document.getElementById("showBitLength").addEventListener("change", function(e) {
+        if (e.target.checked) {
+            for (let el of document.querySelectorAll(".bitlength")) {
+                el.classList.remove("d-none");
+            }
+        } else {
+            for (let el of document.querySelectorAll(".bitlength")) {
                 el.classList.add("d-none");
             }
         }

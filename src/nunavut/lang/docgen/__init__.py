@@ -56,6 +56,15 @@ def is_deprecated(language: Language, instance: typing.Any) -> bool:
 @template_language_filter(__name__)
 def filter_extent(language: Language, instance: typing.Any) -> str:
     try:
+        return instance.extent or 0
+    except TypeError:
+        print(instance)
+        return "unknown"
+
+
+@template_language_filter(__name__)
+def filter_max_bit_length(language: Language, instance: typing.Any) -> str:
+    try:
         return instance.bit_length_set.max or 0
     except TypeError:
         print(instance)

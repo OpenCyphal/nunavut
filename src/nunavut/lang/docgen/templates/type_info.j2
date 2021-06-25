@@ -20,11 +20,6 @@
 {% else %}
 {{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}}) {{ attr_name }}
 {% endif %}
-{% if not t is service %}
-<span class="extent" style="color: green">[extent {{ t | extent }} bytes]</span>
-{% else %}
-<span class="service" style="color: blue">[service]</span>
-{% endif %}
 {% if t.has_fixed_port_id %}
 <span class="portID" style="color: orange">[fixed port-ID {{ t.fixed_port_id }}]</span>
 {% endif %}
@@ -33,6 +28,18 @@
 {% endif %}
 {% else %}
 {{ t | display_type }} {{ attr_name }}
+{% endif %}
+{% if not t is service %}
+{% if t is composite %}
+<span class="extent" style="color: green">
+    [extent {{ t | extent / 8 }} bytes]
+</span>
+{% endif %}
+<span class="bitlength" style="color: green">
+    [max length {{ t | max_bit_length / 8 }} bytes]
+</span>
+{% else %}
+<span class="service" style="color: blue">[service]</span>
 {% endif %}
 </p>
 <div class="collapse type {{ 'nested' if nested else '' }}" id="{{ type_tag_id }}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
@@ -59,10 +66,14 @@
     <p class="fw-bold mb-0">
     {{ attr | display_type }}
     {% if attr is field %}
-    {% if attr.data_type | extent % 8 == 0 %}
-    <span style="color: green">[extent {{ attr.data_type | extent / 8 }} bytes]</span>
+    {% if attr.data_type | max_bit_length % 8 == 0 %}
+    <span class="bitlength" style="color: green">
+        [max length {{ attr.data_type | max_bit_length / 8 }} bytes]
+    </span>
     {% else %}
-    <span style="color: green">[extent {{ attr.data_type | extent }} bits]</span>
+    <span class="bitlength" style="color: green">
+        [max length {{ attr.data_type | max_bit_length }} bits]
+    </span>
     {% endif %}
     {% endif %}
     </p>
