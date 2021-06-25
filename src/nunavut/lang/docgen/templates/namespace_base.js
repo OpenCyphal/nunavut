@@ -97,7 +97,7 @@ function filterNamespaces(e) {
       } else {
         el.classList.remove("show");
         collapseOff(el);
-        if (!lonk.parentNode.classList.contains("deprecated")) {
+        if (!lonk.parentNode.classList.contains("deprecated") && !el.classList.contains("nested")) {
           lonk.parentNode.classList.add("d-none")
         }
       }
