@@ -69,11 +69,19 @@ function scrollSidebar(type) {
 }
 
 function filterNamespaces(e) {
+  console.log("yee", e.target.value)
   if (e.target.value === "") {
-    for (let el of document
-      .getElementById("namespaceinfo")
-      .querySelectorAll(".collapse.type")) {
-      collapseOff(el)
+    for (let el of document.getElementById("namespaceinfo").querySelectorAll(".collapse")) {
+        let lonk = linkFromCollapse(el);
+        if (!lonk.parentNode.classList.contains("deprecated")) {
+          lonk.parentNode.classList.remove("d-none");
+        }
+
+        if (el.classList.contains("type")) {
+          collapseOff(el);
+        } else {
+          collapseOn(el);
+        }
     }
   } else {
     for (let el of document.getElementById("namespaceinfo").querySelectorAll(".collapse")) {

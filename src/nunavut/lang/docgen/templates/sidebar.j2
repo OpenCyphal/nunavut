@@ -102,5 +102,10 @@
 
     document.getElementById("search").addEventListener("input", function(e) {
         filterNamespaces(e);
-    })
+    });
+
+    // Chrome-based browsers add a clear button - catch that event
+    document.getElementById("search").addEventListener("search", function(e) {
+        filterNamespaces(e);
+    });
 </script>
