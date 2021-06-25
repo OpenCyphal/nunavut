@@ -14,33 +14,43 @@ import typing
 
 import pydsdl
 
-from ...templates import template_language_filter
+from ...templates import template_language_filter, template_language_test
 from .. import Language
 
 
-@template_language_filter(__name__)
-def filter_is_composite(language: Language, instance: typing.Any) -> bool:
+@template_language_test(__name__)
+def is_composite(language: Language, instance: typing.Any) -> bool:
     return isinstance(instance, pydsdl.CompositeType)
 
 
-@template_language_filter(__name__)
-def filter_is_array(language: Language, instance: typing.Any) -> bool:
+@template_language_test(__name__)
+def is_array(language: Language, instance: typing.Any) -> bool:
     return isinstance(instance, pydsdl.ArrayType)
 
 
-@template_language_filter(__name__)
-def filter_is_service(language: Language, instance: typing.Any) -> bool:
+@template_language_test(__name__)
+def is_service(language: Language, instance: typing.Any) -> bool:
     return isinstance(instance, pydsdl.ServiceType)
 
 
-@template_language_filter(__name__)
-def filter_is_service_req(language: Language, instance: typing.Any) -> bool:
+@template_language_test(__name__)
+def is_service_req(language: Language, instance: typing.Any) -> bool:
     return instance.has_parent_service and instance.full_name.split(".")[-1] == "Request"
 
 
-@template_language_filter(__name__)
-def filter_is_field(language: Language, instance: typing.Any) -> bool:
+@template_language_test(__name__)
+def is_field(language: Language, instance: typing.Any) -> bool:
     return isinstance(instance, pydsdl.Field)
+
+
+@template_language_test(__name__)
+def is_deprecated(language: Language, instance: typing.Any) -> bool:
+    if isinstance(instance, pydsdl.CompositeType):
+        return instance.deprecated
+    elif isinstance(instance, pydsdl.ArrayType) and isinstance(instance.element_type, pydsdl.CompositeType):
+        return instance.element_type.deprecated
+    else:
+        return False
 
 
 @template_language_filter(__name__)
@@ -114,13 +124,3 @@ def filter_display_type(language: Language, instance: typing.Any) -> str:
         return f"{is_saturated}{type_name}"
     else:
         return str(instance)
-
-
-@template_language_filter(__name__)
-def filter_is_deprecated(language: Language, instance: typing.Any) -> bool:
-    if isinstance(instance, pydsdl.CompositeType):
-        return instance.deprecated
-    elif isinstance(instance, pydsdl.ArrayType) and isinstance(instance.element_type, pydsdl.CompositeType):
-        return instance.element_type.deprecated
-    else:
-        return False

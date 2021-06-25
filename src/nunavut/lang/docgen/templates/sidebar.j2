@@ -17,7 +17,7 @@
     {% for type, _ in t.get_nested_types() %}
     {% if type.short_name != "_" %}
     {% set type_tag_id = type | tag_id %}
-    <p class="{{ 'deprecated d-none' if type | is_deprecated else '' }}">
+    <p class="{{ 'deprecated d-none' if type is deprecated else '' }}">
     <a id="{{ type_tag_id }}_sidebar" href="#{{ type_tag_id }}" class="text-decoration-none">
     {{ type.full_name }} (v{{type.version[0]}}.{{type.version[1]}})
     </a>
