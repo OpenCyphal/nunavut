@@ -26,9 +26,13 @@
 {% if t is deprecated %}
 <span style="color: red">[deprecated]</span>
 {% endif %}
+{% if t is union %}
+<span style="color: blue">[union]</span>
+{% endif %}
 {% else %}
 {{ t | display_type }} {{ attr_name }}
 {% endif %}
+
 {% if not t is service %}
 {% if t is composite %}
 <span class="extent" style="color: green">
@@ -41,6 +45,7 @@
 {% else %}
 <span class="service" style="color: blue">[service]</span>
 {% endif %}
+
 </p>
 <div class="collapse type {{ 'nested' if nested else '' }}" id="{{ type_tag_id }}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
     {% if t is array %}

@@ -32,6 +32,10 @@ def is_array(language: Language, instance: typing.Any) -> bool:
 def is_service(language: Language, instance: typing.Any) -> bool:
     return isinstance(instance, pydsdl.ServiceType)
 
+@template_language_test(__name__)
+def is_union(language: Language, instance: typing.Any) -> bool:
+    return isinstance(instance, pydsdl.UnionType)
+
 
 @template_language_test(__name__)
 def is_service_req(language: Language, instance: typing.Any) -> bool:
