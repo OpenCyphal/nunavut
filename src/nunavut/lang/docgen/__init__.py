@@ -79,16 +79,26 @@ def filter_max_bit_length(language: Language, instance: typing.Any) -> str:
 @template_language_filter(__name__)
 def filter_tag_id(language: Language, instance: typing.Any) -> str:
     if isinstance(instance, pydsdl.ArrayType):
-        return f"{str(instance.element_type).replace('.', '_').replace(' ', '_')}_array"
+        return "{}_array".format(
+            str(instance.element_type).replace('.', '_').replace(' ', '_')
+        )
     else:
-        return f"{instance.full_name.replace('.', '_')}_{instance.version[0]}_{instance.version[1]}"
+        return "{}_{}_{}".format(
+            instance.full_name.replace('.', '_'),
+            instance.version[0],
+            instance.version[1]
+        )
 
 
 @template_language_filter(__name__)
 def filter_url_from_type(language: Language, instance: typing.Any) -> str:
     root_ns = instance.root_namespace
-    tag_id = f"{instance.full_name.replace('.', '_')}_{instance.version[0]}_{instance.version[1]}"
-    return f"../{root_ns}/Namespace.html#{tag_id}"
+    tag_id = "{}_{}_{}".format(
+        instance.full_name.replace('.', '_'),
+        instance.version[0],
+        instance.version[1]
+    )
+    return "../{}/Namespace.html#{}".format(root_ns, tag_id)
 
 
 @template_language_filter(__name__)
@@ -115,26 +125,31 @@ def filter_namespace_doc(language: Language, instance: typing.Any) -> str:
 @template_language_filter(__name__)
 def filter_display_type(language: Language, instance: typing.Any) -> str:
     if isinstance(instance, pydsdl.FixedLengthArrayType):
-        capacity = f'<span style="color: green">[{instance.capacity}]</span>'
+        capacity = '<span style="color: green">[{}]</span>'.format(instance.capacity)
         return filter_display_type(language, instance.element_type) + capacity
     elif isinstance(instance, pydsdl.VariableLengthArrayType):
-        capacity = f'<span style="color: green">[<={instance.capacity}]</span>'
+        capacity = '<span style="color: green">[<={}]</span>'.format(instance.capacity)
         return filter_display_type(language, instance.element_type) + capacity
     elif isinstance(instance, pydsdl.PaddingField):
-        return f'<span style="color: gray">{instance}</span>'
+        return '<span style="color: gray">{}</span>'.format(instance)
     elif isinstance(instance, pydsdl.Field):
-        return f"{filter_display_type(language, instance.data_type)} {instance.name}"
+        return "{} {}".format(
+            filter_display_type(language, instance.data_type),
+            instance.name
+        )
     elif isinstance(instance, pydsdl.Constant):
-        name = f'<span style="color: darkmagenta">{instance.name}</span>'
-        value = f'<span style="color: darkcyan">{instance.value}</span>'
-        return f"{filter_display_type(language, instance.data_type)} {name} = {value}"
+        name = '<span style="color: darkmagenta">{}</span>'.format(instance.name)
+        value = '<span style="color: darkcyan">{}</span>'.format(instance.value)
+        return "{} {} = {}".format(
+            filter_display_type(language, instance.data_type), name, value
+        )
     elif isinstance(instance, pydsdl.PrimitiveType):
         if instance.cast_mode == instance.cast_mode.SATURATED:
             is_saturated = '<span style="color: gray">saturated</span> '
         else:
             is_saturated = '<span style="color: orange">truncated</span> '
         type_name = \
-            f'<span style="color: green">{str(instance).split()[-1]}</span>'
-        return f"{is_saturated}{type_name}"
+            '<span style="color: green">{}</span>'.format(str(instance).split()[-1])
+        return "{}{}".format(is_saturated, type_name)
     else:
         return str(instance)
