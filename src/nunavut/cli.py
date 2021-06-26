@@ -22,7 +22,8 @@ def _should_generate_support(
     args: argparse.Namespace,
     language_context: 'nunavut.lang.LanguageContext'
 ) -> bool:
-    if language_context.get_target_language().omit_serialization_support:
+    if language_context.get_target_language() is not None and \
+            language_context.get_target_language().get_option('omit_serialization_support'):
         return False
     elif args.generate_support == 'as-needed':
         return (args.omit_serialization_support is None or not args.omit_serialization_support)
