@@ -28,10 +28,15 @@ function showCollapse(collapse) {
 function toggleCollapse(e, type_tag) {
   let collapse = document.querySelector(e.target.dataset.target);
   // collapse
-  for (let el of document.getElementById("namespaceinfo").querySelectorAll(".collapse.show")) {
-    collapseOff(el);
+  for (let el of document.getElementById("namespaceinfo")
+    .querySelectorAll(".collapse.show")) {
+    if (el !== collapse) {
+      collapseOff(el);
+    }
   }
+
   if (collapse.classList.contains("show")) {
+    showCollapse(collapse);
     collapseOff(collapse);
     e.target.innerText = "+";
   } else {
@@ -54,7 +59,7 @@ function linkFromCollapse(collapse) {
 function scrollSidebar(type) {
   let el = document.getElementById(`${type}_sidebar`);
 
-  if (el.nodeName === "DIV") {
+  if (el?.nodeName === "DIV") {
     showCollapse(el);
     linkFromCollapse(el).scrollIntoView({
       behavior: "smooth",

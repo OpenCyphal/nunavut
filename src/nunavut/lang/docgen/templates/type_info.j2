@@ -47,7 +47,7 @@
 {% endif %}
 
 </p>
-<div class="collapse type {{ 'nested' if nested else '' }}" id="{{ type_tag_id }}" style="padding-left: 1rem; border-left: 1px solid #AAA;">
+<div class="collapse type {{ 'nested' if nested else '' }}" id="{{ type_tag_id }}" style="padding-left: 2rem; border-left: 1px solid #AAA;">
     {% if t is array %}
     {% if t.element_type is composite %}
     {{ generate_type_info(t.element_type, "", True) }}
@@ -87,5 +87,6 @@
     {% endfor %}
     {% endif %}
     {% endif %}
+    <hr style="max-width: 50vw;">
 </div>
 {% endmacro %}

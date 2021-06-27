@@ -196,11 +196,11 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
     # If docgen selected, warn about linked namespaces
     if args.target_language == 'docgen':
         if len(extra_includes) > 0:
-            logging.warn(textwrap.dedent("""
-                W: Other lookup namespaces are linked in these generated docs.
-                If you do not generate docs for these other namespaces as well, links to external
-                data types could be broken (expansion will still work).
-            """).lstrip())
+            logging.warning(
+                "Other lookup namespaces are linked in these generated docs. "
+                "If you do not generate docs for these other namespaces as well, "
+                "links to external data types could be broken (expansion will still work)."
+            )
 
     return 0
 
