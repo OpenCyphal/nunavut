@@ -25,13 +25,15 @@ function showCollapse(collapse) {
   });
 }
 
-function toggleCollapse(e, type_tag) {
-  let collapse = document.querySelector(e.target.dataset.target);
+function toggleCollapse(e, type_tag, root = "namespaceinfo") {
+  let collapse = document.querySelector(`#${type_tag}`);
   // collapse
-  for (let el of document.getElementById("namespaceinfo")
-    .querySelectorAll(".collapse.show")) {
-    if (el !== collapse) {
-      collapseOff(el);
+  if (window.collapseOther) {
+    for (let el of document.getElementById(root)
+      .querySelectorAll(".collapse.show")) {
+      if (el !== collapse) {
+        collapseOff(el);
+      }
     }
   }
 
@@ -45,7 +47,13 @@ function toggleCollapse(e, type_tag) {
     e.target.innerText = "-";
   }
 
-  scrollSidebar(type_tag);
+  if (root === "namespaceinfo") {
+    let sidebar = document.querySelector(`#${type_tag}_sidebar`);
+    console.log(sidebar, `#${type_tag}_sidebar`);
+
+    toggleCollapse(linkFromCollapse(sidebar), `${type_tag}_sidebar`, "sidebar");
+    scrollSidebar(type_tag);
+  }
 }
 
 function linkFromCollapse(collapse) {

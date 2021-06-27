@@ -3,7 +3,7 @@
     <a
           data-bs-toggle="collapse"
           data-target="#{{ t.full_name.replace(".", "_") }}_sidebar"
-          onclick="toggleCollapse(event)"
+          onclick="toggleCollapse(event, '{{ t.full_name.replace(".", "_") }}_sidebar', 'sidebar')"
           role="button"
           aria-expanded="false"
           aria-controls="{{ t.full_name.replace(".", "_") }}_sidebar"
@@ -61,6 +61,12 @@
                         Show documentation comments
                     </label>
                 </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="collapseOther" checked>
+                    <label class="form-check-label" for="collapseOther">
+                        Collapse neighboring types/namespaces on expansion
+                    </label>
+                </div>
             </div>
         </div>
     </div>
@@ -70,6 +76,8 @@
     </div>
 </aside>
 <script>
+    window.collapseOther = true;
+
     document.getElementById("hideDeprecated").addEventListener("change", function(e) {
         if (e.target.checked) {
             for (let el of document.querySelectorAll(".deprecated")) {
@@ -103,6 +111,14 @@
             for (let el of document.querySelectorAll(".bitlength")) {
                 el.classList.add("d-none");
             }
+        }
+    });
+
+    document.getElementById("collapseOther").addEventListener("change", function(e) {
+        if (e.target.checked) {
+            window.collapseOther = true;
+        } else {
+            window.collapseOther = false;
         }
     });
 
