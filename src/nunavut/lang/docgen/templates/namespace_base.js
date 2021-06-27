@@ -27,11 +27,11 @@ function showCollapse(collapse) {
 
 function toggleCollapse(e, type_tag) {
   let collapse = document.querySelector(e.target.dataset.target);
+  // collapse
+  for (let el of document.getElementById("namespaceinfo").querySelectorAll(".collapse.show")) {
+    collapseOff(el);
+  }
   if (collapse.classList.contains("show")) {
-    // collapse
-    for (let el of collapse.querySelectorAll(".collapse.show")) {
-      collapseOff(el);
-    }
     collapseOff(collapse);
     e.target.innerText = "+";
   } else {
