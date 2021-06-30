@@ -11,6 +11,7 @@
 import string
 import random
 import typing
+import re
 
 import pydsdl
 
@@ -153,3 +154,29 @@ def filter_display_type(language: Language, instance: typing.Any) -> str:
         return "{}{}".format(is_saturated, type_name)
     else:
         return str(instance)
+
+
+@template_language_filter(__name__)
+def filter_natural_sort_namespace(language: Language, instance: typing.Any) -> str:
+    """
+    Namespaces come in plain lists; sort by name only.
+    """
+    return natural_sort(instance, key=lambda s: s.full_name)
+
+
+@template_language_filter(__name__)
+def filter_natural_sort_type(language: Language, instance: typing.Any) -> str:
+    """
+    Types come in tuples (type, path). Sort by type name.
+    """
+    return natural_sort(instance, key=lambda s: s[0].full_name)
+
+
+def natural_sort(instance, key = lambda s: s):
+    def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
+        _key = key(s)
+
+        return [int(text) if text.isdigit() else text.lower()
+                for text in _nsre.split(_key)]
+
+    return sorted(instance, key=natural_sort_key)

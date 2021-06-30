@@ -16,12 +16,12 @@
     {% if t | namespace_doc %}
     <pre>{{ t | namespace_doc }}</pre>
     {% endif %}
-    {% for type, _ in t.get_nested_types() %}
+    {% for type, _ in t.get_nested_types() | natural_sort_type %}
     {% if type.short_name != "_" %}
     {{ generate_type_info(type, "") }}
     {% endif %}
     {% endfor %}
-    {% for type in t.get_nested_namespaces() %}
+    {% for type in t.get_nested_namespaces() | natural_sort_namespace %}
     {{ generate_namespace_info(type) }}
     {% endfor %}
 </div>

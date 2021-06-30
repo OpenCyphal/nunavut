@@ -14,7 +14,7 @@
     {% if t | namespace_doc %}
     <pre>{{ t | namespace_doc }}</pre>
     {% endif %}
-    {% for type, _ in t.get_nested_types() %}
+    {% for type, _ in t.get_nested_types() | natural_sort_type %}
     {% if type.short_name != "_" %}
     {% set type_tag_id = type | tag_id %}
     <p class="{{ 'deprecated d-none' if type is deprecated else '' }}">
@@ -24,7 +24,7 @@
     </p>
     {% endif %}
     {% endfor %}
-    {% for type in t.get_nested_namespaces() %}
+    {% for type in t.get_nested_namespaces() | natural_sort_namespace %}
     {{ generate_sidebar_view(type) }}
     {% endfor %}
 </div>
