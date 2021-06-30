@@ -41,7 +41,9 @@ def is_union(language: Language, instance: typing.Any) -> bool:
 
 @template_language_test(__name__)
 def is_service_req(language: Language, instance: typing.Any) -> bool:
-    return instance.has_parent_service and instance.full_name.split(".")[-1] == "Request"
+    return (
+        instance.has_parent_service and instance.full_name.split(".")[-1] == "Request"
+    )
 
 
 @template_language_test(__name__)
@@ -53,7 +55,9 @@ def is_field(language: Language, instance: typing.Any) -> bool:
 def is_deprecated(language: Language, instance: typing.Any) -> bool:
     if isinstance(instance, pydsdl.CompositeType):
         return instance.deprecated
-    elif isinstance(instance, pydsdl.ArrayType) and isinstance(instance.element_type, pydsdl.CompositeType):
+    elif isinstance(instance, pydsdl.ArrayType) and isinstance(
+        instance.element_type, pydsdl.CompositeType
+    ):
         return instance.element_type.deprecated
     else:
         return False
@@ -81,13 +85,13 @@ def filter_max_bit_length(language: Language, instance: typing.Any) -> str:
 def filter_tag_id(language: Language, instance: typing.Any) -> str:
     if isinstance(instance, pydsdl.ArrayType):
         return "{}_array".format(
-            str(instance.element_type).replace('.', '_').replace(' ', '_')
+            str(instance.element_type).replace(".", "_").replace(" ", "_")
         )
     else:
         return "{}_{}_{}".format(
-            instance.full_name.replace('.', '_'),
+            instance.full_name.replace(".", "_"),
             instance.version[0],
-            instance.version[1]
+            instance.version[1],
         )
 
 
@@ -95,16 +99,16 @@ def filter_tag_id(language: Language, instance: typing.Any) -> str:
 def filter_url_from_type(language: Language, instance: typing.Any) -> str:
     root_ns = instance.root_namespace
     tag_id = "{}_{}_{}".format(
-        instance.full_name.replace('.', '_'),
-        instance.version[0],
-        instance.version[1]
+        instance.full_name.replace(".", "_"), instance.version[0], instance.version[1]
     )
     return "../{}/Namespace.html#{}".format(root_ns, tag_id)
 
 
 @template_language_filter(__name__)
 def filter_add_uuid(language: Language, instance: typing.Any) -> str:
-    return instance + ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
+    return instance + "".join(
+        random.choices(string.ascii_uppercase + string.digits, k=16)
+    )
 
 
 @template_language_filter(__name__)
@@ -135,8 +139,7 @@ def filter_display_type(language: Language, instance: typing.Any) -> str:
         return '<span style="color: gray">{}</span>'.format(instance)
     elif isinstance(instance, pydsdl.Field):
         return "{} {}".format(
-            filter_display_type(language, instance.data_type),
-            instance.name
+            filter_display_type(language, instance.data_type), instance.name
         )
     elif isinstance(instance, pydsdl.Constant):
         name = '<span style="color: darkmagenta">{}</span>'.format(instance.name)
@@ -149,8 +152,9 @@ def filter_display_type(language: Language, instance: typing.Any) -> str:
             is_saturated = '<span style="color: gray">saturated</span> '
         else:
             is_saturated = '<span style="color: orange">truncated</span> '
-        type_name = \
-            '<span style="color: green">{}</span>'.format(str(instance).split()[-1])
+        type_name = '<span style="color: green">{}</span>'.format(
+            str(instance).split()[-1]
+        )
         return "{}{}".format(is_saturated, type_name)
     else:
         return str(instance)
@@ -172,11 +176,12 @@ def filter_natural_sort_type(language: Language, instance: typing.Any) -> str:
     return natural_sort(instance, key=lambda s: s[0].full_name)
 
 
-def natural_sort(instance, key = lambda s: s):
-    def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
+def natural_sort(instance, key=lambda s: s):
+    def natural_sort_key(s, _nsre=re.compile("([0-9]+)")):
         _key = key(s)
 
-        return [int(text) if text.isdigit() else text.lower()
-                for text in _nsre.split(_key)]
+        return [
+            int(text) if text.isdigit() else text.lower() for text in _nsre.split(_key)
+        ]
 
     return sorted(instance, key=natural_sort_key)
