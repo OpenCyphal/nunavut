@@ -18,14 +18,8 @@ import typing
 import nunavut.lang
 
 
-def _should_generate_support(
-    args: argparse.Namespace,
-    language_context: 'nunavut.lang.LanguageContext'
-) -> bool:
-    if language_context.get_target_language() is not None and \
-            language_context.get_target_language().get_option('omit_serialization_support'):
-        return False
-    elif args.generate_support == 'as-needed':
+def _should_generate_support(args: argparse.Namespace) -> bool:
+    if args.generate_support == 'as-needed':
         return (args.omit_serialization_support is None or not args.omit_serialization_support)
     else:
         return bool(args.generate_support == 'always' or args.generate_support == 'only')
@@ -159,7 +153,7 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
                 sys.stdout.write(str(output_path))
                 sys.stdout.write(';')
 
-        if _should_generate_support(args, language_context):
+        if _should_generate_support(args):
             for output_path in support_generator.generate_all(is_dryrun=True):
                 sys.stdout.write(str(output_path))
                 sys.stdout.write(';')
@@ -170,7 +164,7 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
             for input_path in generator.get_templates():
                 sys.stdout.write(str(input_path.resolve()))
                 sys.stdout.write(';')
-        if _should_generate_support(args, language_context):
+        if _should_generate_support(args):
             for input_path in support_generator.get_templates():
                 sys.stdout.write(str(input_path.resolve()))
                 sys.stdout.write(';')
@@ -185,7 +179,7 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
                     sys.stdout.write(';')
         return 0
 
-    if _should_generate_support(args, language_context):
+    if _should_generate_support(args):
         support_generator.generate_all(is_dryrun=args.dry_run,
                                        allow_overwrite=not args.no_overwrite)
 

@@ -231,13 +231,18 @@ class Language:
         """
         Iterates over non-templated supporting files embedded within the Nunavut distribution.
         """
-        module = importlib.import_module('nunavut.lang.{}.support'.format(self._language_name))
+        try:
+            module = importlib.import_module('nunavut.lang.{}.support'.format(self._language_name))
 
-        # All language support modules must provide a list_support_files method
-        # to allow the copy generator access to the packaged support files.
-        list_support_files = getattr(module, 'list_support_files')  \
-            # type: typing.Callable[[], typing.Generator[pathlib.Path, None, None]]
-        return list_support_files()
+            # All language support modules must provide a list_support_files method
+            # to allow the copy generator access to the packaged support files.
+            list_support_files = getattr(module, 'list_support_files')  \
+                # type: typing.Callable[[], typing.Generator[pathlib.Path, None, None]]
+            return list_support_files()
+        except ModuleNotFoundError:
+            # No serialization support for this language
+            logger.warn("No serialization support for selected target. Skipping serialization support generation.")
+            return []
 
     def get_option(self,
                    option_key: str,
