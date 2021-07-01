@@ -404,7 +404,7 @@ def _make_parser() -> argparse.ArgumentParser:
     ''').lstrip())
 
     parser.add_argument('--namespace-output-stem',
-                        default='Namespace',
+                        default=None,
                         help='The name of the file generated when --generate-namespace-types is provided.')
 
     parser.add_argument('--no-overwrite',

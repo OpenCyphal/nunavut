@@ -500,11 +500,11 @@ class LanguageContext:
                     .format(target_language)
                 )
             if namespace_output_stem is None:
-                namespace_output_stem = self._target_language.namespace_output_stem
-            if namespace_output_stem is not None:
+                self._namespace_output_stem = self._target_language.namespace_output_stem
+            if self._namespace_output_stem is not None:
                 self._config.set('nunavut.lang.{}'.format(target_language),
                                  'namespace_file_stem',
-                                 namespace_output_stem)
+                                 self._namespace_output_stem)
             if extension is not None:
                 self._config.set('nunavut.lang.{}'.format(target_language),
                                  'extension',
