@@ -242,7 +242,12 @@ class Language:
         except ModuleNotFoundError:
             # No serialization support for this language
             logger.warn("No serialization support for selected target. Skipping serialization support generation.")
-            return []
+
+            def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
+                return
+                yield
+
+            return list_support_files()
 
     def get_option(self,
                    option_key: str,
