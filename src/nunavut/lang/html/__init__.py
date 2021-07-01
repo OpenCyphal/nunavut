@@ -101,7 +101,7 @@ def filter_url_from_type(language: Language, instance: typing.Any) -> str:
     tag_id = "{}_{}_{}".format(
         instance.full_name.replace(".", "_"), instance.version[0], instance.version[1]
     )
-    return "../{}/Namespace.html#{}".format(root_ns, tag_id)
+    return "../{}/#{}".format(root_ns, tag_id)
 
 
 @template_language_filter(__name__)
