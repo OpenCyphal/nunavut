@@ -188,7 +188,7 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
                                allow_overwrite=not args.no_overwrite)
 
     # If docgen selected, warn about linked namespaces
-    if args.target_language == 'docgen':
+    if args.target_language == 'html':
         if len(extra_includes) > 0:
             logging.warning(
                 "Other lookup namespaces are linked in these generated docs. "
