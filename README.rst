@@ -36,6 +36,7 @@ and it can be used to generate code for other languages if custom templates (and
 Currently, the following languages are supported out of the box:
 
 - **C11** (generates header-only libraries)
+- **HTML** (generates documentation pages) (experimental support)
 
 The following languages are currently on the roadmap:
 
@@ -73,6 +74,21 @@ Nunavut is invoked to generate code for the former.
 .. code-block:: shell
 
     nnvg --target-language c --target-endianness=little --enable-serialization-asserts public_regulated_data_types/reg --lookup-dir public_regulated_data_types/uavcan
+
+Generate HTML documentation pages using the command-line tool
+-------------------------------------------------------------
+
+See above assumptions. The below commands generate documentation
+for the ``reg`` namespace.
+Note that we have to generate documentation for the ``uavcan`` namespace
+as well, because there are types in ``reg`` that will link to ``uavcan``
+documentation sections.
+
+.. code-block:: shell
+
+    nnvg --experimental-languages --target-language html public_regulated_data_types/reg --lookup-dir public_regulated_data_types/uavcan
+    nnvg --experimental-languages --target-language html public_regulated_data_types/uavcan
+
 
 Use custom templates
 --------------------
