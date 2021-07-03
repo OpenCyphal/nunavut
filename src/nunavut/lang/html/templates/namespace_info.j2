@@ -1,0 +1,29 @@
+{% from "type_info.j2" import generate_type_info %}
+{% macro generate_namespace_info(t) %}
+<p class="fst-italic">
+<a
+      data-bs-toggle="collapse"
+      href="javascript:void;"
+      data-target="#{{ t.full_name.replace(".", "_") }}"
+      onclick="toggleCollapse(event, '{{ t.full_name.replace(".", "_") }}')"
+      role="button"
+      aria-expanded="false"
+      aria-controls="{{ t.full_name.replace(".", "_") }}"
+      >+</a>
+{{ t.full_name }}
+</p>
+<div class="collapse namespace" id="{{ t.full_name.replace(".", "_") }}" style="padding-left: 2rem; border-left: 1px solid #AAA;">
+    {% if t | namespace_doc %}
+    <pre>{{ t | namespace_doc }}</pre>
+    {% endif %}
+    {% for type, _ in t.get_nested_types() | natural_sort_type %}
+    {% if type.short_name != "_" %}
+    {{ generate_type_info(type, "") }}
+    {% endif %}
+    {% endfor %}
+    {% for type in t.get_nested_namespaces() | natural_sort_namespace %}
+    {{ generate_namespace_info(type) }}
+    {% endfor %}
+</div>
+{% endmacro %}
+

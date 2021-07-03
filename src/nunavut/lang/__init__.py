@@ -231,13 +231,23 @@ class Language:
         """
         Iterates over non-templated supporting files embedded within the Nunavut distribution.
         """
-        module = importlib.import_module('nunavut.lang.{}.support'.format(self._language_name))
+        try:
+            module = importlib.import_module('nunavut.lang.{}.support'.format(self._language_name))
 
-        # All language support modules must provide a list_support_files method
-        # to allow the copy generator access to the packaged support files.
-        list_support_files = getattr(module, 'list_support_files')  \
-            # type: typing.Callable[[], typing.Generator[pathlib.Path, None, None]]
-        return list_support_files()
+            # All language support modules must provide a list_support_files method
+            # to allow the copy generator access to the packaged support files.
+            list_support_files = getattr(module, 'list_support_files')  \
+                # type: typing.Callable[[], typing.Generator[pathlib.Path, None, None]]
+            return list_support_files()
+        except ModuleNotFoundError:
+            # No serialization support for this language
+            logger.info("No serialization support for selected target. Skipping serialization support generation.")
+
+            def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
+                return
+                yield
+
+            return list_support_files()
 
     def get_option(self,
                    option_key: str,
@@ -494,10 +504,12 @@ class LanguageContext:
                     '{} support is only experimental, but experimental language support is not enabled'
                     .format(target_language)
                 )
-            if namespace_output_stem is not None:
+            if namespace_output_stem is None:
+                self._namespace_output_stem = self._target_language.namespace_output_stem
+            if self._namespace_output_stem is not None:
                 self._config.set('nunavut.lang.{}'.format(target_language),
                                  'namespace_file_stem',
-                                 namespace_output_stem)
+                                 self._namespace_output_stem)
             if extension is not None:
                 self._config.set('nunavut.lang.{}'.format(target_language),
                                  'extension',

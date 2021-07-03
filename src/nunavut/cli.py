@@ -186,6 +186,16 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
     if args.generate_support != 'only':
         generator.generate_all(is_dryrun=args.dry_run,
                                allow_overwrite=not args.no_overwrite)
+
+    # If docgen selected, warn about linked namespaces
+    if args.target_language == 'html':
+        if len(extra_includes) > 0:
+            logging.warning(
+                "Other lookup namespaces are linked in these generated docs. "
+                "If you do not generate docs for these other namespaces as well, "
+                "links to external data types could be broken (expansion will still work)."
+            )
+
     return 0
 
 
@@ -394,7 +404,7 @@ def _make_parser() -> argparse.ArgumentParser:
     ''').lstrip())
 
     parser.add_argument('--namespace-output-stem',
-                        default='Namespace',
+                        default=None,
                         help='The name of the file generated when --generate-namespace-types is provided.')
 
     parser.add_argument('--no-overwrite',

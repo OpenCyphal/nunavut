@@ -1,0 +1,92 @@
+{% macro generate_type_info(t, attr_name, nested=False) %}
+{% set type_tag_id = t | tag_id %}
+{% if nested %}
+{% set type_tag_id = type_tag_id | add_uuid %}
+{% endif %}
+<p class="fw-bold {{ 'deprecated d-none' if t is deprecated else '' }}" style="{{ 'color: gray'  if t is deprecated else '' }}">
+<a
+      data-bs-toggle="collapse"
+      href="javascript:void"
+      data-target="#{{ type_tag_id }}"
+      onclick="toggleCollapse(event, '{{ type_tag_id }}')"
+      role="button"
+      aria-expanded="false"
+      aria-controls="{{ type_tag_id }}"
+      >+</a>
+{% if not t is array %}
+{% if nested %}
+<a href="{{ t | url_from_type }}">{{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}})</a>
+{{ attr_name }}
+{% else %}
+{{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}}) {{ attr_name }}
+{% endif %}
+{% if t.has_fixed_port_id %}
+<span class="portID" style="color: orange">[fixed port-ID {{ t.fixed_port_id }}]</span>
+{% endif %}
+{% if t is deprecated %}
+<span style="color: red">[deprecated]</span>
+{% endif %}
+{% if t is union %}
+<span style="color: blue">[union]</span>
+{% endif %}
+{% else %}
+{{ t | display_type }} {{ attr_name }}
+{% endif %}
+
+{% if not t is service %}
+{% if t is composite %}
+<span class="extent" style="color: green">
+    [extent {{ t | extent / 8 }} bytes]
+</span>
+{% endif %}
+<span class="bitlength" style="color: green">
+    [max length {{ t | max_bit_length / 8 }} bytes]
+</span>
+{% else %}
+<span class="service" style="color: blue">[service]</span>
+{% endif %}
+
+</p>
+<div class="collapse type {{ 'nested' if nested else '' }}" id="{{ type_tag_id }}" style="padding-left: 2rem; border-left: 1px solid #AAA;">
+    {% if t is array %}
+    {% if t.element_type is composite %}
+    {{ generate_type_info(t.element_type, "", True) }}
+    {% else %}
+    <p class="fw-bold mb-0">{{ t.element_type }}</p>
+    {% endif %}
+    {% else %}
+    {# We don't want to show the service docs in both the service and the request #}
+    {% if t.doc and not t is service_req %}
+    <pre class="docs">{{ t.doc }}</pre>
+    {% endif %}
+    {% if t.attributes | length == 0 %}
+    <p>(data type is empty)</p>
+    {% else %}
+    {% for attr in t.attributes %}
+    {% if attr.data_type is array %}
+    {{ generate_type_info(attr.data_type, attr.name, True) }}
+    {% elif attr.data_type is composite %}
+    {{ generate_type_info(attr.data_type, attr.name, True) }}
+    {% else %}
+    <p class="fw-bold mb-0">
+    {{ attr | display_type }}
+    {% if attr is field %}
+    {% if attr.data_type | max_bit_length % 8 == 0 %}
+    <span class="bitlength" style="color: green">
+        [max length {{ attr.data_type | max_bit_length / 8 }} bytes]
+    </span>
+    {% else %}
+    <span class="bitlength" style="color: green">
+        [max length {{ attr.data_type | max_bit_length }} bits]
+    </span>
+    {% endif %}
+    {% endif %}
+    </p>
+    {% endif %}
+    <pre class="docs">{{ attr.doc }}</pre>
+    {% endfor %}
+    {% endif %}
+    {% endif %}
+    <hr style="max-width: 50vw;">
+</div>
+{% endmacro %}

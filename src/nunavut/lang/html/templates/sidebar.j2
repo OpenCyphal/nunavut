@@ -1,0 +1,145 @@
+{% macro generate_sidebar_view(t) %}
+<p class="text-nowrap">
+    <a
+          data-bs-toggle="collapse"
+          data-target="#{{ t.full_name.replace(".", "_") }}_sidebar"
+          onclick="toggleCollapse(event, '{{ t.full_name.replace(".", "_") }}_sidebar', 'sidebar')"
+          role="button"
+          aria-expanded="false"
+          aria-controls="{{ t.full_name.replace(".", "_") }}_sidebar"
+    >+</a>
+    <a href="#{{ t.full_name.replace(".", "_") }}" class="text-decoration-none fst-italic">{{ t.full_name }}</a>
+</p>
+<div class="collapse" id="{{ t.full_name.replace(".", "_") }}_sidebar" style="padding-left: 1rem; border-left: 1px solid #AAA;">
+    {% if t | namespace_doc %}
+    <pre>{{ t | namespace_doc }}</pre>
+    {% endif %}
+    {% for type, _ in t.get_nested_types() | natural_sort_type %}
+    {% if type.short_name != "_" %}
+    {% set type_tag_id = type | tag_id %}
+    <p class="{{ 'deprecated d-none' if type is deprecated else '' }}">
+    <a id="{{ type_tag_id }}_sidebar" href="#{{ type_tag_id }}" class="text-decoration-none">
+    {{ type.full_name }} (v{{type.version[0]}}.{{type.version[1]}})
+    </a>
+    </p>
+    {% endif %}
+    {% endfor %}
+    {% for type in t.get_nested_namespaces() | natural_sort_namespace %}
+    {{ generate_sidebar_view(type) }}
+    {% endfor %}
+</div>
+{% endmacro %}
+
+<aside style="height: 40vh;">
+    <div>
+        <input id="search" class="form-control" type="search" placeholder="Search types..." aria-label="Search Types">
+        <div class="row py-4">
+            <div class="col-sm">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="hideDeprecated" checked>
+                    <label class="form-check-label" for="hideDeprecated">
+                        Hide deprecated datatypes
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showBitLength" checked>
+                    <label class="form-check-label" for="showBitLength">
+                        Show Max Bit Lengths
+                    </label>
+                </div>
+            </div>
+            <div class="col-sm">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showExtent" checked>
+                    <label class="form-check-label" for="showExtent">
+                        Show Extent
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showDocs" checked>
+                    <label class="form-check-label" for="showDocs">
+                        Show documentation comments
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="collapseOther" checked>
+                    <label class="form-check-label" for="collapseOther">
+                        Collapse neighboring types/namespaces on expansion
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div id="sidebar" style="overflow-y: auto; height: 60vh;">
+        {{ generate_sidebar_view(T) }}
+    </div>
+</aside>
+<script>
+    window.collapseOther = true;
+
+    document.getElementById("hideDeprecated").addEventListener("change", function(e) {
+        if (e.target.checked) {
+            for (let el of document.querySelectorAll(".deprecated")) {
+                el.classList.add("d-none");
+            }
+        } else {
+            for (let el of document.querySelectorAll(".deprecated")) {
+                el.classList.remove("d-none");
+            }
+        }
+    });
+
+    document.getElementById("showExtent").addEventListener("change", function(e) {
+        if (e.target.checked) {
+            for (let el of document.querySelectorAll(".extent")) {
+                el.classList.remove("d-none");
+            }
+        } else {
+            for (let el of document.querySelectorAll(".extent")) {
+                el.classList.add("d-none");
+            }
+        }
+    });
+
+    document.getElementById("showBitLength").addEventListener("change", function(e) {
+        if (e.target.checked) {
+            for (let el of document.querySelectorAll(".bitlength")) {
+                el.classList.remove("d-none");
+            }
+        } else {
+            for (let el of document.querySelectorAll(".bitlength")) {
+                el.classList.add("d-none");
+            }
+        }
+    });
+
+    document.getElementById("collapseOther").addEventListener("change", function(e) {
+        if (e.target.checked) {
+            window.collapseOther = true;
+        } else {
+            window.collapseOther = false;
+        }
+    });
+
+    document.getElementById("showDocs").addEventListener("change", function(e) {
+        if (e.target.checked) {
+            for (let el of document.querySelectorAll(".docs")) {
+                el.classList.remove("d-none");
+            }
+        } else {
+            for (let el of document.querySelectorAll(".docs")) {
+                el.classList.add("d-none");
+            }
+        }
+    });
+
+    document.getElementById("search").addEventListener("input", function(e) {
+        filterNamespaces(e);
+    });
+
+    // Chrome-based browsers add a clear button - catch that event
+    document.getElementById("search").addEventListener("search", function(e) {
+        filterNamespaces(e);
+    });
+</script>

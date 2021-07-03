@@ -1,0 +1,118 @@
+{% from "type_info.j2" import generate_type_info %}
+{% from "namespace_info.j2" import generate_namespace_info %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{ T.full_name }}</title>
+        <meta name="description" content="Documentation for DSDL namespace {{ T.full_name }}">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+        {% include "assets/bootstrap.min.css" %}
+        </style>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+        <style>
+        .row {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .py-2 {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+
+        pre {
+            text-overflow: wrap !important;
+        }
+
+        .highlight {
+            background-color: yellow;
+            transition: background-color 200ms;
+        }
+
+        body {
+            line-height: 1.2;
+            tab-size: 16;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        :root {
+            --bs-font-monospace:
+                "Ubuntu Mono",
+                SFMono-Regular,
+                Menlo,
+                Monaco,
+                Consolas,
+                "Liberation Mono",
+                "Courier New",
+                monospace;
+        }
+
+        #sidebar-container {
+            position: fixed;
+            height: 100vh;
+        }
+
+        @media (max-width: 992px) {
+            #sidebar-container {
+                position: static;
+            }
+
+            #sidebar-spacer {
+                display: none;
+            }
+        }
+
+        </style>
+        <!-- Bootstrap-->
+        <script>
+        {% include "assets/bootstrap.bundle.min.js" %}
+        </script>
+        <script>
+        {% include "namespace_base.js" %}
+        </script>
+    </head>
+    <body class="font-monospace px-5 pt-5">
+        <div class="row" style="max-height: 100vh">
+            <div class="col-lg-3 px-4" id="sidebar-container">
+                {% include 'sidebar.j2' %}
+            </div>
+            <div class="col-lg-3 px-4" id="sidebar-spacer"></div>
+            <div class="col-lg-9 px-4">
+                <h2>Documentation for namespace {{ T }}</h2>
+                <div id="namespaceinfo">
+                {{ generate_namespace_info(T) }}
+                </div>
+            </div>
+        </div>
+        <script>
+            if (window.location.hash != null && window.location.hash != "") {
+                const collapse = document.querySelector(window.location.hash);
+                showCollapse(collapse);
+                collapse.classList.add("highlight");
+                setTimeout(function() {
+                    collapse.classList.remove("highlight");
+                }, 2000);
+            } else {
+                const collapse = document.querySelector("#{{ T.full_name }}");
+                showCollapse(collapse);
+            }
+
+            window.onhashchange = function() {
+                if (window.location.hash != null && window.location.hash != "") {
+                    const collapse = document.querySelector(window.location.hash);
+                    showCollapse(collapse);
+                    collapse.classList.add("highlight");
+                    setTimeout(function() {
+                        collapse.classList.remove("highlight");
+                    }, 2000);
+                }
+            }
+        </script>
+    </body>
+</html>

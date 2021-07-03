@@ -3,6 +3,6 @@
 # This software is distributed under the terms of the MIT License.
 #
 
-__version__ = "1.2.2"
+__version__ = "1.3.0"
 
 __license__ = 'MIT'
