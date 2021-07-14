@@ -75,7 +75,6 @@ def ptest_lang_c(gen_paths: Any,
 
     assert len(generated_values) > 0
 
-    # cspell: disable
     lang_c_output = generated_values["tests"]["lang_c"]
     assert lang_c_output["namespace"] == "langtest.c"
     assert lang_c_output["namespace_macrofy"] == "LANGTEST_C"
@@ -109,7 +108,6 @@ def ptest_lang_c(gen_paths: Any,
     unique_name_evaluator(r'_naME\d+_', lang_c_output["unique_name_2"])
     unique_name_evaluator(r'_\d+_', lang_c_output["unique_name_3"])
 
-    # cspell: enable
     return generated_values
 
 
@@ -237,28 +235,28 @@ def test_lang_c(gen_paths: Any,
     """
     lctx = LanguageContext()
 
-    # cspell: disable
     generated_values = ptest_lang_c(gen_paths, implicit, unique_name_evaluator,
                                     use_standard_types, configurable_language_context_factory)
     if implicit:
         lang_any = generated_values["tests"]["lang_any"]
-        assert lang_any['id_0'] == '_123_class__for_u2___ZX0028ZX002Aother_stuffZX002DZX0026ZX002DsuchZX0029'
+
+        assert lang_any['id_0'] == 'zX003123_class__for_u2___zX0028zX002Aother_stuffzX002DzX0026zX002DsuchzX0029'
         assert lang_any['id_1'] == '_reserved'
-        assert lang_any['id_2'] == '_ZX005Falso_reserved'
+        assert lang_any['id_2'] == '_also_reserved'
         assert lang_any['id_3'] == '_register'
         assert lang_any['id_4'] == 'False'
         assert lang_any['id_5'] == '_return'
-        assert lang_any['id_7'] == 'I_ZX2764_UAVCAN'
-        assert lang_any['id_8'] == '_1_ZX2764_UAVCAN'
+        assert lang_any['id_7'] == 'I_zX2764_UAVCAN'
+        assert lang_any['id_8'] == 'zX0031_zX2764_UAVCAN'
 
         assert lang_any['id_9'] == 'str'
         assert lang_any['id_A'] == '_strr'
         assert lang_any['id_B'] == '_uINT_FOO_MIN'
         assert lang_any['id_C'] == '_iNT_C'
-        assert lang_any['id_D'] == '_lC_Is_reserved'
+        assert lang_any['id_D'] == 'LC_Is_reserved'
         assert lang_any['id_E'] == 'NOT_ATOMIC_YO'
         assert lang_any['id_F'] == '_aTOMIC_YO'
-    # cspell: enable
+        assert lang_any['id_G'] == '_memory_order_yo'
 
     assert '_flight__time' == c_filter_id(lctx.get_language('nunavut.lang.c'), Dummy('_Flight__time'))
 
@@ -269,29 +267,28 @@ def test_lang_cpp(gen_paths):  # type: ignore
     """
     lctx = LanguageContext()
 
-    # cspell: disable
     generated_values = ptest_lang_cpp(gen_paths, True)
     lang_any = generated_values["tests"]["lang_any"]
-    assert lang_any['id_0'] == '_123_class_ZX005Ffor_u2_ZX005F_ZX0028ZX002Aother_stuffZX002DZX0026ZX002DsuchZX0029'
+
+    assert lang_any['id_0'] == '_123_class_for_u2_zX0028zX002Aother_stuffzX002DzX0026zX002DsuchzX0029'
     assert lang_any['id_1'] == '_reserved'
-    assert lang_any['id_2'] == '_ZX005Falso_reserved'
+    assert lang_any['id_2'] == 'zX005FzX005Falso_reserved'
     assert lang_any['id_3'] == '_register'
     assert lang_any['id_4'] == 'False'
     assert lang_any['id_5'] == '_return'
-    assert lang_any['id_7'] == 'I_ZX2764_UAVCAN'
-    assert lang_any['id_8'] == '_1_ZX2764_UAVCAN'
+    assert lang_any['id_7'] == 'I_zX2764_UAVCAN'
+    assert lang_any['id_8'] == '_1_zX2764_UAVCAN'
     assert lang_any['id_9'] == 'str'
-    assert lang_any['id_A'] == '_strr'
+    assert lang_any['id_A'] == 'strr'
     assert lang_any['id_B'] == '_uINT_FOO_MIN'
     assert lang_any['id_C'] == '_iNT_C'
-    assert lang_any['id_D'] == '_lC_Is_reserved'
+    assert lang_any['id_D'] == 'LC_Is_reserved'
     assert lang_any['id_E'] == 'NOT_ATOMIC_YO'
     assert lang_any['id_F'] == '_aTOMIC_YO'
 
     lang_cpp = lctx.get_language('nunavut.lang.cpp')
 
-    assert '_flight_ZX005Ftime' == cpp_filter_id(lang_cpp, Dummy('_Flight__time'))
-    # cspell: enable
+    assert '_flight_time' == cpp_filter_id(lang_cpp, Dummy('_Flight_time'))
 
 
 def test_lang_cpp_explicit(gen_paths):  # type: ignore
@@ -309,16 +306,16 @@ def test_lang_py_implicit(gen_paths, unique_name_evaluator):  # type: ignore
     lctx = LanguageContext()
 
     generated_values = ptest_lang_py(gen_paths, True, unique_name_evaluator)
-    # cspell: disable
     lang_any = generated_values["tests"]["lang_any"]
-    assert lang_any['id_0'] == '_123_class__for_u2___ZX0028ZX002Aother_stuffZX002DZX0026ZX002DsuchZX0029'
+
+    assert lang_any['id_0'] == 'zX003123_class__for_u2___zX0028zX002Aother_stuffzX002DzX0026zX002DsuchzX0029'
     assert lang_any['id_1'] == '_Reserved'
     assert lang_any['id_2'] == '__also_reserved'
     assert lang_any['id_3'] == 'register'
     assert lang_any['id_4'] == 'False_'
     assert lang_any['id_5'] == 'return_'
-    assert lang_any['id_7'] == 'I_ZX2764_UAVCAN'
-    assert lang_any['id_8'] == '_1_ZX2764_UAVCAN'
+    assert lang_any['id_7'] == 'I_zX2764_UAVCAN'
+    assert lang_any['id_8'] == 'zX0031_zX2764_UAVCAN'
     assert lang_any['id_9'] == 'str_'
     assert lang_any['id_A'] == 'strr'
     assert lang_any['id_B'] == 'UINT_FOO_MIN'
@@ -328,7 +325,6 @@ def test_lang_py_implicit(gen_paths, unique_name_evaluator):  # type: ignore
     assert lang_any['id_F'] == 'ATOMIC_YO'
 
     assert '_Flight__time' == py_filter_id(lctx.get_language('nunavut.lang.py'), Dummy('_Flight__time'))
-    # cspell: enable
 
 
 def test_lang_py_explicit(gen_paths, unique_name_evaluator):  # type: ignore
@@ -398,13 +394,3 @@ def test_either_target_or_extension() -> None:
 
     with pytest.raises(KeyError):
         _ = LanguageContext('foobar')
-
-
-def test_config_overrides(gen_paths):  # type: ignore
-    """
-    Test providing different configuration values to a LanguageContext object.
-    """
-    additional_config_files = [gen_paths.root_dir / Path('tox').with_suffix('.ini')]
-    lctx = LanguageContext(additional_config_files=additional_config_files)
-    assert '.hc' == lctx.get_language('c').extension
-    assert 'This is a test' == lctx.get_language('c').get_config_value('option_not_in_properties')

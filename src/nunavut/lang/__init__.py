@@ -8,13 +8,14 @@
 This package contains modules that provide specific support for generating
 source for various languages using templates.
 """
-import configparser
 import functools
 import importlib
 import inspect
 import logging
 import pathlib
 import typing
+
+from ._config import LanguageConfig
 
 logger = logging.getLogger(__name__)
 
@@ -24,40 +25,12 @@ class Language:
     Facilities for generating source code for a specific language.
 
     :param str language_name:                The name of the language used by the :mod:`nunavut.lang` module.
-    :param configparser.ConfigParser config: The parser to load language properties from.
+    :param LanguageConfig config:            The parser to load language properties into.
     :param bool omit_serialization_support:  The value to set for the :func:`omit_serialization_support` property
                                              for this language.
     :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
                 target :class:`nunavut.lang.Language` object.
     """
-
-    @classmethod
-    def _as_dict(cls, value: str) -> typing.Dict[str, typing.Any]:
-        def _narrow(value: str) -> typing.Any:
-            if value is None:
-                return None
-            try:
-                return int(value)
-            except ValueError:
-                pass
-            if value.lower() == 'true' or value.lower() == 'false':
-                return bool(value)
-            strvalue = str(value)
-            if strvalue.startswith('"') and strvalue.endswith('"'):
-                return strvalue[1:-1]
-            else:
-                return strvalue
-
-        value_as_dict = dict()
-        value_pairs = value.strip().split('\n')
-        for pair in value_pairs:
-            kv = pair.strip().split('=')
-            value_as_dict[kv[0].strip()] = _narrow(kv[1].strip())
-        return value_as_dict
-
-    @classmethod
-    def _as_list(cls, value: str) -> typing.List[str]:
-        return [r.strip() for r in value.split('\n')]
 
     @classmethod
     def _find_callable_for_language(cls, language_name: str, callable_name_prefix: str) -> \
@@ -84,32 +57,27 @@ class Language:
         return cls._find_callable_for_language(language_name, 'is_')
 
     @classmethod
-    def get_language_config_parser(cls) -> configparser.ConfigParser:
+    def get_language_config_parser(cls) -> LanguageConfig:
         """
-        Create a :class:`configparser.ConfigParser` instance configured for reading
-        language properties.ini.
+        Create a :class:`LanguageConfig` instance configured for reading
+        language properties.yaml.
         """
-        return configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation(),
-                                         converters={'dict': cls._as_dict,
-                                                     'list': cls._as_list})
+        return LanguageConfig()
 
     def __init__(self,
                  language_name: str,
-                 config: configparser.ConfigParser,
+                 config: LanguageConfig,
                  omit_serialization_support: bool,
                  language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None):
         self._globals = None  # type: typing.Optional[typing.Mapping[str, typing.Any]]
         self._language_name = language_name
         self._section = 'nunavut.lang.{}'.format(language_name)
+        self._config_getter_cache = {}  # type: typing.Mapping[str, functools.partial[typing.Any]]
         self._filters = self._find_filters_for_language(language_name)
         self._tests = self._find_tests_for_language(language_name)
         self._config = config
         self._omit_serialization_support = omit_serialization_support
-        option_config = self._config.getdict(self._section, 'options', fallback=None)  # type: ignore
-        if option_config is None:
-            self._language_options = dict()  # type: typing.Mapping[str, typing.Any]
-        else:
-            self._language_options = typing.cast(dict, option_config)
+        self._language_options = config.get_config_value_as_dict(self._section, 'options', dict())
 
         if language_options is not None:
             self._language_options.update(language_options)
@@ -126,19 +94,97 @@ class Language:
         except KeyError as e:
             raise AttributeError(e)
 
+    def get_config_value(self,
+                         key: str,
+                         default_value: typing.Optional[str] = None) -> str:
+        """
+        Get an optional language property from the language configuration.
+
+        :param str key: The config value to retrieve.
+        :param default_value: The value to return if the key was not in the configuration. If provided
+                this method will not raise.
+        :type default_value: typing.Optional[str]
+        :return: Either the value from the config or the default_value if provided.
+        :rtype: str
+        :raises: KeyError if the section or the key in the section does not exist and a default_value was not provided.
+        """
+        return self._config.get_config_value(self._section, key, default_value)
+
+    def get_config_value_as_bool(self, key: str, default_value: bool = False) -> bool:
+        """
+        Get an optional language property from the language configuration returning a boolean.
+
+        :param str key: The config value to retrieve.
+        :param bool default_value: The value to use if no value existed.
+        :return: The config value as either True or False.
+        :rtype: bool
+        """
+        return self._config.get_config_value_as_bool(self._section, key, default_value)
+
+    def get_config_value_as_dict(self, key: str, default_value: typing.Optional[typing.Dict] = None) -> \
+            typing.Dict[str, typing.Any]:
+        """
+        Get a language property parsing it as a map with string keys.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import LanguageConfig, Language
+
+            config = LanguageConfig()
+            config.add_section('nunavut.lang.c')
+            config.set('nunavut.lang.c', 'foo', {'one': 1})
+
+            lang_c = Language('c', config, True)
+
+            assert lang_c.get_config_value_as_dict('foo')['one'] == 1
+
+            assert lang_c.get_config_value_as_dict('bar', {'one': 2})['one'] == 2
+
+        :param str key:           The config value to retrieve.
+        :param default_value:     The value to return if the key was not in the configuration. If provided this method
+            will not raise a KeyError nor a TypeError.
+        :type default_value: typing.Optional[typing.Mapping[str, typing.Any]]
+        :return:                  Either the value from the config or the default_value if provided.
+        :rtype: typing.Mapping[str, typing.Any]
+        :raises: KeyError if the key does not exist and a default_value was not provided.
+        :raises: TypeError if the value exists but is not a dict and a default_value was not provided.
+
+        """
+        return self._config.get_config_value_as_dict(self._section, key, default_value)
+
+    def get_config_value_as_list(self, key: str, default_value: typing.Optional[typing.List] = None)\
+            -> typing.List[typing.Any]:
+        """
+        Get a language property parsing it as a map with string keys.
+
+        :param str key:           The config value to retrieve.
+        :param default_value:     The value to return if the key was not in the configuration. If provided this method
+            will not raise a KeyError nor a TypeError.
+        :type default_value:      typing.Optional[typing.List[typing.Any]]
+        :return:                  Either the value from the config or the default_value if provided.
+        :rtype:                   typing.List[typing.Any]
+        :raises:                  KeyError if the key does not exist and a default_value was not provided.
+        :raises:                  TypeError if the value exists but is not a dict and a default_value was not provided.
+
+        """
+        return self._config.get_config_value_as_list(self._section, key, default_value)
+
     @property
     def extension(self) -> str:
         """
         The extension to use for files generated in this language.
         """
-        return self._config.get(self._section, 'extension')
+        return self._config.get_config_value(self._section, 'extension', 'get')
 
     @property
     def namespace_output_stem(self) -> typing.Optional[str]:
         """
         The name of a namespace file for this language.
         """
-        return self._config.get(self._section, 'namespace_file_stem')
+        try:
+            return self._config.get_config_value(self._section, 'namespace_file_stem')
+        except KeyError:
+            return None
 
     @property
     def name(self) -> str:
@@ -148,23 +194,9 @@ class Language:
         return self._language_name
 
     @property
-    def stropping_prefix(self) -> str:
-        """
-        The string to prepend to an identifier when stropping.
-        """
-        return self._config.get(self._section, 'stropping_prefix')
-
-    @property
-    def stropping_suffix(self) -> str:
-        """
-        The string to add to the end of an identifier when stropping.
-        """
-        return self._config.get(self._section, 'stropping_suffix')
-
-    @property
     def support_namespace(self) -> typing.List[str]:
         """
-        The hierarchial namespace used by the support software. The property
+        The hierarchical namespace used by the support software. The property
         is a dot separated string when specified in configuration. This
         property returns that value split into namespace components with the
         first identifier being the first index in the array, etc.
@@ -186,22 +218,15 @@ class Language:
             assert lang_cpp.support_namespace[1] == 'bar'
 
         """
-        namespace_str = self._config.get(self._section, 'support_namespace', fallback='')
+        namespace_str = self._config.get_config_value(self._section, 'support_namespace', default_value='')
         return namespace_str.split('.')
-
-    @property
-    def encoding_prefix(self) -> str:
-        """
-        The string to prepend to an encoding hex value.
-        """
-        return self._config.get(self._section, 'encoding_prefix')
 
     @property
     def enable_stropping(self) -> bool:
         """
         Whether or not to strop identifiers for this language.
         """
-        return self._config.getboolean(self._section, 'enable_stropping')
+        return self._config.get_config_value_as_bool(self._section, 'enable_stropping')
 
     @property
     def has_standard_namespace_files(self) -> bool:
@@ -209,14 +234,14 @@ class Language:
         Whether or not the language defines special namespace files as part of
         its core standard (e.g. python's __init__).
         """
-        return self._config.getboolean(self._section, 'has_standard_namespace_files')
+        return self._config.get_config_value_as_bool(self._section, 'has_standard_namespace_files')
 
     @property
     def stable_support(self) -> bool:
         """
         Whether support for this language is designated 'stable', and not experimental.
         """
-        return self._config.getboolean(self._section, 'stable_support', fallback=False)
+        return self._config.get_config_value_as_bool(self._section, 'stable_support')
 
     @property
     def omit_serialization_support(self) -> bool:
@@ -262,7 +287,7 @@ class Language:
 
             config = Language.get_language_config_parser()
             config.add_section('nunavut.lang.cpp')
-            config['nunavut.lang.cpp']['options'] = 'target_endianness = little'
+            config.set('nunavut.lang.cpp', 'options', {'target_endianness': 'little'})
 
             lang_cpp = Language('cpp', config, True)
 
@@ -278,7 +303,7 @@ class Language:
             # Also, this method can provide a sane default.
             assert lang_cpp.get_option('foobar', 'sane_default') == 'sane_default'
 
-        :return: Either the value provided to the :class:`Language` instance, the value from properties.ini,
+        :return: Either the value provided to the :class:`Language` instance, the value from properties.yaml,
             or the :code:`default_value`.
 
         """
@@ -287,112 +312,24 @@ class Language:
         except KeyError:
             return default_value
 
-    def get_config_value(self,
-                         key: str,
-                         default_value: typing.Union[typing.Mapping[str, typing.Any], str, None] = None)\
-            -> typing.Union[typing.Mapping[str, typing.Any], str, None]:
-        """
-        Get an optional language property from the language configuration.
-
-        :param str key: The config value to retrieve.
-        :param default_value: The value to return if the key was not in the configuration. If provided
-            this method will not raise.
-        :type default_value: typing.Union[typing.Mapping[str, typing.Any], str, None]
-        :return: Either the value from the config or the default_value if provided.
-        :rtype: typing.Union[typing.Mapping[str, typing.Any], str, None]
-        :raises: KeyError if the key does not exist and a default_value was not provied.
-        """
-        return self._config.get(self._section, key, fallback=default_value)
-
-    def get_config_value_as_bool(self, key: str, default_value: bool = False) -> bool:
-        """
-        Get an optional language property from the language configuration returning a boolean. The rules
-        for boolean conversion are as follows:
-
-        .. invisible-code-block: python
-
-            from nunavut.lang import Language
-
-            config = Language.get_language_config_parser()
-            config.add_section('nunavut.lang.cpp')
-
-            lang_cpp = Language('cpp', config, True)
-
-        .. code-block:: python
-
-            # "Any string" = True
-            config.set('nunavut.lang.cpp', 'v', 'Any string')
-            assert lang_cpp.get_config_value_as_bool('v')
-
-            # "true" = True
-            config.set('nunavut.lang.cpp', 'v', 'true')
-            assert lang_cpp.get_config_value_as_bool('v')
-
-            # "TrUe" = True
-            config.set('nunavut.lang.cpp', 'v', 'TrUe')
-            assert lang_cpp.get_config_value_as_bool('v')
-
-            # "1" = True
-            config.set('nunavut.lang.cpp', 'v', '1')
-            assert lang_cpp.get_config_value_as_bool('v')
-
-            # "false" = False
-            config.set('nunavut.lang.cpp', 'v', 'false')
-            assert not lang_cpp.get_config_value_as_bool('v')
-
-            # "FaLse" = False
-            config.set('nunavut.lang.cpp', 'v', 'FaLse')
-            assert not lang_cpp.get_config_value_as_bool('v')
-
-            # "0" = False
-            config.set('nunavut.lang.cpp', 'v', '0')
-            assert not lang_cpp.get_config_value_as_bool('v')
-
-            # "" = False
-            config.set('nunavut.lang.cpp', 'v', '')
-            assert not lang_cpp.get_config_value_as_bool('v')
-
-            # False if not defined
-            assert not lang_cpp.get_config_value_as_bool('not_a_key')
-
-            # True if not defined but default_value is True
-            assert lang_cpp.get_config_value_as_bool('not_a_key', True)
-
-        :param str key: The config value to retrieve.
-        :param bool default_value: The value to use if no value existed.
-        :return: The config value as either True or False.
-        :rtype: bool
-        """
-        result = self._config.get(self._section, key, fallback='' if not default_value else '1')
-        if result.lower() == 'false' or result == '0':
-            return False
-        else:
-            return bool(result)
-
     def get_templates_package_name(self) -> str:
         """
         The name of the nunavut python package containing filters, types, and configuration
         for this language.
         """
-        return 'nunavut.lang.{}'.format(self.name)
+        return self._section
 
     def get_named_types(self) -> typing.Mapping[str, str]:
         """
         Get a map of named types to the type name to emit for this language.
         """
-        return self._config.getdict(self._section, 'named_types', fallback={})  # type: ignore
+        return self._config.get_config_value_as_dict(self._section, 'named_types', default_value={})
 
     def get_named_values(self) -> typing.Mapping[str, str]:
         """
         Get a map of named values to the token to emit for this language.
         """
-        return self._config.getdict(self._section, 'named_values', fallback={})  # type: ignore
-
-    def get_reserved_identifiers(self) -> typing.List[str]:
-        """
-        Get a list of identifiers that are reserved keywords for this language.
-        """
-        return self._config.getlist(self._section, 'reserved_identifiers', fallback=[])  # type: ignore
+        return self._config.get_config_value_as_dict(self._section, 'named_values', default_value={})
 
     def get_filters(self) -> typing.Mapping[str, typing.Callable]:
         """
@@ -451,7 +388,7 @@ class LanguageContext:
     :param str namespace_output_stem: The filename stem to give to Namespace output files if
                                       emitted or None to use a default based on a target_language.
     :param additional_config_files: A list of paths to additional ini files to load as configuration.
-        These will override any values found in the :file:`nunavut.lang.properties.ini` file and files
+        These will override any values found in the :file:`nunavut.lang.properties.yaml` file and files
         appearing later in this list will override value found in earlier entries.
     :type additional_config_files: typing.List[pathlib.Path]
     :param bool omit_serialization_support_for_target: If True then generators should not include
@@ -464,10 +401,10 @@ class LanguageContext:
     """
 
     @classmethod
-    def _load_config(cls, *additional_config_files: pathlib.Path) -> configparser.ConfigParser:
+    def _load_config(cls, *additional_config_files: pathlib.Path) -> LanguageConfig:
         import pkg_resources
         parser = Language.get_language_config_parser()
-        resources = [r for r in pkg_resources.resource_listdir(__name__, '.') if r.endswith('.ini')]
+        resources = [r for r in pkg_resources.resource_listdir(__name__, '.') if r.endswith('.yaml')]
         for resource in resources:
             with pkg_resources.resource_stream(__name__, resource) as resource_stream:
                 ini_string = resource_stream.read().decode(encoding='utf-8', errors='replace')
@@ -530,18 +467,18 @@ class LanguageContext:
             except ImportError:
                 raise KeyError('{} is not a supported language'.format(language_name))
 
-    def get_language(self, key_or_modulename: str) -> Language:
+    def get_language(self, key_or_module_name: str) -> Language:
         """
         Get a :class:`Language` object for a given language identifier.
 
-        :param str key_or_modulename: Either one of the Nunavut mnemonics for a supported language or
+        :param str key_or_module_name: Either one of the Nunavut mnemonics for a supported language or
             the ``__name__`` of one of the ``nunavut.lang.[language]`` python modules.
         :returns: A :class:`Language` object cached by this context.
         :rtype: Language
         """
-        if key_or_modulename is None or len(key_or_modulename) == 0:
+        if key_or_module_name is None or len(key_or_module_name) == 0:
             raise ValueError('key argument is required.')
-        key = (key_or_modulename[13:] if key_or_modulename.startswith('nunavut.lang.') else key_or_modulename)
+        key = (key_or_module_name[13:] if key_or_module_name.startswith('nunavut.lang.') else key_or_module_name)
         return self.get_supported_languages()[key]
 
     def get_supported_language_names(self) -> typing.Iterable[str]:
@@ -582,7 +519,7 @@ class LanguageContext:
         """
         return self._target_language
 
-    def get_target_id_filter(self) -> typing.Callable[[str], str]:
+    def get_target_id_filter(self) -> typing.Callable[[str, str], str]:
         """
         A filter that will transform a given string into a valid identifier
         in the target language. The string is pass through unmodified if no
@@ -592,10 +529,13 @@ class LanguageContext:
             filters = self._target_language.get_filters()
             for name, filter in filters.items():
                 if name == 'id':
-                    id_filter = typing.cast(typing.Callable[[Language, str], str], filter)
+                    id_filter = typing.cast(typing.Callable[[Language, str, str], str], filter)
                     return functools.partial(id_filter, self._target_language)
 
-        return lambda unfiltered: unfiltered
+        def no_filter(unfiltered: str, _: str = '') -> str:
+            return unfiltered
+
+        return no_filter
 
     def get_supported_languages(self) -> typing.Dict[str, Language]:
         """
@@ -604,50 +544,5 @@ class LanguageContext:
         return self._languages
 
     @property
-    def config(self) -> configparser.ConfigParser:
+    def config(self) -> LanguageConfig:
         return self._config
-
-
-class _UniqueNameGenerator:
-    """
-    Functor used by template filters to obtain a unique name within a given template.
-    This should be made available as a private global within each template.
-    """
-    _singleton = None  # type: typing.Optional['_UniqueNameGenerator']
-
-    def __init__(self) -> None:
-        self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, int]]
-
-    @classmethod
-    def reset(cls) -> None:
-        cls._singleton = cls()
-
-    @classmethod
-    def get_instance(cls) -> '_UniqueNameGenerator':
-        if cls._singleton is None:
-            raise RuntimeError('No _UniqueNameGenerator has been created. Please use reset to create.')
-        return cls._singleton
-
-    def __call__(self, key: str, base_token: str, prefix: str, suffix: str) -> str:
-        """
-        Uses a global index to generate a number unique to a given base_token within a template
-        for a given domain (key).
-        """
-        try:
-            keymap = self._index_map[key]
-        except KeyError:
-            keymap = {}
-            self._index_map[key] = keymap
-
-        try:
-            next_index = keymap[base_token]
-            keymap[base_token] = next_index + 1
-        except KeyError:
-            next_index = 0
-            keymap[base_token] = 1
-
-        return "{prefix}{base_token}{index}{suffix}".format(
-            prefix=prefix,
-            base_token=base_token,
-            index=next_index,
-            suffix=suffix)

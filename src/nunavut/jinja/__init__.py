@@ -232,11 +232,13 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
         """
         if target_language is not None:
 
-            limit_empty_lines_maybe = target_language.get_config_value('limit_empty_lines', None)
-            if limit_empty_lines_maybe is not None and isinstance(limit_empty_lines_maybe, str):
+            try:
+                limit_empty_lines = target_language.get_config_value('limit_empty_lines')
                 post_processors = cls.__augment_post_processors_with_ln_limit_empty_lines(
                     post_processors,
-                    int(limit_empty_lines_maybe))
+                    int(limit_empty_lines))
+            except KeyError:
+                pass
 
             if target_language.get_config_value_as_bool('trim_trailing_whitespace'):
                 post_processors = cls.__augment_post_processors_with_ln_trim_trailing_whitespace(
@@ -551,10 +553,10 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
 
         self._env.globals["now_utc"] = datetime.datetime.utcnow()
 
-        from ..lang import _UniqueNameGenerator
+        from ..lang._common import UniqueNameGenerator
 
         # reset the name generator state for this type
-        _UniqueNameGenerator.reset()
+        UniqueNameGenerator.reset()
 
         # Predetermine the post processor types.
         line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']
@@ -623,12 +625,12 @@ class DSDLCodeGenerator(CodeGenerator):
 
         :param value: The input value to parse as yaml.
 
-        :returns: If pyyaml is available, a pretty dump of the given value as yaml.
-                  If pyyaml is not available then an empty string is returned.
+        :returns: If a yaml parser is available, a pretty dump of the given value as yaml.
+                  If a yaml parser is not available then an empty string is returned.
         """
         try:
-            from yaml import dump
-            return str(dump(value))
+            from ruamel.yaml import YAML
+            return str(YAML().dump(value))
         except ImportError:
             return ""
 

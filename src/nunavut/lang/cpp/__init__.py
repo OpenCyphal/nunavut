@@ -17,16 +17,44 @@ import pydsdl
 
 from ...templates import (template_language_filter,
                           template_language_list_filter)
-from .. import Language, _UniqueNameGenerator
-from .._common import IncludeGenerator
-from ..c import C_RESERVED_PATTERNS, VariableNameEncoder, _CFit
+from .. import Language
+from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
+from ..c import _CFit
 from ..c import filter_literal as c_filter_literal
 
-CPP_RESERVED_PATTERNS = frozenset([*C_RESERVED_PATTERNS])
-
-CPP_NO_DOUBLE_DASH_RULE = re.compile(r'(__)')
-
 DEFAULT_ARRAY_TYPE = 'std::array<{TYPE},{MAX_SIZE}>'
+
+
+def handleStroppingOrEncodingFailure(encoder: TokenEncoder,
+                                     stropped: str,
+                                     token_type: str,
+                                     pending_error: RuntimeError) -> str:
+    """
+    If the generic stropping fails we take one last look to see if there is something c++-specific we can do.
+    """
+    # Note that this is imprecise because C++ does not allow identifiers to start with an underscore if they are in the
+    # global namespace but since we don't have an AST for the C++ we're generating there's no way to know if the
+    # given token is in the global namespace. Since this library is about generating code from DSDL and no DSDL
+    # identifier should be in the global namespace (except for the top-level namespace for the datatypes) we assume that
+    # the token is _not_ in the global namespace.
+    m = re.match(r'^_+([A-Z]?)', stropped)
+    if m:
+        # Resolve the conflict between C's global identifier rules and our desire to use
+        # '_' as a stropping prefix:
+        return '_{}{}'.format(m.group(1).lower(), stropped[m.end():])
+
+    # we couldn't help after all. raise the pending error.
+    raise pending_error
+
+
+@functools.cache
+def get_token_encoder(language: Language) -> TokenEncoder:
+    """
+    Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
+    """
+    return TokenEncoder(language,
+                        stropping_failure_handler=handleStroppingOrEncodingFailure,
+                        encoding_failure_handler=handleStroppingOrEncodingFailure)
 
 
 @template_language_filter(__name__)
@@ -67,7 +95,8 @@ def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
 
 @template_language_filter(__name__)
 def filter_id(language: Language,
-              instance: typing.Any) -> str:
+              instance: typing.Any,
+              id_type: str = 'any') -> str:
     """
     Filter that produces a valid C and/or C++ identifier for a given object. The encoding may not
     be reversible.
@@ -86,7 +115,7 @@ def filter_id(language: Language,
         template = '{{ I | id }}'
 
         # then
-        rendered = 'I_like_cZX002BZX002B'
+        rendered = 'I_like_czX002BzX002B'
 
 
     .. invisible-code-block: python
@@ -114,13 +143,13 @@ def filter_id(language: Language,
     .. code-block:: python
 
         # Given
-        I = '_Reserved'
+        I = 'I   really like \t coffee'
 
         # and
         template = '{{ I | id }}'
 
         # then
-        rendered = '_reserved'
+        rendered = 'I_really_like_coffee'
 
     .. invisible-code-block: python
 
@@ -136,12 +165,7 @@ def filter_id(language: Language,
     else:
         raw_name = str(instance)
 
-    vne = VariableNameEncoder(language.stropping_prefix, language.stropping_suffix, language.encoding_prefix)
-    reserved_identifiers = frozenset(language.get_reserved_identifiers())
-    out = vne.strop(raw_name,
-                    reserved_identifiers,
-                    CPP_RESERVED_PATTERNS)
-    return CPP_NO_DOUBLE_DASH_RULE.sub('_' + vne.encode_character('_'), out)
+    return get_token_encoder(language).strop(raw_name, id_type)
 
 
 @template_language_filter(__name__)
@@ -736,7 +760,7 @@ def filter_to_template_unique_name(base_token: str) -> str:
     .. invisible-code-block: python
 
         from nunavut.lang.cpp import filter_to_template_unique_name
-        from nunavut.lang import _UniqueNameGenerator
+        from nunavut.lang._common import UniqueNameGenerator
 
     .. code-block:: python
 
@@ -749,7 +773,7 @@ def filter_to_template_unique_name(base_token: str) -> str:
 
     .. invisible-code-block: python
 
-        _UniqueNameGenerator.reset()
+        UniqueNameGenerator.reset()
         jinja_filter_tester(filter_to_template_unique_name, template, rendered, 'cpp')
 
     .. code-block:: python
@@ -762,7 +786,7 @@ def filter_to_template_unique_name(base_token: str) -> str:
 
     .. invisible-code-block: python
 
-        _UniqueNameGenerator.reset()
+        UniqueNameGenerator.reset()
         jinja_filter_tester(filter_to_template_unique_name, template, rendered, 'cpp')
 
 
@@ -775,7 +799,7 @@ def filter_to_template_unique_name(base_token: str) -> str:
     else:
         adj_base_token = base_token
 
-    return _UniqueNameGenerator.get_instance()('cpp', adj_base_token, '_', '_')
+    return UniqueNameGenerator.get_instance()('cpp', adj_base_token, '_', '_')
 
 
 def filter_as_boolean_value(value: bool) -> str:
@@ -859,7 +883,7 @@ def filter_indent(language: Language,
 
 
     """
-    configured_indent = int(str(language.get_config_value('indent')))
+    configured_indent = int(language.get_config_value('indent'))
     lines = text.splitlines(keepends=True)
     result = ''
     for i in range(0, len(lines)):
