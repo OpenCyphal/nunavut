@@ -82,7 +82,7 @@ def filter_to_template_unique_name(context: SupportsTemplateContext, base_token:
 PYTHON_RESERVED_IDENTIFIERS = sorted(list(map(str, list(keyword.kwlist) + dir(builtins))))  # type: typing.List[str]
 
 
-@functools.cache
+@functools.lru_cache(maxsize=None)
 def get_token_encoder(language: Language) -> TokenEncoder:
     """
     Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.

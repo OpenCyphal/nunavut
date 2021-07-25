@@ -39,7 +39,7 @@ def handleStroppingFailure(encoder: TokenEncoder, stropped: str, token_type: str
     raise pending_error
 
 
-@functools.cache
+@functools.lru_cache(maxsize=None)
 def get_token_encoder(language: Language) -> TokenEncoder:
     """
     Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
