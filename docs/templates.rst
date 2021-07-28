@@ -107,10 +107,8 @@ Named Types by Language
 | typename_unsigned_length | C, C++      | An unsigned integer type suitable for expressing  |
 |                          |             | the length of any valid type on the local system. |
 +--------------------------+-------------+---------------------------------------------------+
-| typename_byte            | C, C++      | An unsigned integer type used to represent a      |
+| typename_byte            | C           | An unsigned integer type used to represent a      |
 |                          |             | single byte (8-bits).                             |
-+--------------------------+-------------+---------------------------------------------------+
-| typename_byte_ptr        | C++         | A pointer to one or more bytes.                   |
 +--------------------------+-------------+---------------------------------------------------+
 
 
@@ -129,11 +127,11 @@ Named Values by Language
 +--------------------+--------------------------------+
 | Value name         | Language(s)                    |
 +====================+================================+
-| valuetoken_true    | C, C++, Python, JavaScript     |
+| valuetoken_true    | C                              |
 +--------------------+--------------------------------+
-| valuetoken_false   | C, C++, Python, JavaScript     |
+| valuetoken_false   | C                              |
 +--------------------+--------------------------------+
-| valuetoken_null    | C, C++, Python, JavaScript     |
+| valuetoken_null    | C                              |
 +--------------------+--------------------------------+
 
 

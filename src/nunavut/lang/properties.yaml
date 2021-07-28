@@ -15,8 +15,7 @@ nunavut.lang.c:
     indent: 4
     prefer_system_includes: true
     # Taken from https://en.cppreference.com/w/c/keyword
-    # Everything after _Thread_local is taken from
-    # Taken from https://en.cppreference.com/w/cpp/keyword
+    # Everything after _Thread_local is taken from https://en.cppreference.com/w/cpp/keyword
     # We reserve all C++ identifiers in C to ensure interoperability.
     reserved_identifiers: &nunavut_lang_c_reserved_identifiers
         - asm
@@ -277,10 +276,7 @@ nunavut.lang.cpp:
         'boolean': 'bool'
         'unsigned_length': 'std::size_t'
         'unsigned_bit_length': 'std::size_t'
-        'byte': 'std::uint8_t'
-        'byte_ptr': 'std::uint8_t*'
         'unsigned_port': 'std::uint16_t'
-        'error_type': 'int8_t'
     named_values:
         'true': 'true'
         'false': 'false'
@@ -305,10 +301,6 @@ nunavut.lang.py:
     enable_stropping: true
     encoding_prefix: zX
     stropping_suffix: _
-    named_values:
-        'true': 'true'
-        'false': 'false'
-        'null': 'None'
 
 nunavut.lang.js:
     extension: .js
@@ -316,17 +308,9 @@ nunavut.lang.js:
     namespace_is_composite_type: true
     namespace_file_stem: _namespace_
     enable_stropping: false
-    named_values:
-        'true': 'true'
-        'false': 'false'
-        'null': 'None'
 
 nunavut.lang.html:
     extension: .html
     has_standard_namespace_files: true
     namespace_is_composite_type: false
     namespace_file_stem: index
-    named_values:
-        'true': 'true'
-        'false': 'false'
-        'null': 'None'

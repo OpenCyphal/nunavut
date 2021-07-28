@@ -25,18 +25,17 @@ from ..c import filter_literal as c_filter_literal
 DEFAULT_ARRAY_TYPE = 'std::array<{TYPE},{MAX_SIZE}>'
 
 
-def handleStroppingOrEncodingFailure(encoder: TokenEncoder,
-                                     stropped: str,
-                                     token_type: str,
-                                     pending_error: RuntimeError) -> str:
+def _handle_stropping_or_encoding_failure(encoder: TokenEncoder,
+                                          stropped: str,
+                                          token_type: str,
+                                          pending_error: RuntimeError) -> str:
     """
     If the generic stropping fails we take one last look to see if there is something c++-specific we can do.
     """
     # Note that this is imprecise because C++ does not allow identifiers to start with an underscore if they are in the
-    # global namespace but since we don't have an AST for the C++ we're generating there's no way to know if the
-    # given token is in the global namespace. Since this library is about generating code from DSDL and no DSDL
-    # identifier should be in the global namespace (except for the top-level namespace for the datatypes) we assume that
-    # the token is _not_ in the global namespace.
+    # global namespace, however, we don't have an AST for the C++ we're generating so there's no way to know if the
+    # given token is global. Since this library is about generating code from DSDL and no DSDL identifier should be in
+    # the global namespace (except for the top-level namespace for the datatypes) we assume that the token is not.
     m = re.match(r'^_+([A-Z]?)', stropped)
     if m:
         # Resolve the conflict between C's global identifier rules and our desire to use
@@ -53,8 +52,8 @@ def get_token_encoder(language: Language) -> TokenEncoder:
     Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
     """
     return TokenEncoder(language,
-                        stropping_failure_handler=handleStroppingOrEncodingFailure,
-                        encoding_failure_handler=handleStroppingOrEncodingFailure)
+                        stropping_failure_handler=_handle_stropping_or_encoding_failure,
+                        encoding_failure_handler=_handle_stropping_or_encoding_failure)
 
 
 @template_language_filter(__name__)
