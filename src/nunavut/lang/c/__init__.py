@@ -24,7 +24,7 @@ from .. import Language
 from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
 
 
-def handleStroppingFailure(encoder: TokenEncoder, stropped: str, token_type: str, pending_error: RuntimeError) -> str:
+def _handle_stropping_failure(encoder: TokenEncoder, stropped: str, token_type: str, pending_error: RuntimeError) -> str:
     """
     If the generic stropping results in either `^_[A-Z]` or `^__` we handle the failure
     with c-specific logic.
@@ -44,7 +44,7 @@ def get_token_encoder(language: Language) -> TokenEncoder:
     """
     Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
     """
-    return TokenEncoder(language, stropping_failure_handler=handleStroppingFailure)
+    return TokenEncoder(language, stropping_failure_handler=_handle_stropping_failure)
 
 
 @template_language_filter(__name__)

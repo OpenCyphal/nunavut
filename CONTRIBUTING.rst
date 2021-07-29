@@ -73,8 +73,7 @@ and running do::
 
     git submodule update --init --recursive
     docker pull uavcan/toxic:py35-py39-sq
-    docker run --rm -it -v $PWD:/repo uavcan/toxic:py35-py39-sq
-    tox
+    docker run --rm -v $PWD:/repo uavcan/toxic:py35-py39-sq tox
 
 To run a limited suite using only locally available interpreters directly on your host machine,
 skip the docker invocations and use ``tox -s``.
@@ -337,7 +336,7 @@ to cmake. For example ::
 |                                           |        |         |                              | serialization routines.                |
 +-------------------------------------------+--------+---------+------------------------------+----------------------------------------+
 
-\* *Because this option has no default a value must be provided by the user.*
+\* *Because this option has no default, a value must be provided by the user.*
 
 VSCode Remote Container Development of Verification Tests
 ====================================================================================
