@@ -24,7 +24,8 @@ from .. import Language
 from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
 
 
-def _handle_stropping_failure(encoder: TokenEncoder, stropped: str, token_type: str, pending_error: RuntimeError) -> str:
+def _handle_stropping_failure(encoder: TokenEncoder, stropped: str, token_type: str, pending_error: RuntimeError) \
+        -> str:
     """
     If the generic stropping results in either `^_[A-Z]` or `^__` we handle the failure
     with c-specific logic.
