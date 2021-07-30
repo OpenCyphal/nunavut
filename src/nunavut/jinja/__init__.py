@@ -31,6 +31,8 @@ from nunavut.jinja.jinja2 import (BaseLoader, ChoiceLoader, Environment,
 from nunavut.jinja.jinja2.ext import Extension
 from nunavut.jinja.jinja2.parser import Parser
 from nunavut.templates import LANGUAGE_FILTER_ATTRIBUTE_NAME
+from yaml import Dumper as YamlDumper
+from yaml import dump as yaml_dump
 
 logger = logging.getLogger(__name__)
 
@@ -628,11 +630,7 @@ class DSDLCodeGenerator(CodeGenerator):
         :returns: If a yaml parser is available, a pretty dump of the given value as yaml.
                   If a yaml parser is not available then an empty string is returned.
         """
-        try:
-            from ruamel.yaml import YAML
-            return str(YAML().dump(value))
-        except ImportError:
-            return ""
+        return str(yaml_dump(value, Dumper=YamlDumper))
 
     def filter_type_to_template(self, value: typing.Any) -> str:
         """

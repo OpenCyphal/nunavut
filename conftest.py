@@ -17,8 +17,8 @@ import typing
 from doctest import ELLIPSIS
 from unittest.mock import MagicMock
 
-import pytest
 import pydsdl
+import pytest
 from sybil import Sybil
 from sybil.parsers.codeblock import CodeBlockParser
 from sybil.parsers.doctest import DocTestParser
@@ -240,11 +240,12 @@ def configurable_language_context_factory(request):  # type: ignore
                                             omit_serialization_support_for_target: bool = True) \
             -> LanguageContext:
         from tempfile import NamedTemporaryFile
-        from ruamel.yaml import YAML
 
-        yp = YAML()
+        from yaml import Dumper as YamlDumper
+        from yaml import dump as yaml_dump
+
         with NamedTemporaryFile(mode='w', encoding='utf-8', suffix='yaml', newline='\n') as config_override_file:
-            yp.dump(config_overrides, config_override_file)
+            yaml_dump(config_overrides, config_override_file, Dumper=YamlDumper)
             config_override_file.flush()
             return LanguageContext(target_language,
                                    extension,

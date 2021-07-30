@@ -9,6 +9,9 @@
 import re
 import typing
 
+from yaml import Loader as YamlLoader
+from yaml import load as yaml_loader
+
 
 class LanguageConfig:
     """
@@ -214,13 +217,11 @@ class LanguageConfig:
         return self._sections
 
     def read_string(self, string: str, context: typing.Optional[str] = None) -> None:
-        import ruamel.yaml as yaml
-        configuration = yaml.YAML(typ='safe').load(string)
+        configuration = yaml_loader(string, Loader=YamlLoader)
         self.update(configuration)
 
     def read_file(self, f: typing.Iterable[str], context: typing.Optional[str] = None) -> None:
-        import ruamel.yaml as yaml
-        configuration = yaml.YAML(typ='safe').load(f)
+        configuration = yaml_loader(f, Loader=YamlLoader)
         self.update(configuration)
 
     def set(self, section: str, option: str, value: typing.Any) -> None:
