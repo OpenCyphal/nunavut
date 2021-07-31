@@ -220,7 +220,7 @@ class LanguageConfig:
         configuration = yaml_loader(string, Loader=YamlLoader)
         self.update(configuration)
 
-    def read_file(self, f: typing.Iterable[str], context: typing.Optional[str] = None) -> None:
+    def read_file(self, f: typing.TextIO, context: typing.Optional[str] = None) -> None:
         configuration = yaml_loader(f, Loader=YamlLoader)
         self.update(configuration)
 
