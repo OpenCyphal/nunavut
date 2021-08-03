@@ -19,4 +19,4 @@ with open('src/nunavut/version.py') as fp:
     exec(fp.read(), version)
 
 setuptools.setup(version=version['__version__'],
-                 package_data={'': ['*.j2', '**/*.css', '**/*.js', '*.ini', '*.hpp', '*.h']})
+                 package_data={'': ['*.j2', '**/*.css', '**/*.js', '*.ini', '*.yaml', '*.hpp', '*.h']})

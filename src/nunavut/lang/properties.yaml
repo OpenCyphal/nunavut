@@ -1,0 +1,316 @@
+%YAML 1.2
+#
+# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright (C) 2018-2021  UAVCAN Development Team  <uavcan.org>
+# This software is distributed under the terms of the MIT License.
+#
+---
+nunavut.lang.c:
+    extension: .h
+    stable_support: true
+    namespace_file_stem: _namespace_
+    has_standard_namespace_files: false
+    namespace_is_composite_type: false
+    support_namespace: nunavut.support
+    indent: 4
+    prefer_system_includes: true
+    # Taken from https://en.cppreference.com/w/c/keyword
+    # Everything after _Thread_local is taken from https://en.cppreference.com/w/cpp/keyword
+    # We reserve all C++ identifiers in C to ensure interoperability.
+    reserved_identifiers: &nunavut_lang_c_reserved_identifiers
+        - asm
+        - auto
+        - break
+        - case
+        - char
+        - const
+        - continue
+        - default
+        - defined
+        - do
+        - double
+        - error
+        - else
+        - elif
+        - endif
+        - enum
+        - extern
+        - float
+        - for
+        - fortran
+        - goto
+        - if
+        - ifdef
+        - ifndef
+        - include
+        - inline
+        - int
+        - line
+        - long
+        - pragma
+        - register
+        - restrict
+        - return
+        - short
+        - signed
+        - sizeof
+        - static
+        - struct
+        - switch
+        - typedef
+        - undef
+        - union
+        - unsigned
+        - void
+        - volatile
+        - while
+        - _Alignas
+        - _Alignof
+        - _Atomic
+        - _Bool
+        - _Complex
+        - _Generic
+        - _Imaginary
+        - _Noreturn
+        - _Pragma
+        - _Static_assert
+        - _Thread_local
+        - alignas
+        - alignof
+        - and
+        - and_eq
+        - asm
+        - atomic_cancel
+        - atomic_commit
+        - atomic_noexcept
+        - auto
+        - bitand
+        - bitor
+        - bool
+        - break
+        - case
+        - catch
+        - char
+        - char8_t
+        - char16_t
+        - char32_t
+        - class
+        - compl
+        - concept
+        - const
+        - consteval
+        - constexpr
+        - constinit
+        - const_cast
+        - continue
+        - co_await
+        - co_return
+        - co_yield
+        - decltype
+        - default
+        - delete
+        - do
+        - double
+        - dynamic_cast
+        - else
+        - enum
+        - explicit
+        - export
+        - extern
+        - "false"
+        - float
+        - for
+        - friend
+        - goto
+        - if
+        - inline
+        - int
+        - long
+        - mutable
+        - namespace
+        - new
+        - noexcept
+        - not
+        - not_eq
+        - nullptr
+        - operator
+        - or
+        - or_eq
+        - private
+        - protected
+        - public
+        - reflexpr
+        - register
+        - reinterpret_cast
+        - requires
+        - return
+        - short
+        - signed
+        - sizeof
+        - static
+        - static_assert
+        - static_cast
+        - struct
+        - switch
+        - synchronized
+        - template
+        - this
+        - thread_local
+        - throw
+        - "true"
+        - try
+        - typedef
+        - typeid
+        - typename
+        - union
+        - unsigned
+        - using
+        - virtual
+        - void
+        - volatile
+        - wchar_t
+        - while
+        - xor
+        - xor_eq
+        - override
+        - final
+        - import
+        - module
+        - transaction_safe
+        - transaction_safe_dynamic
+        - _Pragma
+        - if
+        - elif
+        - else
+        - endif
+        - ifdef
+        - ifndef
+        - define
+        - undef
+        - include
+        - line
+        - error
+        - pragma
+        - defined
+        - __has_include
+        - __has_cpp_attribute
+    token_encoding_rules_by_identifier_type:
+        all:
+            - '\s+'
+            - '(^\d{1})'
+            - '([^a-zA-Z0-9_]+)'
+    whitespace_encoding_char: _
+    reserved_token_patterns_by_type:
+        all:
+            - (^__)|(^_[A-Z])
+        function:
+            - ^(is|to|str|mem|wcs)[a-z]
+        typedef:
+            - ^u?int[a-zA-Z_0-9]*_t
+            - ^(atomic_|memory_)[a-z]
+            - ^(cnd_|mtx_|thrd_|tss_)[a-z]
+        macro: &nunavut_lang_c_reserved_token_patterns_by_type_macro
+            - ^E[A-Z0-9]+
+            - ^FE_[A-Z]
+            - ^U?INT[a-zA-Z_0-9]*_(MAX|MIN|C)
+            - ^(PRI|SCN)[a-zX]
+            - ^LC_[A-Z]
+            - ^SIG_?[A-Z]
+            - ^TIME_[A-Z]
+            - ^ATOMIC_[A-Z]
+        enum:
+            - ^(memory_order_)[a-z]
+            - ^(cnd_|mtx_|thrd_|tss_)[a-z]
+    enable_stropping: true
+    encoding_prefix: zX
+    stropping_prefix: _
+    stropping_suffix:
+    use_standard_types: true
+    limit_empty_lines: 1
+    trim_trailing_whitespace: true
+    named_types:
+        'boolean': 'bool'
+        'unsigned_length': 'size_t'
+        'byte': 'uint8_t'
+        'unsigned_bit_length': 'size_t'
+        'error_type': 'int8_t'
+        'float_32': 'float'
+        'float_64': 'double'
+    named_values:
+        'true': 'true'
+        'false': 'false'
+        'null': 'NULL'
+    options:
+        target_endianness: any
+        omit_float_serialization_support: false
+        enable_serialization_asserts: false
+        enable_override_variable_array_capacity: false
+
+nunavut.lang.cpp:
+    extension: .hpp
+    namespace_file_stem: _namespace_
+    has_standard_namespace_files: false
+    namespace_is_composite_type: true
+    support_namespace: nunavut.support
+    indent: 4
+    # We reserve all C words in C++ to ensure interoperability.
+    reserved_identifiers: *nunavut_lang_c_reserved_identifiers
+    token_encoding_rules_by_identifier_type:
+        all:
+            - '\s+'
+            - '[^a-zA-Z0-9_]+'
+            - '_{2,}'
+    reserved_token_patterns_by_type:
+        all:
+            - '^\d{1}'
+            - '^_[A-Z]'
+        macro: *nunavut_lang_c_reserved_token_patterns_by_type_macro
+    whitespace_encoding_char: "_"
+    collapse_whitespace_when_encoding: true
+    enable_stropping: true
+    encoding_prefix: zX
+    stropping_prefix: _
+    stropping_suffix:
+    use_standard_types: true
+    named_types:
+        'boolean': 'bool'
+        'unsigned_length': 'std::size_t'
+        'unsigned_bit_length': 'std::size_t'
+        'unsigned_port': 'std::uint16_t'
+    named_values:
+        'true': 'true'
+        'false': 'false'
+    options:
+        target_endianness: any
+        omit_float_serialization_support: false
+        enable_serialization_asserts: false
+        std: 11
+        variable_array_type: "std::vector<{TYPE},std::allocator<{TYPE}>>"
+
+nunavut.lang.py:
+    extension: .py
+    stable_support: true
+    has_standard_namespace_files: true
+    namespace_is_composite_type: true
+    namespace_file_stem: __init__
+    token_encoding_rules_by_identifier_type:
+        all:
+            - '^\d{1}'
+            - '[^a-zA-Z0-9_]+'
+    whitespace_encoding_char: _
+    enable_stropping: true
+    encoding_prefix: zX
+    stropping_suffix: _
+
+nunavut.lang.js:
+    extension: .js
+    has_standard_namespace_files: false
+    namespace_is_composite_type: true
+    namespace_file_stem: _namespace_
+    enable_stropping: false
+
+nunavut.lang.html:
+    extension: .html
+    has_standard_namespace_files: true
+    namespace_is_composite_type: false
+    namespace_file_stem: index

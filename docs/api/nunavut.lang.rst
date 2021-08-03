@@ -9,6 +9,7 @@ Subpackages
 
    nunavut.lang.c
    nunavut.lang.cpp
+   nunavut.lang.html
 
 Submodules
 ----------

@@ -74,7 +74,7 @@ pyenv
 pypi
 pytest
 pyuavcan
-pyyaml
+ruamel
 rcfile
 reflexpr
 roadmap
@@ -126,3 +126,11 @@ rpa
 rp
 cov
 utf-8
+len
+isinstance
+foobar
+foo
+bar
+iterable
+py
+pylint

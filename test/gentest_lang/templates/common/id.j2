@@ -10,9 +10,10 @@ lang_any = {
     'id_8' : '{{ "1 \u2764 UAVCAN" | id }}',
     'id_9' : '{{ "str" | id }}',
     'id_A' : '{{ "strr" | id }}',
-    'id_B' : '{{ "UINT_FOO_MIN" | id }}',
+    'id_B' : '{{ "UINT_FOO_MIN" | id('macro') }}',
     'id_C' : '{{ "INT_C" | id }}',
-    'id_D' : '{{ "LC_Is_reserved" | id }}',
-    'id_E' : '{{ "NOT_ATOMIC_YO" | id }}',
-    'id_F' : '{{ "ATOMIC_YO" | id }}'
+    'id_D' : '{{ "LC_Is_reserved" | id('function') }}',
+    'id_E' : '{{ "NOT_ATOMIC_YO" | id('macro') }}',
+    'id_F' : '{{ "ATOMIC_YO" | id('macro') }}',
+    'id_G' : '{{ "memory_order_yo" | id('enum') }}'
 }

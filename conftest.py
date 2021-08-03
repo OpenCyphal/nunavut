@@ -17,8 +17,8 @@ import typing
 from doctest import ELLIPSIS
 from unittest.mock import MagicMock
 
-import pytest
 import pydsdl
+import pytest
 from sybil import Sybil
 from sybil.parsers.codeblock import CodeBlockParser
 from sybil.parsers.doctest import DocTestParser
@@ -120,8 +120,8 @@ class GenTestPaths:
                     # else ignore this since it's either a namespace or it's not the version
                     # of the type we're looking for.
                 elif found_outfile is not None:
-                    raise RuntimeError('Type {} had more than one version for this test but no type version argument was'
-                                       ' provided.'.format(typename))
+                    raise RuntimeError('Type {} had more than one version for this test but no type version argument'
+                                       ' was provided.'.format(typename))
                 else:
                     found_outfile = str(outfile)
 
@@ -240,32 +240,15 @@ def configurable_language_context_factory(request):  # type: ignore
                                             omit_serialization_support_for_target: bool = True) \
             -> LanguageContext:
         from tempfile import NamedTemporaryFile
-        config_bytes = []  # type: typing.List[bytearray]
 
-        def _config_gen(indent: int,
-                        key: str,
-                        value: typing.Union[typing.Dict, typing.Any],
-                        out_config_bytes: typing.List[bytearray]) \
-                -> None:
-            line = bytearray('{}{} = '.format('    ' * indent, key), 'utf8')
-            if isinstance(value, dict):
-                line += bytearray('\n', 'utf8')
-                out_config_bytes.append(line)
-                for subkey, subvalue in value.items():
-                    _config_gen(indent + 1, subkey, subvalue, out_config_bytes)
-            else:
-                line += bytearray('{}\n'.format(str(value)), 'utf8')
-                out_config_bytes.append(line)
+        from yaml import Dumper as YamlDumper
+        from yaml import dump as yaml_dump
 
-        for section, config in config_overrides.items():
-            config_bytes.append(bytearray('[{}]\n'.format(section), 'utf8'))
-            for key, value in config.items():
-                _config_gen(0, key, value, config_bytes)
-
-        with NamedTemporaryFile() as config_override_file:
-            config_override_file.writelines(config_bytes)
+        with NamedTemporaryFile(mode='w', encoding='utf-8', suffix='yaml', newline='\n') as config_override_file:
+            yaml_dump(config_overrides, config_override_file, Dumper=YamlDumper)
             config_override_file.flush()
-            return LanguageContext(target_language, extension,
+            return LanguageContext(target_language,
+                                   extension,
                                    additional_config_files=[pathlib.Path(config_override_file.name)])
     return _make_configurable_language_context
 

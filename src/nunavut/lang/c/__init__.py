@@ -9,150 +9,49 @@
 """
 
 import enum
-import functools
 import fractions
+import functools
 import re
 import typing
 
 import pydsdl
 
 from ...templates import (SupportsTemplateContext, template_context_filter,
-                          template_language_filter, template_language_list_filter,
+                          template_language_filter,
+                          template_language_list_filter,
                           template_language_test)
-from .. import Language, _UniqueNameGenerator
-from .._common import IncludeGenerator
-
-# Taken from https://en.cppreference.com/w/c/language/identifier
-C_RESERVED_PATTERNS = frozenset(map(functools.partial(re.compile, flags=0), [
-    r'^(is|to|str|mem|wcs|atomic_|cnd_|mtx_|thrd_|tss_|memory_|memory_order_)[a-z]',
-    r'^u?int[a-zA-Z_0-9]*_t',
-    r'^E[A-Z0-9]+',
-    r'^FE_[A-Z]',
-    r'^U?INT[a-zA-Z_0-9]*_(MAX|MIN|C)',
-    r'^(PRI|SCN)[a-zX]',
-    r'^LC_[A-Z]',
-    r'^SIG_?[A-Z]',
-    r'^TIME_[A-Z]',
-    r'^ATOMIC_[A-Z]'
-]))
+from .. import Language
+from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
 
 
-class VariableNameEncoder:
-    '''
+def _handle_stropping_failure(encoder: TokenEncoder, stropped: str, token_type: str, pending_error: RuntimeError) \
+        -> str:
+    """
+    If the generic stropping results in either `^_[A-Z]` or `^__` we handle the failure
+    with c-specific logic.
+    """
+    m = re.match(r'^_+([A-Z]?)', stropped)
+    if m:
+        # Resolve the conflict between C's global identifier rules and our desire to use
+        # '_' as a stropping prefix:
+        return '_{}{}'.format(m.group(1).lower(), stropped[m.end():])
 
-    .. invisible-code-block: python
+    # we couldn't help after all. raise the pending error.
+    raise pending_error
 
-        from nunavut.lang.c import VariableNameEncoder
-        from nunavut.lang.c import C_RESERVED_PATTERNS
 
-    One-way transform from an arbitrary string of unicode characters into a valid
-    C identifier (without the use of digraphs).
-
-    :param str stropping_prefix:  prefix used by the stropping operation. For example:
-
-        .. code-block:: python
-
-            encoder = VariableNameEncoder('_','','%Z')
-            assert '_foo' == encoder.strop('foo',
-                                            {'foo'},
-                                            C_RESERVED_PATTERNS)
-
-    :param str stropping_suffix:  prefix used by the stropping operation. For example:
-
-        .. code-block:: python
-
-            encoder = VariableNameEncoder('','_','%Z')
-            assert 'foo_' == encoder.strop('foo',
-                                            {'foo'},
-                                            C_RESERVED_PATTERNS)
-
-    :param str encoding_prefix: The encoding prefix is used to create unique escape sequences.
-        For example, using '%Z' as the encoding prefix yields the following result:
-
-        .. code-block:: python
-
-            encoder = VariableNameEncoder('_','_','%Z')
-            assert '%Z0061' == encoder.encode_character('a')
-
-    :raises RuntimeError: If the encoding prefix conflicts with patterns reserved by
-        the C language. For example:
-
-        .. code-block:: python
-
-            try:
-                VariableNameEncoder('_','_','__')
-                assert False
-            except RuntimeError:
-                # double underscore is reserved and cannot be used as a prefix.
-                pass
-
-    '''
-    _token_pattern = re.compile(r'(^\d{1})|( +)|[^a-zA-Z0-9_]')  # type: typing.Pattern
-
-    _token_start_pattern = re.compile(r'(^__)|(^_[A-Z])')
-
-    def __init__(self,
-                 stropping_prefix: str,
-                 stropping_suffix: str,
-                 encoding_prefix: str,
-                 enforce_c_prefix_rules: bool = True) -> None:
-        self._stropping_prefix = stropping_prefix
-        self._stropping_suffix = stropping_suffix
-        self._encoding_prefix = encoding_prefix
-        self._enforce_c_prefix_rules = enforce_c_prefix_rules
-        if self._token_start_pattern.match(self._encoding_prefix):
-            raise RuntimeError('{} is not allowed as a prefix since it can result in illegal identifiers.'.format(
-                self._encoding_prefix))
-
-    def _filter_id_illegal_character_replacement(self, m: typing.Match) -> str:
-        if m.group(1) is not None:
-            return '_{}'.format(m.group(1))
-        elif m.group(2) is not None:
-            return '_' * len(m.group(2))
-        else:
-            return self.encode_character(m.group(0))
-
-    def _filter_id_for_illegal_start(self, m: typing.Match) -> str:
-        '''
-        In C r'^__' and r'^_[A-Z]' are always reserved. This will substitute
-        out these start conditions if found.
-        '''
-        if m.group(1) is not None:
-            return '_{}'.format(self.encode_character('_'))
-        elif m.group(2) is not None:
-            return '_{}'.format(m.group(2)[1].lower())
-        else:  # pragma: no cover
-            raise RuntimeError('unknown match')
-
-    @staticmethod
-    def _matches(input_string: str, reserved_patterns: typing.Optional[typing.FrozenSet[typing.Pattern]]) -> bool:
-        if reserved_patterns is not None:
-            for pattern in reserved_patterns:
-                if pattern.match(input_string):
-                    return True
-        return False
-
-    def encode_character(self, c: str) -> str:
-        return '{}{:04X}'.format(self._encoding_prefix, ord(c))
-
-    def strop(self,
-              token: str,
-              reserved_words: typing.FrozenSet[str],
-              reserved_patterns: typing.Optional[typing.FrozenSet[typing.Pattern]] = None) -> str:
-        encoded = str(self._token_pattern.sub(self._filter_id_illegal_character_replacement, token))
-        if encoded in reserved_words or self._matches(encoded, reserved_patterns):
-            stropped = (self._stropping_prefix + encoded + self._stropping_suffix)
-        else:
-            stropped = encoded
-        if self._enforce_c_prefix_rules:
-            return str(self._token_start_pattern.sub(self._filter_id_for_illegal_start, stropped))
-        else:
-            return stropped
+@functools.lru_cache(maxsize=None)
+def get_token_encoder(language: Language) -> TokenEncoder:
+    """
+    Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
+    """
+    return TokenEncoder(language, stropping_failure_handler=_handle_stropping_failure)
 
 
 @template_language_filter(__name__)
 def filter_id(language: Language,
-              instance: typing.Any) -> str:
+              instance: typing.Any,
+              id_type: str = 'any') -> str:
     """
     Filter that produces a valid C identifier for a given object. The encoding may not
     be reversible.
@@ -171,7 +70,7 @@ def filter_id(language: Language,
         template = '{{ I | id }}'
 
         # then
-        rendered = 'I_ZX2764_c'
+        rendered = 'I_zX2764_c'
 
 
     .. invisible-code-block: python
@@ -211,9 +110,26 @@ def filter_id(language: Language,
 
         jinja_filter_tester(filter_id, template, rendered, 'c', I=I)
 
+    .. code-block:: python
+
+        # Given
+        I = 'EMACRO_TOKEN'
+
+        # and
+        template = '{{ I | id("macro") }}'
+
+        # then
+        rendered = '_eMACRO_TOKEN'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_id, template, rendered, 'c', I=I)
+
 
     :param any instance:        Any object or data that either has a name property or can be converted
                                 to a string.
+    :param str id_type:         A type of identifier. For C this value can be 'typedef', 'macro', 'function', or 'enum'.
+                                use 'any' to apply stropping rules for all identifier types to the instance.
     :returns: A token that is a valid identifier for C, is not a reserved keyword, and is transformed
               in a deterministic manner based on the provided instance.
     """
@@ -222,11 +138,8 @@ def filter_id(language: Language,
     else:
         raw_name = str(instance)
 
-    reserved_identifiers = frozenset(language.get_reserved_identifiers())
-    vne = VariableNameEncoder(language.stropping_prefix, language.stropping_suffix, language.encoding_prefix)
-    return vne.strop(raw_name,
-                     reserved_identifiers,
-                     C_RESERVED_PATTERNS)
+    vne = get_token_encoder(language)
+    return vne.strop(raw_name, id_type)
 
 
 @template_language_filter(__name__)
@@ -312,7 +225,7 @@ def filter_macrofy(language: Language, value: str) -> str:
     if not language.enable_stropping:
         return macrofied_value
     else:
-        return filter_id(language, macrofied_value)
+        return filter_id(language, macrofied_value, 'macro')
 
 
 _CFit_T = typing.TypeVar('_CFit_T', bound='_CFit')
@@ -597,7 +510,7 @@ def filter_to_template_unique_name(context: SupportsTemplateContext, base_token:
     .. invisible-code-block: python
 
         from nunavut.lang.c import filter_to_template_unique_name
-        from nunavut.lang import _UniqueNameGenerator
+        from nunavut.lang._common import UniqueNameGenerator
 
     .. code-block:: python
 
@@ -610,7 +523,7 @@ def filter_to_template_unique_name(context: SupportsTemplateContext, base_token:
 
     .. invisible-code-block: python
 
-        _UniqueNameGenerator.reset()
+        UniqueNameGenerator.reset()
         jinja_filter_tester(filter_to_template_unique_name, template, rendered, 'c')
 
     .. code-block:: python
@@ -623,7 +536,7 @@ def filter_to_template_unique_name(context: SupportsTemplateContext, base_token:
 
     .. invisible-code-block: python
 
-        _UniqueNameGenerator.reset()
+        UniqueNameGenerator.reset()
         jinja_filter_tester(filter_to_template_unique_name, template, rendered, 'c')
 
 
@@ -636,7 +549,7 @@ def filter_to_template_unique_name(context: SupportsTemplateContext, base_token:
     else:
         adj_base_token = base_token
 
-    return _UniqueNameGenerator.get_instance()('c', adj_base_token, '_', '_')
+    return UniqueNameGenerator.get_instance()('c', adj_base_token, '_', '_')
 
 
 def _to_short_name(language: Language, t: pydsdl.CompositeType) -> str:
@@ -664,7 +577,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
     .. code-block:: python
 
         # Given a type with illegal C characters
-        my_type.short_name = '2Foo'
+        my_type.short_name = '_Foo'
         my_type.version.major = 1
         my_type.version.minor = 2
 
@@ -672,7 +585,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
         template = '{{ my_type | short_reference_name }}'
 
         # then, with stropping enabled
-        rendered = '_2Foo_1_2'
+        rendered = '_foo_1_2'
 
     .. invisible-code-block: python
 
@@ -682,7 +595,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
     .. code-block:: python
 
-        rendered = '2Foo_1_2'
+        rendered = '_Foo_1_2'
 
     .. invisible-code-block: python
 
@@ -1061,7 +974,7 @@ def is_zero_cost_primitive(language: Language, t: pydsdl.PrimitiveType) -> bool:
         rendered = 'False True False True False'
 
     .. invisible-code-block: python
-        config_overrides = {'nunavut.lang.c': {'options': 'target_endianness = little' }}
+        config_overrides = {'nunavut.lang.c': {'options': {'target_endianness': 'little' }}}
         lctx = configurable_language_context_factory(config_overrides, 'c')
         jinja_filter_tester(is_zero_cost_primitive, template, rendered, lctx, i7=i7, u32=u32, f16=f16, f32=f32, bl=bl)
 
@@ -1073,7 +986,7 @@ def is_zero_cost_primitive(language: Language, t: pydsdl.PrimitiveType) -> bool:
             pass
 
         # big endian is never zero cost.
-        config_overrides = {'nunavut.lang.c': {'options': 'target_endianness = big' }}
+        config_overrides = {'nunavut.lang.c': {'options': {'target_endianness': 'big'}}}
         lctx = configurable_language_context_factory(config_overrides, 'c')
         jinja_filter_tester(is_zero_cost_primitive,
                             template,
@@ -1122,7 +1035,7 @@ def filter_is_zero_cost_primitive(language: Language, t: pydsdl.PrimitiveType) -
 
     .. invisible-code-block: python
 
-        config_overrides = {'nunavut.lang.c': {'options': 'target_endianness = little' }}
+        config_overrides = {'nunavut.lang.c': {'options': {'target_endianness': 'little' }}}
         lctx = configurable_language_context_factory(config_overrides, 'c')
 
         jinja_filter_tester(filter_is_zero_cost_primitive, deprecated_template, 'True', lctx, u32=u32)

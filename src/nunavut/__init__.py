@@ -78,6 +78,7 @@ if sys.version_info[:2] < (3, 5):   # pragma: no cover
     sys.exit(1)
 
 
+@enum.unique
 class YesNoDefault(enum.Enum):
     """
     Trinary type for decisions that allow a default behavior to be requested that can
@@ -141,7 +142,7 @@ class Namespace(pydsdl.Any):
         self._namespace_components = []  # type: typing.List[str]
         self._namespace_components_stropped = []  # type: typing.List[str]
         for component in full_namespace.split('.'):
-            self._namespace_components_stropped.append(self._id_filter(component))
+            self._namespace_components_stropped.append(self._id_filter(component, 'typedef'))
             self._namespace_components.append(component)
         self._full_namespace = '.'.join(self._namespace_components_stropped)
         self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components_stropped))
@@ -223,7 +224,7 @@ class Namespace(pydsdl.Any):
     def get_all_types(self) -> typing.Generator[typing.Tuple[pydsdl.Any, pathlib.Path], None, None]:
         """
         Generates tuples relating datatypes and nested namespaces at and below this
-        namepace to the path for each type's generated output.
+        namespace to the path for each type's generated output.
         """
         yield from self._recursive_data_type_and_namespace_generator(self)
 
@@ -249,7 +250,7 @@ class Namespace(pydsdl.Any):
             return self.get_root_namespace()._bfs_search_for_output_path(any_type, set([self]))
 
     # +-----------------------------------------------------------------------+
-    # | DUCK TYPEING: pydsdl.CompositeType
+    # | DUCK TYPING: pydsdl.CompositeType
     # +-----------------------------------------------------------------------+
     @property
     def full_name(self) -> str:

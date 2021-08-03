@@ -148,13 +148,12 @@ def test_python_filter_imports(gen_paths):  # type: ignore
 def test_python_filter_imports_for_service_type(gen_paths, stropping, sort):  # type: ignore
     lctx = LanguageContext()
     lctx.config.set('nunavut.lang.py', 'enable_stropping', str(stropping))
-    assert stropping == lctx.config.getboolean('nunavut.lang.py', 'enable_stropping')
+    assert stropping == lctx.config.get_config_value_as_bool('nunavut.lang.py', 'enable_stropping')
 
     type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('uavcan')), [])
 
     from nunavut.lang.py import filter_imports
 
-    lctx.get_language('nunavut.lang.py').get_reserved_identifiers()
     test_subject = next(filter(lambda type: (type.short_name == 'bar_svc'), type_map))
     imports = filter_imports(lctx.get_language('nunavut.lang.py'), test_subject, sort=sort)
     assert len(imports) == 2
