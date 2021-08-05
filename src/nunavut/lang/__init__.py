@@ -32,11 +32,10 @@ class Language:
                 target :class:`nunavut.lang.Language` object.
     """
 
-    @classmethod
-    def _find_callable_for_language(cls, language_name: str, callable_name_prefix: str) -> \
+    def _find_callable_for_language(self, callable_name_prefix: str) -> \
             typing.Mapping[str, typing.Callable]:
         callable_map = dict()  # type: typing.Dict[str, typing.Callable]
-        lang_module = importlib.import_module('nunavut.lang.{}'.format(language_name))
+        lang_module = self._language_module
         callables = inspect.getmembers(lang_module, inspect.isfunction)
         callable_name_prefix_len = len(callable_name_prefix)
         for function_tuple in callables:
@@ -45,16 +44,14 @@ class Language:
                     function_name[0:callable_name_prefix_len] == callable_name_prefix:
                 callable_map[function_name[callable_name_prefix_len:]] = function_tuple[1]
                 logging.debug("Found callable {} for language {}".format(function_name[callable_name_prefix_len:],
-                                                                         language_name))
+                                                                         self._language_name))
         return callable_map
 
-    @classmethod
-    def _find_filters_for_language(cls, language_name: str) -> typing.Mapping[str, typing.Callable]:
-        return cls._find_callable_for_language(language_name, 'filter_')
+    def _find_filters_for_language(self) -> typing.Mapping[str, typing.Callable]:
+        return self._find_callable_for_language('filter_')
 
-    @classmethod
-    def _find_tests_for_language(cls, language_name: str) -> typing.Mapping[str, typing.Callable]:
-        return cls._find_callable_for_language(language_name, 'is_')
+    def _find_tests_for_language(self) -> typing.Mapping[str, typing.Callable]:
+        return self._find_callable_for_language('is_')
 
     @classmethod
     def get_language_config_parser(cls) -> LanguageConfig:
@@ -72,9 +69,10 @@ class Language:
         self._globals = None  # type: typing.Optional[typing.Mapping[str, typing.Any]]
         self._language_name = language_name
         self._section = 'nunavut.lang.{}'.format(language_name)
+        self._language_module = importlib.import_module(self._section)
         self._config_getter_cache = {}  # type: typing.Mapping[str, functools.partial[typing.Any]]
-        self._filters = self._find_filters_for_language(language_name)
-        self._tests = self._find_tests_for_language(language_name)
+        self._filters = self._find_filters_for_language()
+        self._tests = self._find_tests_for_language()
         self._config = config
         self._omit_serialization_support = omit_serialization_support
         self._language_options = config.get_config_value_as_dict(self._section, 'options', dict())
@@ -255,22 +253,36 @@ class Language:
     def support_files(self) -> typing.Generator[pathlib.Path, None, None]:
         """
         Iterates over non-templated supporting files embedded within the Nunavut distribution.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import Language
+            from unittest.mock import MagicMock
+
+            mock_config = MagicMock()
+
+            my_lang = Language('c', mock_config, True)
+            my_lang._section = "nunavut.lang.not_a_language_really_not_a_language"
+            for support_file in my_lang.support_files:
+                # if the module doesn't exist it shouldn't have any support files.
+                assert False
+
         """
         try:
-            module = importlib.import_module('nunavut.lang.{}.support'.format(self._language_name))
+            module = importlib.import_module('{}.support'.format(self._section))
 
             # All language support modules must provide a list_support_files method
             # to allow the copy generator access to the packaged support files.
             list_support_files = getattr(module, 'list_support_files')  \
                 # type: typing.Callable[[], typing.Generator[pathlib.Path, None, None]]
             return list_support_files()
-        except ModuleNotFoundError:
+        except ImportError:
             # No serialization support for this language
             logger.info("No serialization support for selected target. Skipping serialization support generation.")
 
             def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
-                return
-                yield
+                # This makes both MyPy and sonarqube happy.
+                return typing.cast(typing.Generator[pathlib.Path, None, None], iter(()))
 
             return list_support_files()
 
@@ -443,12 +455,14 @@ class LanguageContext:
                 )
             if namespace_output_stem is None:
                 self._namespace_output_stem = self._target_language.namespace_output_stem
+
+            target_language_section_name = 'nunavut.lang.{}'.format(target_language)
             if self._namespace_output_stem is not None:
-                self._config.set('nunavut.lang.{}'.format(target_language),
+                self._config.set(target_language_section_name,
                                  'namespace_file_stem',
                                  self._namespace_output_stem)
             if extension is not None:
-                self._config.set('nunavut.lang.{}'.format(target_language),
+                self._config.set(target_language_section_name,
                                  'extension',
                                  extension)
             self._languages[target_language] = self._target_language
