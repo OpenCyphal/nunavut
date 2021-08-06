@@ -296,6 +296,8 @@ C++ Filters
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_minimum_required_capacity_bits
    :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_doc
+   :noindex:
 
 Python Filters
 -------------------------------------------------

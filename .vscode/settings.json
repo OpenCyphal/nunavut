@@ -3,7 +3,8 @@
     "restructuredtext.sphinxBuildPath": "sphinx-build",
     "restructuredtext.confPath": "${workspaceFolder}",
     "restructuredtext.linter.extraArgs": [
-        "--ignore D001"
+        "--ignore D001",
+        "--ignore-messages \"No directive entry for \\\"autofunction\\\"\""
     ],
     "python.linting.flake8Enabled": true,
     "python.linting.pylintEnabled": false,

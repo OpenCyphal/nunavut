@@ -3,6 +3,7 @@
  # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
  # This software is distributed under the terms of the MIT License.
 -#}
+{{ composite_type | doc('zubax', 0, 120) }}
 {{ composite_type | definition_begin }}
 {
     // +----------------------------------------------------------------------+
@@ -21,6 +22,7 @@
     // | CONSTANTS
     // +----------------------------------------------------------------------+
     {% endif -%}
+    {{ constant | doc('zubax', 4, 120) }}
     static constexpr {{ constant.data_type | declaration }} {{ constant.name | id }} = {{ constant | constant_value }};
 {%- endfor -%}
 {%- if composite_type is UnionType -%}

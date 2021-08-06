@@ -12,6 +12,7 @@ import functools
 import io
 import re
 import typing
+import textwrap
 
 import pydsdl
 
@@ -957,3 +958,206 @@ def filter_minimum_required_capacity_bits(t: pydsdl.SerializableType) -> int:
     :returns: The minimum, required bits needed to store some values of the given type.
     """
     return typing.cast(int, min(t.bit_length_set))
+
+
+def filter_doc(instance: pydsdl.Any, style: str, indent: int = 0, line_length: int = 100) -> str:
+    """
+    Generates documentation using Python's :meth:`textwrap.TextWrapper.wrap` function.
+
+    :param instance: The pydsdl object to emit documentation for.
+    :param style: One of "javadoc", "zubax", "c", or "cpp". Dictates the style of comments to wrap the documentation in.
+    :param indent: The number of spaces to indent the comments by (tab indent is not supported. Sorry).
+    :param line_length: The soft maximum width to wrap text at. Some violations may occur where long words are used.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_doc
+        from unittest.mock import MagicMock
+
+        my_obj = MagicMock()
+
+        # Initial, private, verification:
+        my_obj.doc = '''This is a list:
+          1. one
+          2. two
+          3. three'''
+
+        template = '''
+            {{ my_obj | doc('zubax', 4, 50) }}
+            void some_method();
+        '''
+
+        rendered = '''
+            /// This is a list:
+            ///   1. one
+            ///   2. two
+            ///   3. three
+            void some_method();
+        '''
+
+        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+        # handle empty case
+        my_obj.doc = ''
+
+        template = '''
+            {{ my_obj | doc('zubax', 4, 50) }}
+            void some_method();
+        '''
+
+        rendered = '\n    \n    void some_method();\n'
+
+        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+        template = '''
+            {{ my_obj | doc('c', 4, 50) }}
+            void some_method();
+        '''
+
+        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+    .. code-block:: python
+
+        # Given a type with the following docstring
+        my_obj.doc = 'This is a bunch of documentation.'
+
+        # and
+        template = '''
+            {{ my_obj | doc('javadoc', 4, 24) }}
+            void some_method();
+        '''
+
+        # the output will be
+        rendered = '''
+            /**
+             * This is a bunch
+             * of documentation.
+            **/
+            void some_method();
+        '''
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+    .. code-block:: python
+
+        # that same template using zubax style...
+        template = '''
+            {{ my_obj | doc('zubax', 4, 24) }}
+            void some_method();
+        '''
+
+        # ...will be
+        rendered = '''
+            /// This is a bunch of
+            /// documentation.
+            void some_method();
+        '''
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+    .. code-block:: python
+
+        # also supported is cpp style...
+        template = '''
+            {{ my_obj | doc('cpp', 4, 24) }}
+            void some_method();
+        '''
+
+        rendered = '''
+            // This is a bunch of
+            // documentation.
+            void some_method();
+        '''
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+    .. code-block:: python
+
+        # and c style...
+        template = '''
+            {{ my_obj | doc('c', 4, 24) }}
+            void some_method();
+        '''
+
+        rendered = '''
+            /*
+             * This is a bunch
+             * of documentation.
+             */
+            void some_method();
+        '''
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+        # Cover ValueError clause
+        template = "{{ my_obj | doc('not a style', 4, 24) }}"
+
+        try:
+            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+            assert False
+        except ValueError:
+            pass
+    """
+    @functools.lru_cache(3)
+    def _make_textwrap(width: int, initial_indent: str, subseqent_indent: str) -> textwrap.TextWrapper:
+        return textwrap.TextWrapper(width=width,
+                                    initial_indent=initial_indent,
+                                    subsequent_indent=subseqent_indent,
+                                    break_on_hyphens=True,
+                                    break_long_words=False,
+                                    replace_whitespace=False)
+
+    style = style.lower()
+    if style == 'zubax':
+        prefix = ''
+        comment = '/// '
+        suffix = ''
+    elif style == 'cpp':
+        prefix = ''
+        comment = '// '
+        suffix = ''
+    elif style == 'javadoc':
+        comment = ' * '
+        prefix = '/**'
+        suffix = '**/'
+    elif style == 'c':
+        comment = ' * '
+        prefix = '/*'
+        suffix = ' */'
+    else:
+        raise ValueError('{} is not a support comment style. Supported is zubax, c, cpp, and javadoc'.format(style))
+
+    doclines = instance.doc.splitlines()  # type: typing.List[str]
+    indented_comment = '{}{}'.format(' ' * indent, comment)
+
+    commented_doclines = []  # type: typing.List[str]
+
+    if len(doclines) > 0:
+        if len(prefix) > 0:
+            commented_doclines.append(prefix)
+        else:
+            commented_doclines.extend(
+                _make_textwrap(width=line_length,
+                               initial_indent=comment,
+                               subseqent_indent=indented_comment).wrap(doclines.pop(0))
+            )
+
+    tw = _make_textwrap(width=line_length,
+                        initial_indent=indented_comment,
+                        subseqent_indent=indented_comment)
+
+    for docline in doclines:
+        commented_doclines.extend(tw.wrap(docline))
+
+    if len(suffix) > 0 and len(commented_doclines) > 0:
+        commented_doclines.append('{}{}'.format(' ' * indent, suffix))
+
+    return '\n'.join(commented_doclines)
