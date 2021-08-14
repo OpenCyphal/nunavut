@@ -280,6 +280,27 @@ nunavut.lang.cpp:
     named_values:
         'true': 'true'
         'false': 'false'
+    comment_styles:
+        'zubax':
+            'prefix': ''
+            'comment': '/// '
+            'suffix': ''
+        'cpp':
+            'prefix': ''
+            'comment': '// '
+            'suffix': ''
+        'javadoc':
+            'prefix': '/**'
+            'comment': ' * '
+            'suffix': ' */'
+        'c':
+            'prefix': '/*'
+            'comment': ' * '
+            'suffix': ' */'
+        'qt':
+            'prefix': '/*!'
+            'comment': ' * '
+            'suffix': ' */'
     options:
         target_endianness: any
         omit_float_serialization_support: false

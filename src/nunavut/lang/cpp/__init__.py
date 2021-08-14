@@ -960,204 +960,249 @@ def filter_minimum_required_capacity_bits(t: pydsdl.SerializableType) -> int:
     return typing.cast(int, min(t.bit_length_set))
 
 
-def filter_doc(instance: pydsdl.Any, style: str, indent: int = 0, line_length: int = 100) -> str:
-    """
-    Generates documentation using Python's :meth:`textwrap.TextWrapper.wrap` function.
+@functools.lru_cache(3)
+def _make_textwrap(width: int, initial_indent: str, subseqent_indent: str) -> textwrap.TextWrapper:
+    return textwrap.TextWrapper(width=width,
+                                initial_indent=initial_indent,
+                                subsequent_indent=subseqent_indent,
+                                break_on_hyphens=True,
+                                break_long_words=False,
+                                replace_whitespace=False)
 
-    :param instance: The pydsdl object to emit documentation for.
-    :param style: One of "javadoc", "zubax", "c", or "cpp". Dictates the style of comments to wrap the documentation in.
-    :param indent: The number of spaces to indent the comments by (tab indent is not supported. Sorry).
-    :param line_length: The soft maximum width to wrap text at. Some violations may occur where long words are used.
 
-    .. invisible-code-block: python
-
-        from nunavut.lang.cpp import filter_doc
-        from unittest.mock import MagicMock
-
-        my_obj = MagicMock()
-
-        # Initial, private, verification:
-        my_obj.doc = '''This is a list:
-          1. one
-          2. two
-          3. three'''
-
-        template = '''
-            {{ my_obj | doc('zubax', 4, 50) }}
-            void some_method();
-        '''
-
-        rendered = '''
-            /// This is a list:
-            ///   1. one
-            ///   2. two
-            ///   3. three
-            void some_method();
-        '''
-
-        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
-
-        # handle empty case
-        my_obj.doc = ''
-
-        template = '''
-            {{ my_obj | doc('zubax', 4, 50) }}
-            void some_method();
-        '''
-
-        rendered = '\n    \n    void some_method();\n'
-
-        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
-
-        template = '''
-            {{ my_obj | doc('c', 4, 50) }}
-            void some_method();
-        '''
-
-        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
-
-    .. code-block:: python
-
-        # Given a type with the following docstring
-        my_obj.doc = 'This is a bunch of documentation.'
-
-        # and
-        template = '''
-            {{ my_obj | doc('javadoc', 4, 24) }}
-            void some_method();
-        '''
-
-        # the output will be
-        rendered = '''
-            /**
-             * This is a bunch
-             * of documentation.
-            **/
-            void some_method();
-        '''
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
-
-    .. code-block:: python
-
-        # that same template using zubax style...
-        template = '''
-            {{ my_obj | doc('zubax', 4, 24) }}
-            void some_method();
-        '''
-
-        # ...will be
-        rendered = '''
-            /// This is a bunch of
-            /// documentation.
-            void some_method();
-        '''
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
-
-    .. code-block:: python
-
-        # also supported is cpp style...
-        template = '''
-            {{ my_obj | doc('cpp', 4, 24) }}
-            void some_method();
-        '''
-
-        rendered = '''
-            // This is a bunch of
-            // documentation.
-            void some_method();
-        '''
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
-
-    .. code-block:: python
-
-        # and c style...
-        template = '''
-            {{ my_obj | doc('c', 4, 24) }}
-            void some_method();
-        '''
-
-        rendered = '''
-            /*
-             * This is a bunch
-             * of documentation.
-             */
-            void some_method();
-        '''
-
-    .. invisible-code-block: python
-
-        jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
-
-        # Cover ValueError clause
-        template = "{{ my_obj | doc('not a style', 4, 24) }}"
-
-        try:
-            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
-            assert False
-        except ValueError:
-            pass
-    """
-    @functools.lru_cache(3)
-    def _make_textwrap(width: int, initial_indent: str, subseqent_indent: str) -> textwrap.TextWrapper:
-        return textwrap.TextWrapper(width=width,
-                                    initial_indent=initial_indent,
-                                    subsequent_indent=subseqent_indent,
-                                    break_on_hyphens=True,
-                                    break_long_words=False,
-                                    replace_whitespace=False)
-
-    style = style.lower()
-    if style == 'zubax':
-        prefix = ''
-        comment = '/// '
-        suffix = ''
-    elif style == 'cpp':
-        prefix = ''
-        comment = '// '
-        suffix = ''
-    elif style == 'javadoc':
-        comment = ' * '
-        prefix = '/**'
-        suffix = '**/'
-    elif style == 'c':
-        comment = ' * '
-        prefix = '/*'
-        suffix = ' */'
-    else:
-        raise ValueError('{} is not a support comment style. Supported is zubax, c, cpp, and javadoc'.format(style))
-
-    doclines = instance.doc.splitlines()  # type: typing.List[str]
+def _make_block_comment(text: str, prefix: str, comment: str, suffix: str, indent: int, line_length: int) -> str:
+    doc_lines = text.splitlines()  # type: typing.List[str]
     indented_comment = '{}{}'.format(' ' * indent, comment)
 
-    commented_doclines = []  # type: typing.List[str]
+    commented_doc_lines = []  # type: typing.List[str]
 
-    if len(doclines) > 0:
+    if len(doc_lines) > 0:
         if len(prefix) > 0:
-            commented_doclines.append(prefix)
+            commented_doc_lines.append(prefix)
         else:
-            commented_doclines.extend(
+            commented_doc_lines.extend(
                 _make_textwrap(width=line_length,
                                initial_indent=comment,
-                               subseqent_indent=indented_comment).wrap(doclines.pop(0))
+                               subseqent_indent=indented_comment).wrap(doc_lines.pop(0))
             )
 
     tw = _make_textwrap(width=line_length,
                         initial_indent=indented_comment,
                         subseqent_indent=indented_comment)
 
-    for docline in doclines:
-        commented_doclines.extend(tw.wrap(docline))
+    for docline in doc_lines:
+        commented_doc_lines.extend(tw.wrap(docline))
 
-    if len(suffix) > 0 and len(commented_doclines) > 0:
-        commented_doclines.append('{}{}'.format(' ' * indent, suffix))
+    if len(suffix) > 0 and len(commented_doc_lines) > 0:
+        commented_doc_lines.append('{}{}'.format(' ' * indent, suffix))
 
-    return '\n'.join(commented_doclines)
+    return '\n'.join(commented_doc_lines)
+
+
+@template_language_filter(__name__)
+def filter_doc(language: Language, instance: pydsdl.Any, style: str, indent: int = 0, line_length: int = 100) -> str:
+    """
+    Generates documentation using Python's :meth:`textwrap.TextWrapper.wrap` function.
+
+    :param instance: The pydsdl object to emit documentation for.
+    :param style: Dictates the style of comments to wrap the documentation in (see return documentation for valid
+        style names).
+    :param indent: The number of spaces to indent the comments by (tab indent is not supported. Sorry).
+    :param line_length: The soft maximum width to wrap text at. Some violations may occur where long words are used.
+
+    :returns str: A comment block containing the documentation. Comment styles supported are:
+
+        .. invisible-code-block: python
+
+            from nunavut.lang.cpp import filter_doc
+            from unittest.mock import MagicMock
+
+            my_obj = MagicMock()
+
+            # Initial, private, verification:
+            my_obj.doc = '''This is a list:
+             1. one
+             2. two
+             3. three'''
+
+            template = '''
+                {{ my_obj | doc('zubax', 4, 50) }}
+                void some_method();
+            '''
+
+            rendered = '''
+                /// This is a list:
+                ///  1. one
+                ///  2. two
+                ///  3. three
+                void some_method();
+            '''
+
+            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+            # handle empty case
+            my_obj.doc = ''
+
+            template = '''
+                {{ my_obj | doc('zubax', 4, 50) }}
+                void some_method();
+            '''
+
+            rendered = '''
+                {}
+                void some_method();
+            '''.format('')
+
+            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+            template = '''
+                {{ my_obj | doc('c', 4, 50) }}
+                void some_method();
+            '''
+
+            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+            # Cover ValueError clause
+            template = "{{ my_obj | doc('not a style', 4, 24) }}"
+
+            try:
+                jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+                assert False
+            except ValueError:
+                pass
+
+        **javadoc**
+
+        .. code-block:: python
+
+            # Given a type with the following docstring
+            my_obj.doc = 'This is a bunch of documentation.'
+
+            # and
+            template = '''
+                {{ my_obj | doc('javadoc', 4, 24) }}
+                void some_method();
+            '''
+
+            # the output will be
+            rendered = '''
+                /**
+                 * This is a bunch
+                 * of documentation.
+                 */
+                void some_method();
+            '''
+
+        .. invisible-code-block: python
+
+            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+        **zubax**
+
+        .. code-block:: python
+
+            # that same template using zubax style...
+            template = '''
+                {{ my_obj | doc('zubax', 4, 24) }}
+                void some_method();
+            '''
+
+            # ...will be
+            rendered = '''
+                /// This is a bunch of
+                /// documentation.
+                void some_method();
+            '''
+
+        .. invisible-code-block: python
+
+            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+        **cpp**
+
+        .. code-block:: python
+
+            # also supported is cpp style...
+            template = '''
+                {{ my_obj | doc('cpp', 4, 24) }}
+                void some_method();
+            '''
+
+            rendered = '''
+                // This is a bunch of
+                // documentation.
+                void some_method();
+            '''
+
+        .. invisible-code-block: python
+
+            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+        **c**
+
+        .. code-block:: python
+
+            # c style...
+            template = '''
+                {{ my_obj | doc('c', 4, 24) }}
+                void some_method();
+            '''
+
+            rendered = '''
+                /*
+                 * This is a bunch
+                 * of documentation.
+                 */
+                void some_method();
+            '''
+
+        .. invisible-code-block: python
+
+            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+        **qt**
+
+        .. code-block:: python
+
+            # and Qt style...
+            template = '''
+                {{ my_obj | doc('qt', 4, 24) }}
+                void some_method();
+            '''
+
+            rendered = '''
+                /*!
+                 * This is a bunch
+                 * of documentation.
+                 */
+                void some_method();
+            '''
+
+        .. invisible-code-block: python
+
+            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+
+            from nunavut.lang import LanguageContext
+
+            comment_configs = LanguageContext('cpp').get_target_language().get_config_value_as_dict('comment_styles')
+
+            if len(comment_configs) != 5:
+                raise RuntimeError('A comment style was added but not documented here. Please document it/them.')
+
+    """
+
+    config_styles = language.get_config_value_as_dict('comment_styles') \
+        # type: typing.Mapping[str, typing.Mapping[str, str]]
+
+    try:
+        config_style = config_styles[style.lower()]
+    except KeyError:
+        raise ValueError('{} is not a supported comment style. Supported is zubax, c, cpp, and javadoc'.format(style))
+
+    return _make_block_comment(
+        text=instance.doc,
+        prefix=config_style['prefix'],
+        comment=config_style['comment'],
+        suffix=config_style['suffix'],
+        indent=indent,
+        line_length=line_length)
