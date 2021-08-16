@@ -134,3 +134,7 @@ bar
 iterable
 py
 pylint
+textwrap
+javadoc
+zubax
+doxygen
