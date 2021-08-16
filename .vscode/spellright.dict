@@ -137,3 +137,4 @@ pylint
 textwrap
 javadoc
 zubax
+doxygen

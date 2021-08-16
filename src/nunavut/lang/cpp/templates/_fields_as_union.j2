@@ -7,7 +7,7 @@
     {
 {%- for field in composite_type.fields -%}
 {%- if field is not padding %}
-        {{ field | doc('zubax', 8, 120) }}
+        {{ field.doc | block_comment('cpp-doxygen', 8, 120) }}
         {{ field.data_type | declaration }} {{ field.name | id }};
 {%- endif -%}
 {%- endfor %}

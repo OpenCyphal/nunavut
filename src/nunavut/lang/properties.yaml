@@ -281,10 +281,10 @@ nunavut.lang.cpp:
         'true': 'true'
         'false': 'false'
     comment_styles:
-        'zubax':
-            'prefix': ''
+        'cpp-doxygen':
+            'prefix': '///'
             'comment': '/// '
-            'suffix': ''
+            'suffix': '///'
         'cpp':
             'prefix': ''
             'comment': '// '

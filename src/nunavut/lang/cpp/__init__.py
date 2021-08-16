@@ -1000,51 +1000,49 @@ def _make_block_comment(text: str, prefix: str, comment: str, suffix: str, inden
 
 
 @template_language_filter(__name__)
-def filter_doc(language: Language, instance: pydsdl.Any, style: str, indent: int = 0, line_length: int = 100) -> str:
+def filter_block_comment(language: Language, text: str, style: str, indent: int = 0, line_length: int = 100) -> str:
     """
-    Generates documentation using Python's :meth:`textwrap.TextWrapper.wrap` function.
+    Reformats text as a block comment using Python's :meth:`textwrap.TextWrapper.wrap` function.
 
-    :param instance: The pydsdl object to emit documentation for.
-    :param style: Dictates the style of comments to wrap the documentation in (see return documentation for valid
-        style names).
+    :param text: The text to emit as a block comment.
+    :param style: Dictates the style of comments (see return documentation for valid style names).
     :param indent: The number of spaces to indent the comments by (tab indent is not supported. Sorry).
     :param line_length: The soft maximum width to wrap text at. Some violations may occur where long words are used.
 
-    :returns str: A comment block containing the documentation. Comment styles supported are:
+    :returns str: A comment block. Comment styles supported are:
 
         .. invisible-code-block: python
 
-            from nunavut.lang.cpp import filter_doc
-            from unittest.mock import MagicMock
-
-            my_obj = MagicMock()
+            from nunavut.lang.cpp import filter_block_comment
 
             # Initial, private, verification:
-            my_obj.doc = '''This is a list:
+            text = '''This is a list:
              1. one
              2. two
              3. three'''
 
             template = '''
-                {{ my_obj | doc('zubax', 4, 50) }}
+                {{ text | block_comment('cpp-doxygen', 4, 50) }}
                 void some_method();
             '''
 
             rendered = '''
+                ///
                 /// This is a list:
                 ///  1. one
                 ///  2. two
                 ///  3. three
+                ///
                 void some_method();
             '''
 
-            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+            jinja_filter_tester(filter_block_comment, template, rendered, 'cpp', text=text)
 
             # handle empty case
-            my_obj.doc = ''
+            text = ''
 
             template = '''
-                {{ my_obj | doc('zubax', 4, 50) }}
+                {{ text | block_comment('cpp-doxygen', 4, 50) }}
                 void some_method();
             '''
 
@@ -1053,20 +1051,20 @@ def filter_doc(language: Language, instance: pydsdl.Any, style: str, indent: int
                 void some_method();
             '''.format('')
 
-            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+            jinja_filter_tester(filter_block_comment, template, rendered, 'cpp', text=text)
 
             template = '''
-                {{ my_obj | doc('c', 4, 50) }}
+                {{ text | block_comment('c', 4, 50) }}
                 void some_method();
             '''
 
-            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+            jinja_filter_tester(filter_block_comment, template, rendered, 'cpp', text=text)
 
             # Cover ValueError clause
-            template = "{{ my_obj | doc('not a style', 4, 24) }}"
+            template = "{{ text | block_comment('not a style', 4, 24) }}"
 
             try:
-                jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+                jinja_filter_tester(filter_block_comment, template, rendered, 'cpp', text=text)
                 assert False
             except ValueError:
                 pass
@@ -1076,11 +1074,11 @@ def filter_doc(language: Language, instance: pydsdl.Any, style: str, indent: int
         .. code-block:: python
 
             # Given a type with the following docstring
-            my_obj.doc = 'This is a bunch of documentation.'
+            text = 'This is a bunch of documentation.'
 
             # and
             template = '''
-                {{ my_obj | doc('javadoc', 4, 24) }}
+                {{ text | block_comment('javadoc', 4, 24) }}
                 void some_method();
             '''
 
@@ -1095,28 +1093,31 @@ def filter_doc(language: Language, instance: pydsdl.Any, style: str, indent: int
 
         .. invisible-code-block: python
 
-            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+            jinja_filter_tester(filter_block_comment, template, rendered, 'cpp', text=text)
 
-        **zubax**
+        **cpp-doxygen**
 
         .. code-block:: python
 
-            # that same template using zubax style...
+            # that same template using the cpp style of doxygen...
             template = '''
-                {{ my_obj | doc('zubax', 4, 24) }}
+                {{ text | block_comment('cpp-doxygen', 4, 24) }}
                 void some_method();
             '''
 
             # ...will be
             rendered = '''
-                /// This is a bunch of
+                ///
+                /// This is a bunch
+                /// of
                 /// documentation.
+                ///
                 void some_method();
             '''
 
         .. invisible-code-block: python
 
-            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+            jinja_filter_tester(filter_block_comment, template, rendered, 'cpp', text=text)
 
         **cpp**
 
@@ -1124,7 +1125,7 @@ def filter_doc(language: Language, instance: pydsdl.Any, style: str, indent: int
 
             # also supported is cpp style...
             template = '''
-                {{ my_obj | doc('cpp', 4, 24) }}
+                {{ text | block_comment('cpp', 4, 24) }}
                 void some_method();
             '''
 
@@ -1136,7 +1137,7 @@ def filter_doc(language: Language, instance: pydsdl.Any, style: str, indent: int
 
         .. invisible-code-block: python
 
-            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+            jinja_filter_tester(filter_block_comment, template, rendered, 'cpp', text=text)
 
         **c**
 
@@ -1144,7 +1145,7 @@ def filter_doc(language: Language, instance: pydsdl.Any, style: str, indent: int
 
             # c style...
             template = '''
-                {{ my_obj | doc('c', 4, 24) }}
+                {{ text | block_comment('c', 4, 24) }}
                 void some_method();
             '''
 
@@ -1158,7 +1159,7 @@ def filter_doc(language: Language, instance: pydsdl.Any, style: str, indent: int
 
         .. invisible-code-block: python
 
-            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+            jinja_filter_tester(filter_block_comment, template, rendered, 'cpp', text=text)
 
         **qt**
 
@@ -1166,7 +1167,7 @@ def filter_doc(language: Language, instance: pydsdl.Any, style: str, indent: int
 
             # and Qt style...
             template = '''
-                {{ my_obj | doc('qt', 4, 24) }}
+                {{ text | block_comment('qt', 4, 24) }}
                 void some_method();
             '''
 
@@ -1180,7 +1181,7 @@ def filter_doc(language: Language, instance: pydsdl.Any, style: str, indent: int
 
         .. invisible-code-block: python
 
-            jinja_filter_tester(filter_doc, template, rendered, 'cpp', my_obj=my_obj)
+            jinja_filter_tester(filter_block_comment, template, rendered, 'cpp', text=text)
 
             from nunavut.lang import LanguageContext
 
@@ -1197,10 +1198,11 @@ def filter_doc(language: Language, instance: pydsdl.Any, style: str, indent: int
     try:
         config_style = config_styles[style.lower()]
     except KeyError:
-        raise ValueError('{} is not a supported comment style. Supported is zubax, c, cpp, and javadoc'.format(style))
+        raise ValueError('{} is not a supported comment style. Supported is c, cpp, cpp-doxygen, and javadoc'
+                         .format(style))
 
     return _make_block_comment(
-        text=instance.doc,
+        text=text,
         prefix=config_style['prefix'],
         comment=config_style['comment'],
         suffix=config_style['suffix'],
