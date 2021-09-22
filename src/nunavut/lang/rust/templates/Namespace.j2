@@ -1,0 +1,5 @@
+//! Auto-generated rust from DSDL
+
+{% for ns in T.get_nested_namespaces() -%}
+pub mod {{ ns | name }};
+{% endfor %}

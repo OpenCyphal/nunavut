@@ -1,0 +1,25 @@
+{#-
+ # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+ # Authors: David Lenfesty
+-#}
+
+{#- TODO spend some time on what this should look like in docs -#}
+
+{#- should these just be regular comments? -#}
+//! This is an AUTO-GENERATED UAVCAN DSDL data type implementation. Curious? See https://uavcan.org.
+//! You shouldn't attempt to edit this file.
+//!
+//! Checking this file under version control is not recommended unless it is used as part of a high-SIL
+//! safety-critical codebase. The typical usage scenario is to generate it as part of the build process.
+
+{# no includes because we can just use fully qualified paths! -#}
+{# I feel like traits are the best way to encode this, but not sure how to here... -#}
+{% if T.has_fixed_port_id %}
+const HAS_FIXED_PORT_ID: bool = true;
+{% else %}
+const HAS_FIXED_PORT_ID: bool = false;
+{% endif -%}
+const FIXED_PORT_ID: {{ typename_unsigned_port }} = {{ T.fixed_port_id }};
+
+{% block contents %}{% endblock %}

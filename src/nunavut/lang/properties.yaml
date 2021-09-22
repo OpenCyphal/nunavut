@@ -335,3 +335,14 @@ nunavut.lang.html:
     has_standard_namespace_files: true
     namespace_is_composite_type: false
     namespace_file_stem: index
+
+nunavut.lang.rust:
+    extension: .rs
+    has_standard_namespace_files: true # Can potentially be hijacked to generate mod.rs files
+    namespace_is_composite_type: false
+    namespace_file_stem: mod # getting warmer...
+    named_types: # TODO reserved identifiers
+        'boolean': 'bool'
+        'unsigned_length': 'usize'
+        'unsigned_bit_length': 'usize'
+        'unsigned_port': 'u16'

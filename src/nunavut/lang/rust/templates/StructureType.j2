@@ -1,0 +1,20 @@
+{#-
+ # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+ # Authors: David Lenfesty
+-#}
+
+{% extends "base.j2" %}
+
+{% block contents %}
+{#- TODO delimitedType has no name #}
+pub struct {{ T | short_reference_name }} {
+{%- for f, offset in T.iterate_fields_with_offsets() %}
+    {% if f is PrimitiveType -%}
+    pub {{ f.name }}: {{ f.data_type | type_from_primitive }},
+    {%- elif f is CompositeType -%}
+    pub {{ f.name }}: {{ f.data_type | full_reference_name }},
+    {%- endif %}
+{%- endfor %}
+}
+{% endblock %}

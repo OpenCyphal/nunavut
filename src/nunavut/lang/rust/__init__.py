@@ -228,69 +228,51 @@ def filter_macrofy(language: Language, value: str) -> str:
         return filter_id(language, macrofied_value, 'macro')
 
 
-_CFit_T = typing.TypeVar('_CFit_T', bound='_CFit')
+_RustFit_T = typing.TypeVar('_RustFit_T', bound='_RustFit')
 
 
 @enum.unique
-class _CFit(enum.Enum):
+class _RustFit(enum.Enum):
     IN_8 = 8
     IN_16 = 16
     IN_32 = 32
     IN_64 = 64
 
-    def to_std_int(self, is_signed: bool) -> str:
-        return "{}int{}_t".format(('' if is_signed else 'u'), self.value)
-
-    def to_c_int(self, is_signed: bool) -> str:
-        if self.value == 8:
-            intname = 'char'
-        elif self.value == 16:
-            intname = 'int'
-        elif self.value == 32:
-            intname = 'long'
-        else:
-            intname = 'long long'
-
-        if not is_signed:
-            intname = 'unsigned ' + intname
-
-        return intname
-
-    def to_c_float(self) -> str:
+    def to_rust_float(self) -> str:
         if self.value == 8 or self.value == 16 or self.value == 32:
-            return 'float'
+            return 'f32'
         else:
-            return 'double'
+            return 'f64'
 
-    def to_c_type(self,
+    def to_rust_type(self,
                   value: pydsdl.PrimitiveType,
                   language: Language,
                   inttype_prefix: typing.Optional[str] = None) -> str:
         use_standard_types = language.get_config_value_as_bool('use_standard_types')
         safe_prefix = '' if not use_standard_types or inttype_prefix is None else inttype_prefix
         if isinstance(value, pydsdl.UnsignedIntegerType):
-            return safe_prefix + (self.to_c_int(False) if not use_standard_types else self.to_std_int(False))
+            return f"u{self.value}"
         elif isinstance(value, pydsdl.SignedIntegerType):
-            return safe_prefix + (self.to_c_int(True) if not use_standard_types else self.to_std_int(True))
+            return f"i{self.value}"
         elif isinstance(value, pydsdl.FloatType):
-            return self.to_c_float()
+            return self.to_rust_float()
         elif isinstance(value, pydsdl.BooleanType):
             return language.get_named_types()['boolean']
         elif isinstance(value, pydsdl.VoidType):
-            return 'void'
+            return '()' # TODO not sure if this is correct
         else:
             raise RuntimeError('{} is not a known PrimitiveType'.format(type(value).__name__))
 
     @classmethod
-    def get_best_fit(cls: typing.Type[_CFit_T], bit_length: int) -> _CFit_T:
+    def get_best_fit(cls: typing.Type[_RustFit_T], bit_length: int) -> _RustFit_T:
         if bit_length <= 8:
-            bestfit = _CFit.IN_8
+            bestfit = _RustFit.IN_8
         elif bit_length <= 16:
-            bestfit = _CFit.IN_16
+            bestfit = _RustFit.IN_16
         elif bit_length <= 32:
-            bestfit = _CFit.IN_32
+            bestfit = _RustFit.IN_32
         elif bit_length <= 64:
-            bestfit = _CFit.IN_64
+            bestfit = _RustFit.IN_64
         else:
             raise RuntimeError(
                 "Cannot emit a standard type for a primitive that is larger than 64 bits ({}).".format(
@@ -305,11 +287,11 @@ def filter_type_from_primitive(language: Language,
                                value: pydsdl.PrimitiveType) -> str:
     """
     Filter to transform a pydsdl :class:`~pydsdl.PrimitiveType` into
-    a valid C type.
+    a valid Rust type.
 
     .. invisible-code-block: python
 
-        from nunavut.lang.c import filter_type_from_primitive
+        from nunavut.lang.rust import filter_type_from_primitive
         import pydsdl
 
 
@@ -393,7 +375,7 @@ def filter_type_from_primitive(language: Language,
 
 
     """
-    return _CFit.get_best_fit(value.bit_length).to_c_type(value, language)
+    return _RustFit.get_best_fit(value.bit_length).to_rust_type(value, language)
 
 
 _snake_case_pattern_0 = re.compile(r'[\W]+')                    # 'port.SubjectIDList'  -> 'port_SubjectIDList'
@@ -857,6 +839,20 @@ def filter_literal(language: Language,
         raise ValueError('Cannot construct a literal from an instance of {}'.format(type(ty).__name__))
 
 
+def _path_to_reference(language: Language, l: typing.List[str]) -> str:
+    not_stropped = '::'.join(l)
+    if language.enable_stropping:
+        return filter_id(language, not_stropped)
+    else:
+        return not_stropped
+
+
+@template_language_filter(__name__)
+def filter_full_reference_path(language: Language, t: pydsdl.CompositeType) -> str:
+    ns = t.full_namespace.split('.')
+    return _path_to_reference(language, ns)
+
+
 @template_language_filter(__name__)
 def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> str:
     """
@@ -895,12 +891,10 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
     """
     ns = t.full_namespace.split('.')
 
-    full_path = ns + [_to_short_name(language, t)]
-    not_stropped = '_'.join(full_path)
-    if language.enable_stropping:
-        return filter_id(language, not_stropped)
-    else:
-        return not_stropped
+    # TODO I don't like this
+    short_name = _to_short_name(language, t)
+    full_path = ns + [short_name, short_name]
+    return _path_to_reference(language, full_path)
 
 
 def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
@@ -928,7 +922,7 @@ def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
         jinja_filter_tester(filter_to_standard_bit_length, template, rendered, 'c', I=I)
 
     """
-    return int(_CFit.get_best_fit(t.bit_length).value)
+    return int(_RustFit.get_best_fit(t.bit_length).value)
 
 
 @template_language_test(__name__)
@@ -1043,3 +1037,12 @@ def filter_is_zero_cost_primitive(language: Language, t: pydsdl.PrimitiveType) -
 
     """
     return str(is_zero_cost_primitive(language, t))
+
+
+# TODO not sure about the typing to use here
+# only needed for namespaces right now
+@template_language_filter(__name__)
+def filter_name(language: Language, t: pydsdl.CompositeType) -> str:
+    return t.full_name.split('.')[-1]
+
+# TODO write CamelCase filter for enums
