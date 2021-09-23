@@ -853,6 +853,14 @@ def filter_full_reference_path(language: Language, t: pydsdl.CompositeType) -> s
     return _path_to_reference(language, ns)
 
 
+def _to_full_reference_name(language: Language, t: pydsdl.CompositeType):
+    ns = t.full_namespace.split('.')
+
+    # TODO I don't like this
+    short_name = _to_short_name(language, t)
+    full_path = ns + [short_name, short_name]
+    return _path_to_reference(language, full_path)
+
 @template_language_filter(__name__)
 def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> str:
     """
@@ -889,12 +897,7 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
 
     :param pydsdl.CompositeType t: The DSDL type to get the fully-resolved reference name for.
     """
-    ns = t.full_namespace.split('.')
-
-    # TODO I don't like this
-    short_name = _to_short_name(language, t)
-    full_path = ns + [short_name, short_name]
-    return _path_to_reference(language, full_path)
+    _to_full_reference_name(language, t)
 
 
 def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
@@ -1044,5 +1047,30 @@ def filter_is_zero_cost_primitive(language: Language, t: pydsdl.PrimitiveType) -
 @template_language_filter(__name__)
 def filter_name(language: Language, t: pydsdl.CompositeType) -> str:
     return t.full_name.split('.')[-1]
+
+
+@template_language_filter(__name__)
+def filter_qualified_type(language: Language, t: pydsdl.SerializableType):
+    if isinstance(t, pydsdl.PrimitiveType):
+        return _RustFit.get_best_fit(t.bit_length).to_rust_type(t, language)
+    else:
+        return _to_full_reference_name(language, t)
+
+
+@template_language_filter(__name__)
+def filter_snake_case(language: Language, s: str) -> str:
+    out = ""
+    rd_ptr = 0
+    for i in range(len(s)):
+        if s[i].isupper():
+            if i == 0 or s[i-1].isupper():
+                continue
+
+            out += f"{s[rd_ptr:i]}_"
+            rd_ptr = i
+
+    out += s[rd_ptr:]
+
+    return out.lower()
 
 # TODO write CamelCase filter for enums

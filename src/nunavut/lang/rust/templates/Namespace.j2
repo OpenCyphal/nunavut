@@ -1,5 +1,15 @@
 //! Auto-generated rust from DSDL
-
+// Exported submodules
 {% for ns in T.get_nested_namespaces() -%}
 pub mod {{ ns | name }};
+{% endfor %}
+
+// Local modules
+{% for t, _path in T.get_nested_types() -%}
+mod {{ t| short_reference_name | snake_case }};
+{% endfor %}
+
+// Export names for convenience
+{% for t, _path in T.get_nested_types() -%}
+pub use {{ t| short_reference_name | snake_case }}::{{ t | short_reference_name }};
 {% endfor %}
