@@ -1050,7 +1050,7 @@ def filter_name(language: Language, t: pydsdl.CompositeType) -> str:
 
 
 @template_language_filter(__name__)
-def filter_qualified_type(language: Language, t: pydsdl.SerializableType):
+def filter_qualified_type(language: Language, t: pydsdl.SerializableType) -> str:
     if isinstance(t, pydsdl.PrimitiveType):
         return _RustFit.get_best_fit(t.bit_length).to_rust_type(t, language)
     else:
@@ -1072,5 +1072,3 @@ def filter_snake_case(language: Language, s: str) -> str:
     out += s[rd_ptr:]
 
     return out.lower()
-
-# TODO write CamelCase filter for enums

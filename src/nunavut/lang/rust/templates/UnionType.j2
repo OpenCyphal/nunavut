@@ -4,11 +4,7 @@
 {#- TODO delimitedType has no name #}
 pub enum {{ T | short_reference_name }} {
 {%- for f, offset in T.iterate_fields_with_offsets() %}
-    {% if f is PrimitiveType -%}
-    {{ f.name }}({{ f.data_type | type_from_primitive }}),
-    {%- elif f is CompositeType -%}
-    {{ f.name }}({{ f.data_type | full_reference_name }}),
-    {%- endif %}
+    {{ f.name }}({{ f.data_type | qualified_type }}),
 {%- endfor %}
 }
 {% endblock %}
