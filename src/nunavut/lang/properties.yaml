@@ -338,9 +338,10 @@ nunavut.lang.html:
 
 nunavut.lang.rust:
     extension: .rs
-    has_standard_namespace_files: true # Can potentially be hijacked to generate mod.rs files
+    has_standard_namespace_files: true
     namespace_is_composite_type: false
-    namespace_file_stem: mod # getting warmer...
+    namespace_file_stem: mod
+    snake_case_file_names: true
     named_types: # TODO reserved identifiers
         'boolean': 'bool'
         'unsigned_length': 'usize'

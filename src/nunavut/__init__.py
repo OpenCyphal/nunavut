@@ -113,6 +113,21 @@ class YesNoDefault(enum.Enum):
 
 # +---------------------------------------------------------------------------+
 
+def _camel_to_snake_case(camel: str) -> str:
+    out = ""
+    rd_ptr = 0
+    for i in range(len(camel)):
+        if camel[i].isupper():
+            if i == 0 or camel[i-1].isupper():
+                continue
+
+            out += f"{camel[rd_ptr:i]}_"
+            rd_ptr = i
+
+    out += camel[rd_ptr:]
+
+    return out.lower()
+
 
 class Namespace(pydsdl.Any):
     """
@@ -291,9 +306,16 @@ class Namespace(pydsdl.Any):
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
-    def _add_data_type(self, dsdl_type: pydsdl.CompositeType, extension: typing.Optional[str]) -> None:
+    def _add_data_type(self, dsdl_type: pydsdl.CompositeType, extension: typing.Optional[str], snake_case: bool) \
+            -> None:
+        # TODO convert dsdl_type.short_name to CamelCase if configured
+        if snake_case:
+            short_name = _camel_to_snake_case(dsdl_type.short_name)
+        else:
+            short_name = dsdl_type.short_name
+
         filestem = "{}_{}_{}".format(
-            dsdl_type.short_name, dsdl_type.version.major, dsdl_type.version.minor)
+            short_name, dsdl_type.version.major, dsdl_type.version.minor)
         output_path = self._output_folder / pathlib.PurePath(filestem)
         if extension is not None:
             output_path = output_path.with_suffix(extension)
@@ -414,7 +436,11 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
                     break
                 namespace_index.add(ancestor_ns)
 
-        namespace._add_data_type(dsdl_type, language_context.get_output_extension())
+        # TODO need to pass a filter function or something here
+        # THis is hacky as heck, not sure the preferred way
+        snake_case_file_names = language_context.get_target_language().get_config_value('snake_case_file_names', False)
+        namespace._add_data_type(dsdl_type, language_context.get_output_extension(),
+                                 snake_case_file_names)
 
     # We now have an index of all namespace names and we have Namespace
     # objects for non-empty namespaces. This final loop will build any
