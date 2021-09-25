@@ -6,7 +6,7 @@
 Fixtures for our tests.
 """
 
-import functools
+import logging
 import os
 import pathlib
 import re
@@ -15,7 +15,6 @@ import tempfile
 import textwrap
 import typing
 from doctest import ELLIPSIS
-from unittest.mock import MagicMock
 
 import pydsdl
 import pytest
@@ -24,11 +23,18 @@ from sybil.parsers.codeblock import CodeBlockParser
 from sybil.parsers.doctest import DocTestParser
 
 from nunavut import Namespace
-from nunavut.jinja.jinja2 import DictLoader
-from nunavut.lang import LanguageContext
-from nunavut.templates import (CONTEXT_FILTER_ATTRIBUTE_NAME,
-                               ENVIRONMENT_FILTER_ATTRIBUTE_NAME,
-                               LANGUAGE_FILTER_ATTRIBUTE_NAME)
+
+
+def pytest_configure(config: typing.Any) -> None:
+    """
+    See https://docs.pytest.org/en/6.2.x/reference.html#initialization-hooks
+    """
+    # pydsdl._dsdl_definition is reeeeeeealy verbose at the INFO level and below. Turn this down to reduce
+    # scroll-blindness.
+    logging.getLogger('pydsdl._dsdl_definition').setLevel(logging.WARNING)
+    # A lot of DEBUG noise in the other loggers so we'll tune this down to INFO and higher.
+    logging.getLogger('pydsdl._namespace').setLevel(logging.INFO)
+    logging.getLogger('pydsdl._data_type_builder').setLevel(logging.INFO)
 
 
 @pytest.fixture
@@ -197,6 +203,8 @@ def assert_language_config_value(request):  # type: ignore
     """
     Assert that a given configuration value is set for the target language.
     """
+    from nunavut.lang import LanguageContext
+
     def _assert_language_config_value(target_language: typing.Union[typing.Optional[str], LanguageContext],
                                       key: str,
                                       expected_value: typing.Any,
@@ -233,6 +241,8 @@ def configurable_language_context_factory(request):  # type: ignore
             test_my_test(configurable_language_context_factory)
 
     """
+    from nunavut.lang import LanguageContext
+
     def _make_configurable_language_context(config_overrides: typing.Mapping[str, typing.Mapping[str, typing.Any]],
                                             target_language: typing.Optional[str] = None,
                                             extension: typing.Optional[str] = None,
@@ -287,60 +297,37 @@ def jinja_filter_tester(request):  # type: ignore
 
             jinja_filter_tester(filter_dummy, template, rendered, lctx, I=I)
     """
-    def _make_filter_test_template(filter_or_test_or_list_of_either:
-                                   typing.Union[typing.Callable, typing.List[typing.Callable]],
+    from nunavut.jinja.jinja2 import DictLoader
+    from nunavut.lang import LanguageContext
+
+    def _make_filter_test_template(filter_or_list_of_filters:
+                                   typing.Union[None, typing.Callable, typing.List[typing.Callable]],
                                    body: str,
                                    expected: str,
                                    target_language_or_language_context:
                                    typing.Union[typing.Optional[str], LanguageContext],
                                    **globals: typing.Optional[typing.Dict[str, typing.Any]]) -> str:
         from nunavut.jinja import CodeGenEnvironment
-        e = CodeGenEnvironment(loader=DictLoader({'test': body}))
-
-        def _add(name: str,
-                 filter_or_test: typing.Callable,
-                 collection: typing.Dict) -> None:
-            if hasattr(filter_or_test, ENVIRONMENT_FILTER_ATTRIBUTE_NAME) and \
-                    getattr(filter_or_test, ENVIRONMENT_FILTER_ATTRIBUTE_NAME):
-                collection[name] = functools.partial(filter_or_test, e)
-            else:
-                collection[name] = filter_or_test
-
-            if hasattr(filter_or_test, CONTEXT_FILTER_ATTRIBUTE_NAME) and \
-                    getattr(filter_or_test, CONTEXT_FILTER_ATTRIBUTE_NAME):
-                context = MagicMock()
-                collection[name] = functools.partial(filter_or_test, context)
-            else:
-                collection[name] = filter_or_test
-
-            if hasattr(filter_or_test, LANGUAGE_FILTER_ATTRIBUTE_NAME):
-                language_name = getattr(filter_or_test, LANGUAGE_FILTER_ATTRIBUTE_NAME)
-                collection[name] = functools.partial(filter_or_test, lctx.get_language(language_name))
-            else:
-                collection[name] = filter_or_test
-
-        if globals is not None:
-            e.globals.update(globals)
 
         if isinstance(target_language_or_language_context, LanguageContext):
             lctx = target_language_or_language_context
         else:
             lctx = LanguageContext(target_language_or_language_context)
 
-        filters_or_tests = (filter_or_test_or_list_of_either if isinstance(
-            filter_or_test_or_list_of_either, list) else [filter_or_test_or_list_of_either])
-        for filter_or_test in filters_or_tests:
-            if filter_or_test.__name__.startswith('filter_'):
-                _add(filter_or_test.__name__[7:], filter_or_test, e.filters)
-            elif filter_or_test.__name__.startswith('is_'):
-                _add(filter_or_test.__name__[3:], filter_or_test, e.tests)
-            else:
-                raise RuntimeError('unknown filter or test type {} found in inputs.'.format(filter_or_test.__name__))
+        if filter_or_list_of_filters is None:
+            additional_filters = dict()  # type: typing.Optional[typing.Dict[str, typing.Callable]]
+        elif isinstance(filter_or_list_of_filters, list):
+            additional_filters = dict()
+            for filter in filter_or_list_of_filters:
+                additional_filters[filter.__name__] = filter
+        else:
+            additional_filters = {filter_or_list_of_filters.__name__: filter_or_list_of_filters}
 
-        target_language_resolved = lctx.get_target_language()
-        if target_language_resolved is not None:
-            e.globals.update(target_language_resolved.get_globals())
-            e.globals['options'].update(target_language_resolved.get_options())
+        e = CodeGenEnvironment(lctx=lctx,
+                               loader=DictLoader({'test': body}),
+                               allow_filter_test_or_use_query_overwrite=True,
+                               additional_filters=additional_filters,
+                               additional_globals=globals)
 
         rendered = str(e.get_template('test').render())
         if expected != rendered:

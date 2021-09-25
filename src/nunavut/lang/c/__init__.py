@@ -20,32 +20,61 @@ from ...templates import (SupportsTemplateContext, template_context_filter,
                           template_language_filter,
                           template_language_list_filter,
                           template_language_test)
-from .. import Language
+from .. import Dependencies
+from .. import Language as BaseLanguage
 from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
 
 
-def _handle_stropping_failure(encoder: TokenEncoder, stropped: str, token_type: str, pending_error: RuntimeError) \
-        -> str:
+class Language(BaseLanguage):
     """
-    If the generic stropping results in either `^_[A-Z]` or `^__` we handle the failure
-    with c-specific logic.
+    Concrete, C-specific :class:`nunavut.lang.Language` object.
     """
-    m = re.match(r'^_+([A-Z]?)', stropped)
-    if m:
-        # Resolve the conflict between C's global identifier rules and our desire to use
-        # '_' as a stropping prefix:
-        return '_{}{}'.format(m.group(1).lower(), stropped[m.end():])
 
-    # we couldn't help after all. raise the pending error.
-    raise pending_error
+    @staticmethod
+    def _handle_stropping_failure(encoder: TokenEncoder, stropped: str, token_type: str, pending_error: RuntimeError) \
+            -> str:
+        """
+        If the generic stropping results in either `^_[A-Z]` or `^__` we handle the failure
+        with c-specific logic.
+        """
+        m = re.match(r'^_+([A-Z]?)', stropped)
+        if m:
+            # Resolve the conflict between C's global identifier rules and our desire to use
+            # '_' as a stropping prefix:
+            return '_{}{}'.format(m.group(1).lower(), stropped[m.end():])
 
+        # we couldn't help after all. raise the pending error.
+        raise pending_error
 
-@functools.lru_cache(maxsize=None)
-def get_token_encoder(language: Language) -> TokenEncoder:
-    """
-    Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
-    """
-    return TokenEncoder(language, stropping_failure_handler=_handle_stropping_failure)
+    @functools.lru_cache(maxsize=None)
+    def _get_token_encoder(self) -> TokenEncoder:
+        """
+        Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
+        """
+        return TokenEncoder(self, stropping_failure_handler=self._handle_stropping_failure)
+
+    def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
+        std_includes = []  # type: typing.List[str]
+        if self.get_config_value_as_bool('use_standard_types'):
+            std_includes.append('stdlib.h')
+            # we always include stdlib if standard types are in use since initializers
+            # require the use of NULL
+            if dep_types.uses_integer:
+                std_includes.append('stdint.h')
+            if dep_types.uses_bool:
+                std_includes.append('stdbool.h')
+            if dep_types.uses_primitive_static_array:
+                # We include this for memset.
+                std_includes.append('string.h')
+        return ['<{}>'.format(include) for include in sorted(std_includes)]
+
+    def filter_id(self,
+                  instance: typing.Any,
+                  id_type: str = 'any') -> str:
+        raw_name = self.default_filter_id_for_target(instance)
+
+        vne = self._get_token_encoder()
+        return vne.strop(raw_name, id_type)
 
 
 @template_language_filter(__name__)
@@ -130,16 +159,10 @@ def filter_id(language: Language,
                                 to a string.
     :param str id_type:         A type of identifier. For C this value can be 'typedef', 'macro', 'function', or 'enum'.
                                 use 'any' to apply stropping rules for all identifier types to the instance.
-    :returns: A token that is a valid identifier for C, is not a reserved keyword, and is transformed
+    :return: A token that is a valid identifier for C, is not a reserved keyword, and is transformed
               in a deterministic manner based on the provided instance.
     """
-    if hasattr(instance, 'name'):
-        raw_name = str(instance.name)  # type: str
-    else:
-        raw_name = str(instance)
-
-    vne = get_token_encoder(language)
-    return vne.strop(raw_name, id_type)
+    return language.filter_id(instance, id_type)
 
 
 @template_language_filter(__name__)
@@ -219,13 +242,13 @@ def filter_macrofy(language: Language, value: str) -> str:
 
     :param str value: The value to transform.
 
-    :returns: A valid C preprocessor identifier token.
+    :return: A valid C preprocessor identifier token.
     """
     macrofied_value = filter_to_screaming_snake_case(str(value))
     if not language.enable_stropping:
         return macrofied_value
     else:
-        return filter_id(language, macrofied_value, 'macro')
+        return language.filter_id(macrofied_value, 'macro')
 
 
 _CFit_T = typing.TypeVar('_CFit_T', bound='_CFit')
@@ -264,7 +287,7 @@ class _CFit(enum.Enum):
 
     def to_c_type(self,
                   value: pydsdl.PrimitiveType,
-                  language: Language,
+                  language: BaseLanguage,
                   inttype_prefix: typing.Optional[str] = None) -> str:
         use_standard_types = language.get_config_value_as_bool('use_standard_types')
         safe_prefix = '' if not use_standard_types or inttype_prefix is None else inttype_prefix
@@ -351,7 +374,7 @@ def filter_type_from_primitive(language: Language,
 
     :param str value: The dsdl primitive to transform.
 
-    :returns: A valid C99 type name.
+    :return: A valid C99 type name.
 
     :raises RuntimeError: If the primitive cannot be represented as a standard C type.
 
@@ -456,7 +479,7 @@ def filter_to_snake_case(value: str) -> str:
 
     :param str value: The string to transform into C snake-case.
 
-    :returns: A valid C99 token using the snake-case convention.
+    :return: A valid C99 token using the snake-case convention.
     """
     pass0 = _snake_case_pattern_0.sub('_', str.strip(value))
     pass1 = _snake_case_pattern_1.sub(lambda x: '_' + x.group(0).lower(), pass0)
@@ -541,7 +564,7 @@ def filter_to_template_unique_name(context: SupportsTemplateContext, base_token:
 
 
     :param str base_token: A token to include in the base name.
-    :returns: A name that is likely to be valid C identifier and is likely to
+    :return: A name that is likely to be valid C identifier and is likely to
         be unique within the file generated by the current template.
     """
     if len(base_token) > 0:
@@ -607,7 +630,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
     """
     short_name = _to_short_name(language, t)
     if language.enable_stropping:
-        return filter_id(language, short_name)
+        return language.filter_id(short_name)
     else:
         return short_name
 
@@ -898,7 +921,7 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
     full_path = ns + [_to_short_name(language, t)]
     not_stropped = '_'.join(full_path)
     if language.enable_stropping:
-        return filter_id(language, not_stropped)
+        return language.filter_id(not_stropped)
     else:
         return not_stropped
 

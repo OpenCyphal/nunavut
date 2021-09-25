@@ -6,25 +6,76 @@
 #
 
 # +===========================================================================+
+# | flag replacement
+# +===========================================================================+
+#
+# :function: replace_c_std
+# Add a given C -std argument within a string or add it if its not found
+#
+# :param str ARG_REPLACE_IN: The string to do the replacement within.
+# :param str ARG_OVERRIDE_C_STD: The flag <em>value</em> to replace (i.e. just "c99" not "-std=c99")
+function(replace_c_std ARG_OVERRIDE_C_STD
+                       ARG_REPLACE_INOUT)
+
+    string(REGEX REPLACE "-std=[a-fA-F0-9+:]+"
+           "-std=${ARG_OVERRIDE_C_STD}"
+           LOCAL_RESULT
+           ${${ARG_REPLACE_INOUT}})
+    set(${ARG_REPLACE_INOUT} ${LOCAL_RESULT} PARENT_SCOPE)
+endfunction()
+
+#
+# :function: replace_cxx_std
+# Add a given C++ -std argument within a string or add it if its not found
+#
+# :param str ARG_REPLACE_IN: The string to do the replacement within.
+# :param str ARG_OVERRIDE_CXX_STD: The flag <em>value</em> to replace (i.e. just "c++11" not "-std=c++11")
+function(replace_cxx_std ARG_OVERRIDE_CXX_STD
+                         ARG_REPLACE_INOUT)
+
+    string(REGEX REPLACE "-std=[a-fA-F0-9+:]+"
+                         "-std=${ARG_OVERRIDE_CXX_STD}"
+                         LOCAL_RESULT
+                         ${${ARG_REPLACE_INOUT}})
+    set(${ARG_REPLACE_INOUT} ${LOCAL_RESULT} PARENT_SCOPE)
+endfunction()
+
+# +===========================================================================+
 # | Flag set handling
 # +===========================================================================+
-
-function(apply_flag_set ARG_FLAG_SET)
+#
+# :function: apply_flag_set
+# CMake 3.10 compatible routine for loading this project's compiler flag sets
+# (found under cmake/compiler_flag_sets) and properly setting the following cmake build variables:
+#       - CMAKE_C_FLAGS
+#       - CMAKE_CXX_FLAGS
+#       - CMAKE_EXE_LINKER_FLAGS
+#       - CMAKE_ASM_FLAGS
+#
+# :param Path ARG_FLAG_SET:                 The flagset file to include.
+# :param str  ARG_OVERRIDE_C_STD:           Locally overridden -std flag for C.
+# :param str  ARG_OVERRIDE_CXX_STD:         Locally overridden -std flag for C++.
+function(apply_flag_set ARG_FLAG_SET
+                        ARG_OVERRIDE_C_STD
+                        ARG_OVERRIDE_CXX_STD)
     include(${ARG_FLAG_SET})
 
     # list(JOIN ) is a thing in cmake 3.12 but we only require 3.10.
-    foreach(ITEM ${C_FLAG_SET})
-        set(LOCAL_CMAKE_C_FLAGS "${LOCAL_CMAKE_C_FLAGS} ${ITEM}")
-    endforeach()
-    foreach(ITEM ${CXX_FLAG_SET})
-        set(LOCAL_CMAKE_CXX_FLAGS "${LOCAL_CMAKE_CXX_FLAGS} ${ITEM}")
-    endforeach()
-    foreach(ITEM ${EXE_LINKER_FLAG_SET})
-        set(LOCAL_CMAKE_EXE_LINKER_FLAGS "${LOCAL_CMAKE_EXE_LINKER_FLAGS} ${ITEM}")
-    endforeach()
-    foreach(ITEM ${ASM_FLAG_SET})
-        set(LOCAL_CMAKE_ASM_FLAGS "${LOCAL_CMAKE_ASM_FLAGS} ${ITEM}")
-    endforeach()
+    # Why 3.10? Because this is the version in Ubuntu 18.04 LTS.
+    string(REPLACE ";" " " LOCAL_CMAKE_C_FLAGS "${C_FLAG_SET}")
+    string(REPLACE ";" " " LOCAL_CMAKE_CXX_FLAGS "${CXX_FLAG_SET}")
+    string(REPLACE ";" " " LOCAL_CMAKE_EXE_LINKER_FLAGS "${EXE_LINKER_FLAG_SET}")
+    string(REPLACE ";" " " LOCAL_CMAKE_ASM_FLAGS "${ASM_FLAG_SET}")
+
+    if (NOT ARG_OVERRIDE_C_STD STREQUAL "")
+        replace_c_std(${ARG_OVERRIDE_C_STD} LOCAL_CMAKE_C_FLAGS)
+        message(STATUS "Overriding C standard from flag set ${ARG_FLAG_SET} with ${ARG_OVERRIDE_C_STD}")
+    endif()
+
+    if (NOT ARG_OVERRIDE_CXX_STD STREQUAL "")
+        replace_cxx_std(${ARG_OVERRIDE_CXX_STD} LOCAL_CMAKE_CXX_FLAGS)
+        message(STATUS "Overriding C++ standard from flag set ${ARG_FLAG_SET} with ${ARG_OVERRIDE_CXX_STD}")
+    endif()
 
     # +-----------------------------------------------------------------------+
     # | CONFIGURABLE DEFINITIONS
@@ -59,9 +110,16 @@ function(apply_flag_set ARG_FLAG_SET)
     # +-----------------------------------------------------------------------+
 
     set(CMAKE_C_FLAGS ${LOCAL_CMAKE_C_FLAGS} PARENT_SCOPE)
+    message(STATUS "apply_flag_set: CMAKE_C_FLAGS=${LOCAL_CMAKE_C_FLAGS}")
+
     set(CMAKE_CXX_FLAGS ${LOCAL_CMAKE_CXX_FLAGS} PARENT_SCOPE)
+    message(STATUS "apply_flag_set: CMAKE_CXX_FLAGS=${LOCAL_CMAKE_CXX_FLAGS}")
+
     set(CMAKE_EXE_LINKER_FLAGS ${LOCAL_CMAKE_EXE_LINKER_FLAGS} PARENT_SCOPE)
+    message(STATUS "apply_flag_set: CMAKE_EXE_LINKER_FLAGS=${LOCAL_CMAKE_EXE_LINKER_FLAGS}")
+
     set(CMAKE_ASM_FLAGS ${LOCAL_CMAKE_ASM_FLAGS} PARENT_SCOPE)
+    message(STATUS "apply_flag_set: CMAKE_ASM_FLAGS=${LOCAL_CMAKE_ASM_FLAGS}")
 
     add_definitions(${DEFINITIONS_SET})
 

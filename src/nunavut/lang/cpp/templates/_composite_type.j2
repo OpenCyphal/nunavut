@@ -26,7 +26,11 @@
     static constexpr {{ constant.data_type | declaration }} {{ constant.name | id }} = {{ constant | constant_value }};
 {%- endfor -%}
 {%- if composite_type is UnionType -%}
+{%- ifuses "std_variant" -%}
+{% include '_fields_as_variant.j2' %}
+{%- else -%}
 {% include '_fields_as_union.j2' %}
+{%- endifuses -%}
 {%- else -%}
 {% include '_fields.j2' %}
 {%- endif -%}

@@ -58,7 +58,7 @@ class FilePostProcessor(PostProcessor):
         Performs the post-processing action on the generated file.
 
         :param pathlib.Path generated: The path of the generated file.
-        :returns: A path to the generated file. This may be a modified path for
+        :return: A path to the generated file. This may be a modified path for
                   some post-processors.
         """
         raise NotImplementedError()
@@ -111,7 +111,7 @@ class LinePostProcessor(PostProcessor):
         :param str line_and_lineend: A tuple where the first argument is the
                line generated from the template and the second are any new
                line characters.
-        :returns: A tuple with the first item being the content of the line and
+        :return: A tuple with the first item being the content of the line and
                 the second being any newline characters to append. It is
                 reccommended that the newline characters are treated as opaque
                 since these tend to be different on various platforms. Line

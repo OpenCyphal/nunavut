@@ -1,0 +1,36 @@
+{#-
+ # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+#}
+    const std::variant<
+{%- for field in composite_type.fields -%}
+{%- if field is not padding %}
+        {{ field.doc | block_comment('cpp-doxygen', 8, 120) }}
+        {{ field.data_type | declaration }}{% if not loop.last %},{% endif %}
+{%- endif -%}
+{%- endfor %}
+    > storage_;
+{%- for field in composite_type.fields -%}
+{%- if field is not padding %}
+
+    constexpr bool {{ ('is' + field.name.capitalize())  | id }}() const noexcept
+    {
+        return std::holds_alternative<{{ field.data_type | declaration }}>(storage_);
+    }
+
+    constexpr bool {{ ('get' + field.name.capitalize())  | id }}({{ field.data_type | declaration }}& out) const noexcept
+    {
+        const auto pto = std::get_if<{{ field.data_type | declaration }}>(&storage_);
+        if (pto)
+        {
+            out = *pto;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+{%- endif -%}
+{%- endfor-%}

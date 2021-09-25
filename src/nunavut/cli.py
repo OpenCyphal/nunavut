@@ -72,6 +72,8 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
     language_options['omit_float_serialization_support'] = args.omit_float_serialization_support
     language_options['enable_serialization_asserts'] = args.enable_serialization_asserts
     language_options['enable_override_variable_array_capacity'] = args.enable_override_variable_array_capacity
+    if args.language_standard is not None:
+        language_options['std'] = args.language_standard
 
     language_context = nunavut.lang.LanguageContext(
         args.target_language,
@@ -187,7 +189,7 @@ def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # 
         generator.generate_all(is_dryrun=args.dry_run,
                                allow_overwrite=not args.no_overwrite)
 
-    # If docgen selected, warn about linked namespaces
+    # TODO: move this somewhere html-specific.
     if args.target_language == 'html':
         if len(extra_includes) > 0:
             logging.warning(
@@ -556,6 +558,17 @@ def _make_parser() -> argparse.ArgumentParser:
         Instruct support header generators to add the possibility to override max capacity of a
         variable length array in serialization routines. This option will disable serialization
         buffer checks and add conditional compilation statements which violates MISRA.
+
+    ''').lstrip())
+
+    ln_opt_group.add_argument('--language-standard', '-std',
+                              help=textwrap.dedent('''
+
+        For languages generators that support different standards of their core language this option
+        can be used to optimize the output. For example, C templates may generate slightly different
+        code for the the c99 standard then for c11. For available support in Nunavut see the
+        documentation for built-in templates
+        (https://nunavut.readthedocs.io/en/latest/docs/templates.html#built-in-template-guide).
 
     ''').lstrip())
 

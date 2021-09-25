@@ -1,9 +1,9 @@
-{ 
+{
     "name": "{{ attribute.name }}"
   , "type" : "uint{{ attribute.data_type.bit_length }}"
   , "bit_length" : {{ attribute.data_type.bit_length }}
   , "cast_mode" : "{{ attribute.data_type.cast_mode.name }}"
-{%- if attribute is constant %}
+{%- if attribute is Constant %}
   , "const_value" : {{ attribute.value }}
 {% endif -%}
 }

@@ -305,7 +305,7 @@ nunavut.lang.cpp:
         target_endianness: any
         omit_float_serialization_support: false
         enable_serialization_asserts: false
-        std: 11
+        std: c++14
         variable_array_type: "std::vector<{TYPE},std::allocator<{TYPE}>>"
 
 nunavut.lang.py:

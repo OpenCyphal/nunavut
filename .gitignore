@@ -25,6 +25,7 @@ dist
 .clear*
 .DS_Store
 prof
+out
 
 # Eclipse
 .metadata

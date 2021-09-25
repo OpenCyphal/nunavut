@@ -64,7 +64,7 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
     def get_templates(self) -> typing.Iterable[pathlib.Path]:
         """
         Enumerate all templates found in the templates path.
-        :returns: A list of paths to all templates found by this Generator object.
+        :return: A list of paths to all templates found by this Generator object.
         """
         raise NotImplementedError()
 

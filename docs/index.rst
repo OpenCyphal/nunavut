@@ -3,7 +3,7 @@
    :maxdepth: 2
    :hidden:
 
-   api/modules
+   ../build/docs/library
    templates
    CLI (nnvg) <cli>
    dev

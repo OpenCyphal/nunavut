@@ -1,12 +1,19 @@
 {
 {%- for field in T.fields %}
-    "{{ field.name }}" : 
+    "{{ field.name }}" :
     {
         "type": "{{ field.data_type }}",
         "isSerializableType":{% if field.data_type is SerializableType %}true{% else %}false{% endif %},
+        "isSerializable":{% if field is serializable %}true{% else %}false{% endif %},
+        "isPrimitiveType":{% if field.data_type is PrimitiveType %}true{% else %}false{% endif %},
+        "isPrimitive":{% if field is primitive %}true{% else %}false{% endif %},
         "isFloatType":{% if field.data_type is FloatType %}true{% else %}false{% endif %},
         "isIntegerType":{% if field.data_type is IntegerType %}true{% else %}false{% endif %},
-        "isIntegerType_field":{% if field is IntegerType %}true{% else %}false{% endif %}
+        "isIntegerType_field":{% if field is IntegerType %}true{% else %}false{% endif %},
+        "isPaddingField":{% if field is PaddingField %}true{% else %}false{% endif %},
+        "isPadding":{% if field is padding %}true{% else %}false{% endif %},
+        "isConstant":{% if field is Constant %}true{% else %}false{% endif %},
+        "isconstant":{% if field is constant %}true{% else %}false{% endif %}
     }{% if not loop.last %},{% endif %}
 {% endfor %}
 }

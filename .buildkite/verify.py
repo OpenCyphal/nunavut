@@ -69,6 +69,10 @@ def _make_parser() -> argparse.ArgumentParser:
                             default='c',
                             help='Value for NUNAVUT_VERIFICATION_LANG (defaults to c)')
 
+    build_args.add_argument('-std', '--language-standard',
+                            default='',
+                            help='Language standard')
+
     build_args.add_argument('--build-type',
                             help='Value for CMAKE_BUILD_TYPE')
 
@@ -305,6 +309,9 @@ def _cmake_configure(args: argparse.Namespace, cmake_args: typing.List[str], cma
 
     cmake_configure_args.append('--log-level={}'.format(cmake_logging_level))
     cmake_configure_args.append('-DNUNAVUT_VERIFICATION_LANG={}'.format(args.language))
+
+    if args.language_standard is not None:
+        cmake_configure_args.append('-DNUNAVUT_VERIFICATION_LANG_STANDARD={}'.format(args.language_standard))
 
     if args.build_type is not None:
         cmake_configure_args.append('-DCMAKE_BUILD_TYPE={}'.format(args.build_type))

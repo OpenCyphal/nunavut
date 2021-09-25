@@ -23,7 +23,7 @@ configure all Nunavut objects for a specific target language ::
     from nunavut.lang import LanguageContext
 
     # Here we are going to generate C headers.
-    langauge_context = LanguageContext('c')
+    language_context = LanguageContext('c')
 
 :class:`nunavut.generators.AbstractGenerator` objects require
 a :class:`nunavut.Namespace` tree which can be built from the
@@ -47,7 +47,7 @@ Putting this all together, the typical use of this library looks something like 
     compound_types = read_namespace(root_namespace, include_paths)
 
     # select a target language
-    langauge_context = LanguageContext('c')
+    language_context = LanguageContext('c')
 
     # build the namespace tree
     root_namespace = build_namespace_tree(compound_types,
@@ -138,11 +138,10 @@ class Namespace(pydsdl.Any):
                  base_output_path: pathlib.PurePath,
                  language_context: lang.LanguageContext):
         self._parent = None  # type: typing.Optional[Namespace]
-        self._id_filter = language_context.get_target_id_filter()
         self._namespace_components = []  # type: typing.List[str]
         self._namespace_components_stropped = []  # type: typing.List[str]
         for component in full_namespace.split('.'):
-            self._namespace_components_stropped.append(self._id_filter(component, 'typedef'))
+            self._namespace_components_stropped.append(language_context.filter_id_for_target(component, 'typedef'))
             self._namespace_components.append(component)
         self._full_namespace = '.'.join(self._namespace_components_stropped)
         self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components_stropped))
@@ -185,7 +184,7 @@ class Namespace(pydsdl.Any):
         """
         Traverses the namespace tree up to the root and returns the root node.
 
-        :returns: The root namepace object.
+        :return: The root namespace object.
         """
         namespace = self  # type: Namespace
         while namespace._parent is not None:
@@ -235,7 +234,7 @@ class Namespace(pydsdl.Any):
 
         :param Any any_type: Either a Namespace or pydsdl.CompositeType to find the
                              output path for.
-        :returns: The path where a file will be generated for a given type.
+        :return: The path where a file will be generated for a given type.
         :raises KeyError: If the type was not found in this namespace tree.
         """
         if isinstance(any_type, Namespace):
@@ -364,9 +363,9 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
     :param list types: A list of pydsdl types.
     :param str root_namespace_dir: A path to the folder which is the root namespace.
     :param str output_dir: The base directory under which all generated files will be created.
-    :param lang.LanguageContext language_context: The language context to use when building
+    :param nunavut.lang.LanguageContext language_context: The language context to use when building
             :class:`nunavut.Namespace` objects.
-    :returns: The root :class:`nunavut.Namespace`.
+    :return: The root :class:`nunavut.Namespace`.
 
     """
     base_path = pathlib.PurePath(output_dir)
@@ -441,22 +440,6 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
 # +---------------------------------------------------------------------------+
 
 
-class Dependencies:
-    """
-    Data structure that contains a set of composite types and annotations (bool flags)
-    which constitute a set of dependencies for a set of DSDL objects.
-    """
-
-    def __init__(self) -> None:
-        self.composite_types = set()  # type: typing.Set[pydsdl.CompositeType]
-        self.uses_integer = False
-        self.uses_float = False
-        self.uses_variable_length_array = False
-        self.uses_array = False
-        self.uses_bool = False
-        self.uses_primitive_static_array = False
-
-
 class DependencyBuilder:
     """
     Given a list of DSDL types this object builds a set of types that the given types use.
@@ -490,6 +473,7 @@ class DependencyBuilder:
         assert my_dependant_type_l1 in transitive_dependencies.composite_types
         assert my_dependant_type_l2 in transitive_dependencies.composite_types
         assert direct_dependencies.uses_integer
+        assert direct_dependencies.uses_union
 
     :param dependant_types: A list of types to build dependencies for.
     :type dependant_types: typing.Iterable[pydsdl.Any]
@@ -498,14 +482,14 @@ class DependencyBuilder:
     def __init__(self, *dependant_types: pydsdl.Any):
         self._dependent_types = dependant_types
 
-    def transitive(self) -> Dependencies:
+    def transitive(self) -> lang.Dependencies:
         """
         Build a set of all transitive dependencies for the dependent types
         set for this builder.
         """
         return self._build_dependency_list(self._dependent_types, True)
 
-    def direct(self) -> Dependencies:
+    def direct(self) -> lang.Dependencies:
         """
         Build a set of all first-order dependencies for the dependent types
         set for this builder.
@@ -518,12 +502,13 @@ class DependencyBuilder:
 
     @classmethod
     def _build_dependency_list(cls, dependant_types: typing.Iterable[pydsdl.CompositeType], transitive: bool) \
-            -> Dependencies:
-        results = Dependencies()
+            -> lang.Dependencies:
+        results = lang.Dependencies()
         for dependant in dependant_types:
             if isinstance(dependant, pydsdl.UnionType):
                 # Unions always require integer for the tag field.
                 results.uses_integer = True
+                results.uses_union = True
             cls._extract_dependent_types(cls._extract_data_types(dependant), transitive, results)
         return results
 
@@ -540,7 +525,7 @@ class DependencyBuilder:
     def _extract_dependent_types_handle_array_type(cls,
                                                    dependant_type: pydsdl.ArrayType,
                                                    transitive: bool,
-                                                   inout_dependencies: Dependencies) -> None:
+                                                   inout_dependencies: lang.Dependencies) -> None:
         if isinstance(dependant_type, pydsdl.VariableLengthArrayType):
             inout_dependencies.uses_variable_length_array = True
         else:
@@ -552,7 +537,7 @@ class DependencyBuilder:
     def _extract_dependent_types(cls,
                                  dependant_types: typing.Iterable[pydsdl.Any],
                                  transitive: bool,
-                                 inout_dependencies: Dependencies) -> None:
+                                 inout_dependencies: lang.Dependencies) -> None:
         for dt in dependant_types:
             if isinstance(dt, pydsdl.CompositeType):
                 if dt not in inout_dependencies.composite_types:

@@ -13,7 +13,7 @@
       aria-expanded="false"
       aria-controls="{{ type_tag_id }}"
       >+</a>
-{% if not t is array %}
+{% if not t is ArrayType %}
 {% if nested %}
 <a href="{{ t | url_from_type }}">{{ t.full_name }} (v{{t.version[0]}}.{{t.version[1]}})</a>
 {{ attr_name }}
@@ -26,15 +26,15 @@
 {% if t is deprecated %}
 <span style="color: red">[deprecated]</span>
 {% endif %}
-{% if t is union %}
+{% if t is UnionType %}
 <span style="color: blue">[union]</span>
 {% endif %}
 {% else %}
 {{ t | display_type }} {{ attr_name }}
 {% endif %}
 
-{% if not t is service %}
-{% if t is composite %}
+{% if not t is ServiceType %}
+{% if t is CompositeType %}
 <span class="extent" style="color: green">
     [extent {{ t | extent / 8 }} bytes]
 </span>
@@ -48,29 +48,29 @@
 
 </p>
 <div class="collapse type {{ 'nested' if nested else '' }}" id="{{ type_tag_id }}" style="padding-left: 2rem; border-left: 1px solid #AAA;">
-    {% if t is array %}
-    {% if t.element_type is composite %}
+    {% if t is ArrayType %}
+    {% if t.element_type is CompositeType %}
     {{ generate_type_info(t.element_type, "", True) }}
     {% else %}
     <p class="fw-bold mb-0">{{ t.element_type }}</p>
     {% endif %}
     {% else %}
     {# We don't want to show the service docs in both the service and the request #}
-    {% if t.doc and not t is service_req %}
+    {% if t.doc and not t is service_request %}
     <pre class="docs">{{ t.doc }}</pre>
     {% endif %}
     {% if t.attributes | length == 0 %}
     <p>(data type is empty)</p>
     {% else %}
     {% for attr in t.attributes %}
-    {% if attr.data_type is array %}
+    {% if attr.data_type is ArrayType %}
     {{ generate_type_info(attr.data_type, attr.name, True) }}
-    {% elif attr.data_type is composite %}
+    {% elif attr.data_type is CompositeType %}
     {{ generate_type_info(attr.data_type, attr.name, True) }}
     {% else %}
     <p class="fw-bold mb-0">
     {{ attr | display_type }}
-    {% if attr is field %}
+    {% if attr is Field %}
     {% if attr.data_type | max_bit_length % 8 == 0 %}
     <span class="bitlength" style="color: green">
         [max length {{ attr.data_type | max_bit_length / 8 }} bytes]

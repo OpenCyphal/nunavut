@@ -14,6 +14,7 @@
 #
 # :param str ARG_TARGET_NAME:               The name to give the target.
 # :param str ARG_OUTPUT_LANGUAGE            The language to generate for this target.
+# :param str ARG_OUTPUT_LANGUAGE_STD        The language standard use.
 # :param Path ARG_OUTPUT_FOLDER:            The directory to generate all source under.
 # :param Path ARG_DSDL_ROOT_DIR:            A directory containing the root namespace dsdl.
 # :param bool ARG_ENABLE_CLANG_FORMAT:      If ON then clang-format will be run on each generated file.
@@ -29,12 +30,13 @@
 # :param str ARG_GENERATE_SUPPORT:          value for the nnvg --generate-support argument. See
 #                                           nnvg --help for documentation
 # :param ...:                               A list of paths to use when looking up dependent DSDL types.
-# :returns: Sets a variable "ARG_TARGET_NAME"-OUTPUT in the parent scope to the list of files the target
+# :return: Sets a variable "ARG_TARGET_NAME"-OUTPUT in the parent scope to the list of files the target
 #           will generate. For example, if ARG_TARGET_NAME == 'foo-bar' then after calling this function
 #           ${foo-bar-OUTPUT} will be set to the list of output files.
 #
 function (create_dsdl_target ARG_TARGET_NAME
                              ARG_OUTPUT_LANGUAGE
+                             ARG_OUTPUT_LANGUAGE_STD
                              ARG_OUTPUT_FOLDER
                              ARG_DSDL_ROOT_DIR
                              ARG_ENABLE_CLANG_FORMAT
@@ -47,9 +49,9 @@ function (create_dsdl_target ARG_TARGET_NAME
 
     separate_arguments(NNVG_CMD_ARGS UNIX_COMMAND "${NNVG_FLAGS}")
 
-    if (${ARGC} GREATER 11)
+    if (${ARGC} GREATER 12)
         MATH(EXPR ARG_N_LAST "${ARGC}-1")
-        foreach(ARG_N RANGE 11 ${ARG_N_LAST})
+        foreach(ARG_N RANGE 12 ${ARG_N_LAST})
             list(APPEND NNVG_CMD_ARGS "-I")
             list(APPEND NNVG_CMD_ARGS "${ARGV${ARG_N}}")
         endforeach(ARG_N)
@@ -61,32 +63,36 @@ function (create_dsdl_target ARG_TARGET_NAME
     list(APPEND NNVG_CMD_ARGS ${ARG_OUTPUT_FOLDER})
     list(APPEND NNVG_CMD_ARGS ${ARG_DSDL_ROOT_DIR})
 
-    if (${ARGC} GREATER 6)
-        if (NOT "${ARG_SER_ENDIANNESS}" STREQUAL "")
-            list(APPEND NNVG_CMD_ARGS "--target-endianness")
-            list(APPEND NNVG_CMD_ARGS ${ARG_SER_ENDIANNESS})
-            message(STATUS "Setting --target-endianness to ${ARG_SER_ENDIANNESS}")
-        endif()
+    if (NOT "${ARG_SER_ENDIANNESS}" STREQUAL "")
+        list(APPEND NNVG_CMD_ARGS "--target-endianness")
+        list(APPEND NNVG_CMD_ARGS ${ARG_SER_ENDIANNESS})
+        message(STATUS "nnvg:Setting --target-endianness to ${ARG_SER_ENDIANNESS}")
+    endif()
+
+    if (NOT "${ARG_OUTPUT_LANGUAGE_STD}" STREQUAL "")
+        list(APPEND NNVG_CMD_ARGS "-std")
+        list(APPEND NNVG_CMD_ARGS ${ARG_OUTPUT_LANGUAGE_STD})
+        message(STATUS "nnvg:Setting -std to ${ARG_OUTPUT_LANGUAGE_STD}")
     endif()
 
     if (ARG_ENABLE_SER_ASSERT)
         list(APPEND NNVG_CMD_ARGS "--enable-serialization-asserts")
-        message(STATUS "Enabling seralization asserts in generated code.")
+        message(STATUS "nnvg:Enabling seralization asserts in generated code.")
     endif()
 
     if (ARG_DISABLE_SER_FP)
         list(APPEND NNVG_CMD_ARGS "--omit-float-serialization-support")
-        message(STATUS "Disabling floating point seralization routines in generated support code.")
+        message(STATUS "nnvg:Disabling floating point seralization routines in generated support code.")
     endif()
 
     if (ARG_ENABLE_OVR_VAR_ARRAY)
         list(APPEND NNVG_CMD_ARGS "--enable-override-variable-array-capacity")
-        message(STATUS "Enabling variable array capacity override option in generated code.")
+        message(STATUS "nnvg:Enabling variable array capacity override option in generated code.")
     endif()
 
     if (ARG_ENABLE_EXPERIMENTAL)
         list(APPEND NNVG_CMD_ARGS "--experimental-languages")
-        message(STATUS "Enabling support for experimental languages.")
+        message(STATUS "nnvg:Enabling support for experimental languages.")
     endif()
 
     execute_process(COMMAND ${NNVG} --generate-support=${ARG_GENERATE_SUPPORT} --list-outputs ${NNVG_CMD_ARGS}
@@ -94,7 +100,7 @@ function (create_dsdl_target ARG_TARGET_NAME
                     RESULT_VARIABLE LIST_OUTPUTS_RESULT)
 
     if(NOT LIST_OUTPUTS_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to retrieve a list of headers nnvg would "
+        message(FATAL_ERROR "nnvg:Failed to retrieve a list of headers nnvg would "
                             "generate for the ${ARG_TARGET_NAME} target (${LIST_OUTPUTS_RESULT})"
                             " (${NNVG})")
     endif()
@@ -104,7 +110,7 @@ function (create_dsdl_target ARG_TARGET_NAME
                     RESULT_VARIABLE LIST_INPUTS_RESULT)
 
     if(NOT LIST_INPUTS_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to resolve inputs using nnvg for the ${ARG_TARGET_NAME} "
+        message(FATAL_ERROR "nnvg:Failed to resolve inputs using nnvg for the ${ARG_TARGET_NAME} "
                             "target (${LIST_INPUTS_RESULT})"
                             " (${NNVG})")
     endif()
@@ -156,7 +162,7 @@ endfunction(create_dsdl_target)
 
 if(NOT TOX)
 
-    message(STATUS "tox was not found. You must have nunavut and its"
+    message(STATUS "nnvg:tox was not found. You must have nunavut and its"
                    " dependencies available in the global python environment.")
 
     find_program(NNVG nnvg)
@@ -166,7 +172,7 @@ else()
     find_program(NNVG nnvg HINTS ${TOX_LOCAL_PYTHON_BIN})
 
     if (NOT NNVG)
-        message(WARNING "nnvg program was not found. The build will probably fail. (${NNVG})")
+        message(WARNING "nnvg:nnvg program was not found. The build will probably fail. (${NNVG})")
     endif()
 endif()
 
@@ -180,7 +186,7 @@ if (NNVG)
 
     if(NNVG_VERSION_RESULT EQUAL 0)
         string(STRIP ${NNVG_VERSION} NNVG_VERSION)
-        message(STATUS "${NNVG} --version: ${NNVG_VERSION}")
+        message(STATUS "nnvg:${NNVG} --version: ${NNVG_VERSION}")
     endif()
 endif()
 

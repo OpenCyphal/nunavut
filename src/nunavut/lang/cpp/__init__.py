@@ -11,14 +11,15 @@
 import functools
 import io
 import re
-import typing
 import textwrap
+import typing
 
 import pydsdl
 
 from ...templates import (template_language_filter,
-                          template_language_list_filter)
-from .. import Language
+                          template_language_list_filter, template_language_test)
+from .. import Dependencies
+from .. import Language as BaseLanguage
 from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
 from ..c import _CFit
 from ..c import filter_literal as c_filter_literal
@@ -26,35 +27,134 @@ from ..c import filter_literal as c_filter_literal
 DEFAULT_ARRAY_TYPE = 'std::array<{TYPE},{MAX_SIZE}>'
 
 
-def _handle_stropping_or_encoding_failure(encoder: TokenEncoder,
-                                          stropped: str,
-                                          token_type: str,
-                                          pending_error: RuntimeError) -> str:
+class Language(BaseLanguage):
     """
-    If the generic stropping fails we take one last look to see if there is something c++-specific we can do.
+    Concrete, C++-specific :class:`nunavut.lang.Language` object.
     """
-    # Note that this is imprecise because C++ does not allow identifiers to start with an underscore if they are in the
-    # global namespace, however, we don't have an AST for the C++ we're generating so there's no way to know if the
-    # given token is global. Since this library is about generating code from DSDL and no DSDL identifier should be in
-    # the global namespace (except for the top-level namespace for the datatypes) we assume that the token is not.
-    m = re.match(r'^_+([A-Z]?)', stropped)
-    if m:
-        # Resolve the conflict between C's global identifier rules and our desire to use
-        # '_' as a stropping prefix:
-        return '_{}{}'.format(m.group(1).lower(), stropped[m.end():])
 
-    # we couldn't help after all. raise the pending error.
-    raise pending_error
+    CPP_STD_EXTRACT_NUMBER_PATTERN = re.compile(r'(?:gnu|c)\+\+(\d(?:\d|\w))')
+
+    @staticmethod
+    def _handle_stropping_or_encoding_failure(encoder: TokenEncoder,
+                                              stropped: str,
+                                              token_type: str,
+                                              pending_error: RuntimeError) -> str:
+        """
+        If the generic stropping fails we take one last look to see if there is something c++-specific we can do.
+        """
+        # Note that this is imprecise because C++ does not allow identifiers to start with an underscore if they are in
+        # the global namespace, however, we don't have an AST for the C++ we're generating so there's no way to know if
+        # the given token is global. Since this library is about generating code from DSDL and no DSDL identifier should
+        # be in the global namespace (except for the top-level namespace for the datatypes) we assume that the token is
+        # not.
+        m = re.match(r'^_+([A-Z]?)', stropped)
+        if m:
+            # Resolve the conflict between C's global identifier rules and our desire to use
+            # '_' as a stropping prefix:
+            return '_{}{}'.format(m.group(1).lower(), stropped[m.end():])
+
+        # we couldn't help after all. raise the pending error.
+        raise pending_error
+
+    @functools.lru_cache(maxsize=None)
+    def _get_token_encoder(self) -> TokenEncoder:
+        """
+        Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
+        """
+        return TokenEncoder(self,
+                            stropping_failure_handler=self._handle_stropping_or_encoding_failure,
+                            encoding_failure_handler=self._handle_stropping_or_encoding_failure)
+
+    def _has_variant(self) -> bool:
+        """
+         .. invisible-code-block: python
+
+            from nunavut.lang import LanguageLoader
+
+            language = LanguageLoader().load_language('cpp', True, {'std': 'c++17'})
+
+            # test c++17
+            language = LanguageLoader().load_language('cpp', True, {'std': 'c++17'})
+            assert language._has_variant()
+
+            # test c++14
+            language = LanguageLoader().load_language('cpp', True, {'std': 'c++14'})
+            assert not language._has_variant()
+
+            # test gnu++20
+            language = LanguageLoader().load_language('cpp', True, {'std': 'gnu++20'})
+            assert language._has_variant()
+        """
+        std = str(self.get_option('std', ''))
+
+        match = self.CPP_STD_EXTRACT_NUMBER_PATTERN.match(std)
+
+        if match is not None and len(match.groups()) >= 1:
+            std_number = int(match.group(1))
+        else:
+            std_number = 0
+
+        return (std_number >= 17)
+
+    def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
+        std_includes = []  # type: typing.List[str]
+        if self.get_config_value_as_bool('use_standard_types'):
+            if dep_types.uses_integer:
+                std_includes.append('cstdint')
+            if dep_types.uses_array:
+                std_includes.append('array')
+            if dep_types.uses_variable_length_array:
+                std_includes.append('vector')
+            if dep_types.uses_union and self._has_variant():
+                std_includes.append('variant')
+        return ['<{}>'.format(include) for include in sorted(std_includes)]
+
+    def filter_id(self,
+                  instance: typing.Any,
+                  id_type: str = 'any') -> str:
+        raw_name = self.default_filter_id_for_target(instance)
+
+        return self._get_token_encoder().strop(raw_name, id_type)
 
 
-@functools.lru_cache(maxsize=None)
-def get_token_encoder(language: Language) -> TokenEncoder:
+@template_language_test(__name__)
+def uses_std_variant(language: Language) -> bool:
     """
-    Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
+    Uses query for std variant.
+
+    If the language options contain an ``std`` entry for C++ and the specified standard includes the
+    ``std::variant`` type added to the language at C++17 then this value is true. The logic included
+    in this filter can be stated as "options has key std and the value for options.std evaluates to
+    C++ version 17 or greater" but the implementation is able to parse out actual compiler flags like
+    ``gnu++20`` and is aware of any overrides to suppress use of the standard variant type even if
+    available.
+
+    Example:
+
+        .. code-block:: python
+
+            template = '''
+                {%- ifuses "std_variant" -%}
+                    #include <variant>
+                {%- else -%}
+                    #include "user_variant.h"
+                {%- endifuses -%}
+            '''
+
+        .. invisible-code-block: python
+
+            # test c++17
+            config_overrides = {'nunavut.lang.cpp': {'options': {'std': 'c++17' }}}
+            lctx = configurable_language_context_factory(config_overrides, 'cpp')
+            jinja_filter_tester(None, template, '#include <variant>', lctx)
+
+            # test c++11
+            config_overrides = {'nunavut.lang.cpp': {'options': {'std': 'c++11' }}}
+            lctx = configurable_language_context_factory(config_overrides, 'cpp')
+            jinja_filter_tester(None, template, '#include "user_variant.h"', lctx)
+
     """
-    return TokenEncoder(language,
-                        stropping_failure_handler=_handle_stropping_or_encoding_failure,
-                        encoding_failure_handler=_handle_stropping_or_encoding_failure)
+    return language._has_variant()
 
 
 @template_language_filter(__name__)
@@ -157,15 +257,10 @@ def filter_id(language: Language,
 
     :param any instance:        Any object or data that either has a name property or can be converted
                                 to a string.
-    :returns: A token that is a valid identifier for C and C++, is not a reserved keyword, and is transformed
+    :return: A token that is a valid identifier for C and C++, is not a reserved keyword, and is transformed
               in a deterministic manner based on the provided instance.
     """
-    if hasattr(instance, 'name'):
-        raw_name = str(instance.name)  # type: str
-    else:
-        raw_name = str(instance)
-
-    return get_token_encoder(language).strop(raw_name, id_type)
+    return language.filter_id(instance, id_type)
 
 
 @template_language_filter(__name__)
@@ -279,7 +374,7 @@ def filter_open_namespace(language: Language,
     :param str linesep: The line-separator to use when emitting new lines.
                         By default this is ``\\n``.
 
-    :returns: C++ namespace declarations with opening brackets.
+    :return: C++ namespace declarations with opening brackets.
     """
 
     with io.StringIO() as content:
@@ -291,7 +386,7 @@ def filter_open_namespace(language: Language,
                 content.write(linesep)
             content.write('namespace ')
             if language.enable_stropping:
-                content.write(filter_id(language, name))
+                content.write(language.filter_id(name))
             else:
                 content.write(name)
             if bracket_on_next_line:
@@ -340,7 +435,7 @@ def filter_close_namespace(language: Language,
     :param str linesep: The line-separator to use when emitting new lines.
                         By default this is ``\\n``
 
-    :returns: C++ namespace declarations with opening brackets.
+    :return: C++ namespace declarations with opening brackets.
     """
     with io.StringIO() as content:
         first = True
@@ -354,7 +449,7 @@ def filter_close_namespace(language: Language,
             if not omit_comments:
                 content.write(' // namespace ')
                 if language.enable_stropping:
-                    content.write(filter_id(language, name))
+                    content.write(language.filter_id(name))
                 else:
                     content.write(name)
         return content.getvalue()
@@ -448,7 +543,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
     """
     short_name = '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
     if language.enable_stropping:
-        return filter_id(language, short_name)
+        return language.filter_id(short_name)
     else:
         return short_name
 
@@ -692,7 +787,7 @@ def filter_type_from_primitive(language: Language,
 
     :param str value: The dsdl primitive to transform.
 
-    :returns: A valid C++ type name.
+    :return: A valid C++ type name.
 
     :raises TemplateRuntimeError: If the primitive cannot be represented as a standard C++ type.
     """
@@ -791,7 +886,7 @@ def filter_to_template_unique_name(base_token: str) -> str:
 
 
     :param str base_token: A token to include in the base name.
-    :returns: A name that is likely to be valid C++ identifier and is likely to
+    :return: A name that is likely to be valid C++ identifier and is likely to
         be unique within the file generated by the current template.
     """
     if len(base_token) > 0:
@@ -820,24 +915,22 @@ def filter_as_boolean_value(value: bool) -> str:
 
 
 @template_language_filter(__name__)
-def filter_indent(language: Language,
-                  text: str,
-                  depth: int = 1) -> str:
-    """
-    Emit indent characters as configured for the language.
-
-    :param text: The text to indent.
-    :param depth: The number of indents. For example, if depth is 2 and the indent for this language is
-        4 spaces then the text will be indented by 8 spaces.
+def filter_indent_if_not(language: Language,
+                         text: str,
+                         depth: int = 1) -> str:
+    r"""
+    Emit indent characters as configured for the language but only as needed. This
+    is different from the built-in indent filter in that it may add or remove spaces based on the
+    existing indent.
 
     .. invisible-code-block: python
 
-        from nunavut.lang.cpp import filter_indent
+        from nunavut.lang.cpp import filter_indent_if_not
 
     .. code-block:: python
 
         # Given a string with an existing indent of 4 spaces...
-        template  = '{{ "    int a = 1;" | indent }}'
+        template  = '{{ "    int a = 1;" | indent_if_not }}'
 
         # then if cpp.indent == 4 we expect no change.
         rendered = '    int a = 1;'
@@ -845,42 +938,64 @@ def filter_indent(language: Language,
     .. invisible-code-block: python
 
         assert_language_config_value('cpp', 'indent', '4', 'this test expected an indent of 4')
-        jinja_filter_tester(filter_indent, template, rendered, 'cpp')
+        jinja_filter_tester(filter_indent_if_not, template, rendered, 'cpp')
 
     .. code-block:: python
 
         # If the indent is only 3 spaces...
-        template  = '{{ "   int a = 1;" | indent }}'
+        template  = '{{ "   int a = 1;" | indent_if_not }}'
 
         # then if cpp.indent == 4 we expect 4 spaces (i.e. not 7 spaces)
         rendered = '    int a = 1;'
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_indent, template, rendered, 'cpp')
+        jinja_filter_tester(filter_indent_if_not, template, rendered, 'cpp')
 
     .. code-block:: python
 
         # We can also specify multiple indents...
-        template  = '{{ "int a = 1;" | indent(2) }}'
+        template  = '{{ "int a = 1;" | indent_if_not(2) }}'
 
         rendered = '        int a = 1;'
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_indent, template, rendered, 'cpp')
+        jinja_filter_tester(filter_indent_if_not, template, rendered, 'cpp')
 
     .. code-block:: python
 
         # ...or no indent
-        template  = '{{ "    int a = 1;" | indent(0) }}'
+        template  = '{{ "    int a = 1;" | indent_if_not(0) }}'
 
         rendered = 'int a = 1;'
 
     .. invisible-code-block: python
 
-        jinja_filter_tester(filter_indent, template, rendered, 'cpp')
+        jinja_filter_tester(filter_indent_if_not, template, rendered, 'cpp')
 
+    .. code-block:: python
+
+        # Finally, note that blank lines are not indented.
+        template  = '''
+            {%- set block_text -%}
+                int a = 1;
+                {# empty line #}
+                int b = 2;
+            {%- endset -%}{{ block_text | indent_if_not(1) }}'''
+
+        rendered  = '    int a = 1;'
+        rendered += '\n'
+        rendered += '\n'  # Nothing but spaces so this is stripped
+        rendered += '    int b = 2;'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_indent_if_not, template, rendered, 'cpp')
+
+    :param text: The text to indent.
+    :param depth: The number of indents. For example, if depth is 2 and the indent for this language is
+        4 spaces then the text will be indented by 8 spaces.
 
     """
     configured_indent = int(language.get_config_value('indent'))
@@ -888,7 +1003,12 @@ def filter_indent(language: Language,
     result = ''
     for i in range(0, len(lines)):
         line = lines[i].lstrip()
-        result += (' ' * (depth * configured_indent)) + line
+        if len(line) == 0:
+            # don't indent blank lines
+            result += '\n'
+        else:
+            result += (' ' * (depth * configured_indent)) + line
+
     return result
 
 
@@ -955,7 +1075,7 @@ def filter_minimum_required_capacity_bits(t: pydsdl.SerializableType) -> int:
 
     :param pydsdl.SerializableType t: The dsdl type.
 
-    :returns: The minimum, required bits needed to store some values of the given type.
+    :return: The minimum, required bits needed to store some values of the given type.
     """
     return typing.cast(int, min(t.bit_length_set))
 

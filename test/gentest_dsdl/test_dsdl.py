@@ -10,11 +10,17 @@ import pytest
 from nunavut import generate_types
 
 
-@pytest.mark.parametrize('lang_key,generate_support', [('cpp', False), ('cpp', True), ('c', False), ('c', True)])
+@pytest.mark.parametrize('lang_key,generate_support', [
+    ('cpp', False),
+    ('cpp', True),
+    ('c', False),
+    ('c', True),
+    ('py', False),
+    ('html', False)])
 def test_realgen(gen_paths, lang_key, generate_support):  # type: ignore
     """
     Sanity test that runs through the entire public, regulated set of
-    UAVCAN types and generates some basic C code.
+    UAVCAN types and generates code for each internally supported language.
     """
     root_namespace_dir = gen_paths.root_dir / Path("submodules") / Path("public_regulated_data_types") / Path("uavcan")
     generate_types(lang_key, root_namespace_dir, gen_paths.out_dir, omit_serialization_support=not generate_support)
