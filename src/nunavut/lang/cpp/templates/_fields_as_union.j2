@@ -5,19 +5,15 @@
 #}
     union // The union is placed first to ensure that the active element address equals the object address.
     {
-{%- for field in composite_type.fields -%}
-{%- if field is not padding %}
+{%- for field in composite_type.fields_except_padding -%}
         {{ field.doc | block_comment('cpp-doxygen', 8, 120) }}
         {{ field.data_type | declaration }} {{ field.name | id }};
-{%- endif -%}
 {%- endfor %}
     };
 private:
     {{ composite_type.tag_field_type | declaration }} tag_;
 public:
-{%- for field in composite_type.fields -%}
-{%- if field is not padding %}
+{%- for field in composite_type.fields_except_padding -%}
     bool {{ ('is' + field.name.capitalize())  | id }}() const { return (tag_ == {{ loop.index0 }}); }
     void {{ ('select' + field.name.capitalize())  | id }}() { tag_ = {{ loop.index0 }}; }
-{%- endif -%}
 {%- endfor-%}

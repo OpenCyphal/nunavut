@@ -9,8 +9,7 @@
         {{ field.data_type | declaration }}{% if not loop.last %},{% endif %}
 {%- endfor %}
     > storage_;
-{%- for field in composite_type.fields -%}
-{%- if field is not padding %}
+{%- for field in composite_type.fields_except_padding -%}
 
     constexpr bool {{ ('is' + field.name.capitalize())  | id }}() const noexcept
     {
@@ -30,5 +29,4 @@
             return false;
         }
     }
-{%- endif -%}
 {%- endfor-%}

@@ -118,15 +118,13 @@ Partial example: generating a C struct
                 Note that we're not handling union types properly in this simplified example.
                 Unions take a bit more logic to generate correctly.
             */
-            {%- for field in T.fields %}
-            {%- if field is not padding %}
+            {%- for field in T.fields_except_padding %}
                 {{ field.data_type | declaration }} {{ field | id }}
                 {%- if field.data_type is ArrayType -%}
                     [{{ field.data_type.capacity }}]
                 {%- endif -%};
             {%- if field is VariableLengthArrayType %}
                 {{ typename_unsigned_length }} {{ field | id }}_length;
-            {%- endif -%}
             {%- endif -%}
             {%- endfor %}
     ...
