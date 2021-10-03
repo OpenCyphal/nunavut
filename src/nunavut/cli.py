@@ -564,7 +564,7 @@ def _make_parser() -> argparse.ArgumentParser:
     ln_opt_group.add_argument('--language-standard', '-std',
                               help=textwrap.dedent('''
 
-        For languages generators that support different standards of their core language this option
+        For language generators that support different standards of their core language this option
         can be used to optimize the output. For example, C templates may generate slightly different
         code for the the c99 standard then for c11. For available support in Nunavut see the
         documentation for built-in templates

@@ -594,7 +594,6 @@ class DSDLCodeGenerator(CodeGenerator):
         """
         return instance.has_parent_service and instance.full_name.split('.')[-1] == 'Request'  # type: ignore
 
-
     @staticmethod
     def is_service_response(instance: pydsdl.Any) -> bool:
         """
