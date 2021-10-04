@@ -7,9 +7,7 @@ the command-line and anyone that wants to integrate nunavut directly into their 
 
 
 .. toctree::
-   :maxdepth: {{ maxdepth }}
-{% for docname in docnames %}
-   {{ docname }}
-{%- endfor %}
+   :maxdepth: 4
 
-{# newline at end of file #}
+   nunavut
+

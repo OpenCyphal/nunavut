@@ -193,6 +193,15 @@ Of course, you can just use `Visual Studio Code`_ to build and preview the docs 
 :code:`> reStructuredText: Open Preview`.
 
 
+apidoc
+================================================
+
+We manually generate the api doc using ``sphinx-apidoc``. To regenerate use ``tox -e gen-apidoc``.
+
+.. warning::
+
+    ``tox -e gen-apidoc`` will start by deleting the docs/api directory.
+
 ************************************************
 Coverage and Linting Reports
 ************************************************
