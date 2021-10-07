@@ -1,7 +1,7 @@
 {% macro generate_type_info(t, attr_name, nested=False) %}
 {% set type_tag_id = t | tag_id %}
 {% if nested %}
-{% set type_tag_id = type_tag_id | add_uuid %}
+{% set type_tag_id = type_tag_id | make_unique %}
 {% endif %}
 <p class="fw-bold {{ 'deprecated d-none' if t is deprecated else '' }}" style="{{ 'color: gray'  if t is deprecated else '' }}">
 <a

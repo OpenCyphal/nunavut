@@ -16,10 +16,9 @@ import typing
 
 import pydsdl
 
-from ...templates import (SupportsTemplateContext, template_context_filter,
-                          template_language_filter,
+from ...templates import (template_language_filter,
                           template_language_list_filter,
-                          template_language_test)
+                          template_language_test, template_volatile_filter)
 from .. import Dependencies
 from .. import Language as BaseLanguage
 from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
@@ -510,8 +509,8 @@ def filter_to_screaming_snake_case(value: str) -> str:
     return filter_to_snake_case(value).upper()
 
 
-@template_context_filter
-def filter_to_template_unique_name(context: SupportsTemplateContext, base_token: str) -> str:
+@template_volatile_filter
+def filter_to_template_unique_name(_: typing.Any, base_token: str) -> str:
     """
     Filter that takes a base token and forms a name that is very
     likely to be unique within the template the filter is invoked. This

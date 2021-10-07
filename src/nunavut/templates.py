@@ -34,24 +34,6 @@ as the first argument.
 """
 
 
-class SupportsTemplateEnv:
-    """
-    Provided as a pseudo
-    `protocol <https://mypy.readthedocs.io/en/latest/protocols.html#simple-user-defined-protocols/>`_.
-    (in anticipation of that becoming part of the core Python typing someday).
-
-    :var Dict globals: A dictionary mapping global names (str) to variables (Any) that are available in
-                       each template's global environment.
-    :var Dict filters: A dictionary mapping filter names (str) to filters (Callable). Filters are simply
-                       global functions available to templates but are most often used to transform a
-                       given input to output emitted by the template.
-    """
-
-    globals = dict()  # type: typing.Dict[str, typing.Any]
-    filters = dict()  # type: typing.Dict[str, typing.Callable]
-    tests = dict()  # type: typing.Dict[str, typing.Callable[[typing.Any], bool]]
-
-
 class SupportsTemplateContext:
     """
     Provided as a pseudo
@@ -75,6 +57,19 @@ def template_context_filter(filter_func: typing.Callable) -> typing.Callable[...
     Decorator for marking context dependent filters.
     An object supporting the :class:`SupportsTemplateContext` protocol
     will be passed to the filter as the first argument.
+
+    Note that any template that uses such a filter will make the jinja "frame"
+    the filter appears within volatile and therefore unable to be optimized.
+    """
+    setattr(filter_func, CONTEXT_FILTER_ATTRIBUTE_NAME, True)
+    return filter_func
+
+
+def template_volatile_filter(filter_func: typing.Callable) -> typing.Callable[..., str]:
+    """
+    Decorator for marking a filter as volatile therefore disabling optimizations for the
+    frame it appears within.
+    An opaque object will be passed to the filter as the first argument.
     """
     setattr(filter_func, CONTEXT_FILTER_ATTRIBUTE_NAME, True)
     return filter_func

@@ -365,7 +365,7 @@ HTML Filters
    :noindex:
 .. autofunction:: nunavut.lang.html.filter_url_from_type
    :noindex:
-.. autofunction:: nunavut.lang.html.filter_add_uuid
+.. autofunction:: nunavut.lang.html.filter_make_unique
    :noindex:
 .. autofunction:: nunavut.lang.html.filter_namespace_doc
    :noindex:
