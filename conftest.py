@@ -25,6 +25,10 @@ from sybil.parsers.doctest import DocTestParser
 from nunavut import Namespace
 
 
+# +-------------------------------------------------------------------------------------------------------------------+
+# | PYTEST HOOKS
+# +-------------------------------------------------------------------------------------------------------------------+
+
 def pytest_configure(config: typing.Any) -> None:
     """
     See https://docs.pytest.org/en/6.2.x/reference.html#initialization-hooks
@@ -35,6 +39,26 @@ def pytest_configure(config: typing.Any) -> None:
     # A lot of DEBUG noise in the other loggers so we'll tune this down to INFO and higher.
     logging.getLogger('pydsdl._namespace').setLevel(logging.INFO)
     logging.getLogger('pydsdl._data_type_builder').setLevel(logging.INFO)
+
+
+def pytest_addoption(parser):  # type: ignore
+    """
+    See https://docs.pytest.org/en/6.2.x/reference.html#initialization-hooks
+    """
+    parser.addoption("--keep-generated", action="store_true", help=textwrap.dedent('''
+        If set then the temporary directory used to generate files for each test will be left after
+        the test has completed. Normally this directory is temporary and therefore cleaned up automatically.
+
+        :: WARNING ::
+        This will leave orphaned files on disk. They won't be big but there will be a lot of them.
+
+        :: WARNING ::
+        Do not run tests in parallel when using this option.
+    '''))
+
+# +-------------------------------------------------------------------------------------------------------------------+
+# | TEST FIXTURES
+# +-------------------------------------------------------------------------------------------------------------------+
 
 
 @pytest.fixture
@@ -81,15 +105,26 @@ class GenTestPaths:
         self.dsdl_dir = self.test_dir / pathlib.Path('dsdl')
 
         self._keep_temp = keep_temporaries
-        self._out_dir = None  # type: typing.Optional[typing.Any]
+        self._out_dir = None  # type: typing.Optional[pathlib.Path]
         self._build_dir = None  # type: typing.Optional[pathlib.Path]
         self._dsdl_dir = None  # type: typing.Optional[pathlib.Path]
+        self._temp_dirs = []  # type: typing.List[tempfile.TemporaryDirectory]
         print('Paths for test "{}" under dir {}'.format(self.test_name, self.test_dir))
         print('(root directory: {})'.format(self.root_dir))
 
     def test_path_finalizer(self) -> None:
-        if not self._keep_temp and self._out_dir is not None:
-            self._out_dir.cleanup()
+        for temporary_dir in self._temp_dirs:
+            temporary_dir.cleanup()
+        self._temp_dirs.clear()
+
+    def create_new_temp_dir(self, dir_key: str) -> pathlib.Path:
+        if self._keep_temp:
+            result = self._ensure_dir(self.build_dir / pathlib.Path(dir_key))
+        else:
+            temporary_dir = tempfile.TemporaryDirectory(dir=str(self.build_dir))
+            result = pathlib.Path(temporary_dir.name)
+            self._temp_dirs.append(temporary_dir)
+        return result
 
     @property
     def out_dir(self) -> pathlib.Path:
@@ -97,13 +132,8 @@ class GenTestPaths:
         The directory to place test output under for this test case.
         """
         if self._out_dir is None:
-            if self._keep_temp:
-                self._out_dir = lambda: None
-                test_output_dir = self._ensure_dir(self.build_dir / pathlib.Path(self.test_name))
-                setattr(self._out_dir, 'name', str(test_output_dir))
-            else:
-                self._out_dir = tempfile.TemporaryDirectory(dir=str(self.build_dir))
-        return pathlib.Path(self._out_dir.name)
+            self._out_dir = self.create_new_temp_dir(self.test_name)
+        return self._out_dir
 
     @property
     def build_dir(self) -> pathlib.Path:
@@ -149,19 +179,6 @@ def gen_paths(request):  # type: ignore
     g = GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
     request.addfinalizer(g.test_path_finalizer)
     return g
-
-
-def pytest_addoption(parser):  # type: ignore
-    parser.addoption("--keep-generated", action="store_true", help=textwrap.dedent('''
-        If set then the temporary directory used to generate files for each test will be left after
-        the test has completed. Normally this directory is temporary and therefore cleaned up automatically.
-
-        :: WARNING ::
-        This will leave orphaned files on disk. They won't be big but there will be a lot of them.
-
-        :: WARNING ::
-        Do not run tests in parallel when using this option.
-    '''))
 
 
 class _UniqueNameEvaluator:
@@ -337,6 +354,10 @@ def jinja_filter_tester(request):  # type: ignore
         return rendered
 
     return _make_filter_test_template
+
+# +-------------------------------------------------------------------------------------------------------------------+
+# | SYBIL
+# +-------------------------------------------------------------------------------------------------------------------+
 
 
 _sy = Sybil(

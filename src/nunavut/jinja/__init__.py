@@ -23,7 +23,7 @@ from yaml import Dumper as YamlDumper
 from yaml import dump as yaml_dump
 
 from .environment import CodeGenEnvironment
-from .jinja2 import Template, TemplateAssertionError
+from .jinja2 import Template
 from .loaders import DSDLTemplateLoader, TEMPLATE_SUFFIX, DEFAULT_TEMPLATE_PATH
 
 logger = logging.getLogger(__name__)
@@ -368,7 +368,7 @@ class DSDLCodeGenerator(CodeGenerator):
         """
         result = self.dsdl_loader.type_to_template(type(value))
         if result is None:
-            raise TemplateAssertionError('No template found for type {}'.format(type(value)))
+            raise RuntimeError('No template found for type {}'.format(type(value)))
         return result.name
 
     def filter_type_to_include_path(self, value: typing.Any, resolve: bool = False) -> str:
@@ -709,7 +709,7 @@ class DSDLCodeGenerator(CodeGenerator):
     @classmethod
     def _create_all_dsdl_tests(cls) -> typing.Mapping[str, typing.Callable]:
         """
-        Add tests for all pydsdl types.
+        Create a collection of jinja tests for all base dsdl types.
 
         .. invisible-code-block: python
 

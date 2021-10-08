@@ -131,9 +131,10 @@ class CodeGenEnvironment(Environment):
         e = CodeGenEnvironment(loader=DictLoader({'test': template}))
         assert 'Hello World' ==  e.get_template('test').render()
 
-    Note that the :attr:`RESERVED_GLOBAL_NAMESPACES` and :attr:`RESERVED_GLOBAL_NAMES` collections
-    contain names in the global namespace reserved by this environment. Attempting to override one
-    of these reserved names will cause the constructor to raise an error.
+    .. warning::
+        The :attr:`RESERVED_GLOBAL_NAMESPACES` and :attr:`RESERVED_GLOBAL_NAMES` collections
+        contain names in the global namespace reserved by this environment. Attempting to override one
+        of these reserved names will cause the constructor to raise an error.
 
     .. code-block:: python
 
@@ -179,6 +180,11 @@ class CodeGenEnvironment(Environment):
             assert False
         except RuntimeError:
             pass
+
+    .. note:: Maintainer's Note
+        This class should remain DSDL agnostic. It is, theoretically, applicable using Jinja with any compiler front-end
+        input although, in practice, it will only ever be used with pydsdl AST.
+        Pydsdl-specific logic should live in the CodeGenerator (:class:`nunavut.jinja.DSDLCodeGenerator`).
 
     """
 

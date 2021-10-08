@@ -96,16 +96,6 @@ available. For example:
 
    template = '{% if some_type is integer %}This is a pydsdl.IntegerType{% endif %}'
 
-.. invisible-code-block: python
-
-   import pydsdl
-   from unittest.mock import MagicMock
-
-   mock_integer_type = MagicMock(spec=pydsdl.IntegerType)
-   from nunavut.jinja.jinja2.exceptions import UndefinedError
-
-   jinja_filter_tester([], template, 'This is a pydsdl.IntegerType', 'c', some_type=mock_integer_type)
-
 
 Named Types
 =================================================
