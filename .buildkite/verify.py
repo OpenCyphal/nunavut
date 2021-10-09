@@ -10,6 +10,7 @@
 
 import argparse
 import configparser
+import functools
 import logging
 import os
 import pathlib
@@ -63,6 +64,17 @@ def _make_parser() -> argparse.ArgumentParser:
     build_args = parser.add_argument_group(title='build options', description=textwrap.dedent('''
         Arguments that can be used in parallel builds. Each of these will change
         the name of the build directory created for the build.
+    '''[1:]))
+
+    build_args.add_argument('--version-only',
+                            action='store_true',
+                            help=textwrap.dedent('''
+        Print out the version number (stored in src/nunavut/version.py) only and exit. This number
+        will be the only output to stdout allowing build scripts to extract this string value for
+        use in the build environment. For example:
+
+            export NUNAVUT_FULL_VERSION=$(./.buildkite/verify.py --version-only)
+
     '''[1:]))
 
     build_args.add_argument('-l', '--language',
@@ -428,11 +440,24 @@ def _create_build_dir_name(args: argparse.Namespace) -> str:
     return name
 
 
+@functools.lru_cache(maxsize=None)
+def _get_version_string() -> str:
+    with open('src/nunavut/version.py', 'r') as version_py:
+        exec(version_py.read())
+
+    return typing.cast(str, eval('__version__'))
+
+
 def main() -> int:
     """
     Main method to execute when this package/script is invoked as a command.
     """
     args = _apply_overrides(_make_parser().parse_args())
+
+    if args.version_only:
+        sys.stdout.write(_get_version_string())
+        sys.stdout.flush()
+        return 0
 
     logging_level = logging.WARN
 
@@ -450,9 +475,11 @@ def main() -> int:
     Commandline Arguments to {}:
 
     {}
+
+    For Nunavut version {}
     *****************************************************************
 
-    ''').format(os.path.basename(__file__), str(args)))
+    ''').format(os.path.basename(__file__), str(args), _get_version_string()))
 
     verification_dir = pathlib.Path.cwd() / pathlib.Path(args.verification_dir)
     cmake_dir = verification_dir / pathlib.Path(_create_build_dir_name(args))

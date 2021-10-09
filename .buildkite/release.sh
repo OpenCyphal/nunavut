@@ -31,8 +31,10 @@ else
     buildkite-agent artifact download ".tox/report/tmp/*" .
 fi
 
-export NUNAVUT_FULL_VERSION=$(grep __version__ src/nunavut/version.py | awk '{print $3}' | sed -E "s/'([0-9]+\.[0-9]+\.[0-9]+)'/\1/g")
+export NUNAVUT_FULL_VERSION=$(./.buildkite/verify.py --version-only)
+echo "Releasing Nunavut version ${NUNAVUT_FULL_VERSION}"
 export NUNAVUT_MAJOR_MINOR_VERSION=$(echo $NUNAVUT_FULL_VERSION | sed -E "s/([0-9]+\.[0-9]+)\.[0-9]+/\1/g")
+echo "NUNAVUT_MAJOR_MINOR_VERSION=${NUNAVUT_MAJOR_MINOR_VERSION}"
 tox -e package
 tox -e sonar | grep -v "sonar.login"
 tox -e upload | grep -v "twine upload"
