@@ -21,7 +21,7 @@ add_library(o1heap STATIC EXCLUDE_FROM_ALL
 )
 
 target_compile_options(o1heap PUBLIC
-                        "${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS}"
+                        "${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS}"
                        )
 
 include(FindPackageHandleStandardArgs)

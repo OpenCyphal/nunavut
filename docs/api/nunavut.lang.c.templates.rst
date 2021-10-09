@@ -1,8 +1,5 @@
-nunavut.lang.c.templates package
-================================
-
-Module contents
----------------
+nunavut.lang.c.templates
+========================
 
 .. automodule:: nunavut.lang.c.templates
    :members:

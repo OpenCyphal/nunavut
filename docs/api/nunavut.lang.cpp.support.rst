@@ -1,8 +1,5 @@
-nunavut.lang.cpp.support package
-================================
-
-Module contents
----------------
+nunavut.lang.cpp.support
+========================
 
 .. automodule:: nunavut.lang.cpp.support
    :members:

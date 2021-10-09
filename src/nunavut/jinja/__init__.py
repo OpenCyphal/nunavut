@@ -1,143 +1,37 @@
 #
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright (C) 2018-2021  UAVCAN Development Team  <uavcan.org>
 # This software is distributed under the terms of the MIT License.
 #
 """
     jinja-based :class:`~nunavut.generators.AbstractGenerator` implementation.
 """
 
-import collections
 import datetime
-import functools
-import inspect
 import io
 import logging
 import pathlib
 import re
 import shutil
 import typing
-from argparse import Namespace as ApNamespace
 
 import nunavut.generators
 import nunavut.lang
 import nunavut.postprocessors
 import pydsdl
-from nunavut.jinja.jinja2 import (BaseLoader, ChoiceLoader, Environment,
-                                  FileSystemLoader, PackageLoader,
-                                  StrictUndefined, Template,
-                                  TemplateAssertionError, nodes,
-                                  select_autoescape)
-from nunavut.jinja.jinja2.ext import Extension
-from nunavut.jinja.jinja2.parser import Parser
-from nunavut.templates import LANGUAGE_FILTER_ATTRIBUTE_NAME
 from yaml import Dumper as YamlDumper
 from yaml import dump as yaml_dump
 
+from .environment import CodeGenEnvironment
+from .jinja2 import Template
+from .loaders import DSDLTemplateLoader, TEMPLATE_SUFFIX, DEFAULT_TEMPLATE_PATH
+
 logger = logging.getLogger(__name__)
-
-
-class _LanguageTemplateNamespace(ApNamespace):
-    """
-    Generic namespace object used to create 'ln' namespaces in templates.
-    """
-
-    def update(self, update_from: typing.Mapping[str, typing.Any]) -> None:
-        for key, value in update_from.items():
-            setattr(self, key, value)
-
-    def items(self) -> typing.ItemsView[str, typing.Any]:
-        return self.__dict__.items()
-
-
-# +---------------------------------------------------------------------------+
-# | JINJA : Extensions
-# +---------------------------------------------------------------------------+
-
-
-class JinjaAssert(Extension):
-    """
-    Jinja2 extension that allows ``{% assert T.attribute %}`` statements. Templates should
-    uses these statements where False values would result in malformed source code ::
-
-       {% assert False %}
-
-    """
-
-    tags = set(['assert'])
-
-    def __init__(self, environment: Environment):
-        super().__init__(environment)
-
-    def parse(self, parser: Parser) -> nodes.Node:
-        """
-        See http://jinja.pocoo.org/docs/2.10/extensions/ for help writing
-        extensions.
-        """
-
-        # This will be the macro name "assert"
-        token = next(parser.stream)
-
-        # now we parse a single expression that must evaluate to True
-        args = [parser.parse_expression(),
-                nodes.Const(token.lineno),
-                nodes.Const(parser.name),
-                nodes.Const(parser.filename)]
-
-        if parser.stream.skip_if('comma'):
-            args.append(parser.parse_expression())
-        else:
-            args.append(nodes.Const("Template assertion failed."))
-
-        return nodes.CallBlock(self.call_method('_do_assert', args),
-                               [], [], "").set_lineno(token.lineno)
-
-    def _do_assert(self,
-                   expression: str,
-                   lineno: int,
-                   name: str,
-                   filename: str,
-                   message: str,
-                   caller: typing.Callable) -> typing.Any:
-        if not expression:
-            raise TemplateAssertionError(message, lineno, name, filename)
-        return caller()
-
-
-# +---------------------------------------------------------------------------+
-# | JINJA : CodeGenEnvironment
-# +---------------------------------------------------------------------------+
-
-class CodeGenEnvironment(Environment):
-    """
-    Jinja Environment optimized for compile-time generation of source code
-    (i.e. as opposed to dynamically generating webpages).
-    """
-
-    def __init__(self,
-                 loader: BaseLoader,
-                 trim_blocks: bool = False,
-                 lstrip_blocks: bool = False):
-        super().__init__(loader=loader,  # nosec
-                         extensions=[nunavut.jinja.jinja2.ext.do,
-                                     nunavut.jinja.jinja2.ext.loopcontrols,
-                                     JinjaAssert],
-                         autoescape=select_autoescape(enabled_extensions=('htm', 'html', 'xml', 'json'),
-                                                      default_for_string=False,
-                                                      default=False),
-                         undefined=StrictUndefined,
-                         keep_trailing_newline=True,
-                         lstrip_blocks=lstrip_blocks,
-                         trim_blocks=trim_blocks,
-                         auto_reload=False,
-                         cache_size=400)
-        self.globals['options'] = _LanguageTemplateNamespace()
-        self.globals['ln'] = _LanguageTemplateNamespace()
-
 
 # +---------------------------------------------------------------------------+
 # | JINJA : CodeGenerator
 # +---------------------------------------------------------------------------+
+
 
 class CodeGenerator(nunavut.generators.AbstractGenerator):
     """
@@ -179,8 +73,6 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
     :raises RuntimeError: If any additional filter or test attempts to replace a built-in
                           or otherwise already defined filter or test.
     """
-
-    TEMPLATE_SUFFIX = ".j2"  #: The suffix expected for Jinja templates.
 
     @staticmethod
     def __augment_post_processors_with_ln_limit_empty_lines(
@@ -259,104 +151,44 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
                  additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None,
                  additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
                  post_processors: typing.Optional[typing.List['nunavut.postprocessors.PostProcessor']] = None,
-                 builtin_template_path: str = 'templates'):
+                 builtin_template_path: str = DEFAULT_TEMPLATE_PATH):
 
         super().__init__(namespace,
                          generate_namespace_types)
 
-        if templates_dir is None:
-            templates_dirs = []  # type: typing.List[pathlib.Path]
-        else:
+        if templates_dir is not None:
             if not isinstance(templates_dir, list):
-                templates_dirs = [templates_dir]
+                templates_dir = [templates_dir]
             else:
-                templates_dirs = templates_dir
+                templates_dir = templates_dir
 
-            for templates_dir_item in templates_dirs:
-                if templates_dir_item is None:
-                    raise ValueError("Templates directory argument was None")
-                if not pathlib.Path(templates_dir_item).exists:
-                    raise ValueError(
-                        "Templates directory {} did not exist?".format(templates_dir_item))
+        language_context = self._namespace.get_language_context()
+        target_language = language_context.get_target_language()
 
-        self._templates_dirs = templates_dirs
-
-        self._templates_list = None  # type: typing.Optional[typing.List[pathlib.Path]]
-
-        logger.info("Loading templates from {}".format(templates_dirs))
-
-        fs_loader = FileSystemLoader((str(d) for d in self._templates_dirs), followlinks=followlinks)
-
-        target_language = self._namespace.get_language_context().get_target_language()
-
-        if target_language is not None:
-            template_loader = ChoiceLoader([
-                fs_loader,
-                PackageLoader(target_language.get_templates_package_name(), package_path=builtin_template_path)
-            ])  # type: 'nunavut.jinja.jinja2.loaders.BaseLoader'
-        else:
-            template_loader = fs_loader
+        self._dsdl_template_loader = DSDLTemplateLoader(
+            templates_dirs=templates_dir,
+            package_name_for_templates=(
+                None if target_language is None else target_language.get_templates_package_name()),
+            followlinks=followlinks,
+            builtin_template_path=builtin_template_path)
 
         self._post_processors = self._handle_post_processors(post_processors, target_language)
 
-        self._env = CodeGenEnvironment(loader=template_loader,
+        self._env = CodeGenEnvironment(lctx=language_context,
+                                       loader=self._dsdl_template_loader,
                                        lstrip_blocks=lstrip_blocks,
-                                       trim_blocks=trim_blocks)
+                                       trim_blocks=trim_blocks,
+                                       additional_filters=additional_filters,
+                                       additional_tests=additional_tests,
+                                       additional_globals=additional_globals)
 
-        if additional_globals is not None:
-            self._env.globals.update(additional_globals)
-
-        self._add_language_support()
-        self._add_nunavut_globals()
-        self._add_filters_and_tests(additional_filters, additional_tests)
+    @property
+    def dsdl_loader(self) -> DSDLTemplateLoader:
+        return self._dsdl_template_loader
 
     @property
     def language_context(self) -> nunavut.lang.LanguageContext:
         return self._namespace.get_language_context()
-
-    def add_filter_to_environment(self,
-                                  filter_name: str,
-                                  filter: typing.Callable[..., str],
-                                  filter_namespace: typing.Optional[str] = None) -> None:
-        """
-        Add a jinja filter to this environment.
-        :param str filter_name: The name of the filter to use in a template.
-        :param typing.Callable[..., str] filter: The filter method.
-        :param typing.Optional[str] filter_namespace: If provided the namespace to prefix to the filter name. If not \
-            provided the filter_name is added to the global namespace.
-        """
-        if hasattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME):
-            language_name_or_module_name = getattr(filter, LANGUAGE_FILTER_ATTRIBUTE_NAME)
-            filter_language = self.language_context.get_language(language_name_or_module_name)
-            resolved_filter = functools.partial(filter, filter_language)  # type: typing.Callable[..., str]
-        else:
-            resolved_filter = filter
-        if filter_namespace is None:
-            self._env.filters[filter_name] = resolved_filter
-        else:
-            self._env.filters['ln.{}.{}'.format(filter_namespace, filter_name)] = resolved_filter
-
-    def add_test_to_environment(self,
-                                test_name: str,
-                                test: typing.Callable[..., bool],
-                                test_namespace: typing.Optional[str] = None) -> None:
-        """
-        Add a jinja test to this environment.
-        :param str test_name: The name of the test to use in a template.
-        :param typing.Callable[..., bool] test: The test method.
-        :param typing.Optional[str] test_namespace: If provided the namespace to prefix to the test name. If not \
-                                                    provided the test_name is added to the global namespace.
-        """
-        if hasattr(test, LANGUAGE_FILTER_ATTRIBUTE_NAME):
-            language_name_or_module_name = getattr(test, LANGUAGE_FILTER_ATTRIBUTE_NAME)
-            test_language = self.language_context.get_language(language_name_or_module_name)
-            resolved_test = functools.partial(test, test_language)  # type: typing.Callable[..., bool]
-        else:
-            resolved_test = test
-        if test_namespace is None:
-            self._env.tests[test_name] = resolved_test
-        else:
-            self._env.tests['ln.{}.{}'.format(test_namespace, test_name)] = resolved_test
 
     # +-----------------------------------------------------------------------+
     # | PROTECTED
@@ -379,127 +211,13 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
         Enumerate all templates found in the templates path.
         :data:`~TEMPLATE_SUFFIX` as the suffix for the filename.
 
-        :returns: A list of paths to all templates found by this Generator object.
+        :return: A list of paths to all templates found by this Generator object.
         """
-        if self._templates_list is None:
-            self._templates_list = []
-            for template_dir in self._templates_dirs:
-                for template in template_dir.glob("**/*{}".format(self.TEMPLATE_SUFFIX)):
-                    self._templates_list.append(template)
-        return self._templates_list
+        return self._dsdl_template_loader.get_templates()
 
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
-
-    def _add_filters_and_tests(self,
-                               additional_filters: typing.Optional[typing.Dict[str, typing.Callable]],
-                               additional_tests: typing.Optional[typing.Dict[str, typing.Callable]]) -> None:
-        # Automatically find the locally defined filters and
-        # tests and add them to the jinja environment.
-        member_functions = inspect.getmembers(self, inspect.isroutine)
-        for function_tuple in member_functions:
-            function_name = function_tuple[0]
-            function_ref = function_tuple[1]
-            if len(function_name) > 3 and function_name[0:3] == "is_":
-                self._env.tests[function_name[3:]] = function_ref
-            if len(function_name) > 7 and function_name[0:7] == "filter_":
-                self.add_filter_to_environment(function_name[7:], function_ref)
-
-        if additional_filters is not None:
-            for name, additional_filter in additional_filters.items():
-                if name in self._env.filters:
-                    raise RuntimeError('filter {} was already defined.'.format(name))
-                self.add_filter_to_environment(name, additional_filter)
-
-        if additional_tests is not None:
-            for name, additional_test in additional_tests.items():
-                if name in self._env.tests:
-                    raise RuntimeError('test {} was already defined.'.format(name))
-                self._env.tests[name] = additional_test
-
-    def _add_nunavut_globals(self) -> None:
-        """
-        Add globals within the 'nunavut' namespace.
-        """
-        import nunavut.version
-
-        target_language = self.language_context.get_target_language()
-
-        # Helper global so we don't have to futz around with the "omit_serialization_support"
-        # logic in the templates. The omit_serialization_support property of the Language
-        # object is read-only so this boolean will remain consistent for the Environment.
-        if target_language is not None:
-            omit_serialization_support = target_language.omit_serialization_support
-            support_namespace = target_language.support_namespace
-        else:
-            logger.debug("There is no target language so we cannot generate serialization support")
-            omit_serialization_support = True
-            support_namespace = []
-
-        self._env.globals['nunavut'] = {
-            'version': nunavut.version.__version__,
-            'platform_version': self._create_platform_version(),
-            'support': {
-                'omit': omit_serialization_support,
-                'namespace': support_namespace
-            }
-        }
-
-    @classmethod
-    def _create_platform_version(cls) -> typing.Dict[str, typing.Any]:
-        import platform
-        import sys
-
-        platform_version = {}  # type: typing.Dict[str, typing.Any]
-
-        platform_version['python_implementation'] = platform.python_implementation()
-        platform_version['python_version'] = platform.python_version()
-        platform_version['python_release_level'] = sys.version_info[3]
-        platform_version['python_build'] = platform.python_build()
-        platform_version['python_compiler'] = platform.python_compiler()
-        platform_version['python_revision'] = platform.python_revision()
-
-        try:
-            platform_version['python_xoptions'] = sys._xoptions
-        except AttributeError:  # pragma: no cover
-            platform_version['python_xoptions'] = {}
-
-        platform_version['runtime_platform'] = platform.platform()
-
-        return platform_version
-
-    def _add_language_support(self) -> None:
-
-        def _add_support_from_language(adder: typing.Callable[[str, typing.Callable, typing.Optional[str]], None],
-                                       items: typing.AbstractSet[typing.Tuple[str, typing.Callable]],
-                                       namespace: typing.Optional[str] = None) -> None:
-            for name, method in items:
-                adder(name, method, namespace)
-
-        target_language = self.language_context.get_target_language()
-        if target_language is not None:
-            _add_support_from_language(self.add_filter_to_environment, target_language.get_filters().items())
-            _add_support_from_language(self.add_test_to_environment, target_language.get_tests().items())
-            self._env.globals.update(target_language.get_globals())
-            self._env.globals['options'].update(target_language.get_options())
-
-        ln_globals = self._env.globals['ln']
-        for supported_language in self.language_context.get_supported_languages().values():
-            _add_support_from_language(self.add_filter_to_environment,
-                                       supported_language.get_filters().items(),
-                                       supported_language.name)
-            _add_support_from_language(self.add_test_to_environment,
-                                       supported_language.get_tests().items(),
-                                       supported_language.name)
-            if supported_language.name not in ln_globals:
-                setattr(ln_globals,
-                        supported_language.name,
-                        _LanguageTemplateNamespace(options=_LanguageTemplateNamespace()))
-            ln_globals_ns = getattr(ln_globals, supported_language.name)
-            ln_globals_ns.update(supported_language.get_globals())
-            ln_globals_options_ns = getattr(ln_globals_ns, 'options')
-            ln_globals_options_ns.update(supported_language.get_options())
 
     @staticmethod
     def _filter_and_write_line(line_and_lineend: typing.Tuple[str, str],
@@ -553,7 +271,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
         Logic that should run from _generate_type iff is_dryrun is False.
         """
 
-        self._env.globals["now_utc"] = datetime.datetime.utcnow()
+        self._env.now_utc = datetime.datetime.utcnow()
 
         from ..lang._common import UniqueNameGenerator
 
@@ -627,7 +345,7 @@ class DSDLCodeGenerator(CodeGenerator):
 
         :param value: The input value to parse as yaml.
 
-        :returns: If a yaml parser is available, a pretty dump of the given value as yaml.
+        :return: If a yaml parser is available, a pretty dump of the given value as yaml.
                   If a yaml parser is not available then an empty string is returned.
         """
         return str(yaml_dump(value, Dumper=YamlDumper))
@@ -646,41 +364,12 @@ class DSDLCodeGenerator(CodeGenerator):
 
         :param value: The input value to change into a template include path.
 
-        :returns: A path to a template named for the type with :any:`CodeGenerator.TEMPLATE_SUFFIX`
+        :return: A path to a template named for the type with :any:`TEMPLATE_SUFFIX`
         """
-        search_queue = collections.deque()  # type: typing.Deque[typing.Any]
-        discovered = set()  # type: typing.Set[typing.Any]
-        search_queue.appendleft(type(value))
-        template_path = pathlib.Path(type(value).__name__).with_suffix(self.TEMPLATE_SUFFIX)
-
-        def _find_template_by_name(name: str, templates: typing.Iterable[pathlib.Path]) \
-                -> typing.Optional[pathlib.Path]:
-            for template_path in templates:
-                if template_path.stem == name:
-                    return template_path
-            return None
-
-        while len(search_queue) > 0:
-            data_type = search_queue.pop()
-            try:
-                template_path = self._type_to_template_lookup_cache[data_type]
-                break
-            except KeyError:
-                pass
-
-            optional_template_path = _find_template_by_name(data_type.__name__, self.get_templates())
-
-            if optional_template_path is not None:
-                template_path = optional_template_path
-                self._type_to_template_lookup_cache[data_type] = template_path
-                break
-            else:
-                for base_type in data_type.__bases__:
-                    if base_type != object and base_type not in discovered:
-                        search_queue.appendleft(base_type)
-                        discovered.add(data_type)
-
-        return template_path.name
+        result = self.dsdl_loader.type_to_template(type(value))
+        if result is None:
+            raise RuntimeError('No template found for type {}'.format(type(value)))
+        return result.name
 
     def filter_type_to_include_path(self, value: typing.Any, resolve: bool = False) -> str:
         """
@@ -697,7 +386,7 @@ class DSDLCodeGenerator(CodeGenerator):
         :param typing.Any value: The type to emit an include for.
         :param bool resolve: If True the path returned will be absolute else the path will
                              be relative to the folder of the root namespace.
-        :returns: A string path to output file for the type.
+        :return: A string path to output file for the type.
         """
 
         include_path = self.namespace.find_output_path_for_type(value)
@@ -724,7 +413,7 @@ class DSDLCodeGenerator(CodeGenerator):
 
         :param value: The input value to filter into a type name.
 
-        :returns: The ``__name__`` of the python type.
+        :return: The ``__name__`` of the python type.
         """
         return type(value).__name__
 
@@ -834,60 +523,6 @@ class DSDLCodeGenerator(CodeGenerator):
     # +-----------------------------------------------------------------------+
 
     @staticmethod
-    def is_primitive(value: pydsdl.Any) -> bool:
-        """
-        Tests if a given dsdl instance is a ``pydsdl.PrimitiveType``.
-        Available in all template environments as ``is primitive``.
-
-        Example::
-
-            {% if field.data_type is primitive %}
-                {{ field.data_type | c.type_from_primitive }} {{ field.name }};
-            {% endif -%}
-
-        :param value: The instance to test.
-
-        :returns: True if value is an instance of ``pydsdl.PrimitiveType``.
-        """
-        return isinstance(value, pydsdl.PrimitiveType)
-
-    @staticmethod
-    def is_constant(value: pydsdl.Any) -> bool:
-        """
-        Tests if a given dsdl instance is a ``pydsdl.Constant``.
-        Available in all template environments as ``is constant``.
-
-        Example::
-
-            {%- if attribute is constant %}
-                const {{ attribute.data_type | c.type_from_primitive }} {{ attribute.name }} = {{ attribute.initialization_expression }};
-            {% endif %}
-
-        :param value: The instance to test.
-
-        :returns: True if value is an instance of ``pydsdl.Constant``.
-        """  # noqa: E501
-        return isinstance(value, pydsdl.Constant)
-
-    @staticmethod
-    def is_serializable(value: pydsdl.Any) -> bool:
-        """
-        Tests if a given dsdl instance is a ``pydsdl.SerializableType``.
-        Available in all template environments as ``is serializable``.
-
-        Example::
-
-            {%- if attribute is serializable %}
-                // Yup, this is serializable
-            {% endif %}
-
-        :param value: The instance to test.
-
-        :returns: True if value is an instance of ``pydsdl.SerializableType``.
-        """  # noqa: E501
-        return isinstance(value, pydsdl.SerializableType)
-
-    @staticmethod
     def is_None(value: typing.Any) -> bool:
         """
         Tests if a value is ``None``
@@ -900,23 +535,6 @@ class DSDLCodeGenerator(CodeGenerator):
 
         """
         return (value is None)
-
-    @staticmethod
-    def is_padding(value: pydsdl.Field) -> bool:
-        """
-        Tests if a value is a padding field.
-
-        .. invisible-code-block: python
-
-            from nunavut.jinja import DSDLCodeGenerator
-            from unittest.mock import MagicMock
-            import pydsdl
-
-            assert DSDLCodeGenerator.is_padding(MagicMock(spec=pydsdl.PaddingField)) is True
-            assert DSDLCodeGenerator.is_padding(MagicMock(spec=pydsdl.Field)) is False
-
-        """
-        return isinstance(value, pydsdl.PaddingField)
 
     @staticmethod
     def is_saturated(t: pydsdl.PrimitiveType) -> bool:
@@ -950,6 +568,90 @@ class DSDLCodeGenerator(CodeGenerator):
         else:
             raise TypeError('Cast mode is not defined for {}'.format(type(t).__name__))
 
+    @staticmethod
+    def is_service_request(instance: pydsdl.Any) -> bool:
+        """
+        Tests if a type is request type of a service type.
+
+        .. invisible-code-block: python
+
+            from nunavut.jinja import DSDLCodeGenerator
+            from unittest.mock import MagicMock
+            import pydsdl
+
+            service_request_mock = MagicMock(spec=pydsdl.SerializableType)
+            service_request_mock.has_parent_service = True
+            service_request_mock.full_name = 'foo.bar.Service_1_0.Request'
+            assert DSDLCodeGenerator.is_service_request(service_request_mock) is True
+
+            service_request_mock.has_parent_service = False
+            assert DSDLCodeGenerator.is_service_request(service_request_mock) is False
+
+            service_request_mock.has_parent_service = True
+            service_request_mock.full_name = 'foo.bar.Service_1_0.Response'
+            assert DSDLCodeGenerator.is_service_request(service_request_mock) is False
+
+        """
+        return instance.has_parent_service and instance.full_name.split('.')[-1] == 'Request'  # type: ignore
+
+    @staticmethod
+    def is_service_response(instance: pydsdl.Any) -> bool:
+        """
+        Tests if a type is response type of a service type.
+
+        .. invisible-code-block: python
+
+            from nunavut.jinja import DSDLCodeGenerator
+            from unittest.mock import MagicMock
+            import pydsdl
+
+            service_request_mock = MagicMock(spec=pydsdl.SerializableType)
+            service_request_mock.has_parent_service = True
+            service_request_mock.full_name = 'foo.bar.Service_1_0.Response'
+            assert DSDLCodeGenerator.is_service_response(service_request_mock) is True
+
+            service_request_mock.has_parent_service = False
+            assert DSDLCodeGenerator.is_service_response(service_request_mock) is False
+
+            service_request_mock.has_parent_service = True
+            service_request_mock.full_name = 'foo.bar.Service_1_0.Request'
+            assert DSDLCodeGenerator.is_service_response(service_request_mock) is False
+
+        """
+        return instance.has_parent_service and instance.full_name.split('.')[-1] == 'Response'  # type: ignore
+
+    @staticmethod
+    def is_deprecated(instance: pydsdl.Any) -> bool:
+        """
+        Tests if a type is marked as deprecated
+
+        .. invisible-code-block: python
+
+            from nunavut.jinja import DSDLCodeGenerator
+            from unittest.mock import MagicMock
+            import pydsdl
+
+            composite_type_mock = MagicMock(spec=pydsdl.CompositeType)
+            composite_type_mock.deprecated = True
+            assert DSDLCodeGenerator.is_deprecated(composite_type_mock) is True
+
+            array_type_mock = MagicMock(spec=pydsdl.ArrayType)
+            array_type_mock.element_type = composite_type_mock
+            assert DSDLCodeGenerator.is_deprecated(array_type_mock) is True
+
+            other_type_mock = MagicMock(spec=pydsdl.SerializableType)
+            assert DSDLCodeGenerator.is_deprecated(other_type_mock) is False
+
+        """
+        if isinstance(instance, pydsdl.CompositeType):
+            return instance.deprecated  # type: ignore
+        elif isinstance(instance, pydsdl.ArrayType) and isinstance(
+            instance.element_type, pydsdl.CompositeType
+        ):
+            return instance.element_type.deprecated  # type: ignore
+        else:
+            return False
+
     # +-----------------------------------------------------------------------+
 
     def __init__(self,
@@ -957,8 +659,9 @@ class DSDLCodeGenerator(CodeGenerator):
                  **kwargs: typing.Any):
 
         super().__init__(namespace, **kwargs)
-        self._type_to_template_lookup_cache = dict()  # type: typing.Dict[pydsdl.Any, pathlib.Path]
-        self._add_instance_tests_from_root(pydsdl.SerializableType)
+        for test_name, test in self._create_all_dsdl_tests().items():
+            self._env.add_test(test_name, test)
+        self._env.add_conventional_methods_to_environment(self)
 
     # +-----------------------------------------------------------------------+
     # | AbstractGenerator
@@ -980,17 +683,68 @@ class DSDLCodeGenerator(CodeGenerator):
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
+    @classmethod
+    def _create_instance_tests_for_type(cls, root: pydsdl.Any) -> typing.Dict[str, typing.Callable]:
+        tests = dict()
 
-    def _add_instance_tests_from_root(self, root: typing.Type[object]) -> None:
-        def _field_is_instance(field_or_datatype: typing.Any) -> bool:
-            if isinstance(field_or_datatype, pydsdl.Field):
+        def _field_is_instance(field_or_datatype: pydsdl.Any) -> bool:
+            if isinstance(field_or_datatype, pydsdl.Attribute):
                 return isinstance(field_or_datatype.data_type, root)
             else:
                 return isinstance(field_or_datatype, root)
 
-        self._env.tests[root.__name__] = _field_is_instance
+        tests[root.__name__] = _field_is_instance
+        root_name_lower = root.__name__.lower()
+        if len(root_name_lower) > 4 and root_name_lower.endswith('type'):
+            tests[root_name_lower[:-4]] = _field_is_instance
+        elif len(root_name_lower) > 5 and root_name_lower.endswith('field'):
+            tests[root_name_lower[:-5]] = _field_is_instance
+        else:
+            tests[root_name_lower] = _field_is_instance
+
         for derived in root.__subclasses__():
-            self._add_instance_tests_from_root(derived)
+            tests.update(cls._create_instance_tests_for_type(derived))
+        return tests
+
+    @classmethod
+    def _create_all_dsdl_tests(cls) -> typing.Mapping[str, typing.Callable]:
+        """
+        Create a collection of jinja tests for all base dsdl types.
+
+        .. invisible-code-block: python
+
+            import pydsdl
+            from unittest.mock import MagicMock
+            from nunavut.jinja import DSDLCodeGenerator
+
+            test_set = DSDLCodeGenerator._create_all_dsdl_tests()
+
+            def _do_pydsdl_instance_test_test(pydsdl_obj, test_name):
+
+                if not test_set[test_name](pydsdl_obj):
+                    raise AssertionError(test_name)
+
+            def _do_pydsdl_instance_test_tests(pydsdl_type):
+                mock_instance = MagicMock(spec=pydsdl_type)
+                _do_pydsdl_instance_test_test(mock_instance, pydsdl_type.__name__)
+                if pydsdl_type.__name__.endswith('Type'):
+                    _do_pydsdl_instance_test_test(mock_instance, pydsdl_type.__name__[:-4].lower())
+                if pydsdl_type.__name__.endswith('Field'):
+                    _do_pydsdl_instance_test_test(mock_instance, pydsdl_type.__name__[:-5].lower())
+                mock_attribute = MagicMock(spec=pydsdl.Attribute)
+                mock_attribute.data_type = mock_instance
+                _do_pydsdl_instance_test_test(mock_attribute, pydsdl_type.__name__)
+
+            _do_pydsdl_instance_test_tests(pydsdl.SerializableType)
+            _do_pydsdl_instance_test_tests(pydsdl.PrimitiveType)
+            _do_pydsdl_instance_test_tests(pydsdl.IntegerType)
+            _do_pydsdl_instance_test_tests(pydsdl.ServiceType)
+
+        """
+        all_tests = dict()
+        all_tests.update(cls._create_instance_tests_for_type(pydsdl.SerializableType))
+        all_tests.update(cls._create_instance_tests_for_type(pydsdl.Attribute))
+        return all_tests
 
     def _generate_type(self,
                        input_type: pydsdl.CompositeType,
@@ -1083,7 +837,7 @@ class SupportGenerator(CodeGenerator):
                 logger.info("Generating support file: %s", target)
                 if not self._support_enabled:
                     self._remove_header(target, is_dryrun, allow_overwrite)
-                elif resource.suffix == self.TEMPLATE_SUFFIX:
+                elif resource.suffix == TEMPLATE_SUFFIX:
                     self._generate_header(resource, target, is_dryrun, allow_overwrite)
                     generated.append(target)
                 else:

@@ -3,7 +3,7 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 
-cmake_minimum_required(VERSION 3.6.0)
+cmake_minimum_required(VERSION 3.10.0)
 
 project(nunavut_verification C CXX)
 
@@ -37,6 +37,10 @@ else()
 endif()
 
 set(NUNAVUT_SUBMODULES_ROOT "${NUNAVUT_PROJECT_ROOT}/submodules" CACHE STRING "The path to git submodules for the project.")
+
+if(NOT DEFINED NUNAVUT_VERIFICATION_LANG_STANDARD)
+     set(NUNAVUT_VERIFICATION_LANG_STANDARD "" CACHE STRING "A language standard for languages that support this concept.")
+endif()
 
 if(NOT DEFINED NUNAVUT_VERIFICATION_TARGET_ENDIANNESS)
      set(NUNAVUT_VERIFICATION_TARGET_ENDIANNESS "any" CACHE STRING "The endianess for the target verification architecture.")
@@ -100,14 +104,14 @@ file(WRITE ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/README.txt
 #
 # Handle other inputs that translate to compiler flags.
 #
-set(NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS "")
+set(NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS "")
 
 if(DEFINED NUNAVUT_VERIFICATION_TARGET_PLATFORM)
      if(${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "native32")
-          list(APPEND NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS "-m32")
+          list(APPEND NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS "-m32")
           message(STATUS "Configuring for native32 platform.")
      elseif(${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "native64")
-          list(APPEND NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS "-m64")
+          list(APPEND NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS "-m64")
           message(STATUS "Configuring for native64 platform.")
      else()
           message(FATAL_ERROR "\"${NUNAVUT_VERIFICATION_TARGET_PLATFORM}\" is not a supported value.")
@@ -162,6 +166,7 @@ find_package(o1heap REQUIRED)
 #
 create_dsdl_target(nunavut-support
                    ${NUNAVUT_VERIFICATION_LANG}
+                   "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
                    ""
                    OFF
@@ -177,6 +182,7 @@ create_dsdl_target(nunavut-support
 #
 create_dsdl_target(dsdl-regulated
                    ${NUNAVUT_VERIFICATION_LANG}
+                   "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
                    OFF
@@ -194,6 +200,7 @@ add_dependencies(dsdl-regulated nunavut-support)
 #
 create_dsdl_target(dsdl-test
                    ${NUNAVUT_VERIFICATION_LANG}
+                   "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
                    ${CMAKE_SOURCE_DIR}/nunavut_test_types/test0/regulated
                    OFF
@@ -210,10 +217,29 @@ add_dependencies(dsdl-test nunavut-support)
 # +---------------------------------------------------------------------------+
 # | FLAG SETS
 # +---------------------------------------------------------------------------+
+string(TOLOWER ${NUNAVUT_VERIFICATION_LANG} LOCAL_VERIFICATION_LANG)
+
+if (LOCAL_VERIFICATION_LANG STREQUAL "c")
+     set(LOCAL_VERIFICATION_LANG_STANDARD_C "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
+     set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "")
+elseif(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
+     set(LOCAL_VERIFICATION_LANG_STANDARD_C "")
+     set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
+elseif(NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "")
+     message(FATAL_ERROR "NUNAVUT_VERIFICATION_LANG_STANDARD was set to ${NUNAVUT_VERIFICATION_LANG_STANDARD} but "
+                         "NUNAVUT_VERIFICATION_LANG language was ${NUNAVUT_VERIFICATION_LANG} which does not "
+                         "support this option")
+else()
+    set(LOCAL_VERIFICATION_LANG_STANDARD_C "")
+    set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "")
+endif()
+
 #
 # Load all our compile flag sets into the appropriate places.
 #
-apply_flag_set("${NUNAVUT_FLAGSET}")
+apply_flag_set("${NUNAVUT_FLAGSET}"
+               "${LOCAL_VERIFICATION_LANG_STANDARD_C}"
+               "${LOCAL_VERIFICATION_LANG_STANDARD_CXX}")
 
 
 # +---------------------------------------------------------------------------+
@@ -250,7 +276,7 @@ set(ALL_TEST_COVERAGE "")
 foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
     set(${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS, "")
-    list(APPEND ${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS})
+    list(APPEND ${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS})
 
     if(NUNAVUT_VERIFICATION_LANG STREQUAL "c")
           #
@@ -281,7 +307,7 @@ endforeach()
 foreach(NATIVE_TEST ${NATIVE_TESTS_C})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
     set(${NATIVE_TEST_NAME}_C_EXTRA_FLAGS, "")
-    list(APPEND ${NATIVE_TEST_NAME}_C_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS})
+    list(APPEND ${NATIVE_TEST_NAME}_C_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS})
 
     define_native_unit_test("unity"
                             ${NATIVE_TEST_NAME}

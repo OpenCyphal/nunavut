@@ -89,6 +89,14 @@ means you can do::
         // stuff for integer fields
     {% endif %}
 
+Finally, for every pydsdl object that ends in "Type" or "Field" a lower-case name ommitting these suffixes is made
+available. For example:
+
+.. code-block:: python
+
+   template = '{% if some_type is integer %}This is a pydsdl.IntegerType{% endif %}'
+
+
 Named Types
 =================================================
 
@@ -228,6 +236,20 @@ Common Filters
 .. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_bits2bytes_ceil
    :noindex:
 
+Common Tests
+-------------------------------------------------
+
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.is_None
+   :noindex:
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.is_saturated
+   :noindex:
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.is_service_request
+   :noindex:
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.is_service_response
+   :noindex:
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.is_deprecated
+   :noindex:
+
 C Filters
 -------------------------------------------------
 
@@ -292,12 +314,18 @@ C++ Filters
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_as_boolean_value
    :noindex:
-.. autofunction:: nunavut.lang.cpp.filter_indent
+.. autofunction:: nunavut.lang.cpp.filter_indent_if_not
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_minimum_required_capacity_bits
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_block_comment
    :noindex:
+
+C++ Use Queries
+-------------------------------------------------
+.. autofunction:: nunavut.lang.cpp.uses_std_variant
+   :noindex:
+
 
 Python Filters
 -------------------------------------------------
@@ -314,6 +342,30 @@ Python Filters
    :noindex:
 .. autofunction:: nunavut.lang.py.filter_longest_id_length
    :noindex:
+
+
+HTML Filters
+-------------------------------------------------
+
+.. autofunction:: nunavut.lang.html.filter_extent
+   :noindex:
+.. autofunction:: nunavut.lang.html.filter_max_bit_length
+   :noindex:
+.. autofunction:: nunavut.lang.html.filter_tag_id
+   :noindex:
+.. autofunction:: nunavut.lang.html.filter_url_from_type
+   :noindex:
+.. autofunction:: nunavut.lang.html.filter_make_unique
+   :noindex:
+.. autofunction:: nunavut.lang.html.filter_namespace_doc
+   :noindex:
+.. autofunction:: nunavut.lang.html.filter_display_type
+   :noindex:
+.. autofunction:: nunavut.lang.html.filter_natural_sort_namespace
+   :noindex:
+.. autofunction:: nunavut.lang.html.filter_natural_sort_type
+   :noindex:
+
 
 *************************************************
 Template Mapping and Use

@@ -1,0 +1,56 @@
+{#-
+ # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+#}
+    using {{ composite_type.short_name.capitalize() | id }}VariantType = std::variant<
+{%- for field in composite_type.fields_except_padding %}
+        {{ field.doc | block_comment('cpp-doxygen', 8, 120) }}
+        {{ field.data_type | declaration }}{% if not loop.last %},{% endif %}
+{%- endfor %}
+    >;
+
+private:
+
+    {{ composite_type.short_name.capitalize() | id }}VariantType storage_;
+
+    {{ composite_type.tag_field_type | declaration }} tag_;
+
+public:
+
+{%- for field in composite_type.fields_except_padding %}
+
+    bool {{ ('is' + field.name.capitalize())  | id }}() const noexcept { return (tag_ == {{ loop.index0 }}); }
+
+    constexpr bool {{ ('has' + field.name.capitalize())  | id }}() const noexcept
+    {
+        return ({{ ('is' + field.name.capitalize())  | id }}() && std::holds_alternative<{{ field.data_type | declaration }}>(storage_));
+    }
+
+    constexpr bool get({{ field.data_type | declaration }}& out) const noexcept
+    {
+        if (tag_ != {{ loop.index0 }})
+        {
+            return false;
+        }
+        const auto pto = std::get_if<{{ field.data_type | declaration }}>(&storage_);
+        if (pto)
+        {
+            out = *pto;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    void {{ ('select' + field.name.capitalize())  | id }}() noexcept { tag_ = {{ loop.index0 }}; }
+
+    constexpr void set(const {{ field.data_type | declaration }}& value) noexcept
+    {
+        {{ ('select' + field.name.capitalize())  | id }}();
+        storage_ = value;
+    }
+
+{%- endfor %}

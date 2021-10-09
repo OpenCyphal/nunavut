@@ -1,8 +1,5 @@
-nunavut.lang.cpp.templates package
-==================================
-
-Module contents
----------------
+nunavut.lang.cpp.templates
+==========================
 
 .. automodule:: nunavut.lang.cpp.templates
    :members:

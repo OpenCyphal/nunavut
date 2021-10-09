@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # Copyright (C) 2018-2020  UAVCAN Development Team  <uavcan.org>
 # This software is distributed under the terms of the MIT License.
 #
@@ -8,21 +8,148 @@
 This package contains modules that provide specific support for generating
 source for various languages using templates.
 """
-import functools
+import abc
 import importlib
-import inspect
 import logging
 import pathlib
+import types
 import typing
+
+import pydsdl
 
 from ._config import LanguageConfig
 
 logger = logging.getLogger(__name__)
 
 
-class Language:
+class Dependencies:
     """
-    Facilities for generating source code for a specific language.
+    Data structure that contains a set of composite types and annotations (bool flags)
+    which constitute a set of dependencies for a set of DSDL objects.
+    """
+
+    def __init__(self) -> None:
+        self.composite_types = set()  # type: typing.Set[pydsdl.CompositeType]
+        self.uses_integer = False
+        self.uses_float = False
+        self.uses_variable_length_array = False
+        self.uses_array = False
+        self.uses_bool = False
+        self.uses_primitive_static_array = False
+        self.uses_union = False
+
+
+class LanguageLoader:
+    """
+    Factory class that loads language meta-data and concrete :class:`nunavut.lang.Language` objects.
+
+    :param additional_config_files: A list of paths to additional configuration files to load as configuration.
+        These will override any values found in the :file:`nunavut.lang.properties.yaml` file and files
+        appearing later in this list will override value found in earlier entries.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import LanguageLoader
+
+            subject = LanguageLoader()
+
+            c_reserved_identifiers = subject.config.get_config_value('nunavut.lang.c','reserved_identifiers')
+            assert len(c_reserved_identifiers) > 0
+    """
+
+    @classmethod
+    def load_language_module(cls, language_name: str) -> 'types.ModuleType':
+        module_name = 'nunavut.lang.{}'.format(language_name)
+        return importlib.import_module(module_name)
+
+    @classmethod
+    def _load_config(cls, *additional_config_files: pathlib.Path) -> LanguageConfig:
+        import pkg_resources
+        parser = LanguageConfig()
+        resources = [r for r in pkg_resources.resource_listdir(__name__, '.') if r.endswith('.yaml')]
+        for resource in resources:
+            with pkg_resources.resource_stream(__name__, resource) as resource_stream:
+                ini_string = resource_stream.read().decode(encoding='utf-8', errors='replace')
+                parser.read_string(ini_string, resource)
+        for additional_path in additional_config_files:
+            with open(str(additional_path), 'r') as additional_file:
+                parser.read_file(additional_file)
+        return parser
+
+    def __init__(self, *additional_config_files: pathlib.Path):
+        self._config = None  # type: typing.Optional[LanguageConfig]
+        self._additional_config_files = additional_config_files
+
+    @property
+    def config(self) -> LanguageConfig:
+        """
+        Meta-data about all languages merged from the Nunavut internal defaults and any additional
+        configuration files provided to this class's constructor.
+        """
+        if self._config is None:
+            self._config = self._load_config(*self._additional_config_files)
+        return self._config
+
+    def load_language(self,
+                      language_name: str,
+                      omit_serialization_support: bool,
+                      language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None) -> 'Language':
+        """
+        :param str language_name:                The name of the language used by the :mod:`nunavut.lang` module.
+        :param LanguageConfig config:            The parser to load language properties into.
+        :param bool omit_serialization_support:  The value to set for the :func:`omit_serialization_support` property
+                                                for this language.
+        :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
+                    target :class:`nunavut.lang.Language` object.
+
+        :return: A new object that extends :class:`nunavut.lang.Language`.
+        :rtype: nunavut.lang.Language
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import LanguageLoader
+
+        .. code-block:: python
+
+            lang_c = LanguageLoader().load_language('c', True)
+            assert lang_c.name == 'c'
+
+        .. invisible-code-block: python
+
+            # let's go ahead and load the rest of our known, internally supported languages just to raise
+            # test failures right here at the wellspring.
+
+            lang_cpp = LanguageLoader().load_language('py', True)
+            assert lang_cpp.name == 'py'
+
+            lang_js = LanguageLoader().load_language('js', True)
+            assert lang_js.name == 'js'
+
+        """
+        ln_module = self.load_language_module(language_name)
+
+        try:
+            language_type = typing.cast(typing.Type['Language'], getattr(ln_module, 'Language'))
+        except AttributeError:
+            logging.debug('Unable to find a Language object in nunavut.lang.{}. Using a Generic language object'
+                          .format(language_name))
+            language_type = _GenericLanguage
+
+        if language_type == Language:
+            # the language module just imported the base class so let's go ahead and use _GenericLanguage
+            language_type = _GenericLanguage
+
+        return language_type(ln_module,
+                             self.config,
+                             omit_serialization_support,
+                             language_options)
+
+
+class Language(metaclass=abc.ABCMeta):
+    """
+    Facilities for generating source code for a specific language. Concrete Language classes must be implemented
+    by the language support package below lang and should be instantiated using
+    :class:`nunavut.lang.LanguageLoader`.
 
     :param str language_name:                The name of the language used by the :mod:`nunavut.lang` module.
     :param LanguageConfig config:            The parser to load language properties into.
@@ -30,55 +157,79 @@ class Language:
                                              for this language.
     :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
                 target :class:`nunavut.lang.Language` object.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import Language, _GenericLanguage
+            from unittest.mock import MagicMock
+
+            mock_config = MagicMock()
+            mock_module = MagicMock()
+
+            mock_module.__name__ = 'foo'
+            try:
+                my_lang = _GenericLanguage(mock_module, mock_config, True)
+                # module must be within 'nunavut'
+                assert False
+            except RuntimeError:
+                pass
+
+            mock_module.__name__ = 'nunavut.foo'
+            try:
+                my_lang = _GenericLanguage(mock_module, mock_config, True)
+                # module must be within 'nunavut.lang'
+                assert False
+            except RuntimeError:
+                pass
+
+            mock_module.__name__ = 'not.nunavut.foo'
+            try:
+                my_lang = _GenericLanguage(mock_module, mock_config, True)
+                # module must be within 'nunavut.lang'
+                assert False
+            except RuntimeError:
+                pass
+
+            mock_module.__name__ = 'nunavut.lang.foo'
+            my_lang = _GenericLanguage(mock_module, mock_config, True)
+            assert my_lang.name == 'foo'
     """
 
-    def _find_callable_for_language(self, callable_name_prefix: str) -> \
-            typing.Mapping[str, typing.Callable]:
-        callable_map = dict()  # type: typing.Dict[str, typing.Callable]
-        lang_module = self._language_module
-        callables = inspect.getmembers(lang_module, inspect.isfunction)
-        callable_name_prefix_len = len(callable_name_prefix)
-        for function_tuple in callables:
-            function_name = function_tuple[0]
-            if len(function_name) > callable_name_prefix_len and \
-                    function_name[0:callable_name_prefix_len] == callable_name_prefix:
-                callable_map[function_name[callable_name_prefix_len:]] = function_tuple[1]
-                logging.debug("Found callable {} for language {}".format(function_name[callable_name_prefix_len:],
-                                                                         self._language_name))
-        return callable_map
-
-    def _find_filters_for_language(self) -> typing.Mapping[str, typing.Callable]:
-        return self._find_callable_for_language('filter_')
-
-    def _find_tests_for_language(self) -> typing.Mapping[str, typing.Callable]:
-        return self._find_callable_for_language('is_')
-
     @classmethod
-    def get_language_config_parser(cls) -> LanguageConfig:
+    def default_filter_id_for_target(cls,
+                                     instance: typing.Any) -> str:
         """
-        Create a :class:`LanguageConfig` instance configured for reading
-        language properties.yaml.
+        The default transformation of any object into a string.
+
+        :param any instance:        Any object or data that either has a name property or can be converted to a string.
+        :return: Either ``str(instance.name)`` if the instance has a name property or just ``str(instance)``
         """
-        return LanguageConfig()
+        if hasattr(instance, 'name'):
+            return str(instance.name)
+        else:
+            return str(instance)
 
     def __init__(self,
-                 language_name: str,
+                 language_module: 'types.ModuleType',
                  config: LanguageConfig,
                  omit_serialization_support: bool,
                  language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None):
         self._globals = None  # type: typing.Optional[typing.Mapping[str, typing.Any]]
-        self._language_name = language_name
-        self._section = 'nunavut.lang.{}'.format(language_name)
-        self._language_module = importlib.import_module(self._section)
-        self._config_getter_cache = {}  # type: typing.Mapping[str, functools.partial[typing.Any]]
-        self._filters = self._find_filters_for_language()
-        self._tests = self._find_tests_for_language()
+        self._section = language_module.__name__
+        name_parts = self._section.split('.')
+        if len(name_parts) != 3 or name_parts[0] != 'nunavut' or name_parts[1] != 'lang':
+            raise RuntimeError('unknown module provided to Language class.')
+        self._language_name = name_parts[2]
         self._config = config
         self._omit_serialization_support = omit_serialization_support
         self._language_options = config.get_config_value_as_dict(self._section, 'options', dict())
 
         if language_options is not None:
             self._language_options.update(language_options)
+
+        self._filters = dict()  # type: typing.Dict[str, typing.Callable]
+        self._tests = dict()  # type: typing.Dict[str, typing.Callable]
+        self._uses = dict()  # type: typing.Dict[str, typing.Callable]
 
     def __getattr__(self, name: str) -> typing.Any:
         """
@@ -91,6 +242,31 @@ class Language:
             return self.get_globals()[name]
         except KeyError as e:
             raise AttributeError(e)
+
+    @abc.abstractmethod
+    def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
+        """
+        Get a list of include paths that are specific to this language and the options set for it.
+        :param Dependencies dep_types: A description of the dependencies includes are needed for.
+        :return: A list of include file paths. The list may be empty if no includes were needed.
+        """
+        pass
+
+    def filter_id(self,
+                  instance: typing.Any,
+                  id_type: str = 'any') -> str:
+        """
+        Produces a valid identifier in the language for a given object. The encoding may not be reversible.
+
+        :param any instance:        Any object or data that either has a name property or can be converted
+                                    to a string.
+        :param str id_type:         A type of identifier. This is different for each language. For example, for C this
+                                    value can be 'typedef', 'macro', 'function', or 'enum'.
+                                    Use 'any' to apply stropping rules for all identifier types to the instance.
+        :return: A token that is a valid identifier in the language, is not a reserved keyword, and is transformed
+                in a deterministic manner based on the provided instance.
+        """
+        return self.default_filter_id_for_target(instance)
 
     def get_config_value(self,
                          key: str,
@@ -126,13 +302,13 @@ class Language:
 
         .. invisible-code-block: python
 
-            from nunavut.lang import LanguageConfig, Language
+            from nunavut.lang import LanguageConfig, LanguageLoader, Language, _GenericLanguage
 
             config = LanguageConfig()
             config.add_section('nunavut.lang.c')
             config.set('nunavut.lang.c', 'foo', {'one': 1})
 
-            lang_c = Language('c', config, True)
+            lang_c = _GenericLanguage(LanguageLoader.load_language_module('c'), config, True)
 
             assert lang_c.get_config_value_as_dict('foo')['one'] == 1
 
@@ -203,14 +379,15 @@ class Language:
 
             from nunavut.lang import Language
 
-            config = Language.get_language_config_parser()
-            config.add_section('nunavut.lang.cpp')
+            config = {
+                'nunavut.lang.cpp':
+                {
+                    'support_namespace': 'foo.bar'
+                }
+            }
+            lctx = configurable_language_context_factory(config, 'cpp')
+            lang_cpp = lctx.get_target_language()
 
-            lang_cpp = Language('cpp', config, True)
-
-        .. code-block:: python
-
-            config.set('nunavut.lang.cpp', 'support_namespace', 'foo.bar')
             assert len(lang_cpp.support_namespace) == 2
             assert lang_cpp.support_namespace[0] == 'foo'
             assert lang_cpp.support_namespace[1] == 'bar'
@@ -256,12 +433,14 @@ class Language:
 
         .. invisible-code-block: python
 
-            from nunavut.lang import Language
+            from nunavut.lang import Language, _GenericLanguage
             from unittest.mock import MagicMock
 
             mock_config = MagicMock()
+            mock_module = MagicMock()
+            mock_module.__name__ = 'nunavut.lang.foo'
 
-            my_lang = Language('c', mock_config, True)
+            my_lang = _GenericLanguage(mock_module, mock_config, True)
             my_lang._section = "nunavut.lang.not_a_language_really_not_a_language"
             for support_file in my_lang.support_files:
                 # if the module doesn't exist it shouldn't have any support files.
@@ -295,24 +474,21 @@ class Language:
 
         .. invisible-code-block: python
 
-            from nunavut.lang import Language
-
-            config = Language.get_language_config_parser()
-            config.add_section('nunavut.lang.cpp')
-            config.set('nunavut.lang.cpp', 'options', {'target_endianness': 'little'})
-
-            lang_cpp = Language('cpp', config, True)
+            config = {
+                'nunavut.lang.cpp':
+                {
+                    'options': {'target_endianness': 'little'}
+                }
+            }
+            lctx = configurable_language_context_factory(config, 'cpp')
+            lang_cpp = lctx.get_target_language()
 
         .. code-block:: python
 
             # Values can come from defaults...
             assert lang_cpp.get_option('target_endianness') == 'little'
 
-            # ... or can be provided to a language instance.
-            my_lang = Language('cpp', config, True, language_options={'target_endianness': 'any'})
-            assert my_lang.get_option('target_endianness') == 'any'
-
-            # Also, this method can provide a sane default.
+            # ... or can come from a sane default.
             assert lang_cpp.get_option('foobar', 'sane_default') == 'sane_default'
 
         :return: Either the value provided to the :class:`Language` instance, the value from properties.yaml,
@@ -343,29 +519,11 @@ class Language:
         """
         return self._config.get_config_value_as_dict(self._section, 'named_values', default_value={})
 
-    def get_filters(self) -> typing.Mapping[str, typing.Callable]:
-        """
-        Inspect the language module for functions with a name starting with "filter\\_" and return
-        a map of filter names to the filter callable.
-
-        :returns: A mapping of filter names to filter functions.
-        """
-        return self._filters
-
-    def get_tests(self) -> typing.Mapping[str, typing.Callable]:
-        """
-        Inspect the language module for functions with a name starting with "is\\_" and return
-        a map of test names to the test callable.
-
-        :returns: A mapping of test names to test functions.
-        """
-        return self._tests
-
     def get_globals(self) -> typing.Mapping[str, typing.Any]:
         """
         Get all values for this language that should be available in a global context.
 
-        :returns: A mapping of global names to global values.
+        :return: A mapping of global names to global values.
         """
         if self._globals is None:
             globals_map = dict()  # type: typing.Dict[str, typing.Any]
@@ -382,9 +540,22 @@ class Language:
         """
         Get all language options for this Language.
 
-        :returns: A mapping of option names to option values.
+        :return: A mapping of option names to option values.
         """
         return self._language_options
+
+
+class _GenericLanguage(Language):
+    """
+    Language type used when the language support within Nunavut does not define a language-specific
+    subclass.
+
+    Do not use this. Use :class:`nunavut.lang.LanguageLoader` which will create the proper object type
+    based on inspection of the Nunavut internals.
+    """
+
+    def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
+        return []
 
 
 class LanguageContext:
@@ -399,7 +570,7 @@ class LanguageContext:
                           based on the target_language.
     :param str namespace_output_stem: The filename stem to give to Namespace output files if
                                       emitted or None to use a default based on a target_language.
-    :param additional_config_files: A list of paths to additional ini files to load as configuration.
+    :param additional_config_files: A list of paths to additional files to load as configuration.
         These will override any values found in the :file:`nunavut.lang.properties.yaml` file and files
         appearing later in this list will override value found in earlier entries.
     :type additional_config_files: typing.List[pathlib.Path]
@@ -412,20 +583,6 @@ class LanguageContext:
     :raises KeyError: If the target language is not known.
     """
 
-    @classmethod
-    def _load_config(cls, *additional_config_files: pathlib.Path) -> LanguageConfig:
-        import pkg_resources
-        parser = Language.get_language_config_parser()
-        resources = [r for r in pkg_resources.resource_listdir(__name__, '.') if r.endswith('.yaml')]
-        for resource in resources:
-            with pkg_resources.resource_stream(__name__, resource) as resource_stream:
-                ini_string = resource_stream.read().decode(encoding='utf-8', errors='replace')
-                parser.read_string(ini_string, resource)
-        for additional_path in additional_config_files:
-            with open(str(additional_path), 'r') as additional_file:
-                parser.read_file(additional_file)
-        return parser
-
     def __init__(self,
                  target_language: typing.Optional[str] = None,
                  extension: typing.Optional[str] = None,
@@ -436,16 +593,17 @@ class LanguageContext:
                  include_experimental_languages: bool = True):
         self._extension = extension
         self._namespace_output_stem = namespace_output_stem
-        self._config = self._load_config(*additional_config_files)
+        self._ln_loader = LanguageLoader(*additional_config_files)
+        self._config = self._ln_loader.config
         self._languages = dict()  # type: typing.Dict[str, Language]
 
         # create target language, if there is one.
         self._target_language = None
         if target_language is not None:
             try:
-                self._target_language = Language(target_language, self._config,
-                                                 omit_serialization_support_for_target,
-                                                 language_options=language_options)
+                self._target_language = self._ln_loader.load_language(target_language,
+                                                                      omit_serialization_support_for_target,
+                                                                      language_options=language_options)
             except ImportError:
                 raise KeyError('{} is not a supported language'.format(target_language))
             if not (self._target_language.stable_support or include_experimental_languages):
@@ -475,7 +633,7 @@ class LanguageContext:
                             include_experimental: bool) -> None:
         for language_name in language_names:
             try:
-                lang = Language(language_name, self._config, False)
+                lang = self._ln_loader.load_language(language_name, False)
                 if lang.stable_support or include_experimental:
                     self._languages[language_name] = lang
             except ImportError:
@@ -487,7 +645,7 @@ class LanguageContext:
 
         :param str key_or_module_name: Either one of the Nunavut mnemonics for a supported language or
             the ``__name__`` of one of the ``nunavut.lang.[language]`` python modules.
-        :returns: A :class:`Language` object cached by this context.
+        :return: A :class:`Language` object cached by this context.
         :rtype: Language
         """
         if key_or_module_name is None or len(key_or_module_name) == 0:
@@ -498,7 +656,7 @@ class LanguageContext:
     def get_supported_language_names(self) -> typing.Iterable[str]:
         """Get a list of target languages supported by Nunavut.
 
-        :returns: An iterable of strings which are languages with special
+        :return: An iterable of strings which are languages with special
             support within Nunavut templates.
         """
         return [s[13:] for s in self._config.sections() if s.startswith('nunavut.lang.')]
@@ -507,7 +665,7 @@ class LanguageContext:
         """
         Gets the output extension to use regardless of a target language being available or not.
 
-        :returns: A file extension name with a leading dot.
+        :return: A file extension name with a leading dot.
         """
         if self._extension is not None:
             return self._extension
@@ -522,7 +680,7 @@ class LanguageContext:
         The filename stem to give to Namespace output files if emitted or None if there was none
         specified and there is no target language.
 
-        :returns: A file name stem or None
+        :return: A file name stem or None
         """
         return self._namespace_output_stem
 
@@ -533,23 +691,23 @@ class LanguageContext:
         """
         return self._target_language
 
-    def get_target_id_filter(self) -> typing.Callable[[str, str], str]:
+    def filter_id_for_target(self,
+                             instance: typing.Any,
+                             id_type: str = 'any') -> str:
         """
-        A filter that will transform a given string into a valid identifier
-        in the target language. The string is pass through unmodified if no
-        target language was set.
+        A filter that will transform a given string or pydsdl identifier into a valid identifier in the target language.
+        A default transformation is applied if no target language is set.
+
+        :param any instance:        Any object or data that either has a name property or can be converted to a string.
+        :param str id_type:         A type of identifier. This is different for each language.
+                                    Use 'any' to apply stropping rules for all identifier types to the instance.
+        :return: A token that is a valid identifier in the target language, is not a reserved keyword, and is
+                 transformed in a deterministic manner based on the provided instance.
         """
         if self._target_language is not None:
-            filters = self._target_language.get_filters()
-            for name, filter in filters.items():
-                if name == 'id':
-                    id_filter = typing.cast(typing.Callable[[Language, str, str], str], filter)
-                    return functools.partial(id_filter, self._target_language)
-
-        def no_filter(unfiltered: str, _: str = '') -> str:
-            return unfiltered
-
-        return no_filter
+            return self._target_language.filter_id(instance, id_type)
+        else:
+            return Language.default_filter_id_for_target(instance)
 
     def get_supported_languages(self) -> typing.Dict[str, Language]:
         """

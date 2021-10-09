@@ -30,7 +30,7 @@ target_compile_options(unity_core PUBLIC
                         "-Wno-switch-enum"
                         "-Wno-conversion"
                         "-DUNITY_INCLUDE_DOUBLE"
-                        "${NUNAVUT_VERIFICATION_EXTRA_COMPILE_FLAGS}"
+                        "${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS}"
                        )
 
 include(FindPackageHandleStandardArgs)

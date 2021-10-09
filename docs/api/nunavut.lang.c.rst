@@ -1,5 +1,10 @@
-nunavut.lang.c package
-======================
+nunavut.lang.c
+==============
+
+.. automodule:: nunavut.lang.c
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Subpackages
 -----------
@@ -9,11 +14,3 @@ Subpackages
 
    nunavut.lang.c.support
    nunavut.lang.c.templates
-
-Module contents
----------------
-
-.. automodule:: nunavut.lang.c
-   :members:
-   :undoc-members:
-   :show-inheritance:

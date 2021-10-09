@@ -14,7 +14,7 @@ import re
 import typing
 
 import pydsdl
-from nunavut import Dependencies, DependencyBuilder
+from nunavut import DependencyBuilder
 
 from . import Language
 
@@ -52,51 +52,13 @@ class IncludeGenerator(DependencyBuilder):
             path_list_with_punctuation = ['"{}"'.format(p) for p in path_list]
 
         if sort:
-            return sorted(path_list_with_punctuation) + self._get_language_includes(dep_types)
+            return sorted(path_list_with_punctuation) + self._language.get_includes(dep_types)
         else:
-            return path_list_with_punctuation + self._get_language_includes(dep_types)
+            return path_list_with_punctuation + self._language.get_includes(dep_types)
 
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
-
-    def _get_language_includes(self, dep_types: Dependencies) -> typing.List[str]:
-        """
-        Retrieve well-known includes for well-known languages. If this list grows beyond
-        C and C++ then utilize the language properties.yaml to drive this from configuration.
-        """
-        if self._language.name == 'c':
-            return self._get_std_includes_for_c(dep_types)
-        elif self._language.name == 'cpp':
-            return self._get_std_includes_for_cpp(dep_types)
-        else:
-            return []
-
-    def _get_std_includes_for_cpp(self, dep_types: Dependencies) -> typing.List[str]:
-        std_includes = []  # type: typing.List[str]
-        if self._language.get_config_value_as_bool('use_standard_types'):
-            if dep_types.uses_integer:
-                std_includes.append('cstdint')
-            if dep_types.uses_array:
-                std_includes.append('array')
-            if dep_types.uses_variable_length_array:
-                std_includes.append('vector')
-        return ['<{}>'.format(include) for include in sorted(std_includes)]
-
-    def _get_std_includes_for_c(self, dep_types: Dependencies) -> typing.List[str]:
-        std_includes = []  # type: typing.List[str]
-        if self._language.get_config_value_as_bool('use_standard_types'):
-            std_includes.append('stdlib.h')
-            # we always include stdlib if standard types are in use since initializers
-            # require the use of NULL
-            if dep_types.uses_integer:
-                std_includes.append('stdint.h')
-            if dep_types.uses_bool:
-                std_includes.append('stdbool.h')
-            if dep_types.uses_primitive_static_array:
-                # We include this for memset.
-                std_includes.append('string.h')
-        return ['<{}>'.format(include) for include in sorted(std_includes)]
 
     def _make_path(self, dt: pydsdl.CompositeType, output_extension: str) -> str:
         short_name = self._short_reference_name_filter(self._language, dt)
@@ -191,31 +153,21 @@ class TokenEncoder:
         from nunavut.lang._common import TokenEncoder
         from nunavut.lang import Language
 
-        config = Language.get_language_config_parser()
-        config.add_section('nunavut.lang.c')
-        config.set('nunavut.lang.c',
-                   'stropping_prefix',
-                   stropping_prefix)
-        config.set('nunavut.lang.c',
-                   'stropping_suffix',
-                   stropping_suffix)
-        config.set('nunavut.lang.c',
-                   'encoding_prefix',
-                   encoding_prefix)
-        config.set('nunavut.lang.c',
-                   'reserved_token_patterns_by_type',
-                   reserved_token_patterns_by_type)
-        config.set('nunavut.lang.c',
-                   'reserved_identifiers',
-                   reserved_identifiers)
-        config.set('nunavut.lang.c',
-                   'token_encoding_rules_by_identifier_type',
-                   token_encoding_rules_by_identifier_type)
-        config.set('nunavut.lang.c',
-                   'whitespace_encoding_char',
-                   whitespace_encoding_char)
+        config = {
+                    'nunavut.lang.c':
+                    {
+                        'stropping_prefix': stropping_prefix,
+                        'stropping_suffix': stropping_suffix,
+                        'encoding_prefix': encoding_prefix,
+                        'reserved_token_patterns_by_type': reserved_token_patterns_by_type,
+                        'reserved_identifiers': reserved_identifiers,
+                        'token_encoding_rules_by_identifier_type': token_encoding_rules_by_identifier_type,
+                        'whitespace_encoding_char': whitespace_encoding_char
+                     }
+                }
 
-        lang_c = Language('c', config, True)
+        lctx = configurable_language_context_factory(config, 'c')
+        lang_c = lctx.get_target_language()
 
     .. code-block:: python
 
@@ -255,17 +207,12 @@ class TokenEncoder:
                     '^(__)|(^(_)[A-Z])'
                 ]
         }
-        config.set('nunavut.lang.c',
-                   'stropping_prefix',
-                   stropping_prefix)
-        config.set('nunavut.lang.c',
-                   'encoding_prefix',
-                   encoding_prefix)
-        config.set('nunavut.lang.c',
-                   'token_encoding_rules_by_identifier_type',
-                   token_encoding_rules_by_identifier_type)
+        config['nunavut.lang.c']['stropping_prefix'] = stropping_prefix
+        config['nunavut.lang.c']['encoding_prefix'] = encoding_prefix
+        config['nunavut.lang.c']['token_encoding_rules_by_identifier_type'] = token_encoding_rules_by_identifier_type
 
-        lang_c = Language('c', config, True)
+        lctx = configurable_language_context_factory(config, 'c')
+        lang_c = lctx.get_target_language()
 
         encoder = TokenEncoder(lang_c)
 
@@ -526,13 +473,15 @@ class TokenEncoder:
             from nunavut.lang import Language
             from nunavut.lang._common import TokenEncoder
 
-            config = Language.get_language_config_parser()
-            config.add_section('nunavut.lang.cpp')
-            config.set('nunavut.lang.cpp',
-                       'reserved_token_patterns_by_type',
-                       reserved_token_patterns_by_type)
+            config = {
+                        'nunavut.lang.cpp':
+                        {
+                            'reserved_token_patterns_by_type': reserved_token_patterns_by_type
+                        }
+                    }
 
-            lang_cpp = Language('cpp', config, True)
+            lctx = configurable_language_context_factory(config, 'cpp')
+            lang_cpp = lctx.get_target_language()
 
         .. code-block:: python
 
@@ -561,13 +510,15 @@ class TokenEncoder:
 
         .. invisible-code-block: python
 
-            config = Language.get_language_config_parser()
-            config.add_section('nunavut.lang.cpp')
-            config.set('nunavut.lang.cpp',
-                       'reserved_token_patterns_by_type',
-                       reserved_token_patterns_by_type)
+            config = {
+                        'nunavut.lang.cpp':
+                        {
+                            'reserved_token_patterns_by_type': reserved_token_patterns_by_type
+                        }
+                    }
 
-            lang_cpp = Language('cpp', config, True)
+            lctx = configurable_language_context_factory(config, 'cpp')
+            lang_cpp = lctx.get_target_language()
 
         .. code-block:: python
 
@@ -602,13 +553,15 @@ class TokenEncoder:
 
         .. invisible-code-block: python
 
-            config = Language.get_language_config_parser()
-            config.add_section('nunavut.lang.cpp')
-            config.set('nunavut.lang.cpp',
-                       'reserved_token_patterns_by_type',
-                       reserved_token_patterns_by_type)
+            config = {
+                        'nunavut.lang.cpp':
+                        {
+                            'reserved_token_patterns_by_type': reserved_token_patterns_by_type
+                        }
+                    }
 
-            lang_cpp = Language('cpp', config, True)
+            lctx = configurable_language_context_factory(config, 'cpp')
+            lang_cpp = lctx.get_target_language()
 
         .. code-block:: python
 
@@ -635,9 +588,9 @@ class TokenEncoder:
                             'three'
                         ]
                 }
-            config.set('nunavut.lang.cpp',
-                       'reserved_token_patterns_by_type',
-                       reserved_token_patterns_by_type)
+            config['nunavut.lang.cpp']['reserved_token_patterns_by_type'] = reserved_token_patterns_by_type
+            lctx = configurable_language_context_factory(config, 'cpp')
+            lang_cpp = lctx.get_target_language()
 
             try:
                 TokenEncoder._get_map_of_type_to_lists_of_patterns(lang_cpp,

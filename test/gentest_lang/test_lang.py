@@ -5,18 +5,18 @@
 #
 
 from pathlib import Path
-from typing import Dict, Any, Callable
+from typing import Any, Callable, Dict, List
 from unittest.mock import MagicMock
 
 import pytest
-from pydsdl import read_namespace
-
 from nunavut import YesNoDefault, build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
-from nunavut.lang import Language, LanguageContext
+from nunavut.lang import (Dependencies, Language, LanguageContext,
+                          LanguageLoader)
 from nunavut.lang.c import filter_id as c_filter_id
 from nunavut.lang.cpp import filter_id as cpp_filter_id
 from nunavut.lang.py import filter_id as py_filter_id
+from pydsdl import read_namespace
 
 
 class Dummy:
@@ -341,15 +341,17 @@ def test_language_object() -> None:
     Verify that the Language module object works as required.
     """
     mock_config = MagicMock()
-    language = Language('c', mock_config, True)
+
+    class TestLang(Language):
+
+        def get_includes(self, deps: Dependencies) -> List[str]:
+            return []
+
+
+
+    language = TestLang(LanguageLoader.load_language_module('c'), mock_config, True)
 
     assert 'c' == language.name
-
-    filters = language.get_filters()
-    assert 'id' in filters
-
-    tests = language.get_tests()
-    assert 'zero_cost_primitive' in tests
 
     assert language.omit_serialization_support
 
@@ -365,14 +367,11 @@ def test_language_context() -> None:
     assert 'cpp' in context_w_no_target.get_supported_languages()
     assert 'py' in context_w_no_target.get_supported_languages()
 
-    assert context_w_no_target.get_target_id_filter() is not None
-    assert 'if' == context_w_no_target.get_target_id_filter()('if')
+    assert 'if' == context_w_no_target.filter_id_for_target('if', '')
 
     context_w_target = LanguageContext('c')
 
     assert context_w_target.get_target_language() is not None
-    assert context_w_target.get_target_id_filter() is not None
-    assert '_if' == context_w_target.get_target_id_filter()('if')
 
     target_language = context_w_target.get_target_language()
     assert target_language is not None

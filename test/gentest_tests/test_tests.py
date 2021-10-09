@@ -37,11 +37,25 @@ def test_instance_tests(gen_paths):  # type: ignore
 
     assert json_blob is not None
     assert json_blob["this_field_is_an_int32"]["isSerializableType"] is True
+    assert json_blob["this_field_is_an_int32"]["isSerializable"] is True
+    assert json_blob["this_field_is_an_int32"]["isPrimitiveType"] is True
+    assert json_blob["this_field_is_an_int32"]["isPrimitive"] is True
     assert json_blob["this_field_is_an_int32"]["isIntegerType"] is True
     assert json_blob["this_field_is_an_int32"]["isFloatType"] is False
     assert json_blob["this_field_is_an_int32"]["isIntegerType_field"] is True
+    assert json_blob["this_field_is_an_int32"]["isPaddingField"] is False
+    assert json_blob["this_field_is_an_int32"]["isPadding"] is False
+    assert json_blob["this_field_is_an_int32"]["isConstant"] is False
+    assert json_blob["this_field_is_an_int32"]["isconstant"] is False
 
     assert json_blob["this_field_is_a_float"]["isSerializableType"] is True
+    assert json_blob["this_field_is_a_float"]["isSerializable"] is True
+    assert json_blob["this_field_is_a_float"]["isPrimitiveType"] is True
+    assert json_blob["this_field_is_a_float"]["isPrimitive"] is True
     assert json_blob["this_field_is_a_float"]["isIntegerType"] is False
     assert json_blob["this_field_is_a_float"]["isIntegerType_field"] is False
     assert json_blob["this_field_is_a_float"]["isFloatType"] is True
+    assert json_blob["this_field_is_a_float"]["isPaddingField"] is False
+    assert json_blob["this_field_is_a_float"]["isPadding"] is False
+    assert json_blob["this_field_is_a_float"]["isConstant"] is False
+    assert json_blob["this_field_is_a_float"]["isconstant"] is False

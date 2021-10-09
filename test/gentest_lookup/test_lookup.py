@@ -12,6 +12,7 @@ from pydsdl import read_namespace
 from nunavut import build_namespace_tree, Namespace
 from nunavut.lang import LanguageContext
 from nunavut.jinja import DSDLCodeGenerator
+from nunavut.jinja.loaders import TEMPLATE_SUFFIX
 
 
 class a:
@@ -42,7 +43,7 @@ def test_bfs_of_type_for_template(gen_paths):  # type: ignore
     generator = DSDLCodeGenerator(empty_namespace, templates_dir=gen_paths.templates_dir)
     subject = d()
     template_file = generator.filter_type_to_template(subject)
-    assert str(Path('c').with_suffix(DSDLCodeGenerator.TEMPLATE_SUFFIX)) == template_file
+    assert str(Path('c').with_suffix(TEMPLATE_SUFFIX)) == template_file
     assert generator.filter_type_to_template(subject) == template_file
 
 

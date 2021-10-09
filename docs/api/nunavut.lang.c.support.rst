@@ -1,8 +1,5 @@
-nunavut.lang.c.support package
-==============================
-
-Module contents
----------------
+nunavut.lang.c.support
+======================
 
 .. automodule:: nunavut.lang.c.support
    :members:

@@ -1,7 +1,7 @@
-nunavut.lang.html
-=================
+nunavut.lang.py
+===============
 
-.. automodule:: nunavut.lang.html
+.. automodule:: nunavut.lang.py
    :members:
    :undoc-members:
    :show-inheritance:
@@ -12,4 +12,4 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   nunavut.lang.html.templates
+   nunavut.lang.py.templates

@@ -1,8 +1,5 @@
-nunavut.lang.html.templates package
-===================================
-
-Module contents
----------------
+nunavut.lang.html.templates
+===========================
 
 .. automodule:: nunavut.lang.html.templates
    :members:

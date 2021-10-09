@@ -1,5 +1,10 @@
-nunavut.lang package
-====================
+nunavut.lang
+============
+
+.. automodule:: nunavut.lang
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Subpackages
 -----------
@@ -10,26 +15,5 @@ Subpackages
    nunavut.lang.c
    nunavut.lang.cpp
    nunavut.lang.html
-
-Submodules
-----------
-
-
-.. automodule:: nunavut.lang.js
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: nunavut.lang.py
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: nunavut.lang
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   nunavut.lang.js
+   nunavut.lang.py

@@ -24,8 +24,10 @@
 // Language Options
 {%- for key, value in options.items() %}
 //     {{ key }}:  {{ value }}
-{%- endfor -%}
-{%- if T.deprecated and options.std < 14 %}
+{%- endfor %}
+// Uses Language Features
+//     Uses std_variant: {%- ifuses "std_variant" -%}yes{%- else -%}no{%- endifuses -%}
+{%- if T.deprecated and options.std | int < 14 %}
 {#- Courtesy http://patorjk.com/software/taag/#p=display&f=Big&t=DEPRECATED #}
 {#- [[deprecated]] becomes available in c++14 #}
 //           _____  ______ _____  _____  ______ _____       _______ ______ _____
