@@ -254,10 +254,9 @@ class ArgparseRunner:
                                         allow_overwrite=not self._args.no_overwrite)
 
         # TODO: move this somewhere html-specific.
-        if self._args.target_language == 'html':
-            if len(self.extra_includes) > 0:
-                logging.warning(
-                    "Other lookup namespaces are linked in these generated docs. "
-                    "If you do not generate docs for these other namespaces as well, "
-                    "links to external data types could be broken (expansion will still work)."
-                )
+        if self._args.target_language == 'html' and len(self.extra_includes) > 0:
+            logging.warning(
+                "Other lookup namespaces are linked in these generated docs. "
+                "If you do not generate docs for these other namespaces as well, "
+                "links to external data types could be broken (expansion will still work)."
+            )

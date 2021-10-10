@@ -815,36 +815,45 @@ class SupportGenerator(CodeGenerator):
             logger.info("No target language, therefore, no support headers")
             return []
         else:
-            target_path = pathlib.Path(self.namespace.get_support_output_folder()) / self._sub_folders
-
-            line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']
-            file_pps = []  # type: typing.List['nunavut.postprocessors.FilePostProcessor']
-            if self._post_processors is not None:
-                for pp in self._post_processors:
-                    if isinstance(pp, nunavut.postprocessors.LinePostProcessor):
-                        line_pps.append(pp)
-                    elif isinstance(pp, nunavut.postprocessors.FilePostProcessor):
-                        file_pps.append(pp)
-                    else:
-                        raise ValueError('PostProcessor type {} is unknown.'.format(type(pp)))
-
-            generated = []  # type: typing.List[pathlib.Path]
-            for resource in self.get_templates():
-                target = (target_path / resource.name).with_suffix(target_language.extension)
-                logger.info("Generating support file: %s", target)
-                if not self._support_enabled:
-                    self._remove_header(target, is_dryrun, allow_overwrite)
-                elif resource.suffix == TEMPLATE_SUFFIX:
-                    self._generate_header(resource, target, is_dryrun, allow_overwrite)
-                    generated.append(target)
-                else:
-                    self._copy_header(resource, target, is_dryrun, allow_overwrite, line_pps, file_pps)
-                    generated.append(target)
-            return generated
+            return self._generate_all(target_language, self._sub_folders, is_dryrun, allow_overwrite)
 
     # +-----------------------------------------------------------------------+
     # | Private
     # +-----------------------------------------------------------------------+
+
+    def _generate_all(self,
+                      target_language: nunavut.lang.Language,
+                      sub_folders: pathlib.Path,
+                      is_dryrun: bool,
+                      allow_overwrite: bool) \
+            -> typing.Iterable[pathlib.Path]:
+        target_path = pathlib.Path(self.namespace.get_support_output_folder()) / sub_folders
+
+        line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']
+        file_pps = []  # type: typing.List['nunavut.postprocessors.FilePostProcessor']
+        if self._post_processors is not None:
+            for pp in self._post_processors:
+                if isinstance(pp, nunavut.postprocessors.LinePostProcessor):
+                    line_pps.append(pp)
+                elif isinstance(pp, nunavut.postprocessors.FilePostProcessor):
+                    file_pps.append(pp)
+                else:
+                    raise ValueError('PostProcessor type {} is unknown.'.format(type(pp)))
+
+        generated = []  # type: typing.List[pathlib.Path]
+        for resource in self.get_templates():
+            target = (target_path / resource.name).with_suffix(target_language.extension)
+            logger.info("Generating support file: %s", target)
+            if not self._support_enabled:
+                self._remove_header(target, is_dryrun, allow_overwrite)
+            elif resource.suffix == TEMPLATE_SUFFIX:
+                self._generate_header(resource, target, is_dryrun, allow_overwrite)
+                generated.append(target)
+            else:
+                self._copy_header(resource, target, is_dryrun, allow_overwrite, line_pps, file_pps)
+                generated.append(target)
+        return generated
+
     def _remove_header(self,
                        target: pathlib.Path,
                        is_dryrun: bool,

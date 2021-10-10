@@ -137,27 +137,27 @@ class LanguageEnvironment:
     Data structure defining stuff contributed to a template environment for a given :class:`Language`.
     """
 
-    TestNamePrefix = 'is_'
-    FilterNamePrefix = 'filter_'
-    UsesQueryPrefix = 'uses_'
+    TEST_NAME_PREFIX = 'is_'
+    FILTER_NAME_PREFIX = 'filter_'
+    USES_QUERY_PREFIX = 'uses_'
 
     @classmethod
     def is_test_name(cls, callable_name: typing.Optional[str]) -> bool:
         return callable_name is not None and \
-            len(callable_name) >= len(cls.TestNamePrefix) and \
-            callable_name.startswith(cls.TestNamePrefix)
+            len(callable_name) >= len(cls.TEST_NAME_PREFIX) and \
+            callable_name.startswith(cls.TEST_NAME_PREFIX)
 
     @classmethod
     def is_filter_name(cls, callable_name: typing.Optional[str]) -> bool:
         return callable_name is not None and \
-            len(callable_name) >= len(cls.FilterNamePrefix) and \
-            callable_name.startswith(cls.FilterNamePrefix)
+            len(callable_name) >= len(cls.FILTER_NAME_PREFIX) and \
+            callable_name.startswith(cls.FILTER_NAME_PREFIX)
 
     @classmethod
     def is_uses_query_name(cls, callable_name: typing.Optional[str]) -> bool:
         return callable_name is not None and \
-            len(callable_name) >= len(cls.UsesQueryPrefix) and \
-            callable_name.startswith(cls.UsesQueryPrefix)
+            len(callable_name) >= len(cls.USES_QUERY_PREFIX) and \
+            callable_name.startswith(cls.USES_QUERY_PREFIX)
 
     LanguageListT = typing.TypeVar('LanguageListT',
                                    typing.AbstractSet[nunavut.lang.Language],
@@ -197,14 +197,14 @@ class LanguageEnvironment:
                 callable_name = callable.__name__
 
         if cls.is_test_name(callable_name):
-            prefix = cls.TestNamePrefix  # type: typing.Optional[str]
-            method_name = callable_name[len(cls.TestNamePrefix):]
+            prefix = cls.TEST_NAME_PREFIX  # type: typing.Optional[str]
+            method_name = callable_name[len(cls.TEST_NAME_PREFIX):]
         elif cls.is_filter_name(callable_name):
-            prefix = cls.FilterNamePrefix
-            method_name = callable_name[len(cls.FilterNamePrefix):]
+            prefix = cls.FILTER_NAME_PREFIX
+            method_name = callable_name[len(cls.FILTER_NAME_PREFIX):]
         elif cls.is_uses_query_name(callable_name):
-            prefix = cls.UsesQueryPrefix
-            method_name = callable_name[len(cls.UsesQueryPrefix):]
+            prefix = cls.USES_QUERY_PREFIX
+            method_name = callable_name[len(cls.USES_QUERY_PREFIX):]
         else:
             prefix = None
             method_name = callable_name

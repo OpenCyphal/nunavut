@@ -1,6 +1,6 @@
 #
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright (C) 2018-2021  UAVCAN Development Team  <uavcan.org>
 # This software is distributed under the terms of the MIT License.
 #
 """Code generator built on top of pydsdl.
@@ -349,7 +349,48 @@ class Namespace(pydsdl.Any):
 # +---------------------------------------------------------------------------+
 
 
-def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
+class _NamespaceFactory:
+    """
+    Read-through cache and factory for :class:`Namespace` objects.
+    """
+
+    def __init__(self,
+                 lctx: lang.LanguageContext,
+                 base_path: pathlib.PurePath,
+                 root_namespace_dir: pathlib.Path):
+        self._lctx = lctx
+        self._base_path = base_path
+        self._namespaces = dict()  # type: typing.Dict[str, Namespace]
+        self._root_namespace_dir = root_namespace_dir
+
+    def get_root_namesapce(self) -> Namespace:
+        try:
+            return next(iter(self._namespaces.values())).get_root_namespace()
+        except StopIteration:
+            pass
+        return self.get_empty_namespace()
+
+    def get_empty_namespace(self) -> Namespace:
+        return self.get_or_make_namespace('')[0]
+
+    def get_or_make_namespace(self, full_namespace: str) -> typing.Tuple[Namespace, bool]:
+        try:
+            namespace = self._namespaces[str(full_namespace)]
+            return (namespace, True)
+        except KeyError:
+            pass
+
+        namespace = Namespace(full_namespace,
+                              self._root_namespace_dir,
+                              self._base_path,
+                              self._lctx)
+
+        self._namespaces[str(full_namespace)] = namespace
+
+        return (namespace, False)
+
+
+def build_namespace_tree(types: typing.List[pydsdl.CompositeType],
                          root_namespace_dir: str,
                          output_dir: str,
                          language_context: lang.LanguageContext) -> Namespace:
@@ -368,27 +409,11 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
     :return: The root :class:`nunavut.Namespace`.
 
     """
-    base_path = pathlib.PurePath(output_dir)
-
     namespace_index = set()  # type: typing.Set[str]
-    namespaces = dict()  # type: typing.Dict[str, Namespace]
 
-    def get_or_make_namespace(full_namespace: str) -> typing.Tuple[Namespace, bool]:
-        # Local Namespace read through cache and factory.
-        try:
-            namespace = namespaces[str(full_namespace)]
-            return (namespace, True)
-        except KeyError:
-            pass
-
-        namespace = Namespace(full_namespace,
-                              pathlib.Path(root_namespace_dir),
-                              base_path,
-                              language_context)
-
-        namespaces[str(full_namespace)] = namespace
-
-        return (namespace, False)
+    nsf = _NamespaceFactory(language_context,
+                            pathlib.PurePath(output_dir),
+                            pathlib.Path(root_namespace_dir))
 
     for dsdl_type in types:
         # For each type we form a path with the output_dir as the base; the intermediate
@@ -399,7 +424,7 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
         # We also, lazily, generate Namespace nodes as we encounter new namespaces for the
         # first time.
 
-        namespace, did_exist = get_or_make_namespace(dsdl_type.full_namespace)
+        namespace, did_exist = nsf.get_or_make_namespace(dsdl_type.full_namespace)
 
         if not did_exist:
             # add all namespaces up to root to index so we trigger
@@ -407,8 +432,6 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
             # loop below.
             for i in range(len(dsdl_type.name_components) - 1, 0, -1):
                 ancestor_ns = '.'.join(dsdl_type.name_components[0:i])
-                # This little optimization pushed the complexity metric
-                # too high which is why I did noqa here.
                 if ancestor_ns in namespace_index:
                     break
                 namespace_index.add(ancestor_ns)
@@ -420,22 +443,16 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],  # noqa: C901
     # missing (i.e. empty) namespaces and all the links to form the
     # namespace tree.
     for full_namespace in namespace_index:
-        namespace, _ = get_or_make_namespace(full_namespace)
+        namespace, _ = nsf.get_or_make_namespace(full_namespace)
 
         parent_namespace_components = namespace._namespace_components[0:-1]
         if (len(parent_namespace_components) > 0):
             parent_name = '.'.join(parent_namespace_components)
 
-            parent, _ = get_or_make_namespace(parent_name)
+            parent, _ = nsf.get_or_make_namespace(parent_name)
             parent._add_nested_namespace(namespace)
 
-    try:
-        return next(iter(namespaces.values())).get_root_namespace()
-    except StopIteration:
-        pass
-
-    # The empty namespace
-    return get_or_make_namespace('')[0]
+    return nsf.get_root_namesapce()
 
 # +---------------------------------------------------------------------------+
 
