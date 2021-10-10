@@ -1,6 +1,6 @@
 #
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright (C) 2018-2021  UAVCAN Development Team  <uavcan.org>
 # This software is distributed under the terms of the MIT License.
 #
 """
@@ -15,190 +15,6 @@ import pathlib
 import sys
 import textwrap
 import typing
-
-
-def _should_generate_support(args: argparse.Namespace) -> bool:
-    if args.generate_support == 'as-needed':
-        return (args.omit_serialization_support is None or not args.omit_serialization_support)
-    else:
-        return bool(args.generate_support == 'always' or args.generate_support == 'only')
-
-
-def _run(args: argparse.Namespace, extra_includes: typing.List[str]) -> int:  # noqa: C901
-    '''
-        Post command-line setup and parsing logic to execute nunavut
-        library routines based on input.
-    '''
-    #
-    # nunavut : load module
-    #
-    import pydsdl
-    import nunavut
-    import nunavut.jinja
-    import nunavut.lang
-
-    def _build_ext_program_postprocessor(program: str, args: argparse.Namespace) \
-            -> nunavut.postprocessors.FilePostProcessor:
-        subprocess_args = [program]
-        if hasattr(args, 'pp_run_program_arg') and args.pp_run_program_arg is not None:
-            for program_arg in args.pp_run_program_arg:
-                subprocess_args.append(program_arg)
-        return nunavut.postprocessors.ExternalProgramEditInPlace(subprocess_args)
-
-    def _build_post_processor_list_from_args(args: argparse.Namespace) \
-            -> typing.List[nunavut.postprocessors.PostProcessor]:
-        '''
-        Return a list of post processors setup based on the provided command-line arguments. This
-        list may be empty but the function will not return None.
-        '''
-        post_processors = []  # type: typing.List[nunavut.postprocessors.PostProcessor]
-        if args.pp_trim_trailing_whitespace:
-            post_processors.append(nunavut.postprocessors.TrimTrailingWhitespace())
-        if hasattr(args, 'pp_max_emptylines') and args.pp_max_emptylines is not None:
-            post_processors.append(nunavut.postprocessors.LimitEmptyLines(args.pp_max_emptylines))
-        if hasattr(args, 'pp_run_program') and args.pp_run_program is not None:
-            post_processors.append(_build_ext_program_postprocessor(args.pp_run_program, args))
-
-        post_processors.append(nunavut.postprocessors.SetFileMode(args.file_mode))
-
-        return post_processors
-
-    #
-    # nunavut: language context.
-    #
-    language_options = dict()
-    if args.target_endianness is not None:
-        language_options['target_endianness'] = args.target_endianness
-    language_options['omit_float_serialization_support'] = args.omit_float_serialization_support
-    language_options['enable_serialization_asserts'] = args.enable_serialization_asserts
-    language_options['enable_override_variable_array_capacity'] = args.enable_override_variable_array_capacity
-    if args.language_standard is not None:
-        language_options['std'] = args.language_standard
-
-    language_context = nunavut.lang.LanguageContext(
-        args.target_language,
-        args.output_extension,
-        args.namespace_output_stem,
-        omit_serialization_support_for_target=args.omit_serialization_support,
-        language_options=language_options,
-        include_experimental_languages=args.experimental_languages)
-
-    #
-    # nunavut: inferred target language from extension
-    #
-    if args.output_extension is not None and language_context.get_target_language() is None:
-
-        inferred_target_language_name = None  # type: typing.Optional[str]
-        for name, lang in language_context.get_supported_languages().items():
-            extension = lang.get_config_value('extension', None)
-            if extension is not None and extension == args.output_extension:
-                inferred_target_language_name = name
-                break
-
-        if inferred_target_language_name is not None:
-            logging.info('Inferring target language %s based on extension "%s".',
-                         inferred_target_language_name, args.output_extension)
-            language_context = nunavut.lang.LanguageContext(
-                inferred_target_language_name,
-                args.output_extension,
-                args.namespace_output_stem,
-                omit_serialization_support_for_target=args.omit_serialization_support,
-                language_options=language_options)
-        elif args.templates is None:
-            logging.warn(
-                textwrap.dedent('''
-                ***********************************************************************
-                    No target language was given, none could be inferred from the output extension (-e) argument "%s",
-                    and no user templates were specified. You will fail to find templates if you have provided any
-                    DSDL types to generate.
-                ***********************************************************************
-                ''').lstrip(),
-                args.output_extension
-            )
-
-    #
-    # nunavut : parse
-    #
-    if args.generate_support != 'only':
-        type_map = pydsdl.read_namespace(args.root_namespace,
-                                         extra_includes,
-                                         allow_unregulated_fixed_port_id=args.allow_unregulated_fixed_port_id)
-    else:
-        type_map = []
-
-    root_namespace = nunavut.build_namespace_tree(
-        type_map,
-        args.root_namespace,
-        args.outdir,
-        language_context)
-
-    #
-    # nunavut : generate
-    #
-
-    generator_args = {
-        'generate_namespace_types': (nunavut.YesNoDefault.YES
-                                     if args.generate_namespace_types
-                                     else nunavut.YesNoDefault.DEFAULT),
-        'templates_dir': (pathlib.Path(args.templates) if args.templates is not None else None),
-        'trim_blocks': args.trim_blocks,
-        'lstrip_blocks': args.lstrip_blocks,
-        'post_processors': _build_post_processor_list_from_args(args)
-    }
-
-    from nunavut.generators import create_generators
-    generator, support_generator = create_generators(root_namespace, **generator_args)
-
-    if args.list_outputs:
-        if args.generate_support != 'only':
-            for output_path in generator.generate_all(is_dryrun=True):
-                sys.stdout.write(str(output_path))
-                sys.stdout.write(';')
-
-        if _should_generate_support(args):
-            for output_path in support_generator.generate_all(is_dryrun=True):
-                sys.stdout.write(str(output_path))
-                sys.stdout.write(';')
-        return 0
-
-    if args.list_inputs:
-        if args.generate_support != 'only':
-            for input_path in generator.get_templates():
-                sys.stdout.write(str(input_path.resolve()))
-                sys.stdout.write(';')
-        if _should_generate_support(args):
-            for input_path in support_generator.get_templates():
-                sys.stdout.write(str(input_path.resolve()))
-                sys.stdout.write(';')
-        if args.generate_support != 'only':
-            if generator.generate_namespace_types:
-                for output_type, _ in root_namespace.get_all_types():
-                    sys.stdout.write(str(output_type.source_file_path))
-                    sys.stdout.write(';')
-            else:
-                for output_type, _ in root_namespace.get_all_datatypes():
-                    sys.stdout.write(str(output_type.source_file_path))
-                    sys.stdout.write(';')
-        return 0
-
-    if _should_generate_support(args):
-        support_generator.generate_all(is_dryrun=args.dry_run,
-                                       allow_overwrite=not args.no_overwrite)
-
-    if args.generate_support != 'only':
-        generator.generate_all(is_dryrun=args.dry_run,
-                               allow_overwrite=not args.no_overwrite)
-
-    # TODO: move this somewhere html-specific.
-    if args.target_language == 'html':
-        if len(extra_includes) > 0:
-            logging.warning(
-                "Other lookup namespaces are linked in these generated docs. "
-                "If you do not generate docs for these other namespaces as well, "
-                "links to external data types could be broken (expansion will still work)."
-            )
-
-    return 0
 
 
 class _LazyVersionAction(argparse._VersionAction):
@@ -610,4 +426,9 @@ def main() -> int:
     except KeyError:
         pass
 
-    return _run(args, extra_includes)
+    from nunavut.cli.runners import ArgparseRunner
+
+    runner = ArgparseRunner(args, extra_includes)
+    runner.setup()
+    runner.run()
+    return 0

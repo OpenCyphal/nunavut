@@ -156,11 +156,8 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
         super().__init__(namespace,
                          generate_namespace_types)
 
-        if templates_dir is not None:
-            if not isinstance(templates_dir, list):
-                templates_dir = [templates_dir]
-            else:
-                templates_dir = templates_dir
+        if templates_dir is not None and not isinstance(templates_dir, list):
+            templates_dir = [templates_dir]
 
         language_context = self._namespace.get_language_context()
         target_language = language_context.get_target_language()
