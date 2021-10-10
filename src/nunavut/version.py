@@ -10,4 +10,4 @@
 __version__ = "1.5.0"  #: The version number used in the release of nunavut to pypi.
 
 
-__license__ = 'MIT'
+__license__ = "MIT"

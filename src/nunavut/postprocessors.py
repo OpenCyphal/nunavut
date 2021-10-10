@@ -170,6 +170,7 @@ class ExternalProgramEditInPlace(FilePostProcessor):
         subprocess_run(run_args, check=self._check)
         return generated
 
+
 # +---------------------------------------------------------------------------+
 # | BUILT-IN POST PROCESSORS :: LinePostProcessor
 # +---------------------------------------------------------------------------+
@@ -186,12 +187,12 @@ class TrimTrailingWhitespace(LinePostProcessor):
     """
 
     def __init__(self):  # type: ignore
-        self._trailing_ws_pattern = re.compile(r'\s+$')
+        self._trailing_ws_pattern = re.compile(r"\s+$")
 
     def __call__(self, line_and_lineend: typing.Tuple[str, str]) -> typing.Tuple[str, str]:
         match_obj = self._trailing_ws_pattern.search(line_and_lineend[0])
         if match_obj is not None:
-            return (line_and_lineend[0][:match_obj.start()], line_and_lineend[1])
+            return (line_and_lineend[0][: match_obj.start()], line_and_lineend[1])
         else:
             return line_and_lineend
 
@@ -205,6 +206,7 @@ class LimitEmptyLines(LinePostProcessor):
         invoking a code formatter from a :class:`FilePostProcessor` instead.
 
     """
+
     def __init__(self, max_empty_lines: int):
         self._max_empty_lines = max_empty_lines
         self._empty_line_count = 0
@@ -216,6 +218,6 @@ class LimitEmptyLines(LinePostProcessor):
             self._empty_line_count = 0
 
         if self._empty_line_count > self._max_empty_lines:
-            return ('', '')
+            return ("", "")
         else:
             return line_and_lineend

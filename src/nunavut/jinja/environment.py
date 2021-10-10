@@ -79,12 +79,12 @@ class LanguageTemplateNamespace:
         star_args = {}
         for name, value in self._get_kwargs():
             if name.isidentifier():
-                arg_strings.append('%s=%r' % (name, value))
+                arg_strings.append("%s=%r" % (name, value))
             else:
                 star_args[name] = value
         if star_args:
-            arg_strings.append('**%s' % repr(star_args))
-        return '%s(%s)' % (type_name, ', '.join(arg_strings))
+            arg_strings.append("**%s" % repr(star_args))
+        return "%s(%s)" % (type_name, ", ".join(arg_strings))
 
     def _get_kwargs(self) -> typing.List[typing.Any]:
         return list(self.__dict__.items())
@@ -188,43 +188,37 @@ class CodeGenEnvironment(Environment):
 
     """
 
-    RESERVED_GLOBAL_NAMESPACES = {
-        'ln',
-        'options',
-        'uses_queries',
-        'nunavut'
-    }
+    RESERVED_GLOBAL_NAMESPACES = {"ln", "options", "uses_queries", "nunavut"}
 
-    RESERVED_GLOBAL_NAMES = {
-        'now_utc'
-    }
+    RESERVED_GLOBAL_NAMES = {"now_utc"}
 
-    NUNAVUT_NAMESPACE_PREFIX = 'nunavut.lang.'
+    NUNAVUT_NAMESPACE_PREFIX = "nunavut.lang."
 
-    def __init__(self,
-                 loader: BaseLoader,
-                 lctx: typing.Optional[nunavut.lang.LanguageContext] = None,
-                 trim_blocks: bool = False,
-                 lstrip_blocks: bool = False,
-                 additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
-                 additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None,
-                 additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
-                 extensions: typing.List[Extension] = [jinja_do,
-                                                       loopcontrols,
-                                                       JinjaAssert,
-                                                       UseQuery],
-                 allow_filter_test_or_use_query_overwrite: bool = False):
-        super().__init__(loader=loader,  # nosec
-                         extensions=extensions,
-                         autoescape=select_autoescape(enabled_extensions=('htm', 'html', 'xml', 'json'),
-                                                      default_for_string=False,
-                                                      default=False),
-                         undefined=StrictUndefined,
-                         keep_trailing_newline=True,
-                         lstrip_blocks=lstrip_blocks,
-                         trim_blocks=trim_blocks,
-                         auto_reload=False,
-                         cache_size=400)
+    def __init__(
+        self,
+        loader: BaseLoader,
+        lctx: typing.Optional[nunavut.lang.LanguageContext] = None,
+        trim_blocks: bool = False,
+        lstrip_blocks: bool = False,
+        additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
+        additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None,
+        additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        extensions: typing.List[Extension] = [jinja_do, loopcontrols, JinjaAssert, UseQuery],
+        allow_filter_test_or_use_query_overwrite: bool = False,
+    ):
+        super().__init__(
+            loader=loader,  # nosec
+            extensions=extensions,
+            autoescape=select_autoescape(
+                enabled_extensions=("htm", "html", "xml", "json"), default_for_string=False, default=False
+            ),
+            undefined=StrictUndefined,
+            keep_trailing_newline=True,
+            lstrip_blocks=lstrip_blocks,
+            trim_blocks=trim_blocks,
+            auto_reload=False,
+            cache_size=400,
+        )
         if additional_globals is not None:
             for global_name, global_value in additional_globals.items():
                 if global_name in self.RESERVED_GLOBAL_NAMESPACES or global_name in self.RESERVED_GLOBAL_NAMES:
@@ -236,7 +230,7 @@ class CodeGenEnvironment(Environment):
         for global_namespace in self.RESERVED_GLOBAL_NAMESPACES:
             self.globals[global_namespace] = LanguageTemplateNamespace()
 
-        self.globals['now_utc'] = datetime.datetime(datetime.MINYEAR, 1, 1)
+        self.globals["now_utc"] = datetime.datetime(datetime.MINYEAR, 1, 1)
         self._target_language = None  # type: typing.Optional[nunavut.lang.Language]
 
         # --------------------------------------------------
@@ -247,8 +241,9 @@ class CodeGenEnvironment(Environment):
         if lctx is not None:
             self._update_language_support(lctx)
 
-            supported_languages = lctx.get_supported_languages().values() \
-                # type: typing.Optional[typing.ValuesView[nunavut.lang.Language]]
+            supported_languages = (
+                lctx.get_supported_languages().values()
+            )  # type: typing.Optional[typing.ValuesView[nunavut.lang.Language]]
         else:
             supported_languages = None
 
@@ -257,43 +252,39 @@ class CodeGenEnvironment(Environment):
         self.add_conventional_methods_to_environment(self)
 
         if additional_filters is not None:
-            self._add_each_to_environment(additional_filters.items(),
-                                          self.filters,
-                                          supported_languages=supported_languages)
+            self._add_each_to_environment(
+                additional_filters.items(), self.filters, supported_languages=supported_languages
+            )
         if additional_tests is not None:
-            self._add_each_to_environment(additional_tests.items(),
-                                          self.tests,
-                                          supported_languages=supported_languages)
+            self._add_each_to_environment(additional_tests.items(), self.tests, supported_languages=supported_languages)
 
     def add_conventional_methods_to_environment(self, obj: typing.Any) -> None:
         for name, method in inspect.getmembers(obj, inspect.isroutine):
             try:
-                self._add_conventional_method_to_environment(method,
-                                                             name,
-                                                             supported_languages=self.supported_languages)
+                self._add_conventional_method_to_environment(method, name, supported_languages=self.supported_languages)
             except TypeError:
                 pass
 
     @property
     def supported_languages(self) -> typing.ValuesView[nunavut.lang.Language]:
-        ln_globals = self.globals['ln']  # type: LanguageTemplateNamespace
+        ln_globals = self.globals["ln"]  # type: LanguageTemplateNamespace
         return ln_globals.values()
 
     @property
     def nunavut_global(self) -> LanguageTemplateNamespace:
-        return typing.cast(LanguageTemplateNamespace, self.globals['nunavut'])
+        return typing.cast(LanguageTemplateNamespace, self.globals["nunavut"])
 
     @property
     def target_language_uses_queries(self) -> LanguageTemplateNamespace:
-        return typing.cast(LanguageTemplateNamespace, self.globals['uses_queries'])
+        return typing.cast(LanguageTemplateNamespace, self.globals["uses_queries"])
 
     @property
     def language_options(self) -> LanguageTemplateNamespace:
-        return typing.cast(LanguageTemplateNamespace, self.globals['options'])
+        return typing.cast(LanguageTemplateNamespace, self.globals["options"])
 
     @property
     def language_support(self) -> LanguageTemplateNamespace:
-        return typing.cast(LanguageTemplateNamespace, self.globals['ln'])
+        return typing.cast(LanguageTemplateNamespace, self.globals["ln"])
 
     @property
     def target_language(self) -> typing.Optional[nunavut.lang.Language]:
@@ -313,13 +304,12 @@ class CodeGenEnvironment(Environment):
     # +----------------------------------------------------------------------------------------------------------------+
     # | Private
     # +----------------------------------------------------------------------------------------------------------------+
-    def _resolve_collection(self,
-                            conventional_method_prefix: typing.Optional[str],
-                            method_name: str,
-                            collection_maybe: typing.Optional[
-                                typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]
-                            ]) -> \
-            typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]:
+    def _resolve_collection(
+        self,
+        conventional_method_prefix: typing.Optional[str],
+        method_name: str,
+        collection_maybe: typing.Optional[typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]],
+    ) -> typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]:
         if collection_maybe is not None:
             return collection_maybe
 
@@ -328,44 +318,44 @@ class CodeGenEnvironment(Environment):
         elif LanguageEnvironment.is_filter_name(conventional_method_prefix):
             return typing.cast(typing.Dict[str, typing.Any], self.filters)
         elif LanguageEnvironment.is_uses_query_name(conventional_method_prefix):
-            uses_queries = self.globals['uses_queries']
+            uses_queries = self.globals["uses_queries"]
             return typing.cast(LanguageTemplateNamespace, uses_queries)
         else:
             raise TypeError(
-                'Tried to add an item {} to the template environment but we don\'t know what the item is.'
-                .format(method_name))
+                "Tried to add an item {} to the template environment but we don't know what the item is.".format(
+                    method_name
+                )
+            )
 
-    def _add_to_environment(self,
-                            item_name: str,
-                            item: typing.Any,
-                            collection:
-                            typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]) \
-            -> None:
+    def _add_to_environment(
+        self,
+        item_name: str,
+        item: typing.Any,
+        collection: typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]],
+    ) -> None:
         if item_name in collection:
             if not self._allow_replacements:
-                raise RuntimeError('{} was already defined.'.format(item_name))
+                raise RuntimeError("{} was already defined.".format(item_name))
             elif item_name in JINJA2_FILTERS:
-                logger.info('Replacing Jinja built-in {}'.format(item_name))
+                logger.info("Replacing Jinja built-in {}".format(item_name))
             else:
                 logger.info('Replacing "{}" which was already defined for this environment.'.format(item_name))
         else:
-            logger.debug('Adding {} to environment'.format(item_name))
+            logger.debug("Adding {} to environment".format(item_name))
         if isinstance(collection, LanguageTemplateNamespace):
             setattr(collection, item_name, item)
         else:
             collection[item_name] = item
 
-    def _add_conventional_method_to_environment(self,
-                                                method: typing.Callable[..., bool],
-                                                method_name: str,
-                                                collection_maybe: typing.Optional[
-                                                    typing.Union[LanguageTemplateNamespace,
-                                                                 typing.Dict[str, typing.Any]]
-                                                ] = None,
-                                                supported_languages: typing.Optional[
-                                                    typing.ValuesView[nunavut.lang.Language]] = None,
-                                                method_language: typing.Optional[nunavut.lang.Language] = None,
-                                                is_target: bool = False) -> None:
+    def _add_conventional_method_to_environment(
+        self,
+        method: typing.Callable[..., bool],
+        method_name: str,
+        collection_maybe: typing.Optional[typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]] = None,
+        supported_languages: typing.Optional[typing.ValuesView[nunavut.lang.Language]] = None,
+        method_language: typing.Optional[nunavut.lang.Language] = None,
+        is_target: bool = False,
+    ) -> None:
         """
 
         :param str callable_name: The name of the callable to use in a template.
@@ -404,112 +394,110 @@ class CodeGenEnvironment(Environment):
         collection = self._resolve_collection(result[0], method_name, collection_maybe)
 
         if method_language is not None:
-            self._add_to_environment('ln.{}.{}'.format(method_language.name, result[1]), result[2], collection)
+            self._add_to_environment("ln.{}.{}".format(method_language.name, result[1]), result[2], collection)
         else:
             self._add_to_environment(result[1], result[2], collection)
         if is_target:
             self._add_to_environment(result[1], result[2], collection)
 
-    def _add_each_to_environment(self,
-                                 items: typing.AbstractSet[typing.Tuple[str, typing.Callable]],
-                                 collection: typing.Optional[
-                                     typing.Union[
-                                         LanguageTemplateNamespace,
-                                         typing.Dict[str, typing.Any],
-                                     ]] = None,
-                                 supported_languages: typing.Optional[typing.ValuesView[nunavut.lang.Language]] = None,
-                                 language: typing.Optional[nunavut.lang.Language] = None,
-                                 is_target: bool = False) -> None:
+    def _add_each_to_environment(
+        self,
+        items: typing.AbstractSet[typing.Tuple[str, typing.Callable]],
+        collection: typing.Optional[
+            typing.Union[
+                LanguageTemplateNamespace,
+                typing.Dict[str, typing.Any],
+            ]
+        ] = None,
+        supported_languages: typing.Optional[typing.ValuesView[nunavut.lang.Language]] = None,
+        language: typing.Optional[nunavut.lang.Language] = None,
+        is_target: bool = False,
+    ) -> None:
         for method_name, method in items:
             self._add_conventional_method_to_environment(
-                method,
-                method_name,
-                collection,
-                supported_languages,
-                language,
-                is_target)
+                method, method_name, collection, supported_languages, language, is_target
+            )
 
-    @ classmethod
+    @classmethod
     def _create_platform_version(cls) -> typing.Dict[str, typing.Any]:
         import platform
         import sys
 
         platform_version = {}  # type: typing.Dict[str, typing.Any]
 
-        platform_version['python_implementation'] = platform.python_implementation()
-        platform_version['python_version'] = platform.python_version()
-        platform_version['python_release_level'] = sys.version_info[3]
-        platform_version['python_build'] = platform.python_build()
-        platform_version['python_compiler'] = platform.python_compiler()
-        platform_version['python_revision'] = platform.python_revision()
+        platform_version["python_implementation"] = platform.python_implementation()
+        platform_version["python_version"] = platform.python_version()
+        platform_version["python_release_level"] = sys.version_info[3]
+        platform_version["python_build"] = platform.python_build()
+        platform_version["python_compiler"] = platform.python_compiler()
+        platform_version["python_revision"] = platform.python_revision()
 
         try:
-            platform_version['python_xoptions'] = sys._xoptions
+            platform_version["python_xoptions"] = sys._xoptions
         except AttributeError:  # pragma: no cover
-            platform_version['python_xoptions'] = {}
+            platform_version["python_xoptions"] = {}
 
-        platform_version['runtime_platform'] = platform.platform()
+        platform_version["runtime_platform"] = platform.platform()
 
         return platform_version
 
-    def _add_support_from_language_module_to_environment(self,
-                                                         lctx: nunavut.lang.LanguageContext,
-                                                         language: nunavut.lang.Language,
-                                                         ln_module: 'types.ModuleType',
-                                                         is_target: bool = False) -> None:
+    def _add_support_from_language_module_to_environment(
+        self,
+        lctx: nunavut.lang.LanguageContext,
+        language: nunavut.lang.Language,
+        ln_module: "types.ModuleType",
+        is_target: bool = False,
+    ) -> None:
         supported_languages = lctx.get_supported_languages()
         ln_env = LanguageEnvironment.find_all_conventional_methods_in_language_module(
-            language,
-            supported_languages.values(),
-            ln_module
+            language, supported_languages.values(), ln_module
         )
-        self._add_each_to_environment(ln_env.filters.items(),
-                                      self.filters,
-                                      supported_languages.values(),
-                                      language=language,
-                                      is_target=is_target)
-        self._add_each_to_environment(ln_env.tests.items(),
-                                      self.tests,
-                                      supported_languages.values(),
-                                      language=language,
-                                      is_target=is_target)
+        self._add_each_to_environment(
+            ln_env.filters.items(), self.filters, supported_languages.values(), language=language, is_target=is_target
+        )
+        self._add_each_to_environment(
+            ln_env.tests.items(), self.tests, supported_languages.values(), language=language, is_target=is_target
+        )
         if is_target:
             self._target_language = language
-            self._add_each_to_environment(ln_env.uses_queries.items(),
-                                          self.globals['uses_queries'],
-                                          supported_languages.values(),
-                                          language=language,
-                                          is_target=is_target)
+            self._add_each_to_environment(
+                ln_env.uses_queries.items(),
+                self.globals["uses_queries"],
+                supported_languages.values(),
+                language=language,
+                is_target=is_target,
+            )
 
     def _update_language_support(self, lctx: nunavut.lang.LanguageContext) -> None:
 
         supported_languages = lctx.get_supported_languages()
         target_language = lctx.get_target_language()
-        ln_globals = self.globals['ln']
+        ln_globals = self.globals["ln"]
         if target_language is not None:
             self.globals.update(target_language.get_globals())
-            globals_options_ns = self.globals['options']
+            globals_options_ns = self.globals["options"]
             globals_options_ns.update(target_language.get_options())
         for supported_language in supported_languages.values():
             if supported_language.name not in ln_globals:
-                setattr(ln_globals,
-                        supported_language.name,
-                        LanguageTemplateNamespace(options=LanguageTemplateNamespace()))
+                setattr(
+                    ln_globals, supported_language.name, LanguageTemplateNamespace(options=LanguageTemplateNamespace())
+                )
             ln_globals_ns = getattr(ln_globals, supported_language.name)
             ln_globals_ns.update(supported_language.get_globals())
-            ln_globals_options_ns = getattr(ln_globals_ns, 'options')
+            ln_globals_options_ns = getattr(ln_globals_ns, "options")
             ln_globals_options_ns.update(supported_language.get_options())
 
         # then load everything into the environment from this list.
         # note that we don't unload anything here so this method is not idempotent
         for supported_language in supported_languages.values():
-            is_target = (target_language is not None and supported_language == target_language)
+            is_target = target_language is not None and supported_language == target_language
             try:
                 self._add_support_from_language_module_to_environment(
                     lctx,
                     supported_language,
                     nunavut.lang.LanguageLoader.load_language_module(supported_language.name),
-                    is_target)
+                    is_target,
+                )
             except ModuleNotFoundError:
                 pass
 
@@ -518,7 +506,7 @@ class CodeGenEnvironment(Environment):
         # Helper global so we don't have to futz around with the "omit_serialization_support"
         # logic in the templates. The omit_serialization_support property of the Language
         # object is read-only so this boolean will remain consistent for the Environment.
-        target_language = (None if lctx is None else lctx.get_target_language())
+        target_language = None if lctx is None else lctx.get_target_language()
         if target_language is not None:
             omit_serialization_support = target_language.omit_serialization_support
             support_namespace = target_language.support_namespace
@@ -529,13 +517,10 @@ class CodeGenEnvironment(Environment):
 
         nunavut_namespace = self.nunavut_global
 
-        setattr(nunavut_namespace, 'support', {
-            'omit': omit_serialization_support,
-            'namespace': support_namespace
-        })
+        setattr(nunavut_namespace, "support", {"omit": omit_serialization_support, "namespace": support_namespace})
 
-        if 'version' not in nunavut_namespace:
+        if "version" not in nunavut_namespace:
             import nunavut.version
 
-            setattr(nunavut_namespace, 'version', nunavut.version.__version__)
-            setattr(nunavut_namespace, 'platform_version', self._create_platform_version())
+            setattr(nunavut_namespace, "version", nunavut.version.__version__)
+            setattr(nunavut_namespace, "platform_version", self._create_platform_version())

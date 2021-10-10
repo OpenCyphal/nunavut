@@ -72,7 +72,7 @@ class LanguageConfig:
     """
 
     def __init__(self):  # type: ignore
-        self._section_name_pattern = re.compile(r'^nunavut\.lang\.([a-zA-Z]{1}\w*)$')
+        self._section_name_pattern = re.compile(r"^nunavut\.lang\.([a-zA-Z]{1}\w*)$")
         self._sections = dict()  # type: typing.Dict[str, typing.Dict[str, typing.Any]]
 
     def update(self, configuration: typing.Any) -> None:
@@ -202,10 +202,11 @@ class LanguageConfig:
         # validate the (very loose) configuration schema.
         for section_name, section_data in configuration.items():
             if not isinstance(section_name, str):
-                raise TypeError('section names must be strings')
+                raise TypeError("section names must be strings")
             if not self._section_name_pattern.match(section_name):
-                raise ValueError('Section name "{}" is invalid. See LanguageConfig documentation for rules.'
-                                 .format(section_name))
+                raise ValueError(
+                    'Section name "{}" is invalid. See LanguageConfig documentation for rules.'.format(section_name)
+                )
             try:
                 section = self._sections[section_name]
             except KeyError:
@@ -229,20 +230,18 @@ class LanguageConfig:
 
     def add_section(self, section_name: str) -> None:
         if not isinstance(section_name, str):
-            raise TypeError('section names must be strings')
+            raise TypeError("section names must be strings")
         if not self._section_name_pattern.match(section_name):
-            raise ValueError('Section name "{}" is invalid. See LanguageConfig documentation for rules.'
-                             .format(section_name))
+            raise ValueError(
+                'Section name "{}" is invalid. See LanguageConfig documentation for rules.'.format(section_name)
+            )
         if section_name in self._sections:
-            raise ValueError('Section {} is already defined.'.format(section_name))
+            raise ValueError("Section {} is already defined.".format(section_name))
         self._sections[section_name] = dict()
 
     _UNSET = object()  # Used internally to allow "None" as a default value.
 
-    def _get_config_value_raw(self,
-                              section_name: str,
-                              key: str,
-                              default_value: typing.Any) -> typing.Any:
+    def _get_config_value_raw(self, section_name: str, key: str, default_value: typing.Any) -> typing.Any:
         """
         .. invisible-code-block: python
             from nunavut.lang import LanguageConfig
@@ -297,10 +296,7 @@ class LanguageConfig:
             else:
                 raise
 
-    def get_config_value(self,
-                         section_name: str,
-                         key: str,
-                         default_value: typing.Optional[str] = None) -> str:
+    def get_config_value(self, section_name: str, key: str, default_value: typing.Optional[str] = None) -> str:
         """
         Get an optional language property from the language configuration.
 
@@ -344,13 +340,14 @@ class LanguageConfig:
             except KeyError:
                 pass
         """
-        optional_result = self._get_config_value_raw(section_name, key, (
-            self._UNSET if default_value is None else default_value))
+        optional_result = self._get_config_value_raw(
+            section_name, key, (self._UNSET if default_value is None else default_value)
+        )
 
         # when we've retrieved a None result the str() cast will return "None" which isn't our intent.
         # Instead, if we get None and the _get_config_value_raw didn't throw a KeyError then what we really
         # meant is that we wanted an empty string if the value existed but was None.
-        return (str(optional_result) if optional_result is not None else '')
+        return str(optional_result) if optional_result is not None else ""
 
     def get_config_value_as_bool(self, section_name: str, key: str, default_value: bool = False) -> bool:
         """
@@ -410,14 +407,15 @@ class LanguageConfig:
         :return                     : The config value as either True or False.
         :rtype                      : bool
         """
-        result = self.get_config_value(section_name, key, default_value='false' if not default_value else 'true')
-        if result.lower() == 'false' or result == '0':
+        result = self.get_config_value(section_name, key, default_value="false" if not default_value else "true")
+        if result.lower() == "false" or result == "0":
             return False
         else:
             return bool(result)
 
-    def get_config_value_as_dict(self, section_name: str, key: str, default_value: typing.Optional[typing.Dict] = None)\
-            -> typing.Dict[str, typing.Any]:
+    def get_config_value_as_dict(
+        self, section_name: str, key: str, default_value: typing.Optional[typing.Dict] = None
+    ) -> typing.Dict[str, typing.Any]:
         """
         Get a language property parsing it as a map with string keys.
 
@@ -475,22 +473,20 @@ class LanguageConfig:
         :raises                 : TypeError if the value exists but is not a dict and a default_value was not provided.
 
         """
-        raw_value = self._get_config_value_raw(section_name,
-                                               key,
-                                               default_value=(
-                                                   self._UNSET if default_value is None else default_value
-                                               )
-                                               )
+        raw_value = self._get_config_value_raw(
+            section_name, key, default_value=(self._UNSET if default_value is None else default_value)
+        )
         if isinstance(raw_value, dict):
             return raw_value
 
         if default_value is None:
-            raise TypeError('{}.{} exists but is not a dict. (is type {})'.format(section_name, key, type(raw_value)))
+            raise TypeError("{}.{} exists but is not a dict. (is type {})".format(section_name, key, type(raw_value)))
 
         return default_value
 
-    def get_config_value_as_list(self, section_name: str, key: str, default_value: typing.Optional[typing.List] = None)\
-            -> typing.List[typing.Any]:
+    def get_config_value_as_list(
+        self, section_name: str, key: str, default_value: typing.Optional[typing.List] = None
+    ) -> typing.List[typing.Any]:
         """
         Get a language property parsing it as a map with string keys.
 
@@ -548,16 +544,13 @@ class LanguageConfig:
         :raises                 : TypeError if the value exists but is not a dict and a default_value was not provided.
 
         """
-        raw_value = self._get_config_value_raw(section_name,
-                                               key,
-                                               default_value=(
-                                                   self._UNSET if default_value is None else default_value
-                                               )
-                                               )
+        raw_value = self._get_config_value_raw(
+            section_name, key, default_value=(self._UNSET if default_value is None else default_value)
+        )
         if isinstance(raw_value, list):
             return raw_value
 
         if default_value is None:
-            raise TypeError('{}.{} exists but is not a list. (is type {})'.format(section_name, key, type(raw_value)))
+            raise TypeError("{}.{} exists but is not a list. (is type {})".format(section_name, key, type(raw_value)))
 
         return default_value

@@ -11,7 +11,7 @@ steps:
     artifact_paths:
       - ".tox/report/tmp/*"
       - ".tox/mypy/tmp/*"
-      - ".tox/flake8/tmp/*"
+      - ".tox/lint/tmp/*"
       - ".tox/dist/*.zip"
       - ".tox/py*-test/tmp/xunit-result.xml"
     plugins:

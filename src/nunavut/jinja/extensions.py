@@ -6,8 +6,7 @@
 
 import typing
 
-from nunavut.jinja.jinja2 import (Environment, TemplateAssertionError,
-                                  UndefinedError, nodes)
+from nunavut.jinja.jinja2 import Environment, TemplateAssertionError, UndefinedError, nodes
 from nunavut.jinja.jinja2.ext import Extension
 from nunavut.jinja.jinja2.parser import Parser
 
@@ -56,7 +55,7 @@ class JinjaAssert(Extension):
 
     """
 
-    tags = set(['assert'])
+    tags = set(["assert"])
 
     def __init__(self, environment: Environment):
         super().__init__(environment)
@@ -71,26 +70,23 @@ class JinjaAssert(Extension):
         token = next(parser.stream)
 
         # now we parse a single expression that must evaluate to True
-        args = [parser.parse_expression(),
-                nodes.Const(token.lineno),
-                nodes.Const(parser.name),
-                nodes.Const(parser.filename)]
+        args = [
+            parser.parse_expression(),
+            nodes.Const(token.lineno),
+            nodes.Const(parser.name),
+            nodes.Const(parser.filename),
+        ]
 
-        if parser.stream.skip_if('comma'):
+        if parser.stream.skip_if("comma"):
             args.append(parser.parse_expression())
         else:
             args.append(nodes.Const("Template assertion failed."))
 
-        return nodes.CallBlock(self.call_method('_do_assert', args),
-                               [], [], "").set_lineno(token.lineno)
+        return nodes.CallBlock(self.call_method("_do_assert", args), [], [], "").set_lineno(token.lineno)
 
-    def _do_assert(self,
-                   expression: str,
-                   lineno: int,
-                   name: str,
-                   filename: str,
-                   message: str,
-                   caller: typing.Callable) -> typing.Any:
+    def _do_assert(
+        self, expression: str, lineno: int, name: str, filename: str, message: str, caller: typing.Callable
+    ) -> typing.Any:
         if not expression:
             raise TemplateAssertionError(message, lineno, name, filename)
         return caller()
@@ -141,7 +137,7 @@ class UseQuery(Extension):
                 pass
     """
 
-    tags = set(['ifuses'])
+    tags = set(["ifuses"])
 
     def __init__(self, environment: Environment):
         super().__init__(environment)
@@ -152,59 +148,47 @@ class UseQuery(Extension):
         extensions.
         """
 
-        node = result = nodes.If(lineno=parser.stream.expect('name:ifuses').lineno)
+        node = result = nodes.If(lineno=parser.stream.expect("name:ifuses").lineno)
         while 1:
-            args = [parser.parse_expression(),
-                    nodes.Const(parser.stream.current.lineno),
-                    nodes.Const(parser.name),
-                    nodes.Const(parser.filename)]
-            node.test = self.call_method('_use_query', args)
-            node.body = parser.parse_statements(('name:elifuses',
-                                                 'name:else',
-                                                 'name:endifuses'))
+            args = [
+                parser.parse_expression(),
+                nodes.Const(parser.stream.current.lineno),
+                nodes.Const(parser.name),
+                nodes.Const(parser.filename),
+            ]
+            node.test = self.call_method("_use_query", args)
+            node.body = parser.parse_statements(("name:elifuses", "name:else", "name:endifuses"))
             node.elif_ = []
             node.else_ = []
             token = next(parser.stream)
-            if token.test('name:elifuses'):
+            if token.test("name:elifuses"):
                 node = nodes.If(lineno=parser.stream.current.lineno)
                 result.elif_.append(node)
                 continue
-            elif token.test('name:else'):
-                result.else_ = parser.parse_statements(('name:endifuses',),
-                                                       drop_needle=True)
+            elif token.test("name:else"):
+                result.else_ = parser.parse_statements(("name:endifuses",), drop_needle=True)
             break
         return result
 
-    def _use_query(self,
-                   uses_query_name: str,
-                   lineno: int,
-                   name: str,
-                   filename: str) -> bool:
+    def _use_query(self, uses_query_name: str, lineno: int, name: str, filename: str) -> bool:
 
         target_language = self.environment.target_language
 
         if target_language is None:
-            raise TemplateAssertionError('ifuses directive cannot be used in a language without a target language.',
-                                         lineno,
-                                         name,
-                                         filename)
+            raise TemplateAssertionError(
+                "ifuses directive cannot be used in a language without a target language.", lineno, name, filename
+            )
         if uses_query_name is None:
-            raise TemplateAssertionError('Unknown uses_query_name found.',
-                                         lineno,
-                                         name,
-                                         filename)
+            raise TemplateAssertionError("Unknown uses_query_name found.", lineno, name, filename)
 
         try:
-            uses_query = typing.cast(typing.Callable[..., bool], getattr(
-                self.environment.target_language_uses_queries,
-                uses_query_name))
+            uses_query = typing.cast(
+                typing.Callable[..., bool], getattr(self.environment.target_language_uses_queries, uses_query_name)
+            )
         except AttributeError:
-            raise UndefinedError('use query "{}" for language "{}" is not defined '
-                                 '(line={}, name={}, filename={})'.format(
-                                     uses_query_name,
-                                     target_language.name,
-                                     lineno,
-                                     name,
-                                     filename))
+            raise UndefinedError(
+                'use query "{}" for language "{}" is not defined '
+                "(line={}, name={}, filename={})".format(uses_query_name, target_language.name, lineno, name, filename)
+            )
 
         return uses_query()

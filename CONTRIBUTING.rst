@@ -207,7 +207,7 @@ Coverage and Linting Reports
 ************************************************
 
 We publish the results of our coverage data to `sonarcloud`_ and the tox build will fail for any mypy
-or flake8 errors but you can view additional reports locally under the :code:`.tox` dir.
+or black errors but you can view additional reports locally under the :code:`.tox` dir.
 
 Coverage
 ================================================

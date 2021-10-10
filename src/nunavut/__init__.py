@@ -73,8 +73,8 @@ import pydsdl
 
 from . import lang
 
-if sys.version_info[:2] < (3, 5):   # pragma: no cover
-    print('A newer version of Python is required', file=sys.stderr)
+if sys.version_info[:2] < (3, 5):  # pragma: no cover
+    print("A newer version of Python is required", file=sys.stderr)
     sys.exit(1)
 
 
@@ -107,9 +107,11 @@ class YesNoDefault(enum.Enum):
         assert not should_we_order_pizza(YesNoDefault.NO)
 
     """
+
     NO = 0
     YES = 1
     DEFAULT = 2
+
 
 # +---------------------------------------------------------------------------+
 
@@ -130,20 +132,22 @@ class Namespace(pydsdl.Any):
     :param lang.LanguageContext language_context: The generated software language context the namespace is within.
     """
 
-    DefaultOutputStem = '_'
+    DefaultOutputStem = "_"
 
-    def __init__(self,
-                 full_namespace: str,
-                 root_namespace_dir: pathlib.Path,
-                 base_output_path: pathlib.PurePath,
-                 language_context: lang.LanguageContext):
+    def __init__(
+        self,
+        full_namespace: str,
+        root_namespace_dir: pathlib.Path,
+        base_output_path: pathlib.PurePath,
+        language_context: lang.LanguageContext,
+    ):
         self._parent = None  # type: typing.Optional[Namespace]
         self._namespace_components = []  # type: typing.List[str]
         self._namespace_components_stropped = []  # type: typing.List[str]
-        for component in full_namespace.split('.'):
-            self._namespace_components_stropped.append(language_context.filter_id_for_target(component, 'typedef'))
+        for component in full_namespace.split("."):
+            self._namespace_components_stropped.append(language_context.filter_id_for_target(component, "typedef"))
             self._namespace_components.append(component)
-        self._full_namespace = '.'.join(self._namespace_components_stropped)
+        self._full_namespace = ".".join(self._namespace_components_stropped)
         self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components_stropped))
         output_stem = language_context.get_default_namespace_output_stem()
         if output_stem is None:
@@ -152,7 +156,8 @@ class Namespace(pydsdl.Any):
         self._support_output_folder = base_output_path
         self._output_path = output_path.with_suffix(language_context.get_output_extension())
         self._source_folder = pathlib.Path(
-            root_namespace_dir / pathlib.PurePath(*self._namespace_components[1:])).resolve()
+            root_namespace_dir / pathlib.PurePath(*self._namespace_components[1:])
+        ).resolve()
         if not self._source_folder.exists():
             # to make Python > 3.5 behave the same as Python 3.5
             raise FileNotFoundError(self._source_folder)
@@ -174,13 +179,13 @@ class Namespace(pydsdl.Any):
         """
         return self._support_output_folder
 
-    def get_language_context(self) -> 'lang.LanguageContext':
+    def get_language_context(self) -> "lang.LanguageContext":
         """
         The generated software language context the namespace is within.
         """
         return self._language_context
 
-    def get_root_namespace(self) -> 'Namespace':
+    def get_root_namespace(self) -> "Namespace":
         """
         Traverses the namespace tree up to the root and returns the root node.
 
@@ -191,7 +196,7 @@ class Namespace(pydsdl.Any):
             namespace = namespace._parent
         return namespace
 
-    def get_nested_namespaces(self) -> typing.Iterator['Namespace']:
+    def get_nested_namespaces(self) -> typing.Iterator["Namespace"]:
         """
         Get an iterator over all the nested namespaces within this namespace.
         This is a shallow iterator that only provides directly nested namespaces.
@@ -213,7 +218,7 @@ class Namespace(pydsdl.Any):
         """
         yield from self._recursive_data_type_generator(self)
 
-    def get_all_namespaces(self) -> typing.Generator[typing.Tuple['Namespace', pathlib.Path], None, None]:
+    def get_all_namespaces(self) -> typing.Generator[typing.Tuple["Namespace", pathlib.Path], None, None]:
         """
         Generates tuples relating nested namespaces at and below this namepace to the path
         for each namespace's generated output.
@@ -291,19 +296,19 @@ class Namespace(pydsdl.Any):
     # | PRIVATE
     # +-----------------------------------------------------------------------+
     def _add_data_type(self, dsdl_type: pydsdl.CompositeType, extension: typing.Optional[str]) -> None:
-        filestem = "{}_{}_{}".format(
-            dsdl_type.short_name, dsdl_type.version.major, dsdl_type.version.minor)
+        filestem = "{}_{}_{}".format(dsdl_type.short_name, dsdl_type.version.major, dsdl_type.version.minor)
         output_path = self._output_folder / pathlib.PurePath(filestem)
         if extension is not None:
             output_path = output_path.with_suffix(extension)
         self._data_type_to_outputs[dsdl_type] = output_path
 
-    def _add_nested_namespace(self, nested: 'Namespace') -> None:
+    def _add_nested_namespace(self, nested: "Namespace") -> None:
         self._nested_namespaces.add(nested)
         nested._parent = self
 
-    def _bfs_search_for_output_path(self, data_type: pydsdl.CompositeType, skip_namespace: typing.Set['Namespace']) \
-            -> pathlib.Path:
+    def _bfs_search_for_output_path(
+        self, data_type: pydsdl.CompositeType, skip_namespace: typing.Set["Namespace"]
+    ) -> pathlib.Path:
         search_queue = collections.deque()  # type: typing.Deque[Namespace]
         search_queue.appendleft(self)
         while len(search_queue) > 0:
@@ -319,8 +324,9 @@ class Namespace(pydsdl.Any):
         raise KeyError(data_type)
 
     @classmethod
-    def _recursive_data_type_generator(cls, namespace: 'Namespace') -> \
-            typing.Generator[typing.Tuple[pydsdl.CompositeType, pathlib.Path], None, None]:
+    def _recursive_data_type_generator(
+        cls, namespace: "Namespace"
+    ) -> typing.Generator[typing.Tuple[pydsdl.CompositeType, pathlib.Path], None, None]:
         for data_type, output_path in namespace.get_nested_types():
             yield (data_type, output_path)
 
@@ -328,16 +334,18 @@ class Namespace(pydsdl.Any):
             yield from cls._recursive_data_type_generator(nested_namespace)
 
     @classmethod
-    def _recursive_namespace_generator(cls, namespace: 'Namespace') -> \
-            typing.Generator[typing.Tuple['Namespace', pathlib.Path], None, None]:
+    def _recursive_namespace_generator(
+        cls, namespace: "Namespace"
+    ) -> typing.Generator[typing.Tuple["Namespace", pathlib.Path], None, None]:
         yield (namespace, namespace._output_path)
 
         for nested_namespace in namespace.get_nested_namespaces():
             yield from cls._recursive_namespace_generator(nested_namespace)
 
     @classmethod
-    def _recursive_data_type_and_namespace_generator(cls, namespace: 'Namespace') -> \
-            typing.Generator[typing.Tuple[pydsdl.Any, pathlib.Path], None, None]:
+    def _recursive_data_type_and_namespace_generator(
+        cls, namespace: "Namespace"
+    ) -> typing.Generator[typing.Tuple[pydsdl.Any, pathlib.Path], None, None]:
         yield (namespace, namespace._output_path)
 
         for data_type, output_path in namespace.get_nested_types():
@@ -345,6 +353,7 @@ class Namespace(pydsdl.Any):
 
         for nested_namespace in namespace.get_nested_namespaces():
             yield from cls._recursive_data_type_and_namespace_generator(nested_namespace)
+
 
 # +---------------------------------------------------------------------------+
 
@@ -354,10 +363,7 @@ class _NamespaceFactory:
     Read-through cache and factory for :class:`Namespace` objects.
     """
 
-    def __init__(self,
-                 lctx: lang.LanguageContext,
-                 base_path: pathlib.PurePath,
-                 root_namespace_dir: pathlib.Path):
+    def __init__(self, lctx: lang.LanguageContext, base_path: pathlib.PurePath, root_namespace_dir: pathlib.Path):
         self._lctx = lctx
         self._base_path = base_path
         self._namespaces = dict()  # type: typing.Dict[str, Namespace]
@@ -371,7 +377,7 @@ class _NamespaceFactory:
         return self.get_empty_namespace()
 
     def get_empty_namespace(self) -> Namespace:
-        return self.get_or_make_namespace('')[0]
+        return self.get_or_make_namespace("")[0]
 
     def get_or_make_namespace(self, full_namespace: str) -> typing.Tuple[Namespace, bool]:
         try:
@@ -380,20 +386,19 @@ class _NamespaceFactory:
         except KeyError:
             pass
 
-        namespace = Namespace(full_namespace,
-                              self._root_namespace_dir,
-                              self._base_path,
-                              self._lctx)
+        namespace = Namespace(full_namespace, self._root_namespace_dir, self._base_path, self._lctx)
 
         self._namespaces[str(full_namespace)] = namespace
 
         return (namespace, False)
 
 
-def build_namespace_tree(types: typing.List[pydsdl.CompositeType],
-                         root_namespace_dir: str,
-                         output_dir: str,
-                         language_context: lang.LanguageContext) -> Namespace:
+def build_namespace_tree(
+    types: typing.List[pydsdl.CompositeType],
+    root_namespace_dir: str,
+    output_dir: str,
+    language_context: lang.LanguageContext,
+) -> Namespace:
     """Generates a :class:`nunavut.Namespace` tree.
 
     Given a list of pydsdl types, this method returns a root :class:`nunavut.Namespace`.
@@ -411,9 +416,7 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],
     """
     namespace_index = set()  # type: typing.Set[str]
 
-    nsf = _NamespaceFactory(language_context,
-                            pathlib.PurePath(output_dir),
-                            pathlib.Path(root_namespace_dir))
+    nsf = _NamespaceFactory(language_context, pathlib.PurePath(output_dir), pathlib.Path(root_namespace_dir))
 
     for dsdl_type in types:
         # For each type we form a path with the output_dir as the base; the intermediate
@@ -431,7 +434,7 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],
             # empty namespace generation in the final tree building
             # loop below.
             for i in range(len(dsdl_type.name_components) - 1, 0, -1):
-                ancestor_ns = '.'.join(dsdl_type.name_components[0:i])
+                ancestor_ns = ".".join(dsdl_type.name_components[0:i])
                 if ancestor_ns in namespace_index:
                     break
                 namespace_index.add(ancestor_ns)
@@ -446,13 +449,14 @@ def build_namespace_tree(types: typing.List[pydsdl.CompositeType],
         namespace, _ = nsf.get_or_make_namespace(full_namespace)
 
         parent_namespace_components = namespace._namespace_components[0:-1]
-        if (len(parent_namespace_components) > 0):
-            parent_name = '.'.join(parent_namespace_components)
+        if len(parent_namespace_components) > 0:
+            parent_name = ".".join(parent_namespace_components)
 
             parent, _ = nsf.get_or_make_namespace(parent_name)
             parent._add_nested_namespace(namespace)
 
     return nsf.get_root_namesapce()
+
 
 # +---------------------------------------------------------------------------+
 
@@ -518,8 +522,9 @@ class DependencyBuilder:
     # +-----------------------------------------------------------------------+
 
     @classmethod
-    def _build_dependency_list(cls, dependant_types: typing.Iterable[pydsdl.CompositeType], transitive: bool) \
-            -> lang.Dependencies:
+    def _build_dependency_list(
+        cls, dependant_types: typing.Iterable[pydsdl.CompositeType], transitive: bool
+    ) -> lang.Dependencies:
         results = lang.Dependencies()
         for dependant in dependant_types:
             if isinstance(dependant, pydsdl.UnionType):
@@ -533,16 +538,16 @@ class DependencyBuilder:
     def _extract_data_types(cls, t: pydsdl.CompositeType) -> typing.List[pydsdl.SerializableType]:
         # Make a list of all attributes defined by this type
         if isinstance(t, pydsdl.ServiceType):
-            return [attr.data_type for attr in t.request_type.attributes] + \
-                [attr.data_type for attr in t.response_type.attributes]
+            return [attr.data_type for attr in t.request_type.attributes] + [
+                attr.data_type for attr in t.response_type.attributes
+            ]
         else:
             return [attr.data_type for attr in t.attributes]
 
     @classmethod
-    def _extract_dependent_types_handle_array_type(cls,
-                                                   dependant_type: pydsdl.ArrayType,
-                                                   transitive: bool,
-                                                   inout_dependencies: lang.Dependencies) -> None:
+    def _extract_dependent_types_handle_array_type(
+        cls, dependant_type: pydsdl.ArrayType, transitive: bool, inout_dependencies: lang.Dependencies
+    ) -> None:
         if isinstance(dependant_type, pydsdl.VariableLengthArrayType):
             inout_dependencies.uses_variable_length_array = True
         else:
@@ -551,10 +556,9 @@ class DependencyBuilder:
                 inout_dependencies.uses_primitive_static_array = True
 
     @classmethod
-    def _extract_dependent_types(cls,
-                                 dependant_types: typing.Iterable[pydsdl.Any],
-                                 transitive: bool,
-                                 inout_dependencies: lang.Dependencies) -> None:
+    def _extract_dependent_types(
+        cls, dependant_types: typing.Iterable[pydsdl.Any], transitive: bool, inout_dependencies: lang.Dependencies
+    ) -> None:
         for dt in dependant_types:
             if isinstance(dt, pydsdl.CompositeType):
                 if dt not in inout_dependencies.composite_types:
@@ -571,20 +575,23 @@ class DependencyBuilder:
             elif isinstance(dt, pydsdl.BooleanType):
                 inout_dependencies.uses_bool = True
 
+
 # +---------------------------------------------------------------------------+
 # | GENERATION HELPERS
 # +---------------------------------------------------------------------------+
 
 
-def generate_types(language_key: str,
-                   root_namespace_dir: pathlib.Path,
-                   out_dir: pathlib.Path,
-                   omit_serialization_support: bool = True,
-                   is_dryrun: bool = False,
-                   allow_overwrite: bool = True,
-                   lookup_directories: typing.Optional[typing.Iterable[str]] = None,
-                   allow_unregulated_fixed_port_id: bool = False,
-                   language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None) -> None:
+def generate_types(
+    language_key: str,
+    root_namespace_dir: pathlib.Path,
+    out_dir: pathlib.Path,
+    omit_serialization_support: bool = True,
+    is_dryrun: bool = False,
+    allow_overwrite: bool = True,
+    lookup_directories: typing.Optional[typing.Iterable[str]] = None,
+    allow_unregulated_fixed_port_id: bool = False,
+    language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+) -> None:
     """
     Helper method that uses default settings and built-in templates to generate types for a given
     language. This method is the most direct way to generate code using Nunavut.
@@ -610,21 +617,20 @@ def generate_types(language_key: str,
     """
     from nunavut.generators import create_generators
 
-    language_context = lang.LanguageContext(language_key,
-                                            omit_serialization_support_for_target=omit_serialization_support,
-                                            language_options=language_options)
+    language_context = lang.LanguageContext(
+        language_key,
+        omit_serialization_support_for_target=omit_serialization_support,
+        language_options=language_options,
+    )
 
     if lookup_directories is None:
         lookup_directories = []
 
-    type_map = pydsdl.read_namespace(str(root_namespace_dir),
-                                     lookup_directories,
-                                     allow_unregulated_fixed_port_id=allow_unregulated_fixed_port_id)
+    type_map = pydsdl.read_namespace(
+        str(root_namespace_dir), lookup_directories, allow_unregulated_fixed_port_id=allow_unregulated_fixed_port_id
+    )
 
-    namespace = build_namespace_tree(type_map,
-                                     str(root_namespace_dir),
-                                     str(out_dir),
-                                     language_context)
+    namespace = build_namespace_tree(type_map, str(root_namespace_dir), str(out_dir), language_context)
 
     generator, support_generator = create_generators(namespace)
     support_generator.generate_all(is_dryrun, allow_overwrite)

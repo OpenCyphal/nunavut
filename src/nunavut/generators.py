@@ -18,20 +18,22 @@ import nunavut
 
 class AbstractGenerator(metaclass=abc.ABCMeta):
     """
-        Abstract base class for classes that generate source file output
-        from a given pydsdl parser result.
+    Abstract base class for classes that generate source file output
+    from a given pydsdl parser result.
 
-        :param nunavut.Namespace namespace:  The top-level namespace to
-            generates types at and from.
-        :param nunavut.YesNoDefault generate_namespace_types:  Set to YES
-            to force generation files for namespaces and NO to suppress.
-            DEFAULT will generate namespace files based on the language
-            preference.
+    :param nunavut.Namespace namespace:  The top-level namespace to
+        generates types at and from.
+    :param nunavut.YesNoDefault generate_namespace_types:  Set to YES
+        to force generation files for namespaces and NO to suppress.
+        DEFAULT will generate namespace files based on the language
+        preference.
     """
 
-    def __init__(self,
-                 namespace: nunavut.Namespace,
-                 generate_namespace_types: nunavut.YesNoDefault = nunavut.YesNoDefault.DEFAULT):
+    def __init__(
+        self,
+        namespace: nunavut.Namespace,
+        generate_namespace_types: nunavut.YesNoDefault = nunavut.YesNoDefault.DEFAULT,
+    ):
         self._namespace = namespace
         if generate_namespace_types == nunavut.YesNoDefault.YES:
             self._generate_namespace_types = True
@@ -69,10 +71,7 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def generate_all(self,
-                     is_dryrun: bool = False,
-                     allow_overwrite: bool = True) \
-            -> typing.Iterable[pathlib.Path]:
+    def generate_all(self, is_dryrun: bool = False, allow_overwrite: bool = True) -> typing.Iterable[pathlib.Path]:
         """
         Generates all output for a given :class:`nunavut.Namespace` and using
         the templates found by this object.
@@ -88,8 +87,9 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
 
-def create_generators(namespace: nunavut.Namespace, **kwargs: typing.Any) -> \
-        typing.Tuple['AbstractGenerator', 'AbstractGenerator']:
+def create_generators(
+    namespace: nunavut.Namespace, **kwargs: typing.Any
+) -> typing.Tuple["AbstractGenerator", "AbstractGenerator"]:
     """
     Create the two generators used by Nunavut; a code-generator and a support-library generator.
 
@@ -99,4 +99,5 @@ def create_generators(namespace: nunavut.Namespace, **kwargs: typing.Any) -> \
         generator.
     """
     from nunavut.jinja import DSDLCodeGenerator, SupportGenerator
+
     return (DSDLCodeGenerator(namespace, **kwargs), SupportGenerator(namespace, **kwargs))
