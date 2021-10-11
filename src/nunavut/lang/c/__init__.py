@@ -16,9 +16,12 @@ import typing
 
 import pydsdl
 
-from ...templates import (template_language_filter,
-                          template_language_list_filter,
-                          template_language_test, template_volatile_filter)
+from ...templates import (
+    template_language_filter,
+    template_language_list_filter,
+    template_language_test,
+    template_volatile_filter,
+)
 from .. import Dependencies
 from .. import Language as BaseLanguage
 from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
@@ -30,17 +33,18 @@ class Language(BaseLanguage):
     """
 
     @staticmethod
-    def _handle_stropping_failure(encoder: TokenEncoder, stropped: str, token_type: str, pending_error: RuntimeError) \
-            -> str:
+    def _handle_stropping_failure(
+        encoder: TokenEncoder, stropped: str, token_type: str, pending_error: RuntimeError
+    ) -> str:
         """
         If the generic stropping results in either `^_[A-Z]` or `^__` we handle the failure
         with c-specific logic.
         """
-        m = re.match(r'^_+([A-Z]?)', stropped)
+        m = re.match(r"^_+([A-Z]?)", stropped)
         if m:
             # Resolve the conflict between C's global identifier rules and our desire to use
             # '_' as a stropping prefix:
-            return '_{}{}'.format(m.group(1).lower(), stropped[m.end():])
+            return "_{}{}".format(m.group(1).lower(), stropped[m.end() :])
 
         # we couldn't help after all. raise the pending error.
         raise pending_error
@@ -54,22 +58,20 @@ class Language(BaseLanguage):
 
     def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
         std_includes = []  # type: typing.List[str]
-        if self.get_config_value_as_bool('use_standard_types'):
-            std_includes.append('stdlib.h')
+        if self.get_config_value_as_bool("use_standard_types"):
+            std_includes.append("stdlib.h")
             # we always include stdlib if standard types are in use since initializers
             # require the use of NULL
             if dep_types.uses_integer:
-                std_includes.append('stdint.h')
+                std_includes.append("stdint.h")
             if dep_types.uses_bool:
-                std_includes.append('stdbool.h')
+                std_includes.append("stdbool.h")
             if dep_types.uses_primitive_static_array:
                 # We include this for memset.
-                std_includes.append('string.h')
-        return ['<{}>'.format(include) for include in sorted(std_includes)]
+                std_includes.append("string.h")
+        return ["<{}>".format(include) for include in sorted(std_includes)]
 
-    def filter_id(self,
-                  instance: typing.Any,
-                  id_type: str = 'any') -> str:
+    def filter_id(self, instance: typing.Any, id_type: str = "any") -> str:
         raw_name = self.default_filter_id_for_target(instance)
 
         vne = self._get_token_encoder()
@@ -77,9 +79,7 @@ class Language(BaseLanguage):
 
 
 @template_language_filter(__name__)
-def filter_id(language: Language,
-              instance: typing.Any,
-              id_type: str = 'any') -> str:
+def filter_id(language: Language, instance: typing.Any, id_type: str = "any") -> str:
     """
     Filter that produces a valid C identifier for a given object. The encoding may not
     be reversible.
@@ -247,10 +247,10 @@ def filter_macrofy(language: Language, value: str) -> str:
     if not language.enable_stropping:
         return macrofied_value
     else:
-        return language.filter_id(macrofied_value, 'macro')
+        return language.filter_id(macrofied_value, "macro")
 
 
-_CFit_T = typing.TypeVar('_CFit_T', bound='_CFit')
+_CFit_T = typing.TypeVar("_CFit_T", bound="_CFit")
 
 
 @enum.unique
@@ -261,35 +261,34 @@ class _CFit(enum.Enum):
     IN_64 = 64
 
     def to_std_int(self, is_signed: bool) -> str:
-        return "{}int{}_t".format(('' if is_signed else 'u'), self.value)
+        return "{}int{}_t".format(("" if is_signed else "u"), self.value)
 
     def to_c_int(self, is_signed: bool) -> str:
         if self.value == 8:
-            intname = 'char'
+            intname = "char"
         elif self.value == 16:
-            intname = 'int'
+            intname = "int"
         elif self.value == 32:
-            intname = 'long'
+            intname = "long"
         else:
-            intname = 'long long'
+            intname = "long long"
 
         if not is_signed:
-            intname = 'unsigned ' + intname
+            intname = "unsigned " + intname
 
         return intname
 
     def to_c_float(self) -> str:
         if self.value == 8 or self.value == 16 or self.value == 32:
-            return 'float'
+            return "float"
         else:
-            return 'double'
+            return "double"
 
-    def to_c_type(self,
-                  value: pydsdl.PrimitiveType,
-                  language: BaseLanguage,
-                  inttype_prefix: typing.Optional[str] = None) -> str:
-        use_standard_types = language.get_config_value_as_bool('use_standard_types')
-        safe_prefix = '' if not use_standard_types or inttype_prefix is None else inttype_prefix
+    def to_c_type(
+        self, value: pydsdl.PrimitiveType, language: BaseLanguage, inttype_prefix: typing.Optional[str] = None
+    ) -> str:
+        use_standard_types = language.get_config_value_as_bool("use_standard_types")
+        safe_prefix = "" if not use_standard_types or inttype_prefix is None else inttype_prefix
         if isinstance(value, pydsdl.UnsignedIntegerType):
             return safe_prefix + (self.to_c_int(False) if not use_standard_types else self.to_std_int(False))
         elif isinstance(value, pydsdl.SignedIntegerType):
@@ -297,11 +296,11 @@ class _CFit(enum.Enum):
         elif isinstance(value, pydsdl.FloatType):
             return self.to_c_float()
         elif isinstance(value, pydsdl.BooleanType):
-            return language.get_named_types()['boolean']
+            return language.get_named_types()["boolean"]
         elif isinstance(value, pydsdl.VoidType):
-            return 'void'
+            return "void"
         else:
-            raise RuntimeError('{} is not a known PrimitiveType'.format(type(value).__name__))
+            raise RuntimeError("{} is not a known PrimitiveType".format(type(value).__name__))
 
     @classmethod
     def get_best_fit(cls: typing.Type[_CFit_T], bit_length: int) -> _CFit_T:
@@ -315,16 +314,13 @@ class _CFit(enum.Enum):
             bestfit = _CFit.IN_64
         else:
             raise RuntimeError(
-                "Cannot emit a standard type for a primitive that is larger than 64 bits ({}).".format(
-                    bit_length
-                )
+                "Cannot emit a standard type for a primitive that is larger than 64 bits ({}).".format(bit_length)
             )
         return cls(bestfit)
 
 
 @template_language_filter(__name__)
-def filter_type_from_primitive(language: Language,
-                               value: pydsdl.PrimitiveType) -> str:
+def filter_type_from_primitive(language: Language, value: pydsdl.PrimitiveType) -> str:
     """
     Filter to transform a pydsdl :class:`~pydsdl.PrimitiveType` into
     a valid C type.
@@ -418,10 +414,10 @@ def filter_type_from_primitive(language: Language,
     return _CFit.get_best_fit(value.bit_length).to_c_type(value, language)
 
 
-_snake_case_pattern_0 = re.compile(r'[\W]+')                    # 'port.SubjectIDList'  -> 'port_SubjectIDList'
-_snake_case_pattern_1 = re.compile(r'(?<=[A-Z])([A-Z][a-z]+)')  # 'port_SubjectIDList'  -> 'port_SubjectID_list'
-_snake_case_pattern_2 = re.compile(r'(?<=_)([A-Z])+')           # 'port_SubjectID_list' -> 'port_subjectID_list'
-_snake_case_pattern_3 = re.compile(r'(?<=[a-z])([A-Z])+')       # 'port_subjectID_list' -> 'port_subject_id_list'
+_snake_case_pattern_0 = re.compile(r"[\W]+")  # 'port.SubjectIDList'  -> 'port_SubjectIDList'
+_snake_case_pattern_1 = re.compile(r"(?<=[A-Z])([A-Z][a-z]+)")  # 'port_SubjectIDList'  -> 'port_SubjectID_list'
+_snake_case_pattern_2 = re.compile(r"(?<=_)([A-Z])+")  # 'port_SubjectID_list' -> 'port_subjectID_list'
+_snake_case_pattern_3 = re.compile(r"(?<=[a-z])([A-Z])+")  # 'port_subjectID_list' -> 'port_subject_id_list'
 
 
 def filter_to_snake_case(value: str) -> str:
@@ -480,10 +476,10 @@ def filter_to_snake_case(value: str) -> str:
 
     :return: A valid C99 token using the snake-case convention.
     """
-    pass0 = _snake_case_pattern_0.sub('_', str.strip(value))
-    pass1 = _snake_case_pattern_1.sub(lambda x: '_' + x.group(0).lower(), pass0)
+    pass0 = _snake_case_pattern_0.sub("_", str.strip(value))
+    pass1 = _snake_case_pattern_1.sub(lambda x: "_" + x.group(0).lower(), pass0)
     pass2 = _snake_case_pattern_2.sub(lambda x: x.group(0).lower(), pass1)
-    return _snake_case_pattern_3.sub(lambda x: '_' + x.group(0).lower(), pass2).lower()
+    return _snake_case_pattern_3.sub(lambda x: "_" + x.group(0).lower(), pass2).lower()
 
 
 def filter_to_screaming_snake_case(value: str) -> str:
@@ -571,14 +567,14 @@ def filter_to_template_unique_name(_: typing.Any, base_token: str) -> str:
     else:
         adj_base_token = base_token
 
-    return UniqueNameGenerator.get_instance()('c', adj_base_token, '_', '_')
+    return UniqueNameGenerator.get_instance()("c", adj_base_token, "_", "_")
 
 
 def _to_short_name(language: Language, t: pydsdl.CompositeType) -> str:
     """
     Internal method for producing an un-stropped short_name.
     """
-    return '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
+    return "{short}_{major}_{minor}".format(short=t.short_name, major=t.version.major, minor=t.version.minor)
 
 
 @template_language_filter(__name__)
@@ -635,9 +631,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
 
 @template_language_list_filter(__name__)
-def filter_includes(language: Language,
-                    t: pydsdl.CompositeType,
-                    sort: bool = True) -> typing.List[str]:
+def filter_includes(language: Language, t: pydsdl.CompositeType, sort: bool = True) -> typing.List[str]:
     """
     Returns a list of all include paths for a given type.
 
@@ -685,10 +679,7 @@ def filter_includes(language: Language,
     :return: a list of include headers needed for a given type.
     """
 
-    include_gen = IncludeGenerator(language,
-                                   t,
-                                   filter_id,
-                                   filter_short_reference_name)
+    include_gen = IncludeGenerator(language, t, filter_id, filter_short_reference_name)
     return include_gen.generate_include_filepart_list(language.extension, sort)
 
 
@@ -759,19 +750,19 @@ def filter_to_static_assertion_value(obj: typing.Any) -> int:
     """
 
     if isinstance(obj, bool):
-        return (1 if obj else 0)
+        return 1 if obj else 0
     if isinstance(obj, int):
         return obj
     if isinstance(obj, str):
         from zlib import crc32
-        return crc32(bytearray(obj, 'utf-8'))
 
-    raise ValueError('Cannot convert object of type {} into an integer in a stable manner.'.format(type(obj)))
+        return crc32(bytearray(obj, "utf-8"))
+
+    raise ValueError("Cannot convert object of type {} into an integer in a stable manner.".format(type(obj)))
 
 
 @template_language_filter(__name__)
-def filter_constant_value(language: Language,
-                          constant: pydsdl.Constant) -> str:
+def filter_constant_value(language: Language, constant: pydsdl.Constant) -> str:
     """
     Renders the specified constant as a literal. This is a shorthand for :func:`filter_literal`.
 
@@ -852,9 +843,7 @@ def filter_constant_value(language: Language,
 
 
 @template_language_filter(__name__)
-def filter_literal(language: Language,
-                   value: typing.Union[fractions.Fraction, bool, int],
-                   ty: pydsdl.Any) -> str:
+def filter_literal(language: Language, value: typing.Union[fractions.Fraction, bool, int], ty: pydsdl.Any) -> str:
     """
     Renders the specified value of the specified type as a literal.
     """
@@ -862,21 +851,25 @@ def filter_literal(language: Language,
         return str(language.valuetoken_true if value else language.valuetoken_false)
 
     elif isinstance(ty, pydsdl.IntegerType):
-        out = str(value) + 'U' * isinstance(ty, pydsdl.UnsignedIntegerType) \
-            + 'L' * (ty.bit_length > 16) + 'L' * (ty.bit_length > 32)
+        out = (
+            str(value)
+            + "U" * isinstance(ty, pydsdl.UnsignedIntegerType)
+            + "L" * (ty.bit_length > 16)
+            + "L" * (ty.bit_length > 32)
+        )
         assert isinstance(out, str)
         return out
 
     elif isinstance(ty, pydsdl.FloatType):
         if value.denominator == 1:
-            expr = '{}.0'.format(value.numerator)
+            expr = "{}.0".format(value.numerator)
         else:
-            expr = '({}.0 / {}.0)'.format(value.numerator, value.denominator)
+            expr = "({}.0 / {}.0)".format(value.numerator, value.denominator)
         cast = filter_type_from_primitive(language, ty)
-        return '(({}) {})'.format(cast, expr)
+        return "(({}) {})".format(cast, expr)
 
     else:
-        raise ValueError('Cannot construct a literal from an instance of {}'.format(type(ty).__name__))
+        raise ValueError("Cannot construct a literal from an instance of {}".format(type(ty).__name__))
 
 
 @template_language_filter(__name__)
@@ -915,10 +908,10 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
 
     :param pydsdl.CompositeType t: The DSDL type to get the fully-resolved reference name for.
     """
-    ns = t.full_namespace.split('.')
+    ns = t.full_namespace.split(".")
 
     full_path = ns + [_to_short_name(language, t)]
-    not_stropped = '_'.join(full_path)
+    not_stropped = "_".join(full_path)
     if language.enable_stropping:
         return language.filter_id(not_stropped)
     else:
@@ -1016,7 +1009,7 @@ def is_zero_cost_primitive(language: Language, t: pydsdl.PrimitiveType) -> bool:
                             lctx, i7=i7, u32=u32, f16=f16, f32=f32, bl=bl)
 
     """
-    if language.get_option('target_endianness') != 'little':
+    if language.get_option("target_endianness") != "little":
         # We must explicitly target a little endian platform to get
         # zero cost ser/des.
         return False
@@ -1032,7 +1025,7 @@ def is_zero_cost_primitive(language: Language, t: pydsdl.PrimitiveType) -> bool:
     if isinstance(t, pydsdl.BooleanType):
         return False
 
-    raise TypeError('Zero-cost predicate is not defined on ' + type(t).__name__)
+    raise TypeError("Zero-cost predicate is not defined on " + type(t).__name__)
 
 
 @template_language_filter(__name__)

@@ -16,15 +16,14 @@ import typing
 
 import pydsdl
 
-from ...templates import (template_language_filter,
-                          template_language_list_filter, template_language_test)
+from ...templates import template_language_filter, template_language_list_filter, template_language_test
 from .. import Dependencies
 from .. import Language as BaseLanguage
 from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
 from ..c import _CFit
 from ..c import filter_literal as c_filter_literal
 
-DEFAULT_ARRAY_TYPE = 'std::array<{TYPE},{MAX_SIZE}>'
+DEFAULT_ARRAY_TYPE = "std::array<{TYPE},{MAX_SIZE}>"
 
 
 class Language(BaseLanguage):
@@ -32,13 +31,12 @@ class Language(BaseLanguage):
     Concrete, C++-specific :class:`nunavut.lang.Language` object.
     """
 
-    CPP_STD_EXTRACT_NUMBER_PATTERN = re.compile(r'(?:gnu|c)\+\+(\d(?:\d|\w))')
+    CPP_STD_EXTRACT_NUMBER_PATTERN = re.compile(r"(?:gnu|c)\+\+(\d(?:\d|\w))")
 
     @staticmethod
-    def _handle_stropping_or_encoding_failure(encoder: TokenEncoder,
-                                              stropped: str,
-                                              token_type: str,
-                                              pending_error: RuntimeError) -> str:
+    def _handle_stropping_or_encoding_failure(
+        encoder: TokenEncoder, stropped: str, token_type: str, pending_error: RuntimeError
+    ) -> str:
         """
         If the generic stropping fails we take one last look to see if there is something c++-specific we can do.
         """
@@ -47,11 +45,11 @@ class Language(BaseLanguage):
         # the given token is global. Since this library is about generating code from DSDL and no DSDL identifier should
         # be in the global namespace (except for the top-level namespace for the datatypes) we assume that the token is
         # not.
-        m = re.match(r'^_+([A-Z]?)', stropped)
+        m = re.match(r"^_+([A-Z]?)", stropped)
         if m:
             # Resolve the conflict between C's global identifier rules and our desire to use
             # '_' as a stropping prefix:
-            return '_{}{}'.format(m.group(1).lower(), stropped[m.end():])
+            return "_{}{}".format(m.group(1).lower(), stropped[m.end() :])
 
         # we couldn't help after all. raise the pending error.
         raise pending_error
@@ -61,31 +59,33 @@ class Language(BaseLanguage):
         """
         Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
         """
-        return TokenEncoder(self,
-                            stropping_failure_handler=self._handle_stropping_or_encoding_failure,
-                            encoding_failure_handler=self._handle_stropping_or_encoding_failure)
+        return TokenEncoder(
+            self,
+            stropping_failure_handler=self._handle_stropping_or_encoding_failure,
+            encoding_failure_handler=self._handle_stropping_or_encoding_failure,
+        )
 
     def _has_variant(self) -> bool:
         """
-         .. invisible-code-block: python
+        .. invisible-code-block: python
 
-            from nunavut.lang import LanguageLoader
+           from nunavut.lang import LanguageLoader
 
-            language = LanguageLoader().load_language('cpp', True, {'std': 'c++17'})
+           language = LanguageLoader().load_language('cpp', True, {'std': 'c++17'})
 
-            # test c++17
-            language = LanguageLoader().load_language('cpp', True, {'std': 'c++17'})
-            assert language._has_variant()
+           # test c++17
+           language = LanguageLoader().load_language('cpp', True, {'std': 'c++17'})
+           assert language._has_variant()
 
-            # test c++14
-            language = LanguageLoader().load_language('cpp', True, {'std': 'c++14'})
-            assert not language._has_variant()
+           # test c++14
+           language = LanguageLoader().load_language('cpp', True, {'std': 'c++14'})
+           assert not language._has_variant()
 
-            # test gnu++20
-            language = LanguageLoader().load_language('cpp', True, {'std': 'gnu++20'})
-            assert language._has_variant()
+           # test gnu++20
+           language = LanguageLoader().load_language('cpp', True, {'std': 'gnu++20'})
+           assert language._has_variant()
         """
-        std = str(self.get_option('std', ''))
+        std = str(self.get_option("std", ""))
 
         match = self.CPP_STD_EXTRACT_NUMBER_PATTERN.match(std)
 
@@ -94,24 +94,22 @@ class Language(BaseLanguage):
         else:
             std_number = 0
 
-        return (std_number >= 17)
+        return std_number >= 17
 
     def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
         std_includes = []  # type: typing.List[str]
-        if self.get_config_value_as_bool('use_standard_types'):
+        if self.get_config_value_as_bool("use_standard_types"):
             if dep_types.uses_integer:
-                std_includes.append('cstdint')
+                std_includes.append("cstdint")
             if dep_types.uses_array:
-                std_includes.append('array')
+                std_includes.append("array")
             if dep_types.uses_variable_length_array:
-                std_includes.append('vector')
+                std_includes.append("vector")
             if dep_types.uses_union and self._has_variant():
-                std_includes.append('variant')
-        return ['<{}>'.format(include) for include in sorted(std_includes)]
+                std_includes.append("variant")
+        return ["<{}>".format(include) for include in sorted(std_includes)]
 
-    def filter_id(self,
-                  instance: typing.Any,
-                  id_type: str = 'any') -> str:
+    def filter_id(self, instance: typing.Any, id_type: str = "any") -> str:
         raw_name = self.default_filter_id_for_target(instance)
 
         return self._get_token_encoder().strop(raw_name, id_type)
@@ -158,8 +156,7 @@ def uses_std_variant(language: Language) -> bool:
 
 
 @template_language_filter(__name__)
-def filter_constant_value(language: Language,
-                          constant: pydsdl.Constant) -> str:
+def filter_constant_value(language: Language, constant: pydsdl.Constant) -> str:
     """
     Renders the specified value of the specified type as a literal.
     """
@@ -194,9 +191,7 @@ def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
 
 
 @template_language_filter(__name__)
-def filter_id(language: Language,
-              instance: typing.Any,
-              id_type: str = 'any') -> str:
+def filter_id(language: Language, instance: typing.Any, id_type: str = "any") -> str:
     """
     Filter that produces a valid C and/or C++ identifier for a given object. The encoding may not
     be reversible.
@@ -264,8 +259,7 @@ def filter_id(language: Language,
 
 
 @template_language_filter(__name__)
-def filter_type(language: Language,
-                obj: typing.Any) -> str:
+def filter_type(language: Language, obj: typing.Any) -> str:
     """
     Tries to convert a Python object into a c++ typename.
 
@@ -330,10 +324,9 @@ def filter_type(language: Language,
 
 
 @template_language_filter(__name__)
-def filter_open_namespace(language: Language,
-                          full_namespace: str,
-                          bracket_on_next_line: bool = True,
-                          linesep: str = '\n') -> str:
+def filter_open_namespace(
+    language: Language, full_namespace: str, bracket_on_next_line: bool = True, linesep: str = "\n"
+) -> str:
     """
     Emits c++ opening namespace syntax parsed from a pydsdl "full_namespace",
     dot-separated  value.
@@ -379,12 +372,12 @@ def filter_open_namespace(language: Language,
 
     with io.StringIO() as content:
         first = True
-        for name in full_namespace.split('.'):
+        for name in full_namespace.split("."):
             if first:
                 first = False
             else:
                 content.write(linesep)
-            content.write('namespace ')
+            content.write("namespace ")
             if language.enable_stropping:
                 content.write(language.filter_id(name))
             else:
@@ -392,16 +385,15 @@ def filter_open_namespace(language: Language,
             if bracket_on_next_line:
                 content.write(linesep)
             else:
-                content.write(' ')
-            content.write('{')
+                content.write(" ")
+            content.write("{")
         return content.getvalue()
 
 
 @template_language_filter(__name__)
-def filter_close_namespace(language: Language,
-                           full_namespace: str,
-                           omit_comments: bool = False,
-                           linesep: str = '\n') -> str:
+def filter_close_namespace(
+    language: Language, full_namespace: str, omit_comments: bool = False, linesep: str = "\n"
+) -> str:
     """
     Emits c++ closing namespace syntax parsed from a pydsdl "full_namespace",
     dot-separated  value.
@@ -439,15 +431,15 @@ def filter_close_namespace(language: Language,
     """
     with io.StringIO() as content:
         first = True
-        for name in reversed(full_namespace.split('.')):
+        for name in reversed(full_namespace.split(".")):
             if first:
                 first = False
             else:
                 content.write(linesep)
 
-            content.write('}')
+            content.write("}")
             if not omit_comments:
-                content.write(' // namespace ')
+                content.write(" // namespace ")
                 if language.enable_stropping:
                     content.write(language.filter_id(name))
                 else:
@@ -492,14 +484,14 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
 
     :param pydsdl.CompositeType t: The DSDL type to get the fully-resolved reference name for.
     """
-    ns_parts = t.full_namespace.split('.')
+    ns_parts = t.full_namespace.split(".")
     if language.enable_stropping:
         ns = list(map(functools.partial(filter_id, language), ns_parts))
     else:
         ns = ns_parts
 
     full_path = ns + [filter_short_reference_name(language, t)]
-    return '::'.join(full_path)
+    return "::".join(full_path)
 
 
 @template_language_filter(__name__)
@@ -541,7 +533,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
     :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
     """
-    short_name = '{short}_{major}_{minor}'.format(short=t.short_name, major=t.version.major, minor=t.version.minor)
+    short_name = "{short}_{major}_{minor}".format(short=t.short_name, major=t.version.major, minor=t.version.minor)
     if language.enable_stropping:
         return language.filter_id(short_name)
     else:
@@ -549,9 +541,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
 
 @template_language_list_filter(__name__)
-def filter_includes(language: Language,
-                    t: pydsdl.CompositeType,
-                    sort: bool = True) -> typing.List[str]:
+def filter_includes(language: Language, t: pydsdl.CompositeType, sort: bool = True) -> typing.List[str]:
     """
     Returns a list of all include paths for a given type.
 
@@ -560,33 +550,29 @@ def filter_includes(language: Language,
     :return: a list of include headers needed for a given type.
     """
 
-    include_gen = IncludeGenerator(language,
-                                   t,
-                                   filter_id,
-                                   filter_short_reference_name)
+    include_gen = IncludeGenerator(language, t, filter_id, filter_short_reference_name)
     return include_gen.generate_include_filepart_list(language.extension, sort)
 
 
 @template_language_filter(__name__)
-def filter_declaration(language: Language,
-                       instance: pydsdl.Any) -> str:
+def filter_declaration(language: Language, instance: pydsdl.Any) -> str:
     """
     Emit a declaration statement for the given instance.
     """
     if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.VoidType):
         return filter_type_from_primitive(language, instance)
     elif isinstance(instance, pydsdl.VariableLengthArrayType):
-        variable_array_type = language.get_option('variable_array_type')
+        variable_array_type = language.get_option("variable_array_type")
 
         if not isinstance(variable_array_type, str):
-            raise RuntimeError('variable_array_type language option was missing or invalid.')
+            raise RuntimeError("variable_array_type language option was missing or invalid.")
         return variable_array_type.format(
-            TYPE=filter_declaration(language, instance.element_type),
-            MAX_SIZE=instance.capacity)
+            TYPE=filter_declaration(language, instance.element_type), MAX_SIZE=instance.capacity
+        )
     elif isinstance(instance, pydsdl.ArrayType):
         return DEFAULT_ARRAY_TYPE.format(
-            TYPE=filter_declaration(language, instance.element_type),
-            MAX_SIZE=instance.capacity)
+            TYPE=filter_declaration(language, instance.element_type), MAX_SIZE=instance.capacity
+        )
     else:
         return filter_full_reference_name(language, instance)
 
@@ -675,13 +661,16 @@ def filter_definition_begin(language: Language, instance: pydsdl.CompositeType) 
 
     """
     short_name = filter_short_reference_name(language, instance)
-    if isinstance(instance, pydsdl.DelimitedType) or isinstance(instance, pydsdl.StructureType) \
-            or isinstance(instance, pydsdl.UnionType):
-        return 'struct {}'.format(short_name)
+    if (
+        isinstance(instance, pydsdl.DelimitedType)
+        or isinstance(instance, pydsdl.StructureType)
+        or isinstance(instance, pydsdl.UnionType)
+    ):
+        return "struct {}".format(short_name)
     elif isinstance(instance, pydsdl.ServiceType):
-        return 'namespace {}'.format(short_name)
+        return "namespace {}".format(short_name)
     else:
-        raise ValueError('{} types cannot be redefined.'.format(type(instance).__name__))
+        raise ValueError("{} types cannot be redefined.".format(type(instance).__name__))
 
 
 @template_language_filter(__name__)
@@ -730,18 +719,20 @@ def filter_definition_end(language: Language, instance: pydsdl.CompositeType) ->
                             my_type=my_type)
 
     """
-    if isinstance(instance, pydsdl.DelimitedType) or isinstance(instance, pydsdl.StructureType) \
-            or isinstance(instance, pydsdl.UnionType):
-        return ';'
+    if (
+        isinstance(instance, pydsdl.DelimitedType)
+        or isinstance(instance, pydsdl.StructureType)
+        or isinstance(instance, pydsdl.UnionType)
+    ):
+        return ";"
     elif isinstance(instance, pydsdl.ServiceType):
-        return ' // namespace {}'.format(filter_short_reference_name(language, instance))
+        return " // namespace {}".format(filter_short_reference_name(language, instance))
     else:
-        raise ValueError('{} types cannot be redefined.'.format(type(instance).__name__))
+        raise ValueError("{} types cannot be redefined.".format(type(instance).__name__))
 
 
 @template_language_filter(__name__)
-def filter_type_from_primitive(language: Language,
-                               value: pydsdl.PrimitiveType) -> str:
+def filter_type_from_primitive(language: Language, value: pydsdl.PrimitiveType) -> str:
     """
     Filter to transform a pydsdl :class:`~pydsdl.PrimitiveType` into
     a valid C++ type.
@@ -791,7 +782,7 @@ def filter_type_from_primitive(language: Language,
 
     :raises TemplateRuntimeError: If the primitive cannot be represented as a standard C++ type.
     """
-    return _CFit.get_best_fit(value.bit_length).to_c_type(value, language, 'std::')
+    return _CFit.get_best_fit(value.bit_length).to_c_type(value, language, "std::")
 
 
 def filter_to_namespace_qualifier(namespace_list: typing.List[str]) -> str:
@@ -828,9 +819,9 @@ def filter_to_namespace_qualifier(namespace_list: typing.List[str]) -> str:
 
     """
     if namespace_list is None or len(namespace_list) == 0:
-        return ''
+        return ""
     else:
-        return '::'.join(namespace_list) + '::'
+        return "::".join(namespace_list) + "::"
 
 
 def filter_to_template_unique_name(base_token: str) -> str:
@@ -894,7 +885,7 @@ def filter_to_template_unique_name(base_token: str) -> str:
     else:
         adj_base_token = base_token
 
-    return UniqueNameGenerator.get_instance()('cpp', adj_base_token, '_', '_')
+    return UniqueNameGenerator.get_instance()("cpp", adj_base_token, "_", "_")
 
 
 def filter_as_boolean_value(value: bool) -> str:
@@ -911,13 +902,11 @@ def filter_as_boolean_value(value: bool) -> str:
         assert "false" == filter_as_boolean_value(False)
 
     """
-    return ('true' if value else 'false')
+    return "true" if value else "false"
 
 
 @template_language_filter(__name__)
-def filter_indent_if_not(language: Language,
-                         text: str,
-                         depth: int = 1) -> str:
+def filter_indent_if_not(language: Language, text: str, depth: int = 1) -> str:
     r"""
     Emit indent characters as configured for the language but only as needed. This
     is different from the built-in indent filter in that it may add or remove spaces based on the
@@ -998,16 +987,16 @@ def filter_indent_if_not(language: Language,
         4 spaces then the text will be indented by 8 spaces.
 
     """
-    configured_indent = int(language.get_config_value('indent'))
+    configured_indent = int(language.get_config_value("indent"))
     lines = text.splitlines(keepends=True)
-    result = ''
+    result = ""
     for i in range(0, len(lines)):
         line = lines[i].lstrip()
         if len(line) == 0:
             # don't indent blank lines
-            result += '\n'
+            result += "\n"
         else:
-            result += (' ' * (depth * configured_indent)) + line
+            result += (" " * (depth * configured_indent)) + line
 
     return result
 
@@ -1082,17 +1071,19 @@ def filter_minimum_required_capacity_bits(t: pydsdl.SerializableType) -> int:
 
 @functools.lru_cache(3)
 def _make_textwrap(width: int, initial_indent: str, subseqent_indent: str) -> textwrap.TextWrapper:
-    return textwrap.TextWrapper(width=width,
-                                initial_indent=initial_indent,
-                                subsequent_indent=subseqent_indent,
-                                break_on_hyphens=True,
-                                break_long_words=False,
-                                replace_whitespace=False)
+    return textwrap.TextWrapper(
+        width=width,
+        initial_indent=initial_indent,
+        subsequent_indent=subseqent_indent,
+        break_on_hyphens=True,
+        break_long_words=False,
+        replace_whitespace=False,
+    )
 
 
 def _make_block_comment(text: str, prefix: str, comment: str, suffix: str, indent: int, line_length: int) -> str:
     doc_lines = text.splitlines()  # type: typing.List[str]
-    indented_comment = '{}{}'.format(' ' * indent, comment)
+    indented_comment = "{}{}".format(" " * indent, comment)
 
     commented_doc_lines = []  # type: typing.List[str]
 
@@ -1101,22 +1092,20 @@ def _make_block_comment(text: str, prefix: str, comment: str, suffix: str, inden
             commented_doc_lines.append(prefix)
         else:
             commented_doc_lines.extend(
-                _make_textwrap(width=line_length,
-                               initial_indent=comment,
-                               subseqent_indent=indented_comment).wrap(doc_lines.pop(0))
+                _make_textwrap(width=line_length, initial_indent=comment, subseqent_indent=indented_comment).wrap(
+                    doc_lines.pop(0)
+                )
             )
 
-    tw = _make_textwrap(width=line_length,
-                        initial_indent=indented_comment,
-                        subseqent_indent=indented_comment)
+    tw = _make_textwrap(width=line_length, initial_indent=indented_comment, subseqent_indent=indented_comment)
 
     for docline in doc_lines:
         commented_doc_lines.extend(tw.wrap(docline))
 
     if len(suffix) > 0 and len(commented_doc_lines) > 0:
-        commented_doc_lines.append('{}{}'.format(' ' * indent, suffix))
+        commented_doc_lines.append("{}{}".format(" " * indent, suffix))
 
-    return '\n'.join(commented_doc_lines)
+    return "\n".join(commented_doc_lines)
 
 
 @template_language_filter(__name__)
@@ -1312,19 +1301,22 @@ def filter_block_comment(language: Language, text: str, style: str, indent: int 
 
     """
 
-    config_styles = language.get_config_value_as_dict('comment_styles') \
-        # type: typing.Mapping[str, typing.Mapping[str, str]]
+    config_styles = language.get_config_value_as_dict(
+        "comment_styles"
+    )  # type: typing.Mapping[str, typing.Mapping[str, str]]
 
     try:
         config_style = config_styles[style.lower()]
     except KeyError:
-        raise ValueError('{} is not a supported comment style. Supported is c, cpp, cpp-doxygen, and javadoc'
-                         .format(style))
+        raise ValueError(
+            "{} is not a supported comment style. Supported is c, cpp, cpp-doxygen, and javadoc".format(style)
+        )
 
     return _make_block_comment(
         text=text,
-        prefix=config_style['prefix'],
-        comment=config_style['comment'],
-        suffix=config_style['suffix'],
+        prefix=config_style["prefix"],
+        comment=config_style["comment"],
+        suffix=config_style["suffix"],
         indent=indent,
-        line_length=line_length)
+        line_length=line_length,
+    )

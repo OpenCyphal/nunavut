@@ -38,6 +38,6 @@ def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
 
     :return: A list of C++ support header resources.
     """
-    for resource in pkg_resources.resource_listdir(__name__, '.'):
-        if resource.endswith('.hpp') or resource.endswith('.j2'):
+    for resource in pkg_resources.resource_listdir(__name__, "."):
+        if resource.endswith(".hpp") or resource.endswith(".j2"):
             yield pathlib.Path(pkg_resources.resource_filename(__name__, str(resource)))

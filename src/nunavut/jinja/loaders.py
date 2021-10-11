@@ -11,15 +11,14 @@ import typing
 
 import pydsdl
 
-from .jinja2 import (BaseLoader, Environment, FileSystemLoader, PackageLoader,
-                     TemplateNotFound)
+from .jinja2 import BaseLoader, Environment, FileSystemLoader, PackageLoader, TemplateNotFound
 
 logger = logging.getLogger(__name__)
 
 
-TEMPLATE_SUFFIX = '.j2'  #: The suffix expected for Jinja templates.
+TEMPLATE_SUFFIX = ".j2"  #: The suffix expected for Jinja templates.
 
-DEFAULT_TEMPLATE_PATH = 'templates'
+DEFAULT_TEMPLATE_PATH = "templates"
 
 
 # +--------------------------------------------------------------------------------------------------------------------+
@@ -45,12 +44,14 @@ class DSDLTemplateLoader(BaseLoader):
     :param Any kwargs: Arguments forwarded to the :class:`jinja.jinja2.BaseLoader`.
     """
 
-    def __init__(self,
-                 templates_dirs: typing.Optional[typing.List[pathlib.Path]] = None,
-                 followlinks: bool = False,
-                 package_name_for_templates: typing.Optional[str] = None,
-                 builtin_template_path: str = DEFAULT_TEMPLATE_PATH,
-                 **kwargs: typing.Any):
+    def __init__(
+        self,
+        templates_dirs: typing.Optional[typing.List[pathlib.Path]] = None,
+        followlinks: bool = False,
+        package_name_for_templates: typing.Optional[str] = None,
+        builtin_template_path: str = DEFAULT_TEMPLATE_PATH,
+        **kwargs: typing.Any
+    ):
         super().__init__(**kwargs)
         self._type_to_template_lookup_cache = dict()  # type: typing.Dict[pydsdl.Any, pathlib.Path]
         self._templates_package_name = None  # type: typing.Optional[str]
@@ -58,8 +59,7 @@ class DSDLTemplateLoader(BaseLoader):
         if templates_dirs is not None:
             for templates_dir_item in templates_dirs:
                 if not pathlib.Path(templates_dir_item).exists:
-                    raise ValueError(
-                        "Templates directory {} did not exist?".format(templates_dir_item))
+                    raise ValueError("Templates directory {} did not exist?".format(templates_dir_item))
             logger.info("Loading templates from file system at {}".format(templates_dirs))
             self._fsloader = FileSystemLoader((str(d) for d in templates_dirs), followlinks=followlinks)
         else:
@@ -68,17 +68,18 @@ class DSDLTemplateLoader(BaseLoader):
         if package_name_for_templates is not None:
             logger.info("Loading templates from package {}.{}".format(builtin_template_path, builtin_template_path))
             self._package_loader = PackageLoader(package_name_for_templates, package_path=builtin_template_path)
-            self._templates_package_name = '{}.{}'.format(package_name_for_templates, builtin_template_path)
+            self._templates_package_name = "{}.{}".format(package_name_for_templates, builtin_template_path)
         else:
             self._package_loader = None
 
-    def get_source(self, environment: Environment, template: str) -> \
-            typing.Tuple[typing.Any, str, typing.Callable[..., bool]]:
+    def get_source(
+        self, environment: Environment, template: str
+    ) -> typing.Tuple[typing.Any, str, typing.Callable[..., bool]]:
         if self._fsloader is not None:
             try:
                 return typing.cast(
                     typing.Tuple[typing.Any, str, typing.Callable[..., bool]],
-                    self._fsloader.get_source(environment, template)
+                    self._fsloader.get_source(environment, template),
                 )
             except TemplateNotFound:
                 if self._package_loader is None:
@@ -86,7 +87,7 @@ class DSDLTemplateLoader(BaseLoader):
         if self._package_loader is not None:
             return typing.cast(
                 typing.Tuple[typing.Any, str, typing.Callable[..., bool]],
-                self._package_loader.get_source(environment, template)
+                self._package_loader.get_source(environment, template),
             )
         raise TemplateNotFound(template)
 
@@ -182,14 +183,12 @@ class DSDLTemplateLoader(BaseLoader):
         if self._fsloader is not None:
             filtered_templates = self._filter_template_list_by_suffix(self._fsloader.list_templates())
             template_path = self._type_to_template_internal(
-                value_type,
-                dict(map(lambda x: (pathlib.Path(x).stem, pathlib.Path(x)), filtered_templates))
+                value_type, dict(map(lambda x: (pathlib.Path(x).stem, pathlib.Path(x)), filtered_templates))
             )
         if template_path is None and self._package_loader is not None:
             filtered_templates = self._filter_template_list_by_suffix(self._package_loader.list_templates())
             template_path = self._type_to_template_internal(
-                value_type,
-                dict(map(lambda x: (pathlib.Path(x).stem, pathlib.Path(x)), filtered_templates))
+                value_type, dict(map(lambda x: (pathlib.Path(x).stem, pathlib.Path(x)), filtered_templates))
             )
 
         return template_path
@@ -201,8 +200,9 @@ class DSDLTemplateLoader(BaseLoader):
     def _filter_template_list_by_suffix(files: typing.List[str]) -> typing.List[str]:
         return [f for f in files if (pathlib.Path(f).suffix == TEMPLATE_SUFFIX)]
 
-    def _type_to_template_internal(self, value_type: typing.Type, templates: typing.Mapping[str, pathlib.Path]) \
-            -> typing.Optional[pathlib.Path]:
+    def _type_to_template_internal(
+        self, value_type: typing.Type, templates: typing.Mapping[str, pathlib.Path]
+    ) -> typing.Optional[pathlib.Path]:
         search_queue = collections.deque()  # type: typing.Deque[typing.Any]
         discovered = set()  # type: typing.Set[typing.Any]
         search_queue.appendleft(value_type)
@@ -217,9 +217,11 @@ class DSDLTemplateLoader(BaseLoader):
                 pass
 
             try:
-                logging.debug('NunavutTemplateLoader.type_to_template for {}: considering {}...'.format(
-                    value_type.__name__,
-                    current_search_type.__name__))
+                logging.debug(
+                    "NunavutTemplateLoader.type_to_template for {}: considering {}...".format(
+                        value_type.__name__, current_search_type.__name__
+                    )
+                )
                 template_path = templates[current_search_type.__name__]
                 self._type_to_template_lookup_cache[current_search_type] = template_path
                 break

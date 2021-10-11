@@ -12,19 +12,12 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   nunavut.cli
    nunavut.jinja
    nunavut.lang
 
 Submodules
 ----------
-
-nunavut.cli
-~~~~~~~~~~~
-
-.. automodule:: nunavut.cli
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 nunavut.generators
 ~~~~~~~~~~~~~~~~~~

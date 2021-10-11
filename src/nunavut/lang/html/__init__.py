@@ -39,9 +39,7 @@ def filter_max_bit_length(instance: pydsdl.Any) -> int:
 
 def filter_tag_id(instance: pydsdl.Any) -> str:
     if isinstance(instance, pydsdl.ArrayType):
-        return "{}_array".format(
-            str(instance.element_type).replace(".", "_").replace(" ", "_")
-        )
+        return "{}_array".format(str(instance.element_type).replace(".", "_").replace(" ", "_"))
     else:
         return "{}_{}_{}".format(
             instance.full_name.replace(".", "_"),
@@ -52,9 +50,7 @@ def filter_tag_id(instance: pydsdl.Any) -> str:
 
 def filter_url_from_type(instance: pydsdl.Any) -> str:
     root_ns = instance.root_namespace
-    tag_id = "{}_{}_{}".format(
-        instance.full_name.replace(".", "_"), instance.version[0], instance.version[1]
-    )
+    tag_id = "{}_{}_{}".format(instance.full_name.replace(".", "_"), instance.version[0], instance.version[1])
     return "../{}/#{}".format(root_ns, tag_id)
 
 
@@ -121,7 +117,7 @@ def filter_make_unique(_: typing.Any, base_token: str) -> str:
 
     escaped_base_token = html.escape(adj_base_token)
 
-    return UniqueNameGenerator.get_instance()('html', escaped_base_token, '', '')
+    return UniqueNameGenerator.get_instance()("html", escaped_base_token, "", "")
 
 
 def filter_namespace_doc(ns: nunavut.Namespace) -> str:
@@ -144,23 +140,17 @@ def filter_display_type(instance: pydsdl.Any) -> str:
     elif isinstance(instance, pydsdl.PaddingField):
         return '<span style="color: gray">{}</span>'.format(instance)
     elif isinstance(instance, pydsdl.Field):
-        return "{} {}".format(
-            filter_display_type(instance.data_type), instance.name
-        )
+        return "{} {}".format(filter_display_type(instance.data_type), instance.name)
     elif isinstance(instance, pydsdl.Constant):
         name = '<span style="color: darkmagenta">{}</span>'.format(instance.name)
         value = '<span style="color: darkcyan">{}</span>'.format(instance.value)
-        return "{} {} = {}".format(
-            filter_display_type(instance.data_type), name, value
-        )
+        return "{} {} = {}".format(filter_display_type(instance.data_type), name, value)
     elif isinstance(instance, pydsdl.PrimitiveType):
         if instance.cast_mode == instance.cast_mode.SATURATED:
             is_saturated = '<span style="color: gray">saturated</span> '
         else:
             is_saturated = '<span style="color: orange">truncated</span> '
-        type_name = '<span style="color: green">{}</span>'.format(
-            str(instance).split()[-1]
-        )
+        type_name = '<span style="color: green">{}</span>'.format(str(instance).split()[-1])
         return "{}{}".format(is_saturated, type_name)
     else:
         return str(instance)
@@ -170,9 +160,7 @@ def _natural_sort(instance: typing.List[pydsdl.Any], key: typing.Callable = lamb
     def natural_sort_key(s: str, _nsre: typing.Pattern = re.compile("([0-9]+)")) -> typing.List[pydsdl.Any]:
         _key = key(s)
 
-        return [
-            int(text) if text.isdigit() else text.lower() for text in _nsre.split(_key)
-        ]
+        return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(_key)]
 
     return sorted(instance, key=natural_sort_key)
 

@@ -20,34 +20,35 @@ from . import Language
 
 
 class IncludeGenerator(DependencyBuilder):
-
-    def __init__(self,
-                 language: Language,
-                 t: pydsdl.CompositeType,
-                 id_filter: typing.Callable[[Language, str], str],
-                 short_reference_name_filter: typing.Callable[..., str]):
+    def __init__(
+        self,
+        language: Language,
+        t: pydsdl.CompositeType,
+        id_filter: typing.Callable[[Language, str], str],
+        short_reference_name_filter: typing.Callable[..., str],
+    ):
         super().__init__(t)
         self._language = language
         self._id = id_filter
         self._short_reference_name_filter = short_reference_name_filter
 
-    def generate_include_filepart_list(self,
-                                       output_extension: str,
-                                       sort: bool) -> typing.List[str]:
+    def generate_include_filepart_list(self, output_extension: str, sort: bool) -> typing.List[str]:
         dep_types = self.direct()
 
         path_list = [self._make_path(dt, output_extension) for dt in dep_types.composite_types]
 
         if not self._language.omit_serialization_support:
-            namespace_path = pathlib.Path('')
+            namespace_path = pathlib.Path("")
             for namespace_part in self._language.support_namespace:
                 namespace_path = namespace_path / pathlib.Path(namespace_part)
-            path_list += [(namespace_path / pathlib.Path(p.name).with_suffix(output_extension)).as_posix()
-                          for p in self._language.support_files]
+            path_list += [
+                (namespace_path / pathlib.Path(p.name).with_suffix(output_extension)).as_posix()
+                for p in self._language.support_files
+            ]
 
-        prefer_system_includes = self._language.get_config_value_as_bool('prefer_system_includes', False)
+        prefer_system_includes = self._language.get_config_value_as_bool("prefer_system_includes", False)
         if prefer_system_includes:
-            path_list_with_punctuation = ['<{}>'.format(p) for p in path_list]
+            path_list_with_punctuation = ["<{}>".format(p) for p in path_list]
         else:
             path_list_with_punctuation = ['"{}"'.format(p) for p in path_list]
 
@@ -67,9 +68,9 @@ class IncludeGenerator(DependencyBuilder):
 
     def _make_ns_list(self, dt: pydsdl.SerializableType) -> typing.List[str]:
         if self._language.enable_stropping:
-            return [self._id(self._language, x) for x in dt.full_namespace.split('.')]
+            return [self._id(self._language, x) for x in dt.full_namespace.split(".")]
         else:
-            return typing.cast(typing.List[str], dt.full_namespace.split('.'))
+            return typing.cast(typing.List[str], dt.full_namespace.split("."))
 
 
 class UniqueNameGenerator:
@@ -77,6 +78,7 @@ class UniqueNameGenerator:
     Functor used by template filters to obtain a unique name within a given template.
     This should be made available as a private global within each template.
     """
+
     _singleton = None  # type: typing.Optional['UniqueNameGenerator']
 
     def __init__(self) -> None:
@@ -87,9 +89,9 @@ class UniqueNameGenerator:
         cls._singleton = cls()
 
     @classmethod
-    def get_instance(cls) -> 'UniqueNameGenerator':
+    def get_instance(cls) -> "UniqueNameGenerator":
         if cls._singleton is None:
-            raise RuntimeError('No UniqueNameGenerator has been created. Please use reset to create.')
+            raise RuntimeError("No UniqueNameGenerator has been created. Please use reset to create.")
         return cls._singleton
 
     def __call__(self, key: str, base_token: str, prefix: str, suffix: str) -> str:
@@ -111,10 +113,8 @@ class UniqueNameGenerator:
             keymap[base_token] = 1
 
         return "{prefix}{base_token}{index}{suffix}".format(
-            prefix=prefix,
-            base_token=base_token,
-            index=next_index,
-            suffix=suffix)
+            prefix=prefix, base_token=base_token, index=next_index, suffix=suffix
+        )
 
 
 class TokenEncoder:
@@ -253,47 +253,55 @@ class TokenEncoder:
 
     """
 
-    def __init__(self,
-                 language: Language,
-                 additional_reserved_identifiers: typing.Optional[typing.List[str]] = None,
-                 stropping_failure_handler:
-                 typing.Optional[typing.Callable[['TokenEncoder', str, str, RuntimeError], str]] = None,
-                 encoding_failure_handler:
-                 typing.Optional[typing.Callable[['TokenEncoder', str, str, RuntimeError], str]] = None) -> None:
+    def __init__(
+        self,
+        language: Language,
+        additional_reserved_identifiers: typing.Optional[typing.List[str]] = None,
+        stropping_failure_handler: typing.Optional[
+            typing.Callable[["TokenEncoder", str, str, RuntimeError], str]
+        ] = None,
+        encoding_failure_handler: typing.Optional[
+            typing.Callable[["TokenEncoder", str, str, RuntimeError], str]
+        ] = None,
+    ) -> None:
         self._reserved_token_patterns_by_type = self._get_map_of_type_to_lists_of_patterns(
-            language, 'reserved_token_patterns_by_type')
+            language, "reserved_token_patterns_by_type"
+        )
         self._stropping_failure_handler = stropping_failure_handler
         self._encoding_failure_handler = encoding_failure_handler
         self._token_encoding_rules_by_identifier_type = self._get_map_of_type_to_lists_of_patterns(
-            language, 'token_encoding_rules_by_identifier_type')
-        self._reserved_identifiers = language.get_config_value_as_list('reserved_identifiers', default_value=[])
+            language, "token_encoding_rules_by_identifier_type"
+        )
+        self._reserved_identifiers = language.get_config_value_as_list("reserved_identifiers", default_value=[])
         if additional_reserved_identifiers is not None:
             self._reserved_identifiers = self._reserved_identifiers + additional_reserved_identifiers
-        self._stropping_prefix = language.get_config_value('stropping_prefix', '')
-        self._stropping_suffix = language.get_config_value('stropping_suffix', '')
-        self._encoding_prefix = language.get_config_value('encoding_prefix', '')
+        self._stropping_prefix = language.get_config_value("stropping_prefix", "")
+        self._stropping_suffix = language.get_config_value("stropping_suffix", "")
+        self._encoding_prefix = language.get_config_value("encoding_prefix", "")
         try:
-            self._whitespace_encoding_char = language.get_config_value('whitespace_encoding_char')  \
-                # type: typing.Optional[str]
+            self._whitespace_encoding_char = language.get_config_value(
+                "whitespace_encoding_char"
+            )  # type: typing.Optional[str]
         except KeyError:
             self._whitespace_encoding_char = None
-        self._collapse_whitespace_when_encoding = language.get_config_value_as_bool('collapse_whitespace_when_encoding')
+        self._collapse_whitespace_when_encoding = language.get_config_value_as_bool("collapse_whitespace_when_encoding")
 
     def _encoding_filter(self, m: typing.Match) -> str:
-        '''
+        """
         This will encode any illegal characters in an identifier using Python's re.sub function.
-        '''
-        matched_span = m.string[m.start(): m.end()]
+        """
+        matched_span = m.string[m.start() : m.end()]
         if self._collapse_whitespace_when_encoding and matched_span.isspace():
             if self._whitespace_encoding_char is not None:
                 return self._whitespace_encoding_char
             else:
-                return self.encode_character(' ')
+                return self.encode_character(" ")
         else:
-            return ''.join(map(self.encode_character, matched_span))
+            return "".join(map(self.encode_character, matched_span))
 
-    def _matches(self, input_string: str, patterns: typing.Union[typing.List[typing.Pattern], typing.List[str]]) -> \
-            bool:
+    def _matches(
+        self, input_string: str, patterns: typing.Union[typing.List[typing.Pattern], typing.List[str]]
+    ) -> bool:
         for string_or_pattern in patterns:
             if isinstance(string_or_pattern, str):
                 if string_or_pattern == input_string:
@@ -302,10 +310,7 @@ class TokenEncoder:
                 return True
         return False
 
-    def _encode(self,
-                token: str,
-                token_type: str,
-                dry_run: bool) -> str:
+    def _encode(self, token: str, token_type: str, dry_run: bool) -> str:
         encoded = token
         try:
             encoding_rules = self._token_encoding_rules_by_identifier_type[token_type]
@@ -316,35 +321,28 @@ class TokenEncoder:
                 elif token_pattern.match(encoded):
                     raise RuntimeError(
                         'Unstable encoding: using prefix "{}" partially encoded token: "{}"'.format(
-                            self._encoding_prefix,
-                            encoded))
+                            self._encoding_prefix, encoded
+                        )
+                    )
         except KeyError:
             pass
         return encoded
 
-    def _strop_by_keyword(self,
-                          token: str,
-                          token_type: str,
-                          dry_run: bool) -> str:
+    def _strop_by_keyword(self, token: str, token_type: str, dry_run: bool) -> str:
         stropped = token
 
         if self._matches(stropped, self._reserved_identifiers):
             if not dry_run:
-                stropped = (self._stropping_prefix + stropped + self._stropping_suffix)
+                stropped = self._stropping_prefix + stropped + self._stropping_suffix
             else:
-                raise RuntimeError('input token "{}" of type "{}" yielded an illegal token after '
-                                   'stropping: {}'.format(
-                                       stropped,
-                                       token_type,
-                                       stropped
-                                   ))
+                raise RuntimeError(
+                    'input token "{}" of type "{}" yielded an illegal token after '
+                    "stropping: {}".format(stropped, token_type, stropped)
+                )
 
         return stropped
 
-    def _strop_by_pattern(self,
-                          token: str,
-                          token_type: str,
-                          dry_run: bool) -> str:
+    def _strop_by_pattern(self, token: str, token_type: str, dry_run: bool) -> str:
 
         stropped = token
 
@@ -352,30 +350,26 @@ class TokenEncoder:
 
         if self._matches(stropped, reserved_pattern_rules):
             if not dry_run:
-                stropped = (self._stropping_prefix + stropped + self._stropping_suffix)
+                stropped = self._stropping_prefix + stropped + self._stropping_suffix
             else:
-                raise RuntimeError('input token "{}" of type "{}" yielded an illegal token after '
-                                   'stropping: {}'.format(
-                                       stropped,
-                                       token_type,
-                                       stropped
-                                   ))
+                raise RuntimeError(
+                    'input token "{}" of type "{}" yielded an illegal token after '
+                    "stropping: {}".format(stropped, token_type, stropped)
+                )
 
         return stropped
 
-    def _do_for_type_and_all(self,
-                             transform: typing.Callable[[str, str, bool], str],
-                             token: str,
-                             token_type: str,
-                             dry_run: bool) -> str:
+    def _do_for_type_and_all(
+        self, transform: typing.Callable[[str, str, bool], str], token: str, token_type: str, dry_run: bool
+    ) -> str:
         transformed = token
 
         try:
-            transformed = transform(transformed, 'all', dry_run)
+            transformed = transform(transformed, "all", dry_run)
         except KeyError:
             pass
 
-        if token_type != 'all':
+        if token_type != "all":
             try:
                 transformed = transform(transformed, token_type, dry_run)
             except KeyError:
@@ -391,16 +385,18 @@ class TokenEncoder:
         if self._whitespace_encoding_char is not None and c.isspace():
             return self._whitespace_encoding_char
         else:
-            return '{}{:04X}'.format(self._encoding_prefix, ord(c))
+            return "{}{:04X}".format(self._encoding_prefix, ord(c))
 
     @functools.lru_cache(maxsize=1024)
-    def strop(self, token: str, token_type: str = 'any') -> str:  # noqa: C901
+    def strop(self, token: str, token_type: str = "any") -> str:  # noqa: C901
 
         token_type_lower = token_type.lower()
-        if token_type_lower == 'all':
-            raise ValueError('''Token type 'all' is reserved for patterns that apply to all other types. A single token
+        if token_type_lower == "all":
+            raise ValueError(
+                """Token type 'all' is reserved for patterns that apply to all other types. A single token
                 can't be all token types at once but it can be compatible with any type; perhaps you meant 'any'?
-            ''')
+            """
+            )
 
         # we encode first.
         encoded = self._do_for_type_and_all(self._encode, token, token_type_lower, False)
@@ -444,8 +440,9 @@ class TokenEncoder:
     # | Language CONFIGURATION HELPERS
     # +----------------------------------------------------------------------------------------------------------------+
     @classmethod
-    def _get_map_of_type_to_lists_of_patterns(cls, language: Language, key: str) -> \
-            typing.Mapping[str, typing.List[typing.Pattern]]:
+    def _get_map_of_type_to_lists_of_patterns(
+        cls, language: Language, key: str
+    ) -> typing.Mapping[str, typing.List[typing.Pattern]]:
         """
         Parses a dictionary value retrieved from Language configuration as a map (with string keys) with each
         value being a list containing pre-compiled, regular expressions.
@@ -608,11 +605,12 @@ class TokenEncoder:
             identifier_type = mixed_case_type.lower()
             pattern_list = [re.compile(p) for p in patterns_for_type]
             map_of_list_of_patterns[identifier_type] = pattern_list
-            if identifier_type == 'any':
+            if identifier_type == "any":
                 raise RuntimeError(
-                    '{}:{} - \'any\' key is reserved and cannot be used in configuration.'.format(language.name, key))
+                    "{}:{} - 'any' key is reserved and cannot be used in configuration.".format(language.name, key)
+                )
             any_patterns = any_patterns + pattern_list
 
-        map_of_list_of_patterns['any'] = any_patterns
+        map_of_list_of_patterns["any"] = any_patterns
 
         return map_of_list_of_patterns
