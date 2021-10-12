@@ -375,6 +375,7 @@ class CodeGenEnvironment(Environment):
                 poop_lang = MagicMock(spec=Language)
                 poop_lang.name = 'poop'
                 poop_lang.get_templates_package_name = MagicMock(return_value='nunavut.lang.poop')
+                lctx.get_target_language = MagicMock(return_value=None)
                 lctx.get_supported_languages = MagicMock(return_value = {'poop': poop_lang})
 
                 @template_language_test('nunavut.lang.poop')
@@ -509,18 +510,27 @@ class CodeGenEnvironment(Environment):
         target_language = None if lctx is None else lctx.get_target_language()
         if target_language is not None:
             omit_serialization_support = target_language.omit_serialization_support
-            support_namespace = target_language.support_namespace
+            support_namespace, support_version, _ = target_language.get_support_module()
         else:
             logger.debug("There is no target language so we cannot generate serialization support")
             omit_serialization_support = True
-            support_namespace = []
+            support_namespace = ""
+            support_version = (0, 0, 0)
 
         nunavut_namespace = self.nunavut_global
 
-        setattr(nunavut_namespace, "support", {"omit": omit_serialization_support, "namespace": support_namespace})
+        setattr(
+            nunavut_namespace,
+            "support",
+            {"omit": omit_serialization_support, "namespace": support_namespace, "version": support_version},
+        )
 
         if "version" not in nunavut_namespace:
             import nunavut.version
+            from nunavut.jinja.loaders import DSDLTemplateLoader
 
             setattr(nunavut_namespace, "version", nunavut.version.__version__)
             setattr(nunavut_namespace, "platform_version", self._create_platform_version())
+
+            if isinstance(self.loader, DSDLTemplateLoader):
+                setattr(nunavut_namespace, "template_sets", self.loader.get_template_sets())

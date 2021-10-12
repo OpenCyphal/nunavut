@@ -5,11 +5,11 @@
             "intelliSenseMode": "clang-x64",
             "includePath": [
                 "${workspaceFolder}/submodules/googletest/googlemock/include",
-                "${workspaceFolder}/verification/build_vscode/native-clang-c/generated"
+                "${workspaceFolder}/submodules/unity/src",
+                "${workspaceFolder}/verification/build_vscode/native-clang-c/generated/c"
             ],
             "browse": {
                 "path": [
-                    "${workspaceFolder}/verification/cpp/suite",
                     "${workspaceFolder}/verification/c/suite"
                 ],
                 "limitSymbolsToIncludedHeaders": false
@@ -21,19 +21,18 @@
             "compileCommands": "${workspaceFolder}/.vscode/compile_commands.json",
             "configurationProvider": "ms-vscode.cmake-tools",
             "cStandard": "c11",
-            "cppStandard": "c++11"
+            "cppStandard": "c++14"
         },
         {
             "name": "Mac-cpp",
             "intelliSenseMode": "clang-x64",
             "includePath": [
                 "${workspaceFolder}/submodules/googletest/googlemock/include",
-                "${workspaceFolder}/verification/build_vscode/native-clang-cpp/generated"
+                "${workspaceFolder}/verification/build_vscode/native-clang-cpp-nocov/generated/cpp"
             ],
             "browse": {
                 "path": [
-                    "${workspaceFolder}/verification/cpp/suite",
-                    "${workspaceFolder}/verification/c/suite"
+                    "${workspaceFolder}/verification/cpp/suite"
                 ],
                 "limitSymbolsToIncludedHeaders": false
             },
@@ -43,8 +42,28 @@
             ],
             "compileCommands": "${workspaceFolder}/.vscode/compile_commands.json",
             "configurationProvider": "ms-vscode.cmake-tools",
-            "cStandard": "c11",
-            "cppStandard": "c++11"
+            "cppStandard": "c++14"
+        },
+        {
+            "name": "Mac-cpp-17",
+            "intelliSenseMode": "clang-x64",
+            "includePath": [
+                "${workspaceFolder}/submodules/googletest/googlemock/include",
+                "${workspaceFolder}/verification/build_vscode/native-clang-cpp-17-nocov/generated/cpp"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/verification/cpp/suite"
+                ],
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "macFrameworkPath": [
+                "/System/Library/Frameworks",
+                "/Library/Frameworks"
+            ],
+            "compileCommands": "${workspaceFolder}/.vscode/compile_commands.json",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "cppStandard": "c++17"
         },
         {
             "name": "Linux-c",
@@ -52,12 +71,10 @@
             "includePath": [
                 "${workspaceFolder}/submodules/googletest/googlemock/include",
                 "${workspaceFolder}/submodules/unity/src",
-                "${workspaceFolder}/verification/build_vscode/native-gcc-c/generated",
-                "${workspaceFolder}/verification/build_c/generated/c"
+                "${workspaceFolder}/verification/build_vscode/native-gcc-c/generated/c"
             ],
             "browse": {
                 "path": [
-                    "${workspaceFolder}/verification/cpp/suite",
                     "${workspaceFolder}/verification/c/suite"
                 ],
                 "limitSymbolsToIncludedHeaders": false
@@ -65,7 +82,7 @@
             "compileCommands": "${workspaceFolder}/.vscode/compile_commands.json",
             "configurationProvider": "ms-vscode.cmake-tools",
             "cStandard": "c11",
-            "cppStandard": "c++11"
+            "cppStandard": "c++14"
         },
         {
             "name": "Linux-cpp",
@@ -73,19 +90,18 @@
             "includePath": [
                 "${workspaceFolder}/submodules/googletest/googlemock/include",
                 "${workspaceFolder}/submodules/unity/src",
-                "${workspaceFolder}/verification/build_vscode/native-gcc-cpp/generated"
+                "${workspaceFolder}/verification/build_vscode/native-gcc-cpp/generated/cpp"
             ],
             "browse": {
                 "path": [
-                    "${workspaceFolder}/verification/cpp/suite",
-                    "${workspaceFolder}/verification/c/suite"
+                    "${workspaceFolder}/verification/cpp/suite"
                 ],
                 "limitSymbolsToIncludedHeaders": false
             },
             "compileCommands": "${workspaceFolder}/.vscode/compile_commands.json",
             "configurationProvider": "ms-vscode.cmake-tools",
             "cStandard": "c11",
-            "cppStandard": "c++11"
+            "cppStandard": "c++14"
         }
     ],
     "version": 4

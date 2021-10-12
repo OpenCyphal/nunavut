@@ -11,6 +11,7 @@ import typing
 
 import pydsdl
 
+from ..lang._config import VersionReader
 from .jinja2 import BaseLoader, Environment, FileSystemLoader, PackageLoader, TemplateNotFound
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class DSDLTemplateLoader(BaseLoader):
     if no ``StructureType.j2`` template is found then this loader will look for a ``CompositeType.j2``
     and so on.
 
-    :param Optional[List[Path]] template_dirs: A list of directories to load templates from using a
+    :param Optional[List[Path]] templates_dirs: A list of directories to load templates from using a
         :class:`nunavut.jinja.jinja2.FileSystemLoader`. If ``None`` no filesystem loader is created.
     :param bool followlinks: Argument passed on to the :class:`nunavut.jinja.jinja2.FileSystemLoader` instance.
     :param Optional[str] package_name_for_templates: The name of the package to load templates from. If ``None``
@@ -122,6 +123,13 @@ class DSDLTemplateLoader(BaseLoader):
             files += self._filter_template_list_by_suffix(self._package_loader.list_templates())
 
         return files
+
+    def get_template_sets(self) -> typing.List[typing.Tuple[str, str, typing.Tuple[int, int, int]]]:
+        template_sets = []  # type: typing.List[typing.Tuple[str, str, typing.Tuple[int, int, int]]]
+        if self._templates_package_name is not None:
+            vr = VersionReader(self._templates_package_name)
+            template_sets.append(("package", self._templates_package_name, vr.version))
+        return template_sets
 
     def get_templates(self) -> typing.Iterable[pathlib.Path]:
         """

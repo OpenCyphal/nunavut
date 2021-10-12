@@ -3,24 +3,40 @@
 # Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
 # This software is distributed under the terms of the MIT License.
 #
+import typing
 from pathlib import Path
 
 import pytest
-
 from nunavut import generate_types
 
 
-@pytest.mark.parametrize('lang_key,generate_support', [
-    ('cpp', False),
-    ('cpp', True),
-    ('c', False),
-    ('c', True),
-    ('py', False),
-    ('html', False)])
-def test_realgen(gen_paths, lang_key, generate_support):  # type: ignore
+@pytest.mark.parametrize(
+    "lang_key,generate_support,language_options",
+    [
+        ("cpp", False, None),
+        ("cpp", True, None),
+        ("cpp", True, {"std": "c++17"}),
+        ("c", False, None),
+        ("c", True, None),
+        ("py", False, None),
+        ("html", False, None),
+    ],
+)
+def test_realgen(
+    gen_paths: typing.Any,
+    lang_key: str,
+    generate_support: bool,
+    language_options: typing.Optional[typing.Mapping[str, typing.Any]],
+) -> None:
     """
     Sanity test that runs through the entire public, regulated set of
     UAVCAN types and generates code for each internally supported language.
     """
     root_namespace_dir = gen_paths.root_dir / Path("submodules") / Path("public_regulated_data_types") / Path("uavcan")
-    generate_types(lang_key, root_namespace_dir, gen_paths.out_dir, omit_serialization_support=not generate_support)
+    generate_types(
+        lang_key,
+        root_namespace_dir,
+        gen_paths.out_dir,
+        omit_serialization_support=not generate_support,
+        language_options=language_options,
+    )

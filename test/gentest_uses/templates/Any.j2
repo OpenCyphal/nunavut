@@ -1,0 +1,16 @@
+{
+{%- ifuses "std_variant" %}
+    "ifuses_std_variant": true,
+    "never": false,
+{%- elifnuses "std_variant" %}
+    "ifuses_std_variant": false,
+    "never": false,
+{%- else %}
+    "never": true,
+{%- endifuses -%}
+{%- ifnuses "std_variant" %}
+    "ifnuses_std_variant": true
+{%- else %}
+    "ifnuses_std_variant": false
+{%- endifnuses %}
+}

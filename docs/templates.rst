@@ -300,6 +300,8 @@ C++ Filters
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_includes
    :noindex:
+.. autofunction:: nunavut.lang.cpp.filter_destructor_name
+   :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_declaration
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_definition_begin

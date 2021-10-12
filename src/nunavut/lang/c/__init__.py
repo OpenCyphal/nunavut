@@ -16,6 +16,8 @@ import typing
 
 import pydsdl
 
+from nunavut.utilities import YesNoDefault
+
 from ...templates import (
     template_language_filter,
     template_language_list_filter,
@@ -570,13 +572,6 @@ def filter_to_template_unique_name(_: typing.Any, base_token: str) -> str:
     return UniqueNameGenerator.get_instance()("c", adj_base_token, "_", "_")
 
 
-def _to_short_name(language: Language, t: pydsdl.CompositeType) -> str:
-    """
-    Internal method for producing an un-stropped short_name.
-    """
-    return "{short}_{major}_{minor}".format(short=t.short_name, major=t.version.major, minor=t.version.minor)
-
-
 @template_language_filter(__name__)
 def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> str:
     """
@@ -623,11 +618,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
     :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
     """
-    short_name = _to_short_name(language, t)
-    if language.enable_stropping:
-        return language.filter_id(short_name)
-    else:
-        return short_name
+    return language.filter_short_reference_name(t)
 
 
 @template_language_list_filter(__name__)
@@ -679,8 +670,7 @@ def filter_includes(language: Language, t: pydsdl.CompositeType, sort: bool = Tr
     :return: a list of include headers needed for a given type.
     """
 
-    include_gen = IncludeGenerator(language, t, filter_id, filter_short_reference_name)
-    return include_gen.generate_include_filepart_list(language.extension, sort)
+    return IncludeGenerator(language, t).generate_include_filepart_list(language.extension, sort)
 
 
 def filter_to_static_assertion_value(obj: typing.Any) -> int:
@@ -910,7 +900,7 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
     """
     ns = t.full_namespace.split(".")
 
-    full_path = ns + [_to_short_name(language, t)]
+    full_path = ns + [language.filter_short_reference_name(t, YesNoDefault.NO)]
     not_stropped = "_".join(full_path)
     if language.enable_stropping:
         return language.filter_id(not_stropped)

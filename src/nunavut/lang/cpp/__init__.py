@@ -146,8 +146,8 @@ def uses_std_variant(language: Language) -> bool:
             lctx = configurable_language_context_factory(config_overrides, 'cpp')
             jinja_filter_tester(None, template, '#include <variant>', lctx)
 
-            # test c++11
-            config_overrides = {'nunavut.lang.cpp': {'options': {'std': 'c++11' }}}
+            # test c++14
+            config_overrides = {'nunavut.lang.cpp': {'options': {'std': 'c++14' }}}
             lctx = configurable_language_context_factory(config_overrides, 'cpp')
             jinja_filter_tester(None, template, '#include "user_variant.h"', lctx)
 
@@ -490,7 +490,7 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
     else:
         ns = ns_parts
 
-    full_path = ns + [filter_short_reference_name(language, t)]
+    full_path = ns + [language.filter_short_reference_name(t)]
     return "::".join(full_path)
 
 
@@ -533,11 +533,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
     :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
     """
-    short_name = "{short}_{major}_{minor}".format(short=t.short_name, major=t.version.major, minor=t.version.minor)
-    if language.enable_stropping:
-        return language.filter_id(short_name)
-    else:
-        return short_name
+    return language.filter_short_reference_name(t)
 
 
 @template_language_list_filter(__name__)
@@ -549,9 +545,53 @@ def filter_includes(language: Language, t: pydsdl.CompositeType, sort: bool = Tr
     :param bool sort: If true the returned list will be sorted.
     :return: a list of include headers needed for a given type.
     """
+    return IncludeGenerator(language, t).generate_include_filepart_list(language.extension, sort)
 
-    include_gen = IncludeGenerator(language, t, filter_id, filter_short_reference_name)
-    return include_gen.generate_include_filepart_list(language.extension, sort)
+
+@template_language_filter(__name__)
+def filter_destructor_name(language: Language, instance: pydsdl.Any) -> str:
+    """
+    Returns a token that is the local destructor name. For example:
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_destructor_name
+        from unittest.mock import MagicMock
+        import pydsdl
+
+        my_type = MagicMock(spec=pydsdl.ArrayType)
+        my_type.version = MagicMock()
+        my_type.element_type = MagicMock(spec=pydsdl.UnsignedIntegerType)
+        my_type.element_type.bit_length = 8
+        my_type.element_type.cast_mode = pydsdl.PrimitiveType.CastMode.SATURATED
+
+
+    .. code-block:: python
+
+        # Given a pydsdl.ArrayType "my_type":
+        my_type.short_name = 'Foo'
+        my_type.version.major = 1
+        my_type.version.minor = 0
+        my_type.capacity = 2
+
+        # and
+        template = 'ptr->{{ my_type | destructor_name }}'
+
+        # then
+        rendered = 'ptr->~array<std::uint8_t,2>'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_destructor_name, template, rendered, 'cpp', my_type=my_type)
+
+
+    :param pydsdl.CompositeType t: The type to generate a destructor template for.
+    :return: A destructor name token.
+    """
+    declaration = filter_declaration(language, instance)
+    declaration_parts = declaration.split("<")
+    declaration_parts[0] = declaration_parts[0].split("::")[-1]
+    return "~" + "<".join(declaration_parts)
 
 
 @template_language_filter(__name__)
@@ -660,7 +700,7 @@ def filter_definition_begin(language: Language, instance: pydsdl.CompositeType) 
         jinja_filter_tester(filter_definition_begin, template, rendered, 'cpp', my_service_type=my_service_type)
 
     """
-    short_name = filter_short_reference_name(language, instance)
+    short_name = language.filter_short_reference_name(instance)
     if (
         isinstance(instance, pydsdl.DelimitedType)
         or isinstance(instance, pydsdl.StructureType)
@@ -726,7 +766,7 @@ def filter_definition_end(language: Language, instance: pydsdl.CompositeType) ->
     ):
         return ";"
     elif isinstance(instance, pydsdl.ServiceType):
-        return " // namespace {}".format(filter_short_reference_name(language, instance))
+        return " // namespace {}".format(language.filter_short_reference_name(instance))
     else:
         raise ValueError("{} types cannot be redefined.".format(type(instance).__name__))
 

@@ -220,7 +220,7 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
         else:
             ns = ns_parts[:-1]
 
-    return ".".join(ns + [filter_short_reference_name(language, t)])
+    return ".".join(ns + [language.filter_short_reference_name(t)])
 
 
 @template_language_filter(__name__)
@@ -260,11 +260,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
     :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
     """
-    short_name = "{short}_{major}_{minor}".format(short=t.short_name, major=t.version.major, minor=t.version.minor)
-    if language.enable_stropping:
-        return language.filter_id(short_name)
-    else:
-        return short_name
+    return language.filter_short_reference_name(t)
 
 
 @template_language_list_filter(__name__)

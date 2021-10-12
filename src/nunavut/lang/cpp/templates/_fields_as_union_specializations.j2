@@ -1,0 +1,65 @@
+{#-
+ # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+#}
+// +-------------------------------------------------------------------------------------------------------------------+
+// | EXPLICIT TEMPLATE SPECIALIZATION
+// +-------------------------------------------------------------------------------------------------------------------+
+{%- for field in composite_type.fields_except_padding %}
+template<>
+constexpr bool {{composite_type | short_reference_name }}::VariantType::holds_alternative<{{ field.data_type | declaration }}>(const {{ composite_type | short_reference_name }}::VariantType& v) noexcept
+{
+    return (v.tag_ == {{ loop.index0 }});
+}
+
+template<>
+constexpr const {{ field.data_type | declaration }}* {{ composite_type | short_reference_name }}::VariantType::get_if<{{ field.data_type | declaration }}>(const {{ composite_type | short_reference_name }}::VariantType* v) noexcept
+{
+    const {{ field.data_type | declaration }}* result = nullptr;
+    if (v)
+    {
+        const {{ composite_type | short_reference_name }}::VariantType& vref = *v;
+        if ({{ composite_type | short_reference_name }}::VariantType::holds_alternative<{{ field.data_type | declaration }}>(vref))
+        {
+            result = reinterpret_cast<const {{ field.data_type | declaration }}*>(&vref.internal_union_value_.{{ field.name | id }});
+        }
+    }
+
+    return result;
+}
+
+template<>
+constexpr {{ field.data_type | declaration }}* {{ composite_type | short_reference_name }}::VariantType::get_if<{{ field.data_type | declaration }}>({{ composite_type | short_reference_name }}::VariantType* v) noexcept
+{
+    {{ field.data_type | declaration }}* result = nullptr;
+    if (v)
+    {
+        {{ composite_type | short_reference_name }}::VariantType& vref = *v;
+        if ({{ composite_type | short_reference_name }}::VariantType::holds_alternative<{{ field.data_type | declaration }}>(vref))
+        {
+            result = reinterpret_cast<{{ field.data_type | declaration }}*>(&vref.internal_union_value_.{{ field.name | id }});
+        }
+    }
+
+    return result;
+}
+
+template<>
+{{ field.data_type | declaration }}& {{ composite_type | short_reference_name }}::VariantType::emplace<{{ field.data_type | declaration }}>(const {{ field.data_type | declaration }}&& v)
+{
+    destroy_current();
+    {{ field.data_type | declaration }}* result = new (&internal_union_value_.{{ field.name | id }}) {{ field.data_type | declaration }}(v);
+    tag_ = {{ loop.index0 }};
+    return *result;
+}
+
+template<>
+{{ field.data_type | declaration }}& {{ composite_type | short_reference_name }}::VariantType::emplace<{{ field.data_type | declaration }}>(const {{ field.data_type | declaration }}& v)
+{
+    destroy_current();
+    {{ field.data_type | declaration }}* result = new (&internal_union_value_.{{ field.name | id }}) {{ field.data_type | declaration }}(v);
+    tag_ = {{ loop.index0 }};
+    return *result;
+}
+{% endfor-%}

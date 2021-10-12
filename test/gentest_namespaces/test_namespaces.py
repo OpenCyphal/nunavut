@@ -9,11 +9,11 @@ import typing
 from pathlib import Path
 
 import pytest
-from pydsdl import Any, CompositeType, read_namespace
-
-from nunavut import Namespace, build_namespace_tree, YesNoDefault
+from nunavut import Namespace, build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import LanguageContext
+from nunavut.utilities import YesNoDefault
+from pydsdl import Any, CompositeType, read_namespace
 
 
 class DummyType(Any):

@@ -7,8 +7,8 @@
 // This is an AUTO-GENERATED UAVCAN DSDL data type implementation. Curious? See https://uavcan.org.
 // You shouldn't attempt to edit this file.
 //
-// Checking this file under version control is not recommended unless it is used as part of a high-SIL
-// safety-critical codebase. The typical usage scenario is to generate it as part of the build process.
+// Checking this file under version control is not recommended since metadata in this header will change for each
+// build invocation. TODO: add --reproducible option to prevent any volatile metadata from being generated.
 //
 // Generator:     nunavut-{{ nunavut.version }} (serialization was {{ 'not ' * nunavut.support.omit }}enabled)
 // Source file:   {{ T.source_file_path }}
@@ -17,6 +17,19 @@
 // Fixed port-ID: {{ T.fixed_port_id }}
 // Full name:     {{ T.full_name }}
 // Type Version:  {{ T.version.major }}.{{ T.version.minor }}
+// Support
+{%- if nunavut.support.omit %}
+//     (support file generation disabled)
+{%- else %}
+//    Support Namespace: {{ nunavut.support.namespace }}
+//    Support Version:   {{ nunavut.support.version }}
+{%- endif %}
+{%- for template_set in nunavut.template_sets %}
+// Template Set ({{ template_set[0] }})
+//    priority: {{ loop.index0 }}
+//    package:  {{ template_set[1] }}
+//    version:  {{ template_set[2] }}
+{%- endfor %}
 // Platform
 {%- for key, value in nunavut.platform_version.items() %}
 //     {{ key }}:  {{ value }}
@@ -52,12 +65,12 @@
 {{T.full_namespace | open_namespace}}
 {%- if not nunavut.support.omit %}{% for key, value in options.items() %}
 {% if loop.first -%}
-// +--------------------------------------------------------------------------+
+// +-------------------------------------------------------------------------------------------------------------------+
 // | LANGUAGE OPTION ASSERTIONS
 // |    These static assertions ensure that the header is being used with
 // | Nunavut C++ serialization support that is compatible with the language
 // | options in effect when that support code was generated.
-// +--------------------------------------------------------------------------+
+// +-------------------------------------------------------------------------------------------------------------------+
 {% endif -%}
 static_assert( nunavut::support::options::{{ key | id }} == {{ value | ln.c.to_static_assertion_value }},
               "{{ T.source_file_path }} "

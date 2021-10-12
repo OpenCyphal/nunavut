@@ -16,8 +16,9 @@ import typing
 import nunavut
 import nunavut.jinja
 import nunavut.lang
-from nunavut.generators import create_generators, AbstractGenerator
 import pydsdl
+from nunavut.generators import AbstractGenerator, create_generators
+from nunavut.utilities import YesNoDefault
 
 
 class ArgparseRunner:
@@ -33,11 +34,13 @@ class ArgparseRunner:
         self._args = args
         self._generators = None  # type: typing.Optional[typing.Tuple[AbstractGenerator, AbstractGenerator]]
         self._root_namespace = None  # type: typing.Optional[nunavut.Namespace]
-        self._extra_includes = (
-            extra_includes
-            if extra_includes is not None and isinstance(extra_includes, list)
-            else ([extra_includes] if extra_includes is not None else [])
-        )
+
+        if extra_includes is None:
+            extra_includes = []
+        elif not isinstance(extra_includes, list):
+            extra_includes = [extra_includes]
+
+        self._extra_includes = extra_includes
 
     @property
     def extra_includes(self) -> typing.List[str]:
@@ -93,7 +96,7 @@ class ArgparseRunner:
 
         generator_args = {
             "generate_namespace_types": (
-                nunavut.YesNoDefault.YES if self._args.generate_namespace_types else nunavut.YesNoDefault.DEFAULT
+                YesNoDefault.YES if self._args.generate_namespace_types else YesNoDefault.DEFAULT
             ),
             "templates_dir": (pathlib.Path(self._args.templates) if self._args.templates is not None else None),
             "trim_blocks": self._args.trim_blocks,
@@ -218,36 +221,36 @@ class ArgparseRunner:
     # +---------------------------------------------------------------------------------------------------------------+
     # | PRIVATE :: RUN METHODS
     # +---------------------------------------------------------------------------------------------------------------+
+    def _stdout_lister(
+        self, things_to_list: typing.Iterable[typing.Any], to_string: typing.Callable[[typing.Any], str]
+    ) -> None:
+        for thing in things_to_list:
+            sys.stdout.write(to_string(thing))
+            sys.stdout.write(";")
 
     def _list_outputs_only(self) -> None:
         if self._args.generate_support != "only":
-            for output_path in self.generator.generate_all(is_dryrun=True):
-                sys.stdout.write(str(output_path))
-                sys.stdout.write(";")
+            self._stdout_lister(self.generator.generate_all(is_dryrun=True), lambda p: str(p))
 
         if self._should_generate_support():
-            for output_path in self.support_generator.generate_all(is_dryrun=True):
-                sys.stdout.write(str(output_path))
-                sys.stdout.write(";")
+            self._stdout_lister(self.support_generator.generate_all(is_dryrun=True), lambda p: str(p))
 
     def _list_inputs_only(self) -> None:
         if self._args.generate_support != "only":
-            for input_path in self.generator.get_templates():
-                sys.stdout.write(str(input_path.resolve()))
-                sys.stdout.write(";")
+            self._stdout_lister(self.generator.get_templates(), lambda p: str(p.resolve()))
+
         if self._should_generate_support():
-            for input_path in self.support_generator.get_templates():
-                sys.stdout.write(str(input_path.resolve()))
-                sys.stdout.write(";")
+            self._stdout_lister(self.support_generator.get_templates(), lambda p: str(p.resolve()))
+
         if self._args.generate_support != "only":
             if self.generator.generate_namespace_types:
-                for output_type, _ in self.root_namespace.get_all_types():
-                    sys.stdout.write(str(output_type.source_file_path))
-                    sys.stdout.write(";")
+                self._stdout_lister(
+                    [x for x, _ in self.root_namespace.get_all_types()], lambda p: str(p.source_file_path)
+                )
             else:
-                for output_type, _ in self.root_namespace.get_all_datatypes():
-                    sys.stdout.write(str(output_type.source_file_path))
-                    sys.stdout.write(";")
+                self._stdout_lister(
+                    [x for x, _ in self.root_namespace.get_all_datatypes()], lambda p: str(p.source_file_path)
+                )
 
     def _generate(self) -> None:
         if self._should_generate_support():
