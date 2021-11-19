@@ -26,7 +26,7 @@ class IncludeGenerator:
     def generate_include_filepart_list(self, output_extension: str, sort: bool) -> typing.List[str]:
         dep_types = self._language.get_dependency_builder(self._type).direct()
 
-        path_list = [self._make_path(dt, output_extension) for dt in dep_types.composite_types]
+        path_list = [str(self.make_path(dt, self._language, output_extension)) for dt in dep_types.composite_types]
 
         if not self._language.omit_serialization_support:
             namespace_path = pathlib.Path("")
@@ -48,18 +48,72 @@ class IncludeGenerator:
         else:
             return path_list_with_punctuation + self._language.get_includes(dep_types)
 
+    @classmethod
+    def make_path(
+        cls,
+        dt: pydsdl.CompositeType,
+        language: typing.Optional[Language] = None,
+        output_extension: typing.Optional[str] = None,
+    ) -> pathlib.Path:
+        """
+        Common method for createing a relative path to a datatype source file.
+
+        .. invisible-code-block: python
+
+            import pydsdl
+            from nunavut.lang._common import IncludeGenerator
+            from nunavut.lang import Language
+            from unittest.mock import MagicMock
+
+            config = {
+                        'nunavut.lang.c':
+                        {
+                            'enable_stropping': True
+                        }
+                    }
+
+            lctx = configurable_language_context_factory(config, 'c')
+            lang_c = lctx.get_target_language()
+
+            test_type = MagicMock(spec=pydsdl.CompositeType)
+            test_type.parent_service = False
+            test_type.attributes = []
+            test_type.full_namespace = 'name.space'
+            test_type.short_name = 'typename'
+            test_type.version = MagicMock()
+            test_type.version.major = 1
+            test_type.version.minor = 0
+
+        .. code-block:: python
+
+            assert 'name/space/typename_1_0.h' == IncludeGenerator.make_path(test_type, lang_c, '.h').as_posix()
+            assert 'name/space/typename_1_0.h' == IncludeGenerator.make_path(test_type, lang_c).as_posix()
+            assert 'name/space/typename_1_0' == IncludeGenerator.make_path(test_type).as_posix()
+
+        """
+        if language is None:
+            short_name = "{short}_{major}_{minor}".format(
+                short=dt.short_name, major=dt.version.major, minor=dt.version.minor
+            )
+        else:
+            short_name = language.filter_short_reference_name(dt, id_type="path")
+
+        if output_extension is None:
+            output_extension = '' if language is None else language.extension
+
+        ns_path = pathlib.Path(*cls._make_ns_list(language, dt)) / pathlib.Path(short_name).with_suffix(
+            output_extension
+        )
+        return ns_path
+
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
 
-    def _make_path(self, dt: pydsdl.CompositeType, output_extension: str) -> str:
-        short_name = self._language.filter_short_reference_name(dt)
-        ns_path = pathlib.Path(*self._make_ns_list(dt)) / pathlib.Path(short_name).with_suffix(output_extension)
-        return ns_path.as_posix()
-
-    def _make_ns_list(self, dt: pydsdl.SerializableType) -> typing.List[str]:
-        if self._language.enable_stropping:
-            return [self._language.filter_id(x) for x in dt.full_namespace.split(".")]
+    @classmethod
+    def _make_ns_list(cls, language: typing.Optional[Language], dt: pydsdl.SerializableType) -> typing.List[str]:
+        if language is not None and language.enable_stropping:
+            return [language.filter_id(x, id_type="path") for x in dt.full_namespace.split(".")]
         else:
             return typing.cast(typing.List[str], dt.full_namespace.split("."))
 

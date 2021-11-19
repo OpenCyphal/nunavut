@@ -24,9 +24,9 @@
             destroy_current();
         }
 
-        template< class T > T& emplace(const T&& v);
+        template< std::size_t I, class...Args > T& emplace(const T&& v);
 
-        template< class T > T& emplace(const T& v);
+        template< std::size_t I, class...Args > T& emplace(const T& v);
 
         template< class T >
         static constexpr bool holds_alternative( const {{ composite_type | short_reference_name }}::VariantType& v ) noexcept;
@@ -36,6 +36,14 @@
 
         template< class T>
         static constexpr T* get_if({{ composite_type | short_reference_name }}::VariantType* v) noexcept;
+
+        struct IndexOf final
+        {
+            IndexOf() = delete;
+{%- for field in composite_type.fields_except_padding %}
+            static constexpr const std::size_t {{ field.name | id }} = {{ loop.index0 }}U;
+{%- endfor %}
+        };
 
     private:
         void destroy_current()

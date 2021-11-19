@@ -1,9 +1,9 @@
 #
 # Find tox.
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 
-set(PYTHON3_MINIMUM_VERSION 3.5)
+set(PYTHON3_MINIMUM_VERSION 3.6)
 
 find_program(TOX tox)
 
@@ -12,17 +12,27 @@ if(TOX)
     set(TOX_LOCAL_OUTPUT ${NUNAVUT_PROJECT_ROOT}/.tox/local)
 
     set(TOX_LOCAL_PYTHON_BIN ${TOX_LOCAL_OUTPUT}/bin)
-    set(PYTHON ${TOX_LOCAL_PYTHON_BIN}/python)
 
+    execute_process(COMMAND ${TOX} --version
+                    OUTPUT_VARIABLE TOX_VERSION
+                    RESULT_VARIABLE TOX_VERSION_RESULT)
+
+    if(TOX_VERSION_RESULT EQUAL 0)
+        message(STATUS "${TOX} --version: ${TOX_VERSION}")
+    else()
+        message(WARNING "${TOX} --version command failed.")
+    endif()
 
     execute_process(COMMAND ${TOX} -e local
                     WORKING_DIRECTORY ${NUNAVUT_PROJECT_ROOT}
                     RESULT_VARIABLE TOX_LOCAL_RESULT)
-    
+
     if(NOT TOX_LOCAL_RESULT EQUAL 0)
         message(FATAL_ERROR "Failed to run tox local (${TOX_LOCAL_RESULT})")
     endif()
 
+    # switch over to the virtual environment's python version.
+    set(PYTHON ${TOX_LOCAL_PYTHON_BIN}/python)
 
 endif()
 

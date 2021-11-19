@@ -71,6 +71,7 @@ import typing
 import pydsdl
 
 from .lang import LanguageContext
+from .lang._common import IncludeGenerator
 
 if sys.version_info[:2] < (3, 5):  # pragma: no cover
     print("A newer version of Python is required", file=sys.stderr)
@@ -109,7 +110,7 @@ class Namespace(pydsdl.Any):
         self._namespace_components = []  # type: typing.List[str]
         self._namespace_components_stropped = []  # type: typing.List[str]
         for component in full_namespace.split("."):
-            self._namespace_components_stropped.append(language_context.filter_id_for_target(component, "typedef"))
+            self._namespace_components_stropped.append(language_context.filter_id_for_target(component, "path"))
             self._namespace_components.append(component)
         self._full_namespace = ".".join(self._namespace_components_stropped)
         self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components_stropped))
@@ -117,7 +118,7 @@ class Namespace(pydsdl.Any):
         if output_stem is None:
             output_stem = self.DefaultOutputStem
         output_path = self._output_folder / pathlib.PurePath(output_stem)
-        self._support_output_folder = base_output_path
+        self._base_output_path = base_output_path
         self._output_path = output_path.with_suffix(language_context.get_output_extension())
         self._source_folder = pathlib.Path(
             root_namespace_dir / pathlib.PurePath(*self._namespace_components[1:])
@@ -141,7 +142,7 @@ class Namespace(pydsdl.Any):
         """
         The folder under which support artifacts are generated.
         """
-        return self._support_output_folder
+        return self._base_output_path
 
     def get_language_context(self) -> LanguageContext:
         """
@@ -259,12 +260,10 @@ class Namespace(pydsdl.Any):
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
-    def _add_data_type(self, dsdl_type: pydsdl.CompositeType, extension: typing.Optional[str]) -> None:
-        filestem = "{}_{}_{}".format(dsdl_type.short_name, dsdl_type.version.major, dsdl_type.version.minor)
-        output_path = self._output_folder / pathlib.PurePath(filestem)
-        if extension is not None:
-            output_path = output_path.with_suffix(extension)
-        self._data_type_to_outputs[dsdl_type] = output_path
+    def _add_data_type(self, dsdl_type: pydsdl.CompositeType, extension: str) -> None:
+        self._data_type_to_outputs[dsdl_type] = pathlib.Path(self._base_output_path) / IncludeGenerator.make_path(
+            dsdl_type, self._language_context.get_target_language(), extension
+        )
 
     def _add_nested_namespace(self, nested: "Namespace") -> None:
         self._nested_namespaces.add(nested)

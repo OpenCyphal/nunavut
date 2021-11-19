@@ -46,16 +46,20 @@ constexpr {{ field.data_type | declaration }}* {{ composite_type | short_referen
 }
 
 template<>
-{{ field.data_type | declaration }}& {{ composite_type | short_reference_name }}::VariantType::emplace<{{ field.data_type | declaration }}>(const {{ field.data_type | declaration }}&& v)
+{{ field.data_type | declaration }}& {{ composite_type | short_reference_name }}::VariantType::emplace<
+        {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }},
+        , class...Args
+    >(const {{ field.data_type | declaration }}&& v)
 {
     destroy_current();
-    {{ field.data_type | declaration }}* result = new (&internal_union_value_.{{ field.name | id }}) {{ field.data_type | declaration }}(v);
+    {{ field.data_type | declaration }}* result = new (&internal_union_value_.{{ field.name | id }}) {{ field.data_type | declaration }}(std::forward<Args>(args);
     tag_ = {{ loop.index0 }};
     return *result;
 }
 
 template<>
-{{ field.data_type | declaration }}& {{ composite_type | short_reference_name }}::VariantType::emplace<{{ field.data_type | declaration }}>(const {{ field.data_type | declaration }}& v)
+{{ field.data_type | declaration }}& {{ composite_type | short_reference_name }}::VariantType::emplace<
+    {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }}>(const {{ field.data_type | declaration }}& v)
 {
     destroy_current();
     {{ field.data_type | declaration }}* result = new (&internal_union_value_.{{ field.name | id }}) {{ field.data_type | declaration }}(v);

@@ -295,16 +295,21 @@ class Language(metaclass=abc.ABCMeta):
         return self.default_filter_id_for_target(instance)
 
     def filter_short_reference_name(
-        self, t: pydsdl.CompositeType, stropping: YesNoDefault = YesNoDefault.DEFAULT
+        self, t: pydsdl.CompositeType, stropping: YesNoDefault = YesNoDefault.DEFAULT, id_type: str = "any"
     ) -> str:
         """
         Provides a string that is a shorted version of the full reference name omitting any namespace parts of the type.
 
         :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
+        :param YesNoDefault stropping: If DEFAULT then the stropping value configured for the target language is used
+                                       else this overrides that value.
+        :param str id_type:         A type of identifier. This is different for each language. For example, for C this
+                                    value can be 'typedef', 'macro', 'function', or 'enum'.
+                                    Use 'any' to apply stropping rules for all identifier types to the instance.
         """
         short_name = "{short}_{major}_{minor}".format(short=t.short_name, major=t.version.major, minor=t.version.minor)
         if YesNoDefault.test_truth(stropping, self.enable_stropping):
-            return self.filter_id(short_name)
+            return self.filter_id(short_name, id_type)
         else:
             return short_name
 

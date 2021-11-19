@@ -1,5 +1,7 @@
+
 @union
-Struct_.0.1 struct_
+Struct_.0.1 struct0
+Struct_.0.1 struct1
 DelimitedFixedSize.0.1[2] delimited_fix_le2
 DelimitedVariableSize.0.1[<=2] delimited_var_le2
 @sealed
