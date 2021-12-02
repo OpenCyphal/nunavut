@@ -5,8 +5,7 @@
 
 import pathlib
 import logging
-from typing import Iterator, Optional, Any
-from types import ModuleType
+from typing import Iterator, Optional
 
 _logger = logging.getLogger(__name__)
 
