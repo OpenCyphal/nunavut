@@ -89,4 +89,7 @@ TEST(UnionantTests, get_if_const_variant)
 TEST(UnionantTests, union_with_same_types)
 {
     regulated::basics::UnionWithSameTypes_0_1 a{};
+    std::array<regulated::basics::DelimitedFixedSize_0_1,2>* p =
+        regulated::basics::UnionWithSameTypes_0_1::VariantType::get_if<2>(&a.union_value);
+    ASSERT_EQ(nullptr, p);
 }

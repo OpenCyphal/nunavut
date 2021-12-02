@@ -46,6 +46,42 @@ constexpr {{ field.data_type | declaration }}* {{ composite_type | short_referen
 }
 
 template<>
+constexpr typename {{ composite_type | short_reference_name }}::VariantType::alternative<{{ loop.index0 }}>::type* {{ composite_type | short_reference_name }}::VariantType::get_if<{{ loop.index0 }}>({{ composite_type | short_reference_name }}::VariantType* v) noexcept
+{
+    {{ field.data_type | declaration }}* result = nullptr;
+    if (v)
+    {
+        {{ composite_type | short_reference_name }}::VariantType& vref = *v;
+        if(vref.tag_ == {{ loop.index0 }})
+        {
+            static_assert(std::is_same<typename {{ composite_type | short_reference_name }}::VariantType::alternative<{{ loop.index0 }}>::type, {{ field.data_type | declaration }}>::value,
+                          "The alternative type determined by the preprocessor disagrees with the generated type.");
+            result = reinterpret_cast<{{ field.data_type | declaration }}*>(&vref.internal_union_value_.{{ field.name | id }});
+        }
+    }
+
+    return result;
+}
+
+template<>
+constexpr const typename {{ composite_type | short_reference_name }}::VariantType::alternative<{{ loop.index0 }}>::type* {{ composite_type | short_reference_name }}::VariantType::get_if<{{ loop.index0 }}>(const {{ composite_type | short_reference_name }}::VariantType* v) noexcept
+{
+    const {{ field.data_type | declaration }}* result = nullptr;
+    if (v)
+    {
+        const {{ composite_type | short_reference_name }}::VariantType& vref = *v;
+        if(vref.tag_ == {{ loop.index0 }})
+        {
+            static_assert(std::is_same<typename {{ composite_type | short_reference_name }}::VariantType::alternative<{{ loop.index0 }}>::type, {{ field.data_type | declaration }}>::value,
+                          "The alternative type determined by the preprocessor disagrees with the generated type.");
+            result = reinterpret_cast<const {{ field.data_type | declaration }}*>(&vref.internal_union_value_.{{ field.name | id }});
+        }
+    }
+
+    return result;
+}
+
+template<>
 {{ field.data_type | declaration }}& {{ composite_type | short_reference_name }}::VariantType::emplace<
         {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }},
         , class...Args

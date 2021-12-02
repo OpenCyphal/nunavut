@@ -12,22 +12,49 @@
     {
     public:
 
-        template< class T>
-        static constexpr const T* get_if(const {{ composite_type | short_reference_name }}::VariantType_* v) noexcept
+        template<size_t I, typename T>
+        struct alternative;
+
+        template<size_t I, typename... Types>
+        struct alternative<I, std::variant<Types...>>
         {
-            return std::get_if<T>(v);
+            using type = typename std::variant_alternative<I, std::variant<Types...>>::type;
+        };
+
+        template<size_t I, typename T>
+        struct alternative<I, const T>
+        {
+            using type = std::add_const_t<typename std::variant_alternative<I, T>::type>;
+        };
+
+        template<class T, class...Types>
+        static constexpr const T* get_if(const std::variant<Types...>* v) noexcept
+        {
+            return std::get_if<T, Types...>(v);
         }
 
-        template< class T>
-        static constexpr T* get_if({{ composite_type | short_reference_name }}::VariantType_* v) noexcept
+        template<class T, class...Types>
+        static constexpr T* get_if(std::variant<Types...>* v) noexcept
         {
-            return std::get_if<T>(v);
+            return std::get_if<T, Types...>(v);
         }
 
-        template< class T >
-        static constexpr bool holds_alternative( const {{ composite_type | short_reference_name }}::VariantType_& v ) noexcept
+        template<std::size_t I, class... Types>
+        static constexpr typename alternative<I, std::variant<Types...>>::type* get_if(std::variant<Types...>* v) noexcept
         {
-            return std::holds_alternative<T>(v);
+            return std::get_if<I, Types...>(v);
+        }
+
+        template<std::size_t I, class... Types>
+        static constexpr const typename alternative<I, std::variant<Types...>>::type* get_if(const std::variant<Types...>* v) noexcept
+        {
+            return std::get_if<I, Types...>(v);
+        }
+
+        template<class T, class... Types>
+        static constexpr bool holds_alternative(const std::variant<Types...>& v) noexcept
+        {
+            return std::holds_alternative<T, Types...>(v);
         }
     };
 

@@ -24,18 +24,33 @@
             destroy_current();
         }
 
-        template< std::size_t I, class...Args > T& emplace(const T&& v);
+        template<std::size_t I, class...Types> struct alternative;
 
-        template< std::size_t I, class...Args > T& emplace(const T& v);
+{% for field in composite_type.fields_except_padding %}
+        template<class...Types> struct alternative<{{ loop.index0 }}U, Types...>
+        {
+            using type = {{ field.data_type | declaration }};
+        };
+{%- endfor %}
 
-        template< class T >
-        static constexpr bool holds_alternative( const {{ composite_type | short_reference_name }}::VariantType& v ) noexcept;
+        template< std::size_t I, class... Args > T& emplace(const T&& v);
 
-        template< class T>
-        static constexpr const T* get_if(const {{ composite_type | short_reference_name }}::VariantType* v) noexcept;
+        template< std::size_t I, class... Args > T& emplace(const T& v);
 
-        template< class T>
-        static constexpr T* get_if({{ composite_type | short_reference_name }}::VariantType* v) noexcept;
+        template<class T>
+        static constexpr bool holds_alternative(const VariantType& v) noexcept;
+
+        template<class T, class... Types>
+        static constexpr T* get_if(VariantType* v) noexcept;
+
+        template<class T, class... Types>
+        static constexpr const T* get_if(const VariantType* v) noexcept;
+
+        template<std::size_t I, class... Types>
+        static constexpr typename VariantType::alternative<I, VariantType>::type* get_if(VariantType* v) noexcept;
+
+        template<std::size_t I, class... Types>
+        static constexpr const typename VariantType::alternative<I, VariantType>::type* get_if(const VariantType* v) noexcept;
 
         struct IndexOf final
         {
