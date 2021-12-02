@@ -63,7 +63,7 @@ try:  # noqa: C901
         def __init__(self, pkg: ModuleType, res: importlib.abc.Traversable) -> None:
             self._pkg = pkg
             self._res = res
-            self._path: Optional[pathlib.Path] = None
+            self._path = None  # type: Optional[pathlib.Path]
 
         def make_path(self) -> pathlib.Path:
             if not self._path:
