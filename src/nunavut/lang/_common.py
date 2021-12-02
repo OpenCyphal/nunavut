@@ -99,7 +99,7 @@ class IncludeGenerator:
             short_name = language.filter_short_reference_name(dt, id_type="path")
 
         if output_extension is None:
-            output_extension = '' if language is None else language.extension
+            output_extension = "" if language is None else language.extension
 
         ns_path = pathlib.Path(*cls._make_ns_list(language, dt)) / pathlib.Path(short_name).with_suffix(
             output_extension

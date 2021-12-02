@@ -833,7 +833,12 @@ def filter_constant_value(language: Language, constant: pydsdl.Constant) -> str:
 
 
 @template_language_filter(__name__)
-def filter_literal(language: Language, value: typing.Union[fractions.Fraction, bool, int], ty: pydsdl.Any) -> str:
+def filter_literal(
+    language: Language,
+    value: typing.Union[fractions.Fraction, bool, int],
+    ty: pydsdl.Any,
+    cast_format: str = "({type} {value})",
+) -> str:
     """
     Renders the specified value of the specified type as a literal.
     """
@@ -856,7 +861,7 @@ def filter_literal(language: Language, value: typing.Union[fractions.Fraction, b
         else:
             expr = "({}.0 / {}.0)".format(value.numerator, value.denominator)
         cast = filter_type_from_primitive(language, ty)
-        return "(({}) {})".format(cast, expr)
+        return cast_format.format(type=cast, value=expr)
 
     else:
         raise ValueError("Cannot construct a literal from an instance of {}".format(type(ty).__name__))

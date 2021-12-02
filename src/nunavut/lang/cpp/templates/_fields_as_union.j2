@@ -24,6 +24,14 @@
             destroy_current();
         }
 
+        struct IndexOf final
+        {
+            IndexOf() = delete;
+{%- for field in composite_type.fields_except_padding %}
+            static constexpr const std::size_t {{ field.name | id }} = {{ loop.index0 }}U;
+{%- endfor %}
+        };
+
         template<std::size_t I, class...Types> struct alternative;
 
 {% for field in composite_type.fields_except_padding %}
@@ -33,18 +41,7 @@
         };
 {%- endfor %}
 
-        template< std::size_t I, class... Args > T& emplace(const T&& v);
-
-        template< std::size_t I, class... Args > T& emplace(const T& v);
-
-        template<class T>
-        static constexpr bool holds_alternative(const VariantType& v) noexcept;
-
-        template<class T, class... Types>
-        static constexpr T* get_if(VariantType* v) noexcept;
-
-        template<class T, class... Types>
-        static constexpr const T* get_if(const VariantType* v) noexcept;
+        template< std::size_t I, class... Args > typename VariantType::alternative<I, VariantType>::type& emplace(Args&&... v);
 
         template<std::size_t I, class... Types>
         static constexpr typename VariantType::alternative<I, VariantType>::type* get_if(VariantType* v) noexcept;
@@ -52,15 +49,8 @@
         template<std::size_t I, class... Types>
         static constexpr const typename VariantType::alternative<I, VariantType>::type* get_if(const VariantType* v) noexcept;
 
-        struct IndexOf final
-        {
-            IndexOf() = delete;
-{%- for field in composite_type.fields_except_padding %}
-            static constexpr const std::size_t {{ field.name | id }} = {{ loop.index0 }}U;
-{%- endfor %}
-        };
-
     private:
+
         void destroy_current()
         {
 {%- for field in composite_type.fields_except_padding if field is not PrimitiveType %}
@@ -68,7 +58,7 @@
             {
                 if (!std::is_trivially_destructible<{{ field.data_type | declaration }}>::value)
                 {
-                    reinterpret_cast<{{ field.data_type | declaration }}*>(&internal_union_value_.{{ field.name | id }})->{{ field.data_type | destructor_name }}();
+                    reinterpret_cast<{{ field.data_type | declaration }}*>(std::addressof(internal_union_value_.{{ field.name | id }}))->{{ field.data_type | destructor_name }}();
                 }
             }
 {%- endfor %}

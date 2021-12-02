@@ -160,7 +160,7 @@ def filter_constant_value(language: Language, constant: pydsdl.Constant) -> str:
     """
     Renders the specified value of the specified type as a literal.
     """
-    return c_filter_literal(language, constant.value.native_value, constant.data_type)
+    return c_filter_literal(language, constant.value.native_value, constant.data_type, "static_cast<{type}>({value})")
 
 
 def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:

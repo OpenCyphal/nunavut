@@ -8,51 +8,15 @@
 // +-------------------------------------------------------------------------------------------------------------------+
 {%- for field in composite_type.fields_except_padding %}
 template<>
-constexpr bool {{composite_type | short_reference_name }}::VariantType::holds_alternative<{{ field.data_type | declaration }}>(const {{ composite_type | short_reference_name }}::VariantType& v) noexcept
-{
-    return (v.tag_ == {{ loop.index0 }});
-}
-
-template<>
-constexpr const {{ field.data_type | declaration }}* {{ composite_type | short_reference_name }}::VariantType::get_if<{{ field.data_type | declaration }}>(const {{ composite_type | short_reference_name }}::VariantType* v) noexcept
-{
-    const {{ field.data_type | declaration }}* result = nullptr;
-    if (v)
-    {
-        const {{ composite_type | short_reference_name }}::VariantType& vref = *v;
-        if ({{ composite_type | short_reference_name }}::VariantType::holds_alternative<{{ field.data_type | declaration }}>(vref))
-        {
-            result = reinterpret_cast<const {{ field.data_type | declaration }}*>(&vref.internal_union_value_.{{ field.name | id }});
-        }
-    }
-
-    return result;
-}
-
-template<>
-constexpr {{ field.data_type | declaration }}* {{ composite_type | short_reference_name }}::VariantType::get_if<{{ field.data_type | declaration }}>({{ composite_type | short_reference_name }}::VariantType* v) noexcept
+constexpr typename {{ composite_type | short_reference_name }}::VariantType::alternative<{{ loop.index0 }}>::type* {{ composite_type | short_reference_name }}::VariantType::get_if<
+        {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }}
+    >({{ composite_type | short_reference_name }}::VariantType* v) noexcept
 {
     {{ field.data_type | declaration }}* result = nullptr;
     if (v)
     {
         {{ composite_type | short_reference_name }}::VariantType& vref = *v;
-        if ({{ composite_type | short_reference_name }}::VariantType::holds_alternative<{{ field.data_type | declaration }}>(vref))
-        {
-            result = reinterpret_cast<{{ field.data_type | declaration }}*>(&vref.internal_union_value_.{{ field.name | id }});
-        }
-    }
-
-    return result;
-}
-
-template<>
-constexpr typename {{ composite_type | short_reference_name }}::VariantType::alternative<{{ loop.index0 }}>::type* {{ composite_type | short_reference_name }}::VariantType::get_if<{{ loop.index0 }}>({{ composite_type | short_reference_name }}::VariantType* v) noexcept
-{
-    {{ field.data_type | declaration }}* result = nullptr;
-    if (v)
-    {
-        {{ composite_type | short_reference_name }}::VariantType& vref = *v;
-        if(vref.tag_ == {{ loop.index0 }})
+        if(vref.tag_ == {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }})
         {
             static_assert(std::is_same<typename {{ composite_type | short_reference_name }}::VariantType::alternative<{{ loop.index0 }}>::type, {{ field.data_type | declaration }}>::value,
                           "The alternative type determined by the preprocessor disagrees with the generated type.");
@@ -64,13 +28,15 @@ constexpr typename {{ composite_type | short_reference_name }}::VariantType::alt
 }
 
 template<>
-constexpr const typename {{ composite_type | short_reference_name }}::VariantType::alternative<{{ loop.index0 }}>::type* {{ composite_type | short_reference_name }}::VariantType::get_if<{{ loop.index0 }}>(const {{ composite_type | short_reference_name }}::VariantType* v) noexcept
+constexpr const typename {{ composite_type | short_reference_name }}::VariantType::alternative<{{ loop.index0 }}>::type* {{ composite_type | short_reference_name }}::VariantType::get_if<
+         {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }}
+    >(const {{ composite_type | short_reference_name }}::VariantType* v) noexcept
 {
     const {{ field.data_type | declaration }}* result = nullptr;
     if (v)
     {
         const {{ composite_type | short_reference_name }}::VariantType& vref = *v;
-        if(vref.tag_ == {{ loop.index0 }})
+        if(vref.tag_ == {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }})
         {
             static_assert(std::is_same<typename {{ composite_type | short_reference_name }}::VariantType::alternative<{{ loop.index0 }}>::type, {{ field.data_type | declaration }}>::value,
                           "The alternative type determined by the preprocessor disagrees with the generated type.");
@@ -83,23 +49,12 @@ constexpr const typename {{ composite_type | short_reference_name }}::VariantTyp
 
 template<>
 {{ field.data_type | declaration }}& {{ composite_type | short_reference_name }}::VariantType::emplace<
-        {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }},
-        , class...Args
-    >(const {{ field.data_type | declaration }}&& v)
+        {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }}
+    >({{ field.data_type | declaration }}&& v)
 {
     destroy_current();
-    {{ field.data_type | declaration }}* result = new (&internal_union_value_.{{ field.name | id }}) {{ field.data_type | declaration }}(std::forward<Args>(args);
-    tag_ = {{ loop.index0 }};
-    return *result;
-}
-
-template<>
-{{ field.data_type | declaration }}& {{ composite_type | short_reference_name }}::VariantType::emplace<
-    {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }}>(const {{ field.data_type | declaration }}& v)
-{
-    destroy_current();
-    {{ field.data_type | declaration }}* result = new (&internal_union_value_.{{ field.name | id }}) {{ field.data_type | declaration }}(v);
-    tag_ = {{ loop.index0 }};
+    {{ field.data_type | declaration }}* result = new (&internal_union_value_.{{ field.name | id }}) {{ field.data_type | declaration }}(std::forward<{{ field.data_type | declaration }}>(v));
+    tag_ = {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }};
     return *result;
 }
 {% endfor-%}

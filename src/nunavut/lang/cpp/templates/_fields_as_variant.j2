@@ -12,6 +12,14 @@
     {
     public:
 
+        struct IndexOf final
+        {
+            IndexOf() = delete;
+{%- for field in composite_type.fields_except_padding %}
+            static constexpr const std::size_t {{ field.name | id }} = {{ loop.index0 }}U;
+{%- endfor %}
+        };
+
         template<size_t I, typename T>
         struct alternative;
 
@@ -27,18 +35,6 @@
             using type = std::add_const_t<typename std::variant_alternative<I, T>::type>;
         };
 
-        template<class T, class...Types>
-        static constexpr const T* get_if(const std::variant<Types...>* v) noexcept
-        {
-            return std::get_if<T, Types...>(v);
-        }
-
-        template<class T, class...Types>
-        static constexpr T* get_if(std::variant<Types...>* v) noexcept
-        {
-            return std::get_if<T, Types...>(v);
-        }
-
         template<std::size_t I, class... Types>
         static constexpr typename alternative<I, std::variant<Types...>>::type* get_if(std::variant<Types...>* v) noexcept
         {
@@ -49,12 +45,6 @@
         static constexpr const typename alternative<I, std::variant<Types...>>::type* get_if(const std::variant<Types...>* v) noexcept
         {
             return std::get_if<I, Types...>(v);
-        }
-
-        template<class T, class... Types>
-        static constexpr bool holds_alternative(const std::variant<Types...>& v) noexcept
-        {
-            return std::holds_alternative<T, Types...>(v);
         }
     };
 

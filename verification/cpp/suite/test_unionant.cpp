@@ -18,7 +18,7 @@ TEST(UnionantTests, value_compiles)
 
     a.union_value.emplace<ValueType::VariantType::IndexOf::empty>(uavcan::primitive::Empty_1_0());
     ASSERT_TRUE(
-        uavcan::_register::Value_1_0::VariantType::holds_alternative<uavcan::primitive::Empty_1_0>(a.union_value));
+        nullptr != uavcan::_register::Value_1_0::VariantType::get_if<ValueType::VariantType::IndexOf::empty>(&a.union_value));
 }
 
 /**
@@ -27,12 +27,9 @@ TEST(UnionantTests, value_compiles)
 TEST(UnionantTests, get_set_rvalue)
 {
     uavcan::_register::Value_1_0 a{};
-    ASSERT_FALSE(uavcan::_register::Value_1_0::VariantType::holds_alternative<uavcan::primitive::array::Integer32_1_0>(
-        a.union_value));
-    uavcan::primitive::array::Integer32_1_0& result = a.union_value.emplace<uavcan::primitive::array::Integer32_1_0>(
+    using ValueType = uavcan::_register::Value_1_0;
+    uavcan::primitive::array::Integer32_1_0& result = a.union_value.emplace<ValueType::VariantType::IndexOf::integer32>(
         uavcan::primitive::array::Integer32_1_0{{0, 1, 2}});
-    ASSERT_TRUE(uavcan::_register::Value_1_0::VariantType::holds_alternative<uavcan::primitive::array::Integer32_1_0>(
-        a.union_value));
     ASSERT_EQ(3UL, result.value.size());
     ASSERT_EQ(2, result.value[2]);
 }
@@ -42,36 +39,18 @@ TEST(UnionantTests, get_set_rvalue)
  */
 TEST(UnionantTests, get_set_lvalue)
 {
+    using ValueType = uavcan::_register::Value_1_0;
     uavcan::_register::Value_1_0            a{};
     uavcan::primitive::array::Integer32_1_0 v{{0, 1, 2}};
-    ASSERT_FALSE(uavcan::_register::Value_1_0::VariantType::holds_alternative<uavcan::primitive::array::Integer32_1_0>(
-        a.union_value));
-    uavcan::primitive::array::Integer32_1_0& result = a.union_value.emplace<uavcan::primitive::array::Integer32_1_0>(v);
-    ASSERT_TRUE(uavcan::_register::Value_1_0::VariantType::holds_alternative<uavcan::primitive::array::Integer32_1_0>(
-        a.union_value));
+    ASSERT_EQ(nullptr, uavcan::_register::Value_1_0::VariantType::get_if<ValueType::VariantType::IndexOf::integer32>(
+        &a.union_value));
+    uavcan::primitive::array::Integer32_1_0& result = a.union_value.emplace<ValueType::VariantType::IndexOf::integer32>(std::move(v));
+    ASSERT_NE(nullptr, uavcan::_register::Value_1_0::VariantType::get_if<ValueType::VariantType::IndexOf::integer32>(
+        &a.union_value));
     ASSERT_EQ(3UL, result.value.size());
     ASSERT_EQ(2, result.value[2]);
     if (uavcan::primitive::array::Integer32_1_0* p =
-            uavcan::_register::Value_1_0::VariantType::get_if<uavcan::primitive::array::Integer32_1_0>(&a.union_value))
-    {
-        ASSERT_NE(nullptr, p);
-        ASSERT_EQ(3UL, p->value.size());
-    }
-}
-
-TEST(UnionantTests, get_set_lvalue_const_value)
-{
-    uavcan::_register::Value_1_0                  a{};
-    const uavcan::primitive::array::Integer32_1_0 v{{0, 1, 2}};
-    ASSERT_FALSE(uavcan::_register::Value_1_0::VariantType::holds_alternative<uavcan::primitive::array::Integer32_1_0>(
-        a.union_value));
-    uavcan::primitive::array::Integer32_1_0& result = a.union_value.emplace<uavcan::primitive::array::Integer32_1_0>(v);
-    ASSERT_TRUE(uavcan::_register::Value_1_0::VariantType::holds_alternative<uavcan::primitive::array::Integer32_1_0>(
-        a.union_value));
-    ASSERT_EQ(3UL, result.value.size());
-    ASSERT_EQ(2, result.value[2]);
-    if (uavcan::primitive::array::Integer32_1_0* p =
-            uavcan::_register::Value_1_0::VariantType::get_if<uavcan::primitive::array::Integer32_1_0>(&a.union_value))
+            uavcan::_register::Value_1_0::VariantType::get_if<ValueType::VariantType::IndexOf::integer32>(&a.union_value))
     {
         ASSERT_NE(nullptr, p);
         ASSERT_EQ(3UL, p->value.size());
@@ -80,16 +59,18 @@ TEST(UnionantTests, get_set_lvalue_const_value)
 
 TEST(UnionantTests, get_if_const_variant)
 {
+    using ValueType = uavcan::_register::Value_1_0;
     const uavcan::_register::Value_1_0             a{};
     const uavcan::primitive::array::Integer32_1_0* p =
-        uavcan::_register::Value_1_0::VariantType::get_if<uavcan::primitive::array::Integer32_1_0>(&a.union_value);
+        uavcan::_register::Value_1_0::VariantType::get_if<ValueType::VariantType::IndexOf::integer32>(&a.union_value);
     ASSERT_EQ(nullptr, p);
 }
 
 TEST(UnionantTests, union_with_same_types)
 {
-    regulated::basics::UnionWithSameTypes_0_1 a{};
+    using ValueType = regulated::basics::UnionWithSameTypes_0_1;
+    ValueType a{};
     std::array<regulated::basics::DelimitedFixedSize_0_1,2>* p =
-        regulated::basics::UnionWithSameTypes_0_1::VariantType::get_if<2>(&a.union_value);
+        ValueType::VariantType::get_if<ValueType::VariantType::IndexOf::delimited_fix_le2>(&a.union_value);
     ASSERT_EQ(nullptr, p);
 }
