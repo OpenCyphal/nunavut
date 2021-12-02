@@ -1,0 +1,125 @@
+#
+# Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
+# This software is distributed under the terms of the MIT License.
+#
+
+import pathlib
+import logging
+from typing import Iterator, Optional
+from types import ModuleType
+
+_logger = logging.getLogger(__name__)
+
+
+class PackageResource:
+    """
+    Facade for accessing data files distributed within Python packages.
+    See :func:`iter_package_resources` for details.
+    """
+
+    def make_path(self) -> pathlib.Path:
+        """
+        Ensures that this resource is mapped on the physical filesystem and returns its path.
+        This may involve expensive data copying depending on the implementation of the package.
+        """
+        raise NotImplementedError
+
+    @property
+    def basename(self) -> str:
+        raise NotImplementedError
+
+    def read_text(self) -> str:
+        raise NotImplementedError
+
+    def __repr__(self) -> str:
+        raise NotImplementedError
+
+
+def iter_package_resources(pkg_name: str) -> Iterator[PackageResource]:
+    """
+    >>> from nunavut.utilities import iter_package_resources
+    >>> rs, = [x for x in iter_package_resources("nunavut.lang") if x.basename == "__init__.py"]
+    >>> rs.basename
+    '__init__.py'
+    >>> p = rs.make_path()
+    >>> p == rs.make_path()  # Returns same path.
+    True
+    >>> len(p.read_text()) > 0
+    True
+    >>> p.read_text() == rs.read_text()
+    True
+
+    """
+    return _iter_package_resources_impl(pkg_name)
+
+
+try:  # noqa: C901
+    import importlib
+    import importlib.abc
+    import importlib.resources
+    import tempfile
+
+    class PackageResourceImpl(PackageResource):
+        def __init__(self, pkg: ModuleType, res: importlib.abc.Traversable) -> None:
+            self._pkg = pkg
+            self._res = res
+            self._path: Optional[pathlib.Path] = None
+
+        def make_path(self) -> pathlib.Path:
+            if not self._path:
+                tmp = tempfile.mktemp()
+                with open(tmp, "w") as f:
+                    f.write(self.read_text())
+                self._path = pathlib.Path(tmp)
+            _logger.debug("%r available on the filesystem as %r", self, str(self._path))
+            assert self._path and self._path.is_file()
+            return self._path
+
+        @property
+        def basename(self) -> str:
+            return self._res.name
+
+        def read_text(self) -> str:
+            return self._res.read_text()
+
+        def __repr__(self) -> str:
+            return type(self).__name__ + "(%r, %r)" % (
+                self._pkg.__name__,
+                self._res.name,
+            )
+
+    def _iter_package_resources_impl(pkg_name: str) -> Iterator[PackageResource]:
+        pkg = importlib.import_module(pkg_name)
+        for r in importlib.resources.files(pkg).iterdir():
+            _logger.debug("Found %r in %r", r, pkg_name)
+            yield PackageResourceImpl(pkg, r)
+
+
+except ImportError:  # Compatibility with EOL versions of Python (v3.5, v3.6)
+    import pkg_resources
+
+    class PackageResourceImpl(PackageResource):  # type: ignore
+        def __init__(self, pkg_name: str, res_name: str) -> None:
+            self._pkg_name = pkg_name
+            self._res_name = res_name
+
+        def make_path(self) -> pathlib.Path:
+            p = pathlib.Path(pkg_resources.resource_filename(self._pkg_name, str(self._res_name)))
+            _logger.debug("%r available on the filesystem as %r", self, str(p))
+            return p
+
+        @property
+        def basename(self) -> str:
+            return self._res_name
+
+        def read_text(self) -> str:
+            with pkg_resources.resource_stream(self._pkg_name, self._res_name) as rs:
+                return str(rs.read().decode(encoding="utf-8", errors="replace"))
+
+        def __repr__(self) -> str:
+            return type(self).__name__ + "(%r, %r)" % (self._pkg_name, self._res_name)
+
+    def _iter_package_resources_impl(pkg_name: str) -> Iterator[PackageResource]:
+        for r in pkg_resources.resource_listdir(pkg_name, "."):
+            _logger.debug("Found %r in %r", r, pkg_name)
+            yield PackageResourceImpl(pkg_name, r)  # type: ignore
