@@ -9,7 +9,7 @@ Contains supporting C++ headers to distribute with generated types.
 
 import pathlib
 import typing
-import pkg_resources
+from nunavut.utilities import iter_package_resources
 
 __version__ = "1.0.0"
 """Version of the c++ support headers."""
@@ -38,6 +38,6 @@ def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
 
     :return: A list of C++ support header resources.
     """
-    for resource in pkg_resources.resource_listdir(__name__, "."):
-        if resource.endswith(".hpp") or resource.endswith(".j2"):
-            yield pathlib.Path(pkg_resources.resource_filename(__name__, str(resource)))
+    for resource in iter_package_resources(__name__):
+        if resource.basename.endswith(".hpp") or resource.basename.endswith(".j2"):
+            yield pathlib.Path(resource.make_path())
