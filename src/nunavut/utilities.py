@@ -66,10 +66,15 @@ try:  # noqa: C901
 
         def make_path(self) -> pathlib.Path:
             if not self._path:
-                tmp = tempfile.mktemp()
-                with open(tmp, "w") as f:
+                # Create a temporary directory to ensure that the basename is retained unchanged.
+                # Normally we should return a context manager here, but the calling code does not support that,
+                # it always expects a plain path. A mild refactoring is needed to fix that.
+                parent = pathlib.Path(tempfile.mkdtemp())
+                parent.mkdir(parents=True, exist_ok=True)
+                path = parent / self.basename
+                with open(path, "w") as f:
                     f.write(self.read_text())
-                self._path = pathlib.Path(tmp)
+                self._path = path
             _logger.debug("%r available on the filesystem as %r", self, str(self._path))
             assert self._path and self._path.is_file()
             return self._path
