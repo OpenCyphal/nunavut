@@ -5,7 +5,7 @@
 
 import pathlib
 import logging
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Any
 from types import ModuleType
 
 _logger = logging.getLogger(__name__)
@@ -54,15 +54,14 @@ def iter_package_resources(pkg_name: str) -> Iterator[PackageResource]:
 
 
 try:  # noqa: C901
-    import importlib
-    import importlib.abc
     import importlib.resources
+    import importlib
     import tempfile
 
     class PackageResourceImpl(PackageResource):
-        def __init__(self, pkg: ModuleType, res: importlib.abc.Traversable) -> None:
-            self._pkg = pkg
-            self._res = res
+        def __init__(self, pkg_name: str, res_name: str) -> None:
+            self._pkg_name = pkg_name
+            self._res_name = res_name
             self._path = None  # type: Optional[pathlib.Path]
 
         def make_path(self) -> pathlib.Path:
@@ -77,25 +76,21 @@ try:  # noqa: C901
 
         @property
         def basename(self) -> str:
-            return self._res.name
+            return self._res_name
 
         def read_text(self) -> str:
-            return self._res.read_text()
+            return importlib.resources.read_text(self._pkg_name, self._res_name)
 
         def __repr__(self) -> str:
-            return type(self).__name__ + "(%r, %r)" % (
-                self._pkg.__name__,
-                self._res.name,
-            )
+            return type(self).__name__ + "(%r, %r)" % (self._pkg_name, self._res_name)
 
     def _iter_package_resources_impl(pkg_name: str) -> Iterator[PackageResource]:
-        pkg = importlib.import_module(pkg_name)
-        for r in importlib.resources.files(pkg).iterdir():
+        for r in importlib.resources.contents(pkg_name):
             _logger.debug("Found %r in %r", r, pkg_name)
-            yield PackageResourceImpl(pkg, r)
+            yield PackageResourceImpl(pkg_name, r)
 
 
-except ImportError:  # Compatibility with EOL versions of Python (v3.5, v3.6)
+except (ImportError, AttributeError):  # Compatibility with EOL versions of Python (v3.5, v3.6)
     import pkg_resources
 
     class PackageResourceImpl(PackageResource):  # type: ignore
@@ -122,4 +117,4 @@ except ImportError:  # Compatibility with EOL versions of Python (v3.5, v3.6)
     def _iter_package_resources_impl(pkg_name: str) -> Iterator[PackageResource]:
         for r in pkg_resources.resource_listdir(pkg_name, "."):
             _logger.debug("Found %r in %r", r, pkg_name)
-            yield PackageResourceImpl(pkg_name, r)  # type: ignore
+            yield PackageResourceImpl(pkg_name, r)
