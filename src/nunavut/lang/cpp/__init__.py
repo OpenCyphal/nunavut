@@ -560,7 +560,6 @@ def filter_destructor_name(language: Language, instance: pydsdl.Any) -> str:
         import pydsdl
 
         my_type = MagicMock(spec=pydsdl.FixedLengthArrayType)
-        my_type.version = MagicMock()
         my_type.element_type = MagicMock(spec=pydsdl.UnsignedIntegerType)
         my_type.element_type.bit_length = 8
         my_type.element_type.cast_mode = pydsdl.PrimitiveType.CastMode.SATURATED
@@ -568,10 +567,8 @@ def filter_destructor_name(language: Language, instance: pydsdl.Any) -> str:
 
     .. code-block:: python
 
-        # Given a pydsdl.ArrayType "my_type":
+        # Given a pydsdl.FixedLengthArrayType "my_type":
         my_type.short_name = 'Foo'
-        my_type.version.major = 1
-        my_type.version.minor = 0
         my_type.capacity = 2
 
         # and

@@ -66,8 +66,4 @@
     }
 {%- endif %}
 }{{ composite_type | definition_end }}
-{%- if composite_type is UnionType -%}
-{%- ifnuses "std_variant" %}
-{% include '_fields_as_union_specializations.j2' %}
-{%- endifnuses -%}
-{%- endif %}{#- -#}
+{#- -#}
