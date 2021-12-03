@@ -19,7 +19,7 @@ constexpr typename {{ composite_type | short_reference_name }}::VariantType::alt
         if(vref.tag_ == {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }})
         {
             static_assert(std::is_same<typename {{ composite_type | short_reference_name }}::VariantType::alternative<{{ loop.index0 }}>::type, {{ field.data_type | declaration }}>::value,
-                          "The alternative type determined by the preprocessor disagrees with the generated type.");
+                          "The alternative type determined by the compiler disagrees with the generated type.");
             result = reinterpret_cast<{{ field.data_type | declaration }}*>(&vref.internal_union_value_.{{ field.name | id }});
         }
     }
@@ -39,7 +39,7 @@ constexpr const typename {{ composite_type | short_reference_name }}::VariantTyp
         if(vref.tag_ == {{ composite_type | short_reference_name }}::VariantType::IndexOf::{{ field.name | id }})
         {
             static_assert(std::is_same<typename {{ composite_type | short_reference_name }}::VariantType::alternative<{{ loop.index0 }}>::type, {{ field.data_type | declaration }}>::value,
-                          "The alternative type determined by the preprocessor disagrees with the generated type.");
+                          "The alternative type determined by the compiler disagrees with the generated type.");
             result = reinterpret_cast<const {{ field.data_type | declaration }}*>(&vref.internal_union_value_.{{ field.name | id }});
         }
     }

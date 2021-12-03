@@ -837,7 +837,7 @@ def filter_literal(
     language: Language,
     value: typing.Union[fractions.Fraction, bool, int],
     ty: pydsdl.Any,
-    cast_format: str = "({type} {value})",
+    cast_format: str = "(({type}) {value})",
 ) -> str:
     """
     Renders the specified value of the specified type as a literal.

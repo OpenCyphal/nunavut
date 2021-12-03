@@ -559,7 +559,7 @@ def filter_destructor_name(language: Language, instance: pydsdl.Any) -> str:
         from unittest.mock import MagicMock
         import pydsdl
 
-        my_type = MagicMock(spec=pydsdl.ArrayType)
+        my_type = MagicMock(spec=pydsdl.FixedLengthArrayType)
         my_type.version = MagicMock()
         my_type.element_type = MagicMock(spec=pydsdl.UnsignedIntegerType)
         my_type.element_type.bit_length = 8

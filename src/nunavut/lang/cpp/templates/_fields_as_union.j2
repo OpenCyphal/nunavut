@@ -56,10 +56,7 @@
 {%- for field in composite_type.fields_except_padding if field is not PrimitiveType %}
             {% if not loop.first %}else {% endif %}if (tag_ == {{ loop.index0 }})
             {
-                if (!std::is_trivially_destructible<{{ field.data_type | declaration }}>::value)
-                {
-                    reinterpret_cast<{{ field.data_type | declaration }}*>(std::addressof(internal_union_value_.{{ field.name | id }}))->{{ field.data_type | destructor_name }}();
-                }
+                reinterpret_cast<{{ field.data_type | declaration }}*>(std::addressof(internal_union_value_.{{ field.name | id }}))->{{ field.data_type | destructor_name }}();
             }
 {%- endfor %}
         }

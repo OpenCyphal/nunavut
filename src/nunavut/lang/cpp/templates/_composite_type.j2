@@ -5,24 +5,25 @@
 -#}
 {%- ifuses "std_variant" %}
 // +-------------------------------------------------------------------------------------------------------------------+
-// | This implementation uses the C++17 standard library variant type with wrappers for the holds_alternative and
+// | This implementation uses the C++17 standard library variant type with wrappers for the emplace and
 // | get_if methods to support forward-compatibility with the C++14 version of this object. The union_value type
-// | extends std::variant and can be used with the entire set of variant methods but only emplace and the generated
-// | holds_alternative and get_if wrapper will be backwards compatible with the C++14 version of this object.
+// | extends std::variant and can be used with the entire set of variant methods. Using std::variant directly does mean
+// | your code will not be backwards compatible with the C++14 version of this object.
 // +-------------------------------------------------------------------------------------------------------------------+
 {% else %}
 // +-------------------------------------------------------------------------------------------------------------------+
 // | This implementation uses a minimal variant implementation that is forward-compatible with the same types generated
 // | using the C++17 variant type in the standard library. This minimal variant implementation is limited in the
 // | following ways:
-// |    1. Supports only emplace, holds_alternative, and get_if.
-// |    2. This object cannot be copy-constructed nor move-constructed.
-// |    3. There is an O(n) lookup in this object's destructor and in the
+// |    1. Supports only emplace and get_if.
+// |    2. Only support access by index (see the IndexOf property of the VariantType).
+// |    3. This object cannot be copy-constructed nor move-constructed.
+// |    4. There is an O(n) lookup in this object's destructor and in the
 // |       emplace method.
 // |
-// | The C++17 version of this object will define the same holds_alternative and get_if wrappers so code written
-// | against this version will be fully-forward compatible, but the C++17 version exposes the variant type directly
-// | allowing full use of that standard library feature.
+// | The C++17 version of this object will define the same emplace and get_if wrappers so code written against this
+// | version will be fully-forward compatible, but the C++17 version exposes the variant type directly allowing full
+// | use of that standard library feature – it is therefore not backwards-compatible.
 // +-------------------------------------------------------------------------------------------------------------------+
 {% endifuses -%}
 {{ composite_type.doc | block_comment('cpp-doxygen', 0, 120) }}
