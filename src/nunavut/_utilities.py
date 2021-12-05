@@ -24,7 +24,7 @@ class YesNoDefault(enum.Enum):
     .. invisible-code-block: python
 
         from datetime import datetime
-        from nunavut.utilities import YesNoDefault
+        from nunavut._utilities import YesNoDefault
 
     .. code-block:: python
 
@@ -52,7 +52,7 @@ class YesNoDefault(enum.Enum):
 
         .. invisible-code-block: python
 
-            from nunavut.utilities import YesNoDefault
+            from nunavut._utilities import YesNoDefault
 
         .. code-block:: python
 

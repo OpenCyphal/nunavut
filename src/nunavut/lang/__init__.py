@@ -19,7 +19,7 @@ import typing
 import pydsdl
 
 from ..dependencies import Dependencies, DependencyBuilder
-from ..utilities import YesNoDefault
+from .._utilities import YesNoDefault
 from ._config import LanguageConfig, VersionReader
 
 logger = logging.getLogger(__name__)

@@ -9,14 +9,17 @@
         static const constexpr std::size_t variant_npos = -1;
 
         VariantType()
-            : tag_(variant_npos)
+            : tag_(0)
             , internal_union_value_()
             , storage_index_{
 {%- for field in composite_type.fields_except_padding %}
                 {% if not loop.first %}, {% else %}  {% endif %}&internal_union_value_.{{ field.name | id }}
 {%- endfor %}
             }
-        {}
+        {
+            // This is how the C++17 standard library does it; default initialization as the 0th index.
+            new (storage_index_[0]) typename alternative<0>::type();
+        }
 
         VariantType(const VariantType& rhs)
             : tag_(variant_npos)

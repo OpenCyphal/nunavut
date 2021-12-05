@@ -16,7 +16,7 @@ import typing
 
 import pydsdl
 
-from nunavut.utilities import YesNoDefault
+from nunavut._utilities import YesNoDefault
 
 from ...templates import (
     template_language_filter,

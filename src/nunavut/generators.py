@@ -14,7 +14,7 @@ import pathlib
 import typing
 
 import nunavut
-from nunavut.utilities import YesNoDefault
+from nunavut._utilities import YesNoDefault
 
 
 class AbstractGenerator(metaclass=abc.ABCMeta):

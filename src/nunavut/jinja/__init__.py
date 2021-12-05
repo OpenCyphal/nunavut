@@ -19,7 +19,7 @@ import nunavut.generators
 import nunavut.lang
 import nunavut.postprocessors
 import pydsdl
-from nunavut.utilities import YesNoDefault
+from nunavut._utilities import YesNoDefault
 from yaml import Dumper as YamlDumper
 from yaml import dump as yaml_dump
 

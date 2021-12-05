@@ -73,6 +73,10 @@ import pydsdl
 from .lang import LanguageContext
 from .lang._common import IncludeGenerator
 
+# library users can access the utility types directly from the nunvut namespace. Internally
+# we us the _utilities package to break circular imports.
+from ._utilities import YesNoDefault  # noqa # pylint: disable=unused-import
+
 if sys.version_info[:2] < (3, 5):  # pragma: no cover
     print("A newer version of Python is required", file=sys.stderr)
     sys.exit(1)

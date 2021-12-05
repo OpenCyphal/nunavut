@@ -16,7 +16,7 @@ from nunavut.lang import (Dependencies, Language, LanguageContext,
 from nunavut.lang.c import filter_id as c_filter_id
 from nunavut.lang.cpp import filter_id as cpp_filter_id
 from nunavut.lang.py import filter_id as py_filter_id
-from nunavut.utilities import YesNoDefault
+from nunavut._utilities import YesNoDefault
 from pydsdl import read_namespace
 
 

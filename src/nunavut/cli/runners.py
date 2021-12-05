@@ -18,7 +18,7 @@ import nunavut.jinja
 import nunavut.lang
 import pydsdl
 from nunavut.generators import AbstractGenerator, create_generators
-from nunavut.utilities import YesNoDefault
+from nunavut._utilities import YesNoDefault
 
 
 class ArgparseRunner:
