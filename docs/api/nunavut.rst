@@ -51,14 +51,6 @@ nunavut.templates
    :undoc-members:
    :show-inheritance:
 
-nunavut.utilities
-~~~~~~~~~~~~~~~~~
-
-.. automodule:: nunavut.utilities
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 nunavut.version
 ~~~~~~~~~~~~~~~
 

@@ -82,6 +82,8 @@ if sys.version_info[:2] < (3, 5):  # pragma: no cover
     sys.exit(1)
 
 
+__all__ = ["Namespace", "YesNoDefault", "build_namespace_tree", "generate_types"]
+
 # +---------------------------------------------------------------------------+
 
 
