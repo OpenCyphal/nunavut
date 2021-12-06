@@ -94,9 +94,9 @@ class JinjaAssert(Extension):
 
 class UseQuery(Extension):
     """
-    Jinja2 extension that allows conditional blocks like ``{% ifuses "std_variant" %}``. These are defined
-    by the :class:`nunavut.lang.Language` object based on the values returned from
-    :meth:`nunavut.lang.Language.get_uses_queries`.
+    Jinja2 extension that allows conditional blocks like ``{% ifuses "std_variant" %}`` or
+    ``{% ifnuses "std_variant" %}``. These are defined by the :class:`nunavut.lang.Language` object based on the values
+    returned from :meth:`nunavut.lang.Language.get_uses_queries`.
 
         .. code-block:: python
 
@@ -135,9 +135,25 @@ class UseQuery(Extension):
                 assert False
             except UndefinedError:
                 pass
+
+        For "not uses" replace all "uses" tokens with "nuses":
+
+        .. code-block:: python
+
+            template  = ''' {%- ifnuses "some_language_key" -%}
+                                #include "header 1"
+                            {%- elifnuses "some_other_language_key" -%}
+                                #include "header 0"
+                            {%- elifuses "yet_another_language_key" -%}
+                                #include "header 2"
+                            {%- else -%}
+                                #include "header 3"
+                            {%- endifnuses -%}
+                        '''
+
     """
 
-    tags = set(["ifuses"])
+    tags = set(["ifuses", "ifnuses"])
 
     def __init__(self, environment: Environment):
         super().__init__(environment)
@@ -148,7 +164,14 @@ class UseQuery(Extension):
         extensions.
         """
 
-        node = result = nodes.If(lineno=parser.stream.expect("name:ifuses").lineno)
+        if parser.stream.current.test("name:ifnuses"):
+            negate = True
+            ifname = "name:ifnuses"
+        else:
+            negate = False
+            ifname = "name:ifuses"
+
+        node = result = nodes.If(lineno=parser.stream.expect(ifname).lineno)
         while 1:
             args = [
                 parser.parse_expression(),
@@ -156,21 +179,36 @@ class UseQuery(Extension):
                 nodes.Const(parser.name),
                 nodes.Const(parser.filename),
             ]
-            node.test = self.call_method("_use_query", args)
-            node.body = parser.parse_statements(("name:elifuses", "name:else", "name:endifuses"))
+            test_name = "_use_query" if not negate else "_use_nquery"
+            node.test = self.call_method(test_name, args)
+            node.body = parser.parse_statements(
+                ("name:elifuses", "name:elifnuses", "name:else", "name:endifuses", "name:endifnuses")
+            )
             node.elif_ = []
             node.else_ = []
             token = next(parser.stream)
             if token.test("name:elifuses"):
+                negate = False
+                node = nodes.If(lineno=parser.stream.current.lineno)
+                result.elif_.append(node)
+                continue
+            elif token.test("name:elifnuses"):
+                negate = True
                 node = nodes.If(lineno=parser.stream.current.lineno)
                 result.elif_.append(node)
                 continue
             elif token.test("name:else"):
-                result.else_ = parser.parse_statements(("name:endifuses",), drop_needle=True)
+                result.else_ = parser.parse_statements(
+                    (
+                        "name:endifuses",
+                        "name:endifnuses",
+                    ),
+                    drop_needle=True,
+                )
             break
         return result
 
-    def _use_query(self, uses_query_name: str, lineno: int, name: str, filename: str) -> bool:
+    def _use_query_common(self, uses_query_name: str, lineno: int, name: str, filename: str) -> bool:
 
         target_language = self.environment.target_language
 
@@ -192,3 +230,9 @@ class UseQuery(Extension):
             )
 
         return uses_query()
+
+    def _use_nquery(self, uses_query_name: str, lineno: int, name: str, filename: str) -> bool:
+        return not self._use_query_common(uses_query_name, lineno, name, filename)
+
+    def _use_query(self, uses_query_name: str, lineno: int, name: str, filename: str) -> bool:
+        return self._use_query_common(uses_query_name, lineno, name, filename)

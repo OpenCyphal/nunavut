@@ -29,7 +29,7 @@ endfunction()
 # Add a given C++ -std argument within a string or add it if its not found
 #
 # :param str ARG_REPLACE_IN: The string to do the replacement within.
-# :param str ARG_OVERRIDE_CXX_STD: The flag <em>value</em> to replace (i.e. just "c++11" not "-std=c++11")
+# :param str ARG_OVERRIDE_CXX_STD: The flag <em>value</em> to replace (i.e. just "c++14" not "-std=c++14")
 function(replace_cxx_std ARG_OVERRIDE_CXX_STD
                          ARG_REPLACE_INOUT)
 

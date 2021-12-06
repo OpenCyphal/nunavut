@@ -19,6 +19,14 @@ Subpackages
 Submodules
 ----------
 
+nunavut.dependencies
+~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: nunavut.dependencies
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 nunavut.generators
 ~~~~~~~~~~~~~~~~~~
 

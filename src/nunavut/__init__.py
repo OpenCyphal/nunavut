@@ -17,7 +17,7 @@ by calling pydsdl::
 
     compound_types = read_namespace(root_namespace, include_paths)
 
-Next a :class:`nunavut.lang.LanguageContext` is needed which is used to
+Next a :class:`nunavut.LanguageContext` is needed which is used to
 configure all Nunavut objects for a specific target language ::
 
     from nunavut.lang import LanguageContext
@@ -64,54 +64,25 @@ Putting this all together, the typical use of this library looks something like 
 """
 
 import collections
-import enum
 import pathlib
 import sys
 import typing
 
 import pydsdl
 
-from . import lang
+from .lang import LanguageContext
+from .lang._common import IncludeGenerator
+
+# library users can access the utility types directly from the nunvut namespace. Internally
+# we us the _utilities package to break circular imports.
+from ._utilities import YesNoDefault  # noqa # pylint: disable=unused-import
 
 if sys.version_info[:2] < (3, 5):  # pragma: no cover
     print("A newer version of Python is required", file=sys.stderr)
     sys.exit(1)
 
 
-@enum.unique
-class YesNoDefault(enum.Enum):
-    """
-    Trinary type for decisions that allow a default behavior to be requested that can
-    be different based on other contexts. For example:
-
-    .. invisible-code-block: python
-
-        from datetime import datetime
-        from nunavut import YesNoDefault
-
-    .. code-block:: python
-
-        def should_we_order_pizza(answer: YesNoDefault) -> bool:
-            if answer == YesNoDefault.YES or (
-               answer == YesNoDefault.DEFAULT and
-               datetime.today().isoweekday() == 5):
-                # if yes or if we are taking the default action which is to
-                # order pizza on Friday, and today is Friday, then we order pizza
-                return True
-            else:
-                return False
-
-    .. invisible-code-block: python
-
-        assert should_we_order_pizza(YesNoDefault.YES)
-        assert not should_we_order_pizza(YesNoDefault.NO)
-
-    """
-
-    NO = 0
-    YES = 1
-    DEFAULT = 2
-
+__all__ = ["Namespace", "YesNoDefault", "build_namespace_tree", "generate_types"]
 
 # +---------------------------------------------------------------------------+
 
@@ -129,7 +100,7 @@ class Namespace(pydsdl.Any):
                                 namespaces's datatypes and nested namespaces.
     :param pathlib.PurePath base_output_path: The base path under which all namespaces and datatypes should
                                 be generated.
-    :param lang.LanguageContext language_context: The generated software language context the namespace is within.
+    :param LanguageContext language_context: The generated software language context the namespace is within.
     """
 
     DefaultOutputStem = "_"
@@ -139,13 +110,13 @@ class Namespace(pydsdl.Any):
         full_namespace: str,
         root_namespace_dir: pathlib.Path,
         base_output_path: pathlib.PurePath,
-        language_context: lang.LanguageContext,
+        language_context: LanguageContext,
     ):
         self._parent = None  # type: typing.Optional[Namespace]
         self._namespace_components = []  # type: typing.List[str]
         self._namespace_components_stropped = []  # type: typing.List[str]
         for component in full_namespace.split("."):
-            self._namespace_components_stropped.append(language_context.filter_id_for_target(component, "typedef"))
+            self._namespace_components_stropped.append(language_context.filter_id_for_target(component, "path"))
             self._namespace_components.append(component)
         self._full_namespace = ".".join(self._namespace_components_stropped)
         self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components_stropped))
@@ -153,7 +124,7 @@ class Namespace(pydsdl.Any):
         if output_stem is None:
             output_stem = self.DefaultOutputStem
         output_path = self._output_folder / pathlib.PurePath(output_stem)
-        self._support_output_folder = base_output_path
+        self._base_output_path = base_output_path
         self._output_path = output_path.with_suffix(language_context.get_output_extension())
         self._source_folder = pathlib.Path(
             root_namespace_dir / pathlib.PurePath(*self._namespace_components[1:])
@@ -177,9 +148,9 @@ class Namespace(pydsdl.Any):
         """
         The folder under which support artifacts are generated.
         """
-        return self._support_output_folder
+        return self._base_output_path
 
-    def get_language_context(self) -> "lang.LanguageContext":
+    def get_language_context(self) -> LanguageContext:
         """
         The generated software language context the namespace is within.
         """
@@ -205,7 +176,7 @@ class Namespace(pydsdl.Any):
 
     def get_nested_types(self) -> typing.ItemsView[pydsdl.CompositeType, pathlib.Path]:
         """
-        Get a view of a tuple relating datatypes in this namepace to the path for the
+        Get a view of a tuple relating datatypes in this namespace to the path for the
         type's generated output. This is a shallow view including only the types
         directly within this namespace.
         """
@@ -213,14 +184,14 @@ class Namespace(pydsdl.Any):
 
     def get_all_datatypes(self) -> typing.Generator[typing.Tuple[pydsdl.CompositeType, pathlib.Path], None, None]:
         """
-        Generates tuples relating datatypes at and below this namepace to the path
+        Generates tuples relating datatypes at and below this namespace to the path
         for each type's generated output.
         """
         yield from self._recursive_data_type_generator(self)
 
     def get_all_namespaces(self) -> typing.Generator[typing.Tuple["Namespace", pathlib.Path], None, None]:
         """
-        Generates tuples relating nested namespaces at and below this namepace to the path
+        Generates tuples relating nested namespaces at and below this namespace to the path
         for each namespace's generated output.
         """
         yield from self._recursive_namespace_generator(self)
@@ -295,12 +266,10 @@ class Namespace(pydsdl.Any):
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
-    def _add_data_type(self, dsdl_type: pydsdl.CompositeType, extension: typing.Optional[str]) -> None:
-        filestem = "{}_{}_{}".format(dsdl_type.short_name, dsdl_type.version.major, dsdl_type.version.minor)
-        output_path = self._output_folder / pathlib.PurePath(filestem)
-        if extension is not None:
-            output_path = output_path.with_suffix(extension)
-        self._data_type_to_outputs[dsdl_type] = output_path
+    def _add_data_type(self, dsdl_type: pydsdl.CompositeType, extension: str) -> None:
+        self._data_type_to_outputs[dsdl_type] = pathlib.Path(self._base_output_path) / IncludeGenerator.make_path(
+            dsdl_type, self._language_context.get_target_language(), extension
+        )
 
     def _add_nested_namespace(self, nested: "Namespace") -> None:
         self._nested_namespaces.add(nested)
@@ -363,7 +332,7 @@ class _NamespaceFactory:
     Read-through cache and factory for :class:`Namespace` objects.
     """
 
-    def __init__(self, lctx: lang.LanguageContext, base_path: pathlib.PurePath, root_namespace_dir: pathlib.Path):
+    def __init__(self, lctx: LanguageContext, base_path: pathlib.PurePath, root_namespace_dir: pathlib.Path):
         self._lctx = lctx
         self._base_path = base_path
         self._namespaces = dict()  # type: typing.Dict[str, Namespace]
@@ -397,7 +366,7 @@ def build_namespace_tree(
     types: typing.List[pydsdl.CompositeType],
     root_namespace_dir: str,
     output_dir: str,
-    language_context: lang.LanguageContext,
+    language_context: LanguageContext,
 ) -> Namespace:
     """Generates a :class:`nunavut.Namespace` tree.
 
@@ -460,122 +429,6 @@ def build_namespace_tree(
 
 # +---------------------------------------------------------------------------+
 
-
-class DependencyBuilder:
-    """
-    Given a list of DSDL types this object builds a set of types that the given types use.
-
-    .. invisible-code-block: python
-
-        import pydsdl
-        from unittest.mock import MagicMock
-        from nunavut import DependencyBuilder
-
-        my_dependant_type_l2 = MagicMock(spec=pydsdl.CompositeType)
-        my_dependant_type_l2.parent_service = False
-        my_dependant_type_l2.attributes = []
-
-        my_dependant_type_l1 = MagicMock(spec=pydsdl.CompositeType)
-        my_dependant_type_l1.parent_service = False
-        my_dependant_type_l1.attributes = [MagicMock(data_type=my_dependant_type_l2)]
-
-        my_top_level_type = MagicMock(spec=pydsdl.UnionType)
-        my_top_level_type.parent_service = False
-        my_top_level_type.attributes = [MagicMock(data_type=my_dependant_type_l1)]
-
-        direct_dependencies = DependencyBuilder(my_top_level_type).direct()
-
-        assert len(direct_dependencies.composite_types) == 1
-        assert my_dependant_type_l1 in direct_dependencies.composite_types
-
-        transitive_dependencies = DependencyBuilder(my_top_level_type).transitive()
-
-        assert len(transitive_dependencies.composite_types) == 2
-        assert my_dependant_type_l1 in transitive_dependencies.composite_types
-        assert my_dependant_type_l2 in transitive_dependencies.composite_types
-        assert direct_dependencies.uses_integer
-        assert direct_dependencies.uses_union
-
-    :param dependant_types: A list of types to build dependencies for.
-    :type dependant_types: typing.Iterable[pydsdl.Any]
-    """
-
-    def __init__(self, *dependant_types: pydsdl.Any):
-        self._dependent_types = dependant_types
-
-    def transitive(self) -> lang.Dependencies:
-        """
-        Build a set of all transitive dependencies for the dependent types
-        set for this builder.
-        """
-        return self._build_dependency_list(self._dependent_types, True)
-
-    def direct(self) -> lang.Dependencies:
-        """
-        Build a set of all first-order dependencies for the dependent types
-        set for this builder.
-        """
-        return self._build_dependency_list(self._dependent_types, False)
-
-    # +-----------------------------------------------------------------------+
-    # | PRIVATE
-    # +-----------------------------------------------------------------------+
-
-    @classmethod
-    def _build_dependency_list(
-        cls, dependant_types: typing.Iterable[pydsdl.CompositeType], transitive: bool
-    ) -> lang.Dependencies:
-        results = lang.Dependencies()
-        for dependant in dependant_types:
-            if isinstance(dependant, pydsdl.UnionType):
-                # Unions always require integer for the tag field.
-                results.uses_integer = True
-                results.uses_union = True
-            cls._extract_dependent_types(cls._extract_data_types(dependant), transitive, results)
-        return results
-
-    @classmethod
-    def _extract_data_types(cls, t: pydsdl.CompositeType) -> typing.List[pydsdl.SerializableType]:
-        # Make a list of all attributes defined by this type
-        if isinstance(t, pydsdl.ServiceType):
-            return [attr.data_type for attr in t.request_type.attributes] + [
-                attr.data_type for attr in t.response_type.attributes
-            ]
-        else:
-            return [attr.data_type for attr in t.attributes]
-
-    @classmethod
-    def _extract_dependent_types_handle_array_type(
-        cls, dependant_type: pydsdl.ArrayType, transitive: bool, inout_dependencies: lang.Dependencies
-    ) -> None:
-        if isinstance(dependant_type, pydsdl.VariableLengthArrayType):
-            inout_dependencies.uses_variable_length_array = True
-        else:
-            inout_dependencies.uses_array = True
-            if isinstance(dependant_type.element_type, pydsdl.PrimitiveType):
-                inout_dependencies.uses_primitive_static_array = True
-
-    @classmethod
-    def _extract_dependent_types(
-        cls, dependant_types: typing.Iterable[pydsdl.Any], transitive: bool, inout_dependencies: lang.Dependencies
-    ) -> None:
-        for dt in dependant_types:
-            if isinstance(dt, pydsdl.CompositeType):
-                if dt not in inout_dependencies.composite_types:
-                    inout_dependencies.composite_types.add(dt)
-                    if transitive:
-                        cls._extract_dependent_types(cls._extract_data_types(dt), transitive, inout_dependencies)
-            elif isinstance(dt, pydsdl.ArrayType):
-                cls._extract_dependent_types_handle_array_type(dt, transitive, inout_dependencies)
-                cls._extract_dependent_types([dt.element_type], transitive, inout_dependencies)
-            elif isinstance(dt, pydsdl.IntegerType):
-                inout_dependencies.uses_integer = True
-            elif isinstance(dt, pydsdl.FloatType):
-                inout_dependencies.uses_float = True
-            elif isinstance(dt, pydsdl.BooleanType):
-                inout_dependencies.uses_bool = True
-
-
 # +---------------------------------------------------------------------------+
 # | GENERATION HELPERS
 # +---------------------------------------------------------------------------+
@@ -617,7 +470,7 @@ def generate_types(
     """
     from nunavut.generators import create_generators
 
-    language_context = lang.LanguageContext(
+    language_context = LanguageContext(
         language_key,
         omit_serialization_support_for_target=omit_serialization_support,
         language_options=language_options,

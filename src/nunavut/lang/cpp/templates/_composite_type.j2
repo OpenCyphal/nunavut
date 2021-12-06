@@ -3,12 +3,35 @@
  # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
  # This software is distributed under the terms of the MIT License.
 -#}
+{%- ifuses "std_variant" %}
+// +-------------------------------------------------------------------------------------------------------------------+
+// | This implementation uses the C++17 standard library variant type with wrappers for the emplace and
+// | get_if methods to support forward-compatibility with the C++14 version of this object. The union_value type
+// | extends std::variant and can be used with the entire set of variant methods. Using std::variant directly does mean
+// | your code will not be backwards compatible with the C++14 version of this object.
+// +-------------------------------------------------------------------------------------------------------------------+
+{% else %}
+// +-------------------------------------------------------------------------------------------------------------------+
+// | This implementation uses a minimal variant implementation that is forward-compatible with the same types generated
+// | using the C++17 variant type in the standard library. This minimal variant implementation is limited in the
+// | following ways:
+// |    1. Supports only emplace and get_if.
+// |    2. Only support access by index (see the IndexOf property of the VariantType).
+// |    3. This object cannot be copy-constructed nor move-constructed.
+// |    4. There is an O(n) lookup in this object's destructor and in the
+// |       emplace method.
+// |
+// | The C++17 version of this object will define the same emplace and get_if wrappers so code written against this
+// | version will be fully-forward compatible, but the C++17 version exposes the variant type directly allowing full
+// | use of that standard library feature – it is therefore not backwards-compatible.
+// +-------------------------------------------------------------------------------------------------------------------+
+{% endifuses -%}
 {{ composite_type.doc | block_comment('cpp-doxygen', 0, 120) }}
-{{ composite_type | definition_begin }}
+{{ composite_type | definition_begin }} final
 {
-    // +----------------------------------------------------------------------+
+    // +---------------------------------------------------------------------------------------------------------------+
     // | PORT IDENTIFIERS
-    // +----------------------------------------------------------------------+
+    // +---------------------------------------------------------------------------------------------------------------+
 {%- if T.has_fixed_port_id %}
     static constexpr bool HasFixedPortID = true;
     static constexpr {{ typename_unsigned_port }} FixedPortId = {{ T.fixed_port_id }}U;
@@ -18,9 +41,9 @@
 {% endif -%}
 {%- for constant in composite_type.constants %}
     {% if loop.first %}
-    // +----------------------------------------------------------------------+
+    // +---------------------------------------------------------------------------------------------------------------+
     // | CONSTANTS
-    // +----------------------------------------------------------------------+
+    // +---------------------------------------------------------------------------------------------------------------+
     {% endif -%}
     {{ constant.doc | block_comment('cpp-doxygen', 4, 120) }}
     static constexpr {{ constant.data_type | declaration }} {{ constant.name | id }} = {{ constant | constant_value }};
@@ -42,5 +65,5 @@
         return 0;
     }
 {%- endif %}
-
-}{{ composite_type | definition_end }}{#- -#}
+}{{ composite_type | definition_end }}
+{#- -#}

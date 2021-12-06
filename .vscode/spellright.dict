@@ -143,3 +143,10 @@ elifuses
 endifuses
 kwargs
 endswith
+dirs
+hpp
+gmock
+GOOGLETEST
+Libcanard
+isfinite
+metatransport

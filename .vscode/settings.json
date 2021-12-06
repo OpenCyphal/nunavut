@@ -21,7 +21,7 @@
     "python.testing.pytestEnabled": true,
     "python.formatting.provider": "black",
     "python.formatting.blackArgs": [
-        "--line-length 120"
+        "--line-length=120"
     ],
     "files.exclude": {
         "**/.git": true,
@@ -139,7 +139,8 @@
         "__functional_03": "cpp",
         "any": "cpp",
         "span": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "__bits": "cpp"
     },
     "python.linting.mypyArgs": [
         "--config-file=${workspaceFolder}/tox.ini"
@@ -160,7 +161,6 @@
         "markdown",
         "latex",
         "plaintext",
-        "python",
         "cpp"
     ],
     "testMate.cpp.test.advancedExecutables": [

@@ -9,6 +9,7 @@ This package contains modules that provide specific support for generating
 source for various languages using templates.
 """
 import abc
+import functools
 import importlib
 import logging
 import pathlib
@@ -17,26 +18,11 @@ import typing
 
 import pydsdl
 
-from ._config import LanguageConfig
+from ..dependencies import Dependencies, DependencyBuilder
+from .._utilities import YesNoDefault
+from ._config import LanguageConfig, VersionReader
 
 logger = logging.getLogger(__name__)
-
-
-class Dependencies:
-    """
-    Data structure that contains a set of composite types and annotations (bool flags)
-    which constitute a set of dependencies for a set of DSDL objects.
-    """
-
-    def __init__(self) -> None:
-        self.composite_types = set()  # type: typing.Set[pydsdl.CompositeType]
-        self.uses_integer = False
-        self.uses_float = False
-        self.uses_variable_length_array = False
-        self.uses_array = False
-        self.uses_bool = False
-        self.uses_primitive_static_array = False
-        self.uses_union = False
 
 
 class LanguageLoader:
@@ -247,6 +233,44 @@ class Language(metaclass=abc.ABCMeta):
         except KeyError as e:
             raise AttributeError(e)
 
+    def get_support_module(self) -> typing.Tuple[str, typing.Tuple[int, int, int], typing.Optional["types.ModuleType"]]:
+        """
+        Returns the module object for the language support files.
+        :return: A tuple of module name, x.y.z module version, and the module object itself.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import Language, _GenericLanguage
+            from unittest.mock import MagicMock
+
+            mock_config = MagicMock()
+            mock_module = MagicMock()
+            mock_module.__name__ = 'nunavut.lang.cpp'
+
+            my_lang = _GenericLanguage(mock_module, mock_config, True)
+            my_lang._section = "nunavut.lang.cpp"
+            module_name, support_version, _ = my_lang.get_support_module()
+
+            assert module_name == "nunavut.lang.cpp.support"
+            assert support_version[0] == 1
+
+        """
+        module_name = "{}.support".format(self._section)
+
+        try:
+            module = importlib.import_module(module_name)
+            version_tuple = VersionReader.read_version(module)
+            return (module_name, version_tuple, module)
+        except (ImportError, ValueError):
+            # No serialization support for this language
+            logger.info("No serialization support for selected target. Cannot retrieve module.")
+
+            return (module_name, (0, 0, 0), None)
+
+    @functools.lru_cache()
+    def get_dependency_builder(self, for_type: pydsdl.Any) -> DependencyBuilder:
+        return DependencyBuilder(for_type)
+
     @abc.abstractmethod
     def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
         """
@@ -269,6 +293,25 @@ class Language(metaclass=abc.ABCMeta):
                 in a deterministic manner based on the provided instance.
         """
         return self.default_filter_id_for_target(instance)
+
+    def filter_short_reference_name(
+        self, t: pydsdl.CompositeType, stropping: YesNoDefault = YesNoDefault.DEFAULT, id_type: str = "any"
+    ) -> str:
+        """
+        Provides a string that is a shorted version of the full reference name omitting any namespace parts of the type.
+
+        :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
+        :param YesNoDefault stropping: If DEFAULT then the stropping value configured for the target language is used
+                                       else this overrides that value.
+        :param str id_type:         A type of identifier. This is different for each language. For example, for C this
+                                    value can be 'typedef', 'macro', 'function', or 'enum'.
+                                    Use 'any' to apply stropping rules for all identifier types to the instance.
+        """
+        short_name = "{short}_{major}_{minor}".format(short=t.short_name, major=t.version.major, minor=t.version.minor)
+        if YesNoDefault.test_truth(stropping, self.enable_stropping):
+            return self.filter_id(short_name, id_type)
+        else:
+            return short_name
 
     def get_config_value(self, key: str, default_value: typing.Optional[str] = None) -> str:
         """
@@ -449,19 +492,17 @@ class Language(metaclass=abc.ABCMeta):
                 assert False
 
         """
-        try:
-            module = importlib.import_module("{}.support".format(self._section))
+        _, _, module = self.get_support_module()
 
+        if module is not None:
             # All language support modules must provide a list_support_files method
             # to allow the copy generator access to the packaged support files.
             list_support_files = getattr(
                 module, "list_support_files"
             )  # type: typing.Callable[[], typing.Generator[pathlib.Path, None, None]]
             return list_support_files()
-        except ImportError:
+        else:
             # No serialization support for this language
-            logger.info("No serialization support for selected target. Skipping serialization support generation.")
-
             def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
                 # This makes both MyPy and sonarqube happy.
                 return typing.cast(typing.Generator[pathlib.Path, None, None], iter(()))
@@ -673,7 +714,7 @@ class LanguageContext:
             return self._target_language.extension
         else:
             raise RuntimeError(
-                "No extension was provided and no target language was set." "Cannot determine the extension to use."
+                "No extension was provided and no target language was set. Cannot determine the extension to use."
             )
 
     def get_default_namespace_output_stem(self) -> typing.Optional[str]:

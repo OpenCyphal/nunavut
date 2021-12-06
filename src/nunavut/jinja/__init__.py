@@ -19,12 +19,13 @@ import nunavut.generators
 import nunavut.lang
 import nunavut.postprocessors
 import pydsdl
+from nunavut._utilities import YesNoDefault
 from yaml import Dumper as YamlDumper
 from yaml import dump as yaml_dump
 
 from .environment import CodeGenEnvironment
 from .jinja2 import Template
-from .loaders import DSDLTemplateLoader, TEMPLATE_SUFFIX, DEFAULT_TEMPLATE_PATH
+from .loaders import DEFAULT_TEMPLATE_PATH, TEMPLATE_SUFFIX, DSDLTemplateLoader
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
 
     :param nunavut.Namespace namespace:    The top-level namespace to generates code
                                            at and from.
-    :param nunavut.YesNoDefault generate_namespace_types:  Set to YES to emit files for namespaces.
+    :param YesNoDefault generate_namespace_types:  Set to YES to emit files for namespaces.
                                            NO will suppress namespace file generation and DEFAULT will
                                            use the language's preference.
     :param templates_dir:                  Directories containing jinja templates. These will be available along
@@ -144,7 +145,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
     def __init__(
         self,
         namespace: nunavut.Namespace,
-        generate_namespace_types: nunavut.YesNoDefault = nunavut.YesNoDefault.DEFAULT,
+        generate_namespace_types: YesNoDefault = YesNoDefault.DEFAULT,
         templates_dir: typing.Optional[typing.Union[pathlib.Path, typing.List[pathlib.Path]]] = None,
         followlinks: bool = False,
         trim_blocks: bool = False,

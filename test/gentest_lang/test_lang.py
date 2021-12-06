@@ -9,13 +9,14 @@ from typing import Any, Callable, Dict, List
 from unittest.mock import MagicMock
 
 import pytest
-from nunavut import YesNoDefault, build_namespace_tree
+from nunavut import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import (Dependencies, Language, LanguageContext,
                           LanguageLoader)
 from nunavut.lang.c import filter_id as c_filter_id
 from nunavut.lang.cpp import filter_id as cpp_filter_id
 from nunavut.lang.py import filter_id as py_filter_id
+from nunavut._utilities import YesNoDefault
 from pydsdl import read_namespace
 
 

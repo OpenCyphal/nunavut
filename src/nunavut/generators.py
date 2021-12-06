@@ -14,6 +14,7 @@ import pathlib
 import typing
 
 import nunavut
+from nunavut._utilities import YesNoDefault
 
 
 class AbstractGenerator(metaclass=abc.ABCMeta):
@@ -23,7 +24,7 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
 
     :param nunavut.Namespace namespace:  The top-level namespace to
         generates types at and from.
-    :param nunavut.YesNoDefault generate_namespace_types:  Set to YES
+    :param YesNoDefault generate_namespace_types:  Set to YES
         to force generation files for namespaces and NO to suppress.
         DEFAULT will generate namespace files based on the language
         preference.
@@ -32,12 +33,12 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
     def __init__(
         self,
         namespace: nunavut.Namespace,
-        generate_namespace_types: nunavut.YesNoDefault = nunavut.YesNoDefault.DEFAULT,
+        generate_namespace_types: YesNoDefault = YesNoDefault.DEFAULT,
     ):
         self._namespace = namespace
-        if generate_namespace_types == nunavut.YesNoDefault.YES:
+        if generate_namespace_types == YesNoDefault.YES:
             self._generate_namespace_types = True
-        elif generate_namespace_types == nunavut.YesNoDefault.NO:
+        elif generate_namespace_types == YesNoDefault.NO:
             self._generate_namespace_types = False
         else:
             target_language = self._namespace.get_language_context().get_target_language()

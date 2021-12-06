@@ -7,10 +7,26 @@
         }
     },
     {
+        "name": "native-gcc-cpp-17",
+        "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/gcc-native.cmake",
+        "cmakeSettings": {
+            "NUNAVUT_VERIFICATION_LANG": "cpp",
+            "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17"
+        }
+    },
+    {
         "name": "native-clang-cpp",
         "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/clang-native.cmake",
         "cmakeSettings": {
             "NUNAVUT_VERIFICATION_LANG": "cpp"
+        }
+    },
+    {
+        "name": "native-clang-cpp-17",
+        "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/clang-native.cmake",
+        "cmakeSettings": {
+            "NUNAVUT_VERIFICATION_LANG": "cpp",
+            "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17"
         }
     },
     {
@@ -48,6 +64,15 @@
         "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/clang-native.cmake",
         "cmakeSettings": {
             "NUNAVUT_VERIFICATION_LANG": "cpp",
+            "NUNAVUT_FLAGSET": "${workspaceFolder}/verification/cmake/compiler_flag_sets/native.cmake"
+        }
+    },
+    {
+        "name": "native-clang-cpp-17-nocov",
+        "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/clang-native.cmake",
+        "cmakeSettings": {
+            "NUNAVUT_VERIFICATION_LANG": "cpp",
+            "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17",
             "NUNAVUT_FLAGSET": "${workspaceFolder}/verification/cmake/compiler_flag_sets/native.cmake"
         }
     },

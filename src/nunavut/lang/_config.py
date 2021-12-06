@@ -7,6 +7,7 @@
 
 """
 import re
+import types
 import typing
 
 from yaml import Loader as YamlLoader
@@ -554,3 +555,56 @@ class LanguageConfig:
             raise TypeError("{}.{} exists but is not a list. (is type {})".format(section_name, key, type(raw_value)))
 
         return default_value
+
+
+# +-------------------------------------------------------------------------------------------------------------------+
+# | VersionReader
+# +-------------------------------------------------------------------------------------------------------------------+
+
+
+class VersionReader:
+    """
+    Helper to read an "x.y.z" semantic version from python modules as a module variable
+    "__version__"
+    """
+
+    MODULE_VERSION_ATTRIBUTE_NAME = "__version__"
+
+    @classmethod
+    def parse_version(cls, version_string: str) -> typing.Optional[typing.Tuple[int, int, int]]:
+        version_array = [int(x) for x in version_string.split(".")]
+        if len(version_array) != 3:
+            return None
+        else:
+            return (version_array[0], version_array[1], version_array[2])
+
+    @classmethod
+    def read_version(cls, module: "types.ModuleType") -> typing.Tuple[int, int, int]:
+        version = getattr(module, cls.MODULE_VERSION_ATTRIBUTE_NAME, "0.0.0")  # type: str
+
+        version_tuple = cls.parse_version(version)
+        if version_tuple is None:
+            raise RuntimeError(
+                'Invalid {} "{}" for module {} (expected "x.y.z")'.format(
+                    cls.MODULE_VERSION_ATTRIBUTE_NAME, version, module.__name__
+                )
+            )
+        return version_tuple
+
+    def __init__(self, module_name: str):
+        self._module_name = module_name
+        self._cached = None  # type: typing.Optional[typing.Tuple[int, int, int]]
+
+    @property
+    def version(self) -> typing.Tuple[int, int, int]:
+        if self._cached is None:
+            self._cached = self._get_version()
+        return self._cached
+
+    def _get_version(self) -> typing.Tuple[int, int, int]:
+        import importlib
+
+        try:
+            return self.read_version(importlib.import_module(self._module_name))
+        except (ImportError, ValueError):
+            return (0, 0, 0)
