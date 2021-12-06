@@ -19,7 +19,11 @@ from doctest import ELLIPSIS
 import pydsdl
 import pytest
 from sybil import Sybil
-from sybil.parsers.codeblock import PythonCodeBlockParser
+try:
+    from sybil.parsers.codeblock import PythonCodeBlockParser
+except ImportError:
+    from sybil.parsers.codeblock import CodeBlockParser as PythonCodeBlockParser
+
 from sybil.parsers.doctest import DocTestParser
 
 from nunavut import Namespace
@@ -374,7 +378,8 @@ _sy = Sybil(
         '**/.*',
         '**/CONTRIBUTING.rst',
         '**/verification/*',
-        '**/prof/*'
+        '**/prof/*',
+        '*.png'
     ],
     fixtures=['jinja_filter_tester',
               'gen_paths',

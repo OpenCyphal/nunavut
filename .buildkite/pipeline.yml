@@ -4,7 +4,6 @@ steps:
     id: toxic-docker-build
     commands:
       - "tox -e lint,mypy,docs"
-      - "tox -e py38-nnvg"
       - "tox -e py39-test,py39-nnvg,py39-doctest,py39-rstdoctest"
       - "tox -e report"
     parallelism: 2
@@ -27,13 +26,14 @@ steps:
     agents:
       queue: 'default'
     timeout_in_minutes: 40
-  - label: ':python::hammer: python 35 - 37'
+  - label: ':python::hammer: python 35 - 38'
     if: build.branch == "main" && pipeline.slug == "nunavut-release"
     id: toxic-docker-build-legacy
     commands:
       - "tox -e py35-test,py35-nnvg"
       - "tox -e py36-nnvg"
       - "tox -e py37-nnvg"
+      - "tox -e py38-nnvg"
     parallelism: 2
     plugins:
       - docker#v3.3.0:
