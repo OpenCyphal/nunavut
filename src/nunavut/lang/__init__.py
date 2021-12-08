@@ -19,7 +19,7 @@ import typing
 import pydsdl
 
 from ..dependencies import Dependencies, DependencyBuilder
-from .._utilities import YesNoDefault
+from .._utilities import YesNoDefault, iter_package_resources
 from ._config import LanguageConfig, VersionReader
 
 logger = logging.getLogger(__name__)
@@ -50,14 +50,10 @@ class LanguageLoader:
 
     @classmethod
     def _load_config(cls, *additional_config_files: pathlib.Path) -> LanguageConfig:
-        import pkg_resources
-
         parser = LanguageConfig()
-        resources = [r for r in pkg_resources.resource_listdir(__name__, ".") if r.endswith(".yaml")]
-        for resource in resources:
-            with pkg_resources.resource_stream(__name__, resource) as resource_stream:
-                ini_string = resource_stream.read().decode(encoding="utf-8", errors="replace")
-                parser.read_string(ini_string, resource)
+        for resource in iter_package_resources(__name__, ".yaml"):
+            ini_string = resource.read_text()
+            parser.read_string(ini_string)
         for additional_path in additional_config_files:
             with open(str(additional_path), "r") as additional_file:
                 parser.read_file(additional_file)

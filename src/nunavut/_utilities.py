@@ -13,6 +13,13 @@ A small collection of common utilities.
 
 """
 import enum
+import logging
+import pathlib
+from typing import Generator
+
+import importlib_resources
+
+_logger = logging.getLogger(__name__)
 
 
 @enum.unique
@@ -84,3 +91,18 @@ class YesNoDefault(enum.Enum):
     NO = 0
     YES = 1
     DEFAULT = 2
+
+
+def iter_package_resources(pkg_name: str, *suffix_filters: str) -> Generator[pathlib.Path, None, None]:
+    """
+    >>> from nunavut._utilities import iter_package_resources
+    >>> rs = [x for x in iter_package_resources("nunavut.lang", ".py") if x.name == "__init__.py"]
+    >>> len(rs)
+    1
+    >>> rs[0].name
+    '__init__.py'
+
+    """
+    for resource in importlib_resources.files(pkg_name).iterdir():
+        if any(suffix == resource.suffix for suffix in suffix_filters):
+            yield resource
