@@ -8,7 +8,7 @@ Contains supporting C headers to distribute with generated types.
 """
 import pathlib
 import typing
-from nunavut.utilities import iter_package_resources
+from nunavut._utilities import iter_package_resources
 
 __version__ = "1.0.0"
 """Version of the c support headers."""
