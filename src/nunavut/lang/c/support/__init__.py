@@ -37,6 +37,4 @@ def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
 
     :return: A list of C support header resources.
     """
-    for resource in iter_package_resources(__name__):
-        if resource.basename.endswith(".h") or resource.basename.endswith(".j2"):
-            yield pathlib.Path(resource.make_path())
+    return iter_package_resources(__name__, ".h", ".j2")

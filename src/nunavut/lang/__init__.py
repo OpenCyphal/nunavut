@@ -51,8 +51,7 @@ class LanguageLoader:
     @classmethod
     def _load_config(cls, *additional_config_files: pathlib.Path) -> LanguageConfig:
         parser = LanguageConfig()
-        resources = [r for r in iter_package_resources(__name__) if r.basename.endswith(".yaml")]
-        for resource in resources:
+        for resource in iter_package_resources(__name__, ".yaml"):
             ini_string = resource.read_text()
             parser.read_string(ini_string)
         for additional_path in additional_config_files:
