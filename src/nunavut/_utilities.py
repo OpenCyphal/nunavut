@@ -15,7 +15,7 @@ A small collection of common utilities.
 import enum
 import logging
 import pathlib
-from typing import Iterator, Optional, Generator
+from typing import Generator
 
 import importlib_resources
 
