@@ -27,7 +27,7 @@
         {
             "label": "verify c native32",
             "type": "shell",
-            "command": "${workspaceFolder}/.buildkite/verify.py",
+            "command": "${workspaceFolder}/.github/verify.py",
             "args": [
                 "--verbose",
                 "--force",
