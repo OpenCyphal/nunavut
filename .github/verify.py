@@ -439,7 +439,7 @@ def _cmake_configure(args: argparse.Namespace, cmake_args: typing.List[str], cma
         cmake_configure_args.append("-DNUNAVUT_VERIFICATION_SER_FP_DISABLE:BOOL=ON")
 
     if args.enable_ovr_var_array:
-        cmake_configure_args.append("-NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE:BOOL=ON")
+        cmake_configure_args.append("-DNUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE:BOOL=ON")
 
     if args.verbose > 0:
         cmake_configure_args.append("-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON")
@@ -509,6 +509,9 @@ def _cmake_test(args: argparse.Namespace, cmake_args: typing.List[str], cmake_di
 
 def _create_build_dir_name(args: argparse.Namespace) -> str:
     name = "build_{}".format(args.language)
+
+    if args.language_standard is not None:
+        name += "_{}".format(args.language_standard)
 
     name += "_{}".format(args.toolchain_family)
 

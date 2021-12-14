@@ -141,7 +141,7 @@ jobs:
                           --build-type ${{ matrix.build_type }} \
                           ${{ matrix.flag }}
 
-  language-verification-cpp-11:
+  language-verification-cpp-14:
     runs-on: ubuntu-latest
     needs: test
     container: uavcan/c_cpp:ubuntu-20.04
@@ -166,7 +166,7 @@ jobs:
         .github/verify.py --override .github/verify_global.ini \
                           --override .github/verify_cpp_${{ matrix.compiler }}_${{ matrix.architecture }}.ini \
                           --build-type ${{ matrix.build_type }} \
-                          --language-standard c++11 \
+                          --language-standard c++14 \
                           ${{ matrix.flag }}
 
   language-verification-cpp-17:
