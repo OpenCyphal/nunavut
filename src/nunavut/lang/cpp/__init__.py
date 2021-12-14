@@ -31,7 +31,7 @@ class Language(BaseLanguage):
     Concrete, C++-specific :class:`nunavut.lang.Language` object.
     """
 
-    CPP_STD_EXTRACT_NUMBER_PATTERN = re.compile(r"(?:gnu|c)\+\+(\d(?:[\d\w]))")
+    CPP_STD_EXTRACT_NUMBER_PATTERN = re.compile(r"(?:gnu|c)\+\+(\d(?:\w))")
 
     @staticmethod
     def _handle_stropping_or_encoding_failure(
