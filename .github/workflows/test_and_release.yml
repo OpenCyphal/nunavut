@@ -57,16 +57,12 @@ jobs:
         python-version: '3.9'
     - name: install-tox
       run: pip3 install tox
-    - name: lint
-      run: tox -e lint
     - name: test-nnvg
       run: tox -e py39-nnvg
     - name: test-doctest
       run: tox -e py39-doctest,py39-rstdoctest
     - name: test-pytest
       run: tox -e py39-test
-    - name: test-report
-      run: tox -e report
 
   sonar:
     runs-on: ubuntu-latest
