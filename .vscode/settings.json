@@ -46,6 +46,9 @@
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "C_Cpp.configurationWarnings": "Disabled",
     "files.associations": {
+        "*.py.template": "python",
+        "*.cc": "c++",
+        "*.hpp": "c++",
         "__bit_reference": "cpp",
         "__config": "cpp",
         "__debug": "cpp",
