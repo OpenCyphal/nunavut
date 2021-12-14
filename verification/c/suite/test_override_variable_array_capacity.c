@@ -19,6 +19,7 @@
 static void testPrimitiveArrayVariableOverride(void)
 {
     regulated_basics_PrimitiveArrayVariable_0_1 ref;
+    memset(&ref, 0, sizeof(ref));
     uint8_t buf[regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_ - 1];
 
 #if NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 1
