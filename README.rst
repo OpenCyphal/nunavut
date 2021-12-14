@@ -193,9 +193,9 @@ Nunavut is part of the UAVCAN project:
     :alt: Documentation Status
 .. _badge_docs: https://nunavut.readthedocs.io/en/latest/?badge=latest
 
-.. |badge_build| image:: https://badge.buildkite.com/049dced90c2afed8a2aa072bc513d9e6e1ffc78f9036624efd.svg
+.. |badge_build| image:: https://github.com/UAVCAN/nunavut/actions/workflows/test_and_release.yml/badge.svg
     :alt: Build status
-.. _badge_build: https://buildkite.com/uavcan/nunavut-release
+.. _badge_build: https://github.com/UAVCAN/nunavut/actions/workflows/test_and_release.yml
 
 .. |badge_pypi_support| image:: https://img.shields.io/pypi/pyversions/nunavut.svg
     :alt: Supported Python Versions

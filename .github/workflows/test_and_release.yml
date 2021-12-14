@@ -1,0 +1,185 @@
+name: test and release CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    - name: install-tox
+      run: pip3 install tox
+    - name: lint
+      run: tox -e lint
+    - name: test-nnvg
+      run: tox -e py39-nnvg
+    - name: test-doctest
+      run: tox -e py39-doctest,py39-rstdoctest
+    - name: test-pytest
+      run: tox -e py39-test
+    - name: test-report
+      run: tox -e report
+    - name: package
+      run: tox -e package
+    - name: upload-coverage-reports
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage-reports
+        path: .tox/report/tmp/*
+    - name: upload-xunit-results
+      uses: actions/upload-artifact@v2
+      with:
+        name: xunit-results
+        path: .tox/py39-test/tmp/xunit-result.xml
+    - name: upload-package
+      uses: actions/upload-artifact@v2
+      with:
+        name: pypi-package
+        path: .tox/package/dist/*
+
+  sonar:
+    runs-on: ubuntu-latest
+    needs: test
+    container: sonarsource/sonar-scanner-cli
+    steps:
+    - uses: actions/checkout@v2
+    - name: sonar-cache
+      uses: actions/cache@v2
+      with:
+        path: /opt/sonar-scanner/.sonar/cache
+        key: sonar-scanner-cli-4.6.2.2472-${{ runner.os }}
+    - name: download-converage-reports
+      uses: actions/download-artifact@v2
+      with:
+        name: coverage-reports
+        path: .tox/report/tmp/
+    - name: download-xunit-results
+      uses: actions/download-artifact@v2
+      with:
+        name: xunit-results
+        path: .tox/py39-test/tmp/
+    - name: set-environment
+      run: |
+        echo NUNAVUT_MAJOR_MINOR_VERSION=$(./.github/verify.py --major-minor-version-only) >> $GITHUB_ENV
+    - name: verify tox artifacts
+      run: ls -R
+      working-directory: .tox
+    - name: report-release
+      if: ${{ github.event_name != 'pull_request' }}
+      env:
+        SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+      run: |
+        sonar-scanner -X \
+        -Dsonar.login=${{ env.SONARQUBE_TOKEN }} \
+        -Dsonar.buildString=${{ env.GITHUB_RUN_ID }} \
+        -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }} \
+        -Dsonar.python.version=python3.9
+    - name: report-pr
+      if: ${{ github.event_name == 'pull_request' }}
+      env:
+        SONARQUBE_TOKEN: 1a2ff4a4fd55f7ad584b24af7ca072c16fa7e3f4
+      run: |
+        sonar-scanner -X \
+        -Dsonar.login=${{ env.SONARQUBE_TOKEN }} \
+        -Dsonar.buildString=${{ env.GITHUB_RUN_ID }} \
+        -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }} \
+        -Dsonar.python.version=python3.9
+
+  compat-test-python3:
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      matrix:
+        python3-version: ['5', '6', '7', '8']
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: setup python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.${{ matrix.python3-version }}
+    - name: setup tox
+      run: pip3 install tox
+    - name: python3.${{ matrix.python3-version }} test
+      run: tox -e py3${{ matrix.python3-version }}-nnvg,py3${{ matrix.python3-version }}-test
+
+  language-verification-c:
+    runs-on: ubuntu-latest
+    needs: test
+    container: uavcan/c_cpp:ubuntu-20.04
+    strategy:
+      matrix:
+        build_type: [Debug, Release, MinSizeRel]
+        architecture: [native32, native64]
+        compiler: [gcc, clang]
+        flag: [--none, --enable-ovr-var-array, --disable-asserts]
+        exclude:
+          - build_type: Debug
+            flag: --disable-asserts
+          - build_type: Release
+            flag: --disable-asserts
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: verify
+      run: |
+        .github/verify.py --override .github/verify_global.ini \
+                          --override .github/verify_c_${{ matrix.compiler }}_${{ matrix.architecture }}.ini \
+                          --build-type ${{ matrix.build_type }} \
+                          ${{ matrix.flag }}
+
+  language-verification-cpp:
+    runs-on: ubuntu-latest
+    needs: test
+    container: uavcan/c_cpp:ubuntu-20.04
+    strategy:
+      matrix:
+        build_type: [Debug, Release, MinSizeRel]
+        architecture: [native32, native64]
+        compiler: [gcc, clang]
+        flag: [--none, --enable-ovr-var-array, --disable-asserts]
+        exclude:
+          - build_type: Debug
+            flag: --disable-asserts
+          - build_type: Release
+            flag: --disable-asserts
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: verify
+      run: |
+        .github/verify.py --override .github/verify_global.ini \
+                          --override .github/verify_cpp_${{ matrix.compiler }}_${{ matrix.architecture }}.ini \
+                          --build-type ${{ matrix.build_type }} \
+                          ${{ matrix.flag }}
+
+  release:
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.repository == 'UAVCAN/nunavut' }}
+    runs-on: ubuntu-latest
+    needs: [compat-test-python3, language-verification-cpp, language-verification-c, sonar]
+    steps:
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    - name: download-package
+      uses: actions/download-artifact@v2
+      with:
+        name: pypi-package
+        path: .tox/package/dist/
+    - name: upload
+      run: |
+        pip3 install twine
+        twine upload -u __token__ -p ${{ secrets.PYPI_PASSWORD }} .tox/package/dist/*
