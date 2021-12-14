@@ -46,24 +46,6 @@ jobs:
         name: pypi-package
         path: .tox/package/dist/*
 
-  test-windows:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
-    - uses: actions/setup-python@v2
-      with:
-        python-version: '3.9'
-    - name: install-tox
-      run: pip3 install tox
-    - name: test-nnvg
-      run: tox -e py39-nnvg
-    - name: test-doctest
-      run: tox -e py39-doctest,py39-rstdoctest
-    - name: test-pytest
-      run: tox -e py39-test
-
   sonar:
     runs-on: ubuntu-latest
     needs: test
