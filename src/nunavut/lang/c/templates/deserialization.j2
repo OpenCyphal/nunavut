@@ -11,10 +11,15 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro deserialize(t) %}
-    if ((out_obj == {{ valuetoken_null }}) || (buffer == {{ valuetoken_null }}) || {# -#}
-        (inout_buffer_size_bytes == {{ valuetoken_null }}))
+    if ((out_obj == {{ valuetoken_null }}) || (inout_buffer_size_bytes == {{ valuetoken_null }}) || {# -#}
+        ((buffer == {{ valuetoken_null }}) && (0 != *inout_buffer_size_bytes)))
     {
         return -NUNAVUT_ERROR_INVALID_ARGUMENT;
+    }
+    else if (buffer == {{ valuetoken_null }})
+    {
+        *inout_buffer_size_bytes = 0;
+        return NUNAVUT_SUCCESS;
     }
 {% if t.inner_type.bit_length_set.max > 0 %}
     {{ _deserialize_impl(t) }}

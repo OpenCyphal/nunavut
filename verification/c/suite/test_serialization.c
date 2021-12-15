@@ -847,6 +847,31 @@ static void testPrimitiveArrayVariable(void)
     }
 }
 
+/*
+ * Test that deserialization methods do not signal an error if a zero size is specified for a null output buffer.
+ */
+static void testIssue221(void)
+{
+    uint8_t buf[regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];
+    const size_t fixed_size = sizeof(buf);
+    size_t size = fixed_size;
+
+    regulated_basics_Primitive_0_1 obj;
+    TEST_ASSERT_EQUAL(0, regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], &size));
+    size = fixed_size;
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
+                      regulated_basics_Primitive_0_1_deserialize_(NULL, &buf[0], &size));
+    size = fixed_size;
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
+                      regulated_basics_Primitive_0_1_deserialize_(&obj, NULL, &size));
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
+                      regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], NULL));
+    size = 0;
+    TEST_ASSERT_EQUAL(0,
+                      regulated_basics_Primitive_0_1_deserialize_(&obj, NULL, &size));
+    TEST_ASSERT_EQUAL(0, size);
+}
+
 void setUp(void)
 {
     const unsigned seed = (unsigned) time(NULL);
@@ -869,6 +894,7 @@ int main(void)
     RUN_TEST(testPrimitive);
     RUN_TEST(testPrimitiveArrayFixed);
     RUN_TEST(testPrimitiveArrayVariable);
+    RUN_TEST(testIssue221);
 
     return UNITY_END();
 }
