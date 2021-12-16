@@ -8,6 +8,7 @@
 #include <regulated/basics/PrimitiveArrayVariable_0_1.h>
 #include <regulated/delimited/A_1_0.h>
 #include <regulated/delimited/A_1_1.h>
+#include <uavcan/pnp/NodeIDAllocationData_2_0.h>
 #include "unity.h"  // Include 3rd-party headers afterward to ensure that our headers are self-sufficient.
 #include <stdlib.h>
 #include <time.h>
@@ -847,6 +848,45 @@ static void testPrimitiveArrayVariable(void)
     }
 }
 
+/*
+ * Test that deserialization methods do not signal an error if a zero size is specified for a null output buffer.
+ */
+static void testIssue221(void)
+{
+    uint8_t buf[regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];
+    const size_t fixed_size = sizeof(buf);
+    size_t size = fixed_size;
+
+    regulated_basics_Primitive_0_1 obj;
+    TEST_ASSERT_EQUAL(0, regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], &size));
+    size = fixed_size;
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
+                      regulated_basics_Primitive_0_1_deserialize_(NULL, &buf[0], &size));
+    size = fixed_size;
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
+                      regulated_basics_Primitive_0_1_deserialize_(&obj, NULL, &size));
+    TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
+                      regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], NULL));
+    size = 0;
+    TEST_ASSERT_EQUAL(0,
+                      regulated_basics_Primitive_0_1_deserialize_(&obj, NULL, &size));
+    TEST_ASSERT_EQUAL(0, size);
+}
+
+/*
+ * Ensure that, where there is no input data, the deserialization method applies the zero-extension rule as defined
+ * in section 3.7.1.4 of the specification.
+ */
+static void testIssue221_zeroExtensionRule(void)
+{
+    size_t size = 0;
+    uavcan_pnp_NodeIDAllocationData_2_0 obj;
+    obj.node_id.value = 0xAAAA;
+    TEST_ASSERT_EQUAL(0, uavcan_pnp_NodeIDAllocationData_2_0_deserialize_(&obj, NULL, &size));
+    TEST_ASSERT_EQUAL(0, obj.node_id.value);
+}
+
+
 void setUp(void)
 {
     const unsigned seed = (unsigned) time(NULL);
@@ -869,6 +909,8 @@ int main(void)
     RUN_TEST(testPrimitive);
     RUN_TEST(testPrimitiveArrayFixed);
     RUN_TEST(testPrimitiveArrayVariable);
+    RUN_TEST(testIssue221);
+    RUN_TEST(testIssue221_zeroExtensionRule);
 
     return UNITY_END();
 }

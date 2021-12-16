@@ -215,7 +215,7 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_
 /// @returns Negative on error, zero on success.
 static inline {{ typename_error_type }} {{ t | full_reference_name }}_deserialize_(
     {{ t | full_reference_name }}* const out_obj, {# -#}
-    const {{ typename_byte }}* const buffer, {# -#}
+    const {{ typename_byte }}* buffer, {# -#}
     {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
 {
     {% from 'deserialization.j2' import deserialize -%}
