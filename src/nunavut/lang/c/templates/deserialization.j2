@@ -16,10 +16,9 @@
     {
         return -NUNAVUT_ERROR_INVALID_ARGUMENT;
     }
-    else if (buffer == {{ valuetoken_null }})
+    if (buffer == {{ valuetoken_null }})
     {
-        *inout_buffer_size_bytes = 0;
-        return NUNAVUT_SUCCESS;
+        buffer = (const {{ typename_byte }}*)"";
     }
 {% if t.inner_type.bit_length_set.max > 0 %}
     {{ _deserialize_impl(t) }}
