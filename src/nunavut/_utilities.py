@@ -93,7 +93,9 @@ class YesNoDefault(enum.Enum):
     DEFAULT = 2
 
 
-def iter_package_resources(pkg_name: str, *suffix_filters: str) -> Generator[pathlib.Path, None, None]:
+def iter_package_resources(
+        pkg_name: str, 
+        *suffix_filters: str) -> Generator[tuple[pathlib.Path, pathlib.Path], None, None]:
     """
     >>> from nunavut._utilities import iter_package_resources
     >>> rs = [x for x in iter_package_resources("nunavut.lang", ".py") if x.name == "__init__.py"]
@@ -103,6 +105,7 @@ def iter_package_resources(pkg_name: str, *suffix_filters: str) -> Generator[pat
     '__init__.py'
 
     """
-    for resource in importlib_resources.files(pkg_name).iterdir():
+    root = importlib_resources.files(pkg_name)
+    for resource in root.rglob("*"):
         if any(suffix == resource.suffix for suffix in suffix_filters):
-            yield resource
+            yield (root, resource)

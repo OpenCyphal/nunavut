@@ -33,8 +33,8 @@ class IncludeGenerator:
             for namespace_part in self._language.support_namespace:
                 namespace_path = namespace_path / pathlib.Path(namespace_part)
             path_list += [
-                (namespace_path / pathlib.Path(p.name).with_suffix(output_extension)).as_posix()
-                for p in self._language.support_files
+                (namespace_path / p.relative_to(r).with_suffix(output_extension)).as_posix()
+                for r, p in self._language.support_files
             ]
 
         prefer_system_includes = self._language.get_config_value_as_bool("prefer_system_includes", False)

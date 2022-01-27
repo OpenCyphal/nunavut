@@ -792,7 +792,7 @@ class SupportGenerator(CodeGenerator):
     # +-----------------------------------------------------------------------+
     # | AbstractGenerator
     # +-----------------------------------------------------------------------+
-    def get_templates(self) -> typing.Iterable[pathlib.Path]:
+    def get_templates(self) -> typing.Iterable[tuple[pathlib.Path, pathlib.Path]]:
         files = []
         target_language = self.language_context.get_target_language()
 
@@ -815,7 +815,7 @@ class SupportGenerator(CodeGenerator):
 
     def _generate_all(
         self, target_language: nunavut.lang.Language, sub_folders: pathlib.Path, is_dryrun: bool, allow_overwrite: bool
-    ) -> typing.Iterable[pathlib.Path]:
+    ) -> typing.Iterable[tuple[pathlib.Path, pathlib.Path]]:
         target_path = pathlib.Path(self.namespace.get_support_output_folder()) / sub_folders
 
         line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']
@@ -830,8 +830,8 @@ class SupportGenerator(CodeGenerator):
                     raise ValueError("PostProcessor type {} is unknown.".format(type(pp)))
 
         generated = []  # type: typing.List[pathlib.Path]
-        for resource in self.get_templates():
-            target = (target_path / resource.name).with_suffix(target_language.extension)
+        for root, resource in self.get_templates():
+            target = (target_path / resource.relative_to(root)).with_suffix(target_language.extension)
             logger.info("Generating support file: %s", target)
             if not self._support_enabled:
                 self._remove_header(target, is_dryrun, allow_overwrite)

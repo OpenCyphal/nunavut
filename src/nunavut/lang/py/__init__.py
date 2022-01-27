@@ -7,10 +7,15 @@
     Filters for generating python. All filters in this
     module will be available in the template's global namespace as ``py``.
 """
+import base64
 import builtins
 import functools
+import gzip
+import itertools
 import keyword
+import pickle
 import typing
+from typing import Iterable, Sequence
 
 import pydsdl
 
@@ -332,3 +337,51 @@ def filter_longest_id_length(language: Language, attributes: typing.List[pydsdl.
         return max(map(len, map(functools.partial(filter_id, language), attributes)))
     else:
         return max(map(len, attributes))
+
+
+@template_language_filter(__name__)
+def filter_pickle(language: Language, instance: typing.Any) -> str:
+    pickled: str = base64.b85encode(gzip.compress(pickle.dumps(instance, protocol=4))).decode().strip()
+    segment_gen = map("".join, itertools.zip_longest(*([iter(pickled)] * 100), fillvalue=""))
+    return "\n".join(repr(x) for x in segment_gen)
+
+
+@template_language_filter(__name__)
+def filter_numpy_scalar_type(language: Language, t: pydsdl.Any) -> str:
+    def pick_width(w: int) -> int:
+        for o in [8, 16, 32, 64]:
+            if w <= o:
+                return o
+        raise ValueError(f"Invalid bit width: {w}")  # pragma: no cover
+
+    if isinstance(t, pydsdl.BooleanType):
+        return "bool"  # TODO: numpy.bool is deprecated in v1.20
+    if isinstance(t, pydsdl.SignedIntegerType):
+        return f"_np_.int{pick_width(t.bit_length)}"
+    if isinstance(t, pydsdl.UnsignedIntegerType):
+        return f"_np_.uint{pick_width(t.bit_length)}"
+    if isinstance(t, pydsdl.FloatType):
+        return f"_np_.float{pick_width(t.bit_length)}"
+    assert not isinstance(t, pydsdl.PrimitiveType), "Forgot to handle some primitive types"
+    return "object"  # TODO: numpy.object is deprecated in v1.20
+
+
+@template_language_filter(__name__)
+def filter_newest_minor_version_aliases(
+        language: Language,
+        tys: Iterable[pydsdl.CompositeType],
+) -> Sequence[tuple[str, pydsdl.CompositeType]]:
+    """
+    Implementation of https://github.com/UAVCAN/nunavut/issues/193
+    """
+    tys = list(tys)
+    return [
+        (
+            f"{name}_{major}",
+            max(
+                (t for t in tys if t.short_name == name and t.version.major == major),
+                key=lambda x: int(x.version.minor),
+            ),
+        )
+        for name, major in sorted({(x.short_name, x.version.major) for x in tys})
+    ]
