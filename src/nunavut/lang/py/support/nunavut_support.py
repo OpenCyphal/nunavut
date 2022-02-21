@@ -19,6 +19,19 @@ from numpy.typing import NDArray
 import pydsdl
 
 
+
+if sys.byteorder != "little":  # pragma: no cover
+    raise RuntimeError(
+        "BIG-ENDIAN PLATFORMS ARE NOT YET SUPPORTED. "
+        "The current serialization code assumes that the native byte order is little-endian. Since UAVCAN uses "
+        "little-endian byte order in its serialized data representations, this assumption allows us to bypass data "
+        "transformation in many cases, resulting in zero-cost serialization and deserialization. "
+        "Big-endian platforms are unable to take advantage of that, requiring byte swapping for multi-byte entities; "
+        "fortunately, nowadays such platforms are uncommon. If you need to use this library on a big-endian platform, "
+        "please implement the missing code and submit a pull request to the upstream, then remove this exception."
+    )
+
+
 Byte = numpy.uint8
 """
 We must use uint8 instead of ubyte because uint8 is platform-invariant whereas (u)byte is platform-dependent.
