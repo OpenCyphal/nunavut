@@ -7,7 +7,7 @@
       {
         "name": "{{ T.short_name }}",
         "type": "{{ T | typename }}",
-        "source" : "{{ T.source_file_path }}",
+        "source" : "{{ T.source_file_path | replace("\\", "\\\\") }}",
         "fixed_port_id": {{ T.fixed_port_id }},
         "deprecated": {{ T.deprecated | ln.js.to_true_or_false }},
         "version":
