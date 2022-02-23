@@ -58,11 +58,13 @@
 {% include '_fields.j2' %}
 {%- endif -%}
 {%- if not nunavut.support.omit %}
-    {{ typename_unsigned_length }} serialize(std::size_t todo_ser = 0)
+
+    nunavut::support::SerializeResult
+    serialize(nunavut::support::span<{{ typename_byte }}> out_buffer) const
     {
-        // TODO: implement this routine
-        (void)todo_ser;
-        return 0;
+        (void)out_buffer;
+        {% from 'serialization.j2' import serialize -%}
+        {{ serialize(composite_type) | trim }}
     }
 {%- endif %}
 }{{ composite_type | definition_end }}

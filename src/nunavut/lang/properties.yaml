@@ -277,6 +277,7 @@ nunavut.lang.cpp:
         'unsigned_length': 'std::size_t'
         'unsigned_bit_length': 'std::size_t'
         'unsigned_port': 'std::uint16_t'
+        'byte': 'uint8_t'
     named_values:
         'true': 'true'
         'false': 'false'
