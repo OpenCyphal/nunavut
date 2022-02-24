@@ -460,3 +460,355 @@ TEST(BitSpan, GetI64_zeroDataLen)
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
     ASSERT_EQ(0, nunavut::support::const_bitspan(data, 0).getI64(0U));
 }
+
+// +--------------------------------------------------------------------------+
+// | nunavut::support::float16Pack
+// +--------------------------------------------------------------------------+
+
+TEST(BitSpan, Float16Pack)
+{
+    // Comparing to NumPy calculated values
+
+    uint16_t packed_float = nunavut::support::float16Pack(3.14f);
+    // hex(int.from_bytes(np.array([np.float16('3.14')]).tobytes(), 'little'))
+    ASSERT_EQ(0x4248, packed_float) << "Failed to serialize 3.14f";
+
+    packed_float = nunavut::support::float16Pack(-3.14f);
+    // hex(int.from_bytes(np.array([-np.float16('3.14')]).tobytes(), 'little'))
+    ASSERT_EQ(0xC248, packed_float) << "Failed to serialize -3.14f";
+
+    packed_float = nunavut::support::float16Pack(65536.141592653589793238462643383279f);
+    // hex(int.from_bytes(np.array([np.float16('65536.141592653589793238462643383279')]).tobytes(), 'little'))
+    ASSERT_EQ(0x7C00, packed_float) << "Failed to serialize 65536.141592653589793238462643383279f";
+
+    packed_float = nunavut::support::float16Pack(-65536.141592653589793238462643383279f);
+    // hex(int.from_bytes(np.array([np.float16('65536.141592653589793238462643383279')]).tobytes(), 'little'))
+    ASSERT_EQ(0xFC00, packed_float) << "Failed to serialize -65536.141592653589793238462643383279f";
+}
+
+TEST(BitSpan, Float16Pack_NAN_cmath)
+{
+    uint16_t packed_float = nunavut::support::float16Pack(NAN);
+    ASSERT_EQ(0x7C00U, (0x7C00UL & packed_float)) << "Exponent bits were not all set for NAN.";
+    ASSERT_EQ(0x0000U, (0x8000UL & packed_float)) << "NAN sign bit was negative.";
+
+    packed_float = nunavut::support::float16Pack(-NAN);
+    ASSERT_EQ(0x7C00U, (0x7C00UL & packed_float)) << "Exponent bits were not all set for -NAN.";
+    ASSERT_EQ(0x8000U, (0x8000UL & packed_float)) << "-NAN sign bit was positive.";
+}
+
+TEST(BitSpan, Float16Pack_infinity)
+{
+    uint16_t packed_float = nunavut::support::float16Pack(INFINITY);
+    ASSERT_EQ(0x0000, (0x03FF & packed_float)) << "Mantessa bits were not 0 for INFINITY.";
+    ASSERT_EQ(0x7C00, (0x7C00 & packed_float)) << "INFINITY did not set bits G5 - G4+w";
+    ASSERT_EQ(0x0000, (0x8000 & packed_float)) << "INFINITY sign bit was negative.";
+
+    packed_float = nunavut::support::float16Pack(-INFINITY);
+    ASSERT_EQ(0x0000, (0x03FF & packed_float)) << "Mantessa bits were not 0 for -INFINITY.";
+    ASSERT_EQ(0x7C00, (0x7C00 & packed_float)) << "-INFINITY did not set bits G5 - G4+w";
+    ASSERT_EQ(0x8000, (0x8000 & packed_float)) << "-INFINITY sign bit was positive.";
+}
+
+TEST(BitSpan, Float16Pack_zero)
+{
+    uint16_t packed_float = nunavut::support::float16Pack(0.0f);
+    ASSERT_EQ(0x0, (0x03FF & packed_float)) << "0.0f had bits in significand.";
+    ASSERT_EQ(0x0, (0x7C00 & packed_float)) << "0.0f had bits in exponent.";
+    ASSERT_EQ(0x0, (0x8000 & packed_float)) << "0.0f sign bit was negative.";
+
+    packed_float = nunavut::support::float16Pack(-0.0f);
+    ASSERT_EQ(0x0000, (0x03FF & packed_float)) << "-0.0f had bits in significand.";
+    ASSERT_EQ(0x0000, (0x7C00 & packed_float)) << "-0.0f had bits in exponent.";
+    ASSERT_EQ(0x8000, (0x8000 & packed_float)) << "-0.0f sign bit was not negative.";
+}
+
+// +--------------------------------------------------------------------------+
+// | nunavut::support::float16Unpack
+// +--------------------------------------------------------------------------+
+
+TEST(BitSpan, Float16Unpack)
+{
+    // >>> hex(int.from_bytes(np.array([-np.float16('3.14')]).tobytes(), 'little'))
+    // '0xc248'
+    ASSERT_NEAR(-3.14f, nunavut::support::float16Unpack(0xC248), 0.001f);
+    // >>> hex(int.from_bytes(np.array([np.float16('3.14')]).tobytes(), 'little'))
+    // '0x4248'
+    ASSERT_NEAR(3.14f, nunavut::support::float16Unpack(0x4248), 0.001f);
+    // >>> hex(int.from_bytes(np.array([np.float16('nan')]).tobytes(), 'little'))
+    // '0x7e00'
+    ASSERT_TRUE(std::isnan(nunavut::support::float16Unpack(0x7e00)));
+    // >>> hex(int.from_bytes(np.array([-np.float16('nan')]).tobytes(), 'little'))
+    // '0xfe00'
+    ASSERT_TRUE(std::isnan(nunavut::support::float16Unpack(0xfe00)));
+    // >>> hex(int.from_bytes(np.array([np.float16('infinity')]).tobytes(), 'little'))
+    // '0x7c00'
+    ASSERT_FLOAT_EQ(INFINITY, nunavut::support::float16Unpack(0x7c00));
+    // >>> hex(int.from_bytes(np.array([-np.float16('infinity')]).tobytes(), 'little'))
+    // '0xfc00'
+    ASSERT_FLOAT_EQ(-INFINITY, nunavut::support::float16Unpack(0xfc00));
+}
+
+TEST(BitSpan, Float16Unpack_INFINITY)
+{
+    ASSERT_FLOAT_EQ(INFINITY, nunavut::support::float16Unpack(0x7C00));
+    ASSERT_FLOAT_EQ(-INFINITY, nunavut::support::float16Unpack(0xFC00));
+}
+
+// +--------------------------------------------------------------------------+
+// | nunavut::support::float16Pack/Unpack
+// +--------------------------------------------------------------------------+
+
+static bool helperPackUnpack(const float source_value, uint16_t compare_mask, size_t iterations)
+{
+    const uint16_t packed = nunavut::support::float16Pack(source_value);
+    uint16_t repacked = packed;
+    //char message_buffer[128];
+
+    for(size_t i = 0; i < iterations; ++i)
+    {
+        repacked = nunavut::support::float16Pack(nunavut::support::float16Unpack(repacked));
+        EXPECT_EQ(packed & compare_mask, repacked & compare_mask)
+            << "source_value=" << source_value << "compare_mask=" << std::hex << compare_mask << "i=" << i;
+        if(::testing::Test::HasFailure()) return false;
+    }
+    return true;
+}
+
+/**
+ * Test pack/unpack stability.
+ */
+TEST(BitSpan, Float16PackUnpack)
+{
+    const uint32_t signalling_nan_bits = 0x7F800000U | 0x200000U;
+    const uint32_t signalling_negative_nan_bits = 0xFF800000U | 0x200000U;
+
+    ASSERT_TRUE(helperPackUnpack(3.14f, 0xFFFF, 10));
+    ASSERT_TRUE(helperPackUnpack(-3.14f, 0xFFFF, 10));
+    ASSERT_TRUE(helperPackUnpack(65536.141592653589793238462643383279f, 0xFFFF, 100));
+    ASSERT_TRUE(helperPackUnpack(-65536.141592653589793238462643383279f, 0xFFFF, 100));
+
+    ASSERT_TRUE(helperPackUnpack(NAN, 0xFE00, 10));
+    ASSERT_TRUE(helperPackUnpack(-NAN, 0xFE00, 10));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+    ASSERT_TRUE(helperPackUnpack(*(reinterpret_cast<const float*>(&signalling_nan_bits)), 0xFF00, 10));
+    ASSERT_TRUE(helperPackUnpack(*(reinterpret_cast<const float*>(&signalling_negative_nan_bits)), 0xFF00, 10));
+#pragma GCC diagnostic pop
+    ASSERT_TRUE(helperPackUnpack(INFINITY, 0xFF00, 10));
+    ASSERT_TRUE(helperPackUnpack(-INFINITY, 0xFF00, 10));
+}
+
+TEST(BitSpan, Float16PackUnpack_NAN)
+{
+    ASSERT_TRUE(std::isnan(nunavut::support::float16Unpack(nunavut::support::float16Pack(NAN))));
+}
+
+// +--------------------------------------------------------------------------+
+// | testNunavutSetF16
+// +--------------------------------------------------------------------------+
+
+TEST(BitSpan, Set16)
+{
+    uint8_t buf[3];
+    buf[2] = 0x00;
+
+    nunavut::support::bitspan{ {buf, sizeof(buf)} }.setF16(3.14f);
+    ASSERT_EQ(0x48, buf[0]);
+    ASSERT_EQ(0x42, buf[1]);
+    ASSERT_EQ(0x00, buf[2]);
+}
+
+
+
+// +--------------------------------------------------------------------------+
+// | testNunavutGetF16
+// +--------------------------------------------------------------------------+
+
+TEST(BitSpan, Get16)
+{
+    // >>> hex(int.from_bytes(np.array([np.float16('3.14')]).tobytes(), 'little'))
+    // '0x4248'
+    const uint8_t buf[3] = {0x48, 0x42, 0x00};
+    const float result = nunavut::support::const_bitspan{ { buf, sizeof(buf) } }.getF16( );
+    ASSERT_NEAR(3.14f, result, 0.001f);
+}
+
+
+// +--------------------------------------------------------------------------+
+// | testNunavutSetF32
+// +--------------------------------------------------------------------------+
+/**
+ * Compare the results of Nunavut serialization to the IEEE definition. These must match.
+ */
+static void helperAssertSerFloat32SameAsIEEE(const float original_value, const uint8_t* serialized_result)
+{
+    union
+    {
+        float f;
+        struct
+        {
+            uint32_t mantissa : 23;
+            uint32_t exponent : 8;
+            uint32_t negative : 1;
+        } ieee;
+    } as_int = {original_value};
+
+    ASSERT_EQ(as_int.ieee.mantissa & 0xFF, serialized_result[0]) << "First 8 bits of mantissa did not match.";
+    ASSERT_EQ((as_int.ieee.mantissa >> 8U) & 0xFF, serialized_result[1]) << "Second 8 bits of mantissa did not match.";
+    ASSERT_EQ((as_int.ieee.mantissa >> 16U) & 0x3F, serialized_result[2] & 0x3F) << "Last 6 bits of mantissa did not match.";
+    ASSERT_EQ((as_int.ieee.mantissa >> 16U) & 0x40, serialized_result[2] & 0x40) << "7th bit of mantissa did not match.";
+    ASSERT_EQ(as_int.ieee.exponent & 0x1, (serialized_result[2] >> 7U) & 0x01) << "First bit of exponent did not match.";
+    ASSERT_EQ((as_int.ieee.exponent >> 1U) & 0x7F, serialized_result[3] & 0x7F) << "Last 7 bits of exponent did not match.";
+    ASSERT_EQ(as_int.ieee.negative & 0x1, (serialized_result[3] >> 7U) & 0x01) << "Negative bit did not match.";
+}
+
+TEST(BitSpan, SetF32)
+{
+    uint8_t buffer[] = {0x00, 0x00, 0x00, 0x00};
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( 3.14f);
+    helperAssertSerFloat32SameAsIEEE(3.14f, buffer);
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( -3.14f);
+    helperAssertSerFloat32SameAsIEEE(-3.14f, buffer);
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( -NAN);
+    helperAssertSerFloat32SameAsIEEE(-NAN, buffer);
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( NAN);
+    helperAssertSerFloat32SameAsIEEE(NAN, buffer);
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( INFINITY);
+    helperAssertSerFloat32SameAsIEEE(INFINITY, buffer);
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( -INFINITY);
+    helperAssertSerFloat32SameAsIEEE(-INFINITY, buffer);
+}
+
+// +--------------------------------------------------------------------------+
+// | testNunavutGetF32
+// +--------------------------------------------------------------------------+
+
+TEST(BitSpan, GetF32)
+{
+    // >>> hex(int.from_bytes(np.array([-np.float32('infinity')]).tobytes(), 'little'))
+    // '0xff800000'
+    const uint8_t buffer_neg_inf[] = {0x00, 0x00, 0x80, 0xFF};
+    float result = nunavut::support::const_bitspan{ { buffer_neg_inf, sizeof(buffer_neg_inf) } }.getF32( );
+    ASSERT_FLOAT_EQ(-INFINITY, result);
+
+    // >>> hex(int.from_bytes(np.array([np.float32('infinity')]).tobytes(), 'little'))
+    // '0x7f800000'
+    const uint8_t buffer_inf[] = {0x00, 0x00, 0x80, 0x7F};
+    result = nunavut::support::const_bitspan{ { buffer_inf, sizeof(buffer_inf) } }.getF32( );
+    ASSERT_FLOAT_EQ(INFINITY, result);
+
+    // >>> hex(int.from_bytes(np.array([np.float32('nan')]).tobytes(), 'little'))
+    // '0x7fc00000'
+    const uint8_t buffer_nan[] = {0x00, 0x00, 0xC0, 0x7F};
+    result = nunavut::support::const_bitspan{ { buffer_nan, sizeof(buffer_nan) } }.getF32( );
+    ASSERT_TRUE(std::isnan(result));
+
+    // >>> hex(int.from_bytes(np.array([np.float32('3.14')]).tobytes(), 'little'))
+    // '0x4048f5c3'
+    const uint8_t buffer_pi[] = {0xC3, 0xF5, 0x48, 0x40};
+    result = nunavut::support::const_bitspan{ { buffer_pi, sizeof(buffer_pi) } }.getF32( );
+    ASSERT_FLOAT_EQ(3.14f, result);
+}
+
+
+// +--------------------------------------------------------------------------+
+// | testNunavutGetF64
+// +--------------------------------------------------------------------------+
+
+TEST(BitSpan, GetF64)
+{
+    // >>> hex(int.from_bytes(np.array([np.float64('3.141592653589793')]).tobytes(), 'little'))
+    // '0x400921fb54442d18'
+    const uint8_t buffer_pi[] = {0x18, 0x2D, 0x44, 0x54, 0xFB, 0x21, 0x09, 0x40};
+    double result = nunavut::support::const_bitspan{ { buffer_pi, sizeof(buffer_pi) } }.getF64( );
+    ASSERT_DOUBLE_EQ(3.141592653589793, result);
+
+    // >>> hex(int.from_bytes(np.array([np.float64('infinity')]).tobytes(), 'little'))
+    // '0x7ff0000000000000'
+    const uint8_t buffer_inf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x7F};
+    result = nunavut::support::const_bitspan{ { buffer_inf, sizeof(buffer_inf) } }.getF64( );
+    ASSERT_DOUBLE_EQ(INFINITY, result);
+
+    // >>> hex(int.from_bytes(np.array([-np.float64('infinity')]).tobytes(), 'little'))
+    // '0xfff0000000000000'
+    const uint8_t buffer_neg_inf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xFF};
+    result = nunavut::support::const_bitspan{ { buffer_neg_inf, sizeof(buffer_neg_inf) } }.getF64( );
+    ASSERT_DOUBLE_EQ(-INFINITY, result);
+
+    // >>> hex(int.from_bytes(np.array([np.float64('nan')]).tobytes(), 'little'))
+    // '0x7ff8000000000000'
+    const uint8_t buffer_nan[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x7F};
+    result = nunavut::support::const_bitspan{ { buffer_nan, sizeof(buffer_nan) } }.getF64( );
+    ASSERT_TRUE(std::isnan(result));
+}
+
+// +--------------------------------------------------------------------------+
+// | testNunavutSetF64
+// +--------------------------------------------------------------------------+
+/**
+ * Compare the results of Nunavut serialization to the IEEE definition. These must match.
+ */
+static bool helperAssertSerFloat64SameAsIEEE(const double original_value, const uint8_t* serialized_result)
+{
+    union
+    {
+        double f;
+        struct
+        {
+            uint64_t mantissa : 52;
+            uint64_t exponent : 11;
+            uint64_t negative : 1;
+        } ieee;
+    } as_int = {original_value};
+
+    union
+    {
+        uint64_t as_int;
+        uint8_t as_bytes[8];
+    } result_bytes;
+    memcpy(result_bytes.as_bytes, serialized_result, 8);
+
+    EXPECT_EQ(as_int.ieee.mantissa & 0xFFFFFFFFFFFFF, result_bytes.as_int & 0xFFFFFFFFFFFFF) << "Mantessa did not match.";
+    EXPECT_EQ(as_int.ieee.exponent & 0xF, (serialized_result[6] >> 4U) & 0xF) << "First four bits of exponent did not match.";
+    EXPECT_EQ((as_int.ieee.exponent >> 4U) & 0x7F, serialized_result[7] & 0x7F) << "Last 7 bits of exponent did not match.";
+    EXPECT_EQ(as_int.ieee.negative & 0x1, (serialized_result[7] >> 7U) & 0x01) << "Negative bit did not match.";
+    return not ::testing::Test::HasFailure();
+}
+
+TEST(BitSpan, SetF64)
+{
+    uint8_t buffer[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( 3.141592653589793);
+    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(3.141592653589793, buffer));
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( -3.141592653589793);
+    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(-3.141592653589793, buffer));
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( -NAN);
+    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(-NAN, buffer));
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( NAN);
+    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(NAN, buffer));
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( INFINITY);
+    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(INFINITY, buffer));
+
+    memset(buffer, 0, sizeof(buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( -INFINITY);
+    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(-INFINITY, buffer));
+}
