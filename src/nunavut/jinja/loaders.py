@@ -165,7 +165,13 @@ class DSDLTemplateLoader(BaseLoader):
                     files.add(template)
         if self._package_loader is not None and self._templates_package_name is not None:
             templates_module = importlib.import_module(self._templates_package_name)
-            templates_base_path = pathlib.Path(templates_module.__file__).parent
+            spec_perhaps = templates_module.__spec__
+            file_perhaps = None  # type: typing.Optional[str]
+            if spec_perhaps is not None:
+                file_perhaps = spec_perhaps.origin
+            if file_perhaps is None or file_perhaps == "builtin":
+                raise RuntimeError("Unknown template package origin?")
+            templates_base_path = pathlib.Path(file_perhaps).parent
             for t in self._package_loader.list_templates():
                 files.add(templates_base_path / pathlib.Path(t))
         return sorted(files)
