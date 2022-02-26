@@ -368,8 +368,8 @@ def filter_numpy_scalar_type(language: Language, t: pydsdl.Any) -> str:
 
 @template_language_filter(__name__)
 def filter_newest_minor_version_aliases(
-        language: Language,
-        tys: Iterable[pydsdl.CompositeType],
+    language: Language,
+    tys: Iterable[pydsdl.CompositeType],
 ) -> Sequence[tuple[str, pydsdl.CompositeType]]:
     """
     Implementation of https://github.com/UAVCAN/nunavut/issues/193

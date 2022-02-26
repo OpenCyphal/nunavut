@@ -19,7 +19,6 @@ from numpy.typing import NDArray
 import pydsdl
 
 
-
 if sys.byteorder != "little":  # pragma: no cover
     raise RuntimeError(
         "BIG-ENDIAN PLATFORMS ARE NOT YET SUPPORTED. "
@@ -192,10 +191,10 @@ class Serializer(abc.ABC):
         self.add_aligned_u16((65536 + x) if x < 0 else x)
 
     def add_aligned_i32(self, x: int) -> None:
-        self.add_aligned_u32((2 ** 32 + x) if x < 0 else x)
+        self.add_aligned_u32((2**32 + x) if x < 0 else x)
 
     def add_aligned_i64(self, x: int) -> None:
-        self.add_aligned_u64((2 ** 64 + x) if x < 0 else x)
+        self.add_aligned_u64((2**64 + x) if x < 0 else x)
 
     def add_aligned_f16(self, x: float) -> None:
         self.add_aligned_bytes(self._float_to_bytes("e", x))
@@ -220,7 +219,7 @@ class Serializer(abc.ABC):
 
     def add_aligned_signed(self, value: int, bit_length: int) -> None:
         assert bit_length >= 2
-        self.add_aligned_unsigned((2 ** bit_length + value) if value < 0 else value, bit_length)
+        self.add_aligned_unsigned((2**bit_length + value) if value < 0 else value, bit_length)
 
     #
     # Least specialized methods: no assumptions about alignment are made.
@@ -259,7 +258,7 @@ class Serializer(abc.ABC):
 
     def add_unaligned_signed(self, value: int, bit_length: int) -> None:
         assert bit_length >= 2
-        self.add_unaligned_unsigned((2 ** bit_length + value) if value < 0 else value, bit_length)
+        self.add_unaligned_unsigned((2**bit_length + value) if value < 0 else value, bit_length)
 
     def add_unaligned_f16(self, x: float) -> None:
         self.add_unaligned_bytes(self._float_to_bytes("e", x))
@@ -281,7 +280,7 @@ class Serializer(abc.ABC):
     def _unsigned_to_bytes(value: int, bit_length: int) -> NDArray[Byte]:
         assert bit_length >= 1
         assert value >= 0, "This operation is undefined for negative integers"
-        value &= 2 ** bit_length - 1
+        value &= 2**bit_length - 1
         num_bytes = (bit_length + 7) // 8
         out: NDArray[Byte] = numpy.zeros(num_bytes, dtype=Byte)
         for i in range(num_bytes):  # Oh, why is my life like this?
@@ -809,11 +808,11 @@ class Deserializer(abc.ABC):
 
     def fetch_aligned_i32(self) -> int:
         x = self.fetch_aligned_u32()
-        return int(x - 2 ** 32) if x >= 2 ** 31 else x  # wrapped in int() to appease MyPy
+        return int(x - 2**32) if x >= 2**31 else x  # wrapped in int() to appease MyPy
 
     def fetch_aligned_i64(self) -> int:
         x = self.fetch_aligned_u64()
-        return int(x - 2 ** 64) if x >= 2 ** 63 else x  # wrapped in int() to appease MyPy
+        return int(x - 2**64) if x >= 2**63 else x  # wrapped in int() to appease MyPy
 
     def fetch_aligned_f16(self) -> float:  # noinspection PyTypeChecker
         (out,) = struct.unpack("<e", self.fetch_aligned_bytes(2))  # type: ignore
@@ -845,7 +844,7 @@ class Deserializer(abc.ABC):
     def fetch_aligned_signed(self, bit_length: int) -> int:
         assert bit_length >= 2
         u = self.fetch_aligned_unsigned(bit_length)
-        out = (u - 2 ** bit_length) if u >= 2 ** (bit_length - 1) else u
+        out = (u - 2**bit_length) if u >= 2 ** (bit_length - 1) else u
         assert isinstance(out, int)  # MyPy pls
         return out
 
@@ -910,7 +909,7 @@ class Deserializer(abc.ABC):
     def fetch_unaligned_signed(self, bit_length: int) -> int:
         assert bit_length >= 2
         u = self.fetch_unaligned_unsigned(bit_length)
-        out = (u - 2 ** bit_length) if u >= 2 ** (bit_length - 1) else u
+        out = (u - 2**bit_length) if u >= 2 ** (bit_length - 1) else u
         assert isinstance(out, int)  # MyPy pls
         return out
 
@@ -952,7 +951,7 @@ class Deserializer(abc.ABC):
         msb_mask = (2 ** (bit_length % 8) - 1) if bit_length % 8 != 0 else 0xFF
         assert msb_mask in (1, 3, 7, 15, 31, 63, 127, 255)
         out |= (int(x[last_byte_index]) & msb_mask) << (last_byte_index * 8)
-        assert 0 <= out < (2 ** bit_length)
+        assert 0 <= out < (2**bit_length)
         return out
 
     @property
