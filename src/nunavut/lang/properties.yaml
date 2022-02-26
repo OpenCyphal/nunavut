@@ -259,7 +259,8 @@ nunavut.lang.cpp:
         all:
             - '\s+'
             - '[^a-zA-Z0-9_]+'
-            - '_{2,}'
+            - '^_{2,}'
+            - '_{2,}$'
     reserved_token_patterns_by_type:
         all:
             - '^\d{1}'
@@ -308,6 +309,7 @@ nunavut.lang.cpp:
         target_endianness: any
         omit_float_serialization_support: false
         enable_serialization_asserts: false
+        enable_override_variable_array_capacity: false
         std: c++14
         variable_array_type: "std::vector<{TYPE},std::allocator<{TYPE}>>"
 

@@ -531,6 +531,27 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
         my_type.version = MagicMock()
         my_type.parent_service = None
 
+    .. code-block:: python
+
+        # Given a type with illegal C++ characters
+        my_type.short_name = 'Struct_'
+        my_type.version.major = 0
+        my_type.version.minor = 1
+
+        # and
+        template = '{{ my_type | short_reference_name }}'
+
+        # then, with stropping enabled
+        rendered = 'Struct__0_1'
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_short_reference_name, template, rendered, 'cpp', my_type=my_type)
+
+        my_type = MagicMock(spec=pydsdl.StructureType)
+        my_type.version = MagicMock()
+        my_type.parent_service = None
+
     :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
     """
     return language.filter_short_reference_name(t)
