@@ -11,7 +11,7 @@
 // build invocation. TODO: add --reproducible option to prevent any volatile metadata from being generated.
 //
 // Generator:     nunavut-{{ nunavut.version }} (serialization was {{ 'not ' * nunavut.support.omit }}enabled)
-// Source file:   {{ T.source_file_path }}
+// Source file:   {{ T.source_file_path | replace("\\", "\\\\") }}
 // Generated at:  {{ now_utc }} UTC
 // Is deprecated: {{ T.deprecated and 'yes' or 'no' }}
 // Fixed port-ID: {{ T.fixed_port_id }}
@@ -73,7 +73,7 @@
 // +-------------------------------------------------------------------------------------------------------------------+
 {% endif -%}
 static_assert( nunavut::support::options::{{ key | id }} == {{ value | ln.c.to_static_assertion_value }},
-              "{{ T.source_file_path }} "
+              "{{ T.source_file_path | replace("\\", "\\\\") }} "
               "is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not "
               "allowed." );
