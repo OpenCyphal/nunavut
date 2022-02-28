@@ -140,6 +140,16 @@ public:
         return derived_bitspan(self.data_, self.offset_bits_ + bits);
     }
 
+    derived_bitspan subspan({{ typename_unsigned_bit_length }} bits_at=0) const noexcept {
+        auto& self  = *static_cast<const derived_bitspan*>(this);
+        const {{ typename_unsigned_bit_length }} offset_bits = self.offset_bits_ + bits_at;
+        const {{ typename_unsigned_length }} offset_bytes = offset_bits / 8U;
+        {{ assert('offset_bytes * 8U <= offset_bits') }}
+        const {{ typename_unsigned_length }} new_offset_bits = offset_bits - offset_bytes * 8U;
+        {{ assert('offset_bytes <= self.data_.size()') }}
+        return derived_bitspan({ self.data_.data() + offset_bytes, self.data_.size() - offset_bytes}, new_offset_bits);
+    }
+
     void add_offset({{ typename_unsigned_bit_length }} bits) noexcept{
         auto& self  = *static_cast<derived_bitspan*>(this);
         self.offset_bits_ += bits;
@@ -148,6 +158,19 @@ public:
     void set_offset({{ typename_unsigned_bit_length }} bits) noexcept{
         auto& self  = *static_cast<derived_bitspan*>(this);
         self.offset_bits_ = bits;
+    }
+
+    {{ typename_unsigned_bit_length }} offset_misalignment({{ typename_unsigned_bit_length }} alignment_bits) const noexcept{
+        auto& self  = *static_cast<const derived_bitspan*>(this);
+        return self.offset_bits_ % alignment_bits;
+    }
+
+    bool offset_alings_to({{ typename_unsigned_bit_length }} alignment_bits) const noexcept{
+        return offset_misalignment(alignment_bits) == 0U;
+    }
+
+    bool offset_alings_to_byte() const noexcept{
+        return offset_alings_to(8U);
     }
 
     {{ typename_unsigned_bit_length }} size() const noexcept{
@@ -160,27 +183,45 @@ public:
         return bit_size - self.offset_bits_;
     }
 
-    {{ typename_byte }}& aligned_ref({{ typename_unsigned_length }} plus_offset_bits=0U) noexcept {
+    {{ typename_unsigned_bit_length }} offset() const noexcept {
+        auto& self  = *static_cast<const derived_bitspan*>(this);
+        return self.offset_bits_;
+    }
+
+    {{ typename_unsigned_bit_length }} offset_bytes() const noexcept {
+        auto& self  = *static_cast<const derived_bitspan*>(this);
+        const {{ typename_unsigned_length }} offset_bytes = (self.offset_bits_) / 8U;
+        return offset_bytes ;
+    }
+
+    {{ typename_unsigned_bit_length }} offset_bytes_ceil() const noexcept {
+        auto& self  = *static_cast<const derived_bitspan*>(this);
+        const {{ typename_unsigned_length }} offset_bytes = ((self.offset_bits_ + 7U) / 8U);
+        return offset_bytes ;
+    }
+
+    {{ typename_byte }}& aligned_ref({{ typename_unsigned_bit_length }} plus_offset_bits=0U) noexcept {
         auto& self  = *static_cast<derived_bitspan*>(this);
         const {{ typename_unsigned_length }} offset_bytes = ((self.offset_bits_ + plus_offset_bits) / 8U);
         {{ assert('offset_bytes <= self.data_.size()') }}
         return self.data_[offset_bytes];
     }
 
-    const {{ typename_byte }}& aligned_ref({{ typename_unsigned_length }} plus_offset_bits=0U) const noexcept {
+    const {{ typename_byte }}& aligned_ref({{ typename_unsigned_bit_length }} plus_offset_bits=0U) const noexcept {
         auto& self  = *static_cast<const derived_bitspan*>(this);
         const {{ typename_unsigned_length }} offset_bytes = ((self.offset_bits_ + plus_offset_bits) / 8U);
         {{ assert('offset_bytes <= self.data_.size()') }}
         return self.data_[offset_bytes];
     }
 
-    {{ typename_byte }}* aligned_ptr({{ typename_unsigned_length }} plus_offset_bits=0U) noexcept {
+    {{ typename_byte }}* aligned_ptr({{ typename_unsigned_bit_length }} plus_offset_bits=0U) noexcept {
         return &aligned_ref(plus_offset_bits);
     }
 
-    const {{ typename_byte }}* aligned_ptr({{ typename_unsigned_length }} plus_offset_bits=0U) const noexcept {
+    const {{ typename_byte }}* aligned_ptr({{ typename_unsigned_bit_length }} plus_offset_bits=0U) const noexcept {
         return &aligned_ref(plus_offset_bits);
     }
+
 };
 
 } // namespace detail
@@ -214,6 +255,11 @@ public:
     VoidResult setF32(const {{ typename_float_32 }} value);
 
     VoidResult setF64(const {{ typename_float_64 }} value);
+
+    VoidResult setZeros() { return setZeros(size()); }
+    VoidResult setZeros({{ typename_unsigned_bit_length }} length);
+
+    VoidResult padAndMoveToAlignment({{ typename_unsigned_bit_length }} length);
 };
 
 struct const_bitspan: public detail::any_bitspan<const_bitspan>{
@@ -257,7 +303,10 @@ public:
             {
                 {{ assert('length_mod < 8U') }}
                 const uint8_t mask = static_cast<uint8_t>((1U << length_mod) - 1U);
-                dst.data_[length_bytes] = (dst.data_[length_bytes] & static_cast<{{ typename_byte }}>(~mask)) | (data_[length_bytes] & mask);
+                //dst.data_[length_bytes] = (dst.data_[length_bytes] & static_cast<{{ typename_byte }}>(~mask)) | (data_[length_bytes] & mask);
+                dst.aligned_ref(length_bits) = {# -#}
+                    (dst.aligned_ref(length_bits) & static_cast<{{ typename_byte }}>(~mask)) {# -#}
+                    | (aligned_ref(length_bits) & mask);
             }
         }
         else
@@ -292,7 +341,7 @@ public:
                 const uint8_t in = static_cast<uint8_t>(static_cast<uint8_t>(data_[src_off / 8U] >> src_mod) << dst_mod) & 0xFFU;  // NOSONAR
                 // Intentional violation of MISRA: indexing on a pointer.
                 // This simplifies the implementation greatly and avoids pointer arithmetics.
-                const uint8_t a = dst.data_[dst_off / 8U] & (static_cast<uint8_t>(~mask));  // NOSONAR
+                const uint8_t a = dst.data_[dst_off / 8U] & (static_cast<uint8_t>((~mask) & 0xFFU));  // NOSONAR
                 const uint8_t b = in & mask;
                 // Intentional violation of MISRA: indexing on a pointer.
                 // This simplifies the implementation greatly and avoids pointer arithmetics.
@@ -302,6 +351,12 @@ public:
             }
             {{ assert('last_bit == src_off') }}
         }
+    }
+
+    template<{{ typename_unsigned_bit_length }} n_bits>
+    void align_offset_to(){
+        static_assert((n_bits == 8) or (n_bits == 16) or (n_bits == 32) or (n_bits == 64), "Non-standard alignment!");
+        offset_bits_ = (offset_bits_ + (n_bits - 1)) & ~(static_cast<{{ typename_unsigned_bit_length }}>(n_bits - 1));
     }
 
     /// Calculate the number of bits to safely copy from/to a serialized buffer.
@@ -387,6 +442,39 @@ public:
     {{ typename_float_64 }} getF64();
 };
 
+VoidResult bitspan::setZeros({{ typename_unsigned_bit_length }} length){
+    if(length > size()){
+        return -Error::SERIALIZATION_BUFFER_TOO_SMALL;
+    }
+    if(length == 0){
+        return {};
+    }
+    const {{ typename_unsigned_length }} offset_bytes = offset_bits_ / 8U;
+    const {{ typename_unsigned_bit_length }} offset_bits_mod = offset_bits_ % 8U;
+    const {{ typename_unsigned_bit_length }} length_bytes_ceil = (length + 7U) / 8U;
+    {{ assert('offset_bits_mod < 8U') }}
+    const auto first_byte_temp = data_[offset_bytes] & static_cast<{{ typename_byte }}>(0xFF >> (8U - offset_bits_mod));
+    memset(&data_[offset_bytes], 0, length_bytes_ceil);
+    data_[offset_bytes] =  static_cast<{{ typename_byte }}>(data_[offset_bytes] | first_byte_temp);
+    return {};
+}
+
+VoidResult bitspan::padAndMoveToAlignment({{ typename_unsigned_bit_length }} n_bits){
+    const auto padding = static_cast<uint8_t>(n_bits - offset_misalignment(n_bits));
+    if (padding != n_bits)  // Pad to n_bits bits. TODO: Eliminate redundant padding checks.
+    {
+        {{ assert('padding > 0') }}
+        auto ref_result = setZeros(padding);
+        if(not ref_result){
+            return ref_result;
+        }
+        add_offset( padding);
+        {{ assert('offset_alings_to(n_bits)') }}
+    }
+    return {};
+}
+
+
 uint8_t const_bitspan::getU8(const uint8_t len_bits) const noexcept
 {
     {{ assert('data_.data() != nullptr') }}
@@ -425,11 +513,12 @@ uint32_t const_bitspan::getU32(const uint8_t len_bits) const noexcept
     return val;
 {%- elif options.target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint32_t)] = {0};
-    copyTo(bitspan{ { &tmp[0], sizeof(tmp) } }, bits);
-    return static_cast<uint32_t>(static_cast<uint32_t>(tmp[0]) |
-                    (static_cast<uint32_t>(tmp[1]) << 8U) |
-                    (static_cast<uint32_t>(tmp[2]) << 16U) |
-                    (static_cast<uint32_t>(tmp[3]) << 24U));
+    copyTo(bitspan{ { tmp, sizeof(tmp) } }, bits);
+    return static_cast<uint32_t>(
+        (static_cast<uint32_t>(tmp[0])) |
+        (static_cast<uint32_t>(tmp[1]) << 8U) |
+        (static_cast<uint32_t>(tmp[2]) << 16U) |
+        (static_cast<uint32_t>(tmp[3]) << 24U));
 {%- else %}{%- assert False %}
 {%- endif %}
 }
@@ -445,7 +534,7 @@ uint64_t const_bitspan::getU64(const uint8_t len_bits) const noexcept
     return val;
 {%- elif options.target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint64_t)] = {0};
-    copyTo(bitspan{ { &tmp[0], sizeof(tmp) } }, bits);
+    copyTo(bitspan{ { tmp, sizeof(tmp) } }, bits);
     return static_cast<uint64_t>(static_cast<uint64_t>(tmp[0]) |
                     (static_cast<uint64_t>(tmp[1]) << 8U) |
                     (static_cast<uint64_t>(tmp[2]) << 16U) |

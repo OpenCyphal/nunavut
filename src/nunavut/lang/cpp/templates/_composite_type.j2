@@ -39,6 +39,22 @@
     /// This type does not have a fixed port-ID. See https://forum.uavcan.org/t/choosing-message-and-service-ids/889
     static constexpr bool HasFixedPortID = false;
 {% endif -%}
+    {%- assert composite_type.extent % 8 == 0 %}
+    {%- assert composite_type.inner_type.extent % 8 == 0 %}
+    /// Extent is the minimum amount of memory required to hold any serialized representation of any compatible
+    /// version of the data type; or, on other words, it is the the maximum possible size of received objects of this type.
+    /// The size is specified in bytes (rather than bits) because by definition, extent is an integer number of bytes long.
+    /// When allocating a deserialization (RX) buffer for this data type, it should be at least extent bytes large.
+    /// When allocating a serialization (TX) buffer, it is safe to use the size of the largest serialized representation
+    /// instead of the extent because it provides a tighter bound of the object size; it is safe because the concrete type
+    /// is always known during serialization (unlike deserialization). If not sure, use extent everywhere.
+
+    static constexpr {{ typename_unsigned_length }} EXTENT_BYTES                    = {#- -#}
+        {{ composite_type.extent // 8 }}UL;
+    static constexpr {{ typename_unsigned_length }} SERIALIZATION_BUFFER_SIZE_BYTES = {#- -#}
+        {{ composite_type.inner_type.extent // 8 }}UL;
+    static_assert(EXTENT_BYTES >= SERIALIZATION_BUFFER_SIZE_BYTES, "Internal constraint violation");
+
 {%- for constant in composite_type.constants %}
     {% if loop.first %}
     // +---------------------------------------------------------------------------------------------------------------+
@@ -60,11 +76,17 @@
 {%- if not nunavut.support.omit %}
 
     nunavut::support::SerializeResult
-    serialize(nunavut::support::span<{{ typename_byte }}> out_buffer) const
+    serialize(nunavut::support::bitspan out_buffer) const
     {
-        (void)out_buffer;
         {% from 'serialization.j2' import serialize -%}
-        {{ serialize(composite_type) | trim }}
+        {{ serialize(composite_type) | trim | remove_blank_lines | indent }}
+    }
+
+    nunavut::support::SerializeResult
+    deserialize(nunavut::support::const_bitspan in_buffer)
+    {
+        {% from 'deserialization.j2' import deserialize -%}
+        {{ deserialize(composite_type) | trim | remove_blank_lines | indent }}
     }
 {%- endif %}
 }{{ composite_type | definition_end }}

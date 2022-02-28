@@ -1,0 +1,146 @@
+{#-
+ # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # Copyright (C) 2020  UAVCAN Development Team  <uavcan.org>
+ # This software is distributed under the terms of the MIT License.
+ # Authors: David Lenfesty, Scott Dixon <dixonsco@amazon.com>, Pavel Kirienko <pavel@uavcan.org>,
+ #          Peter van der Perk <peter.vanderperk@nxp.com>
+-#}
+
+{% from '_definitions.j2' import assert, LITTLE_ENDIAN %}
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro deserialize(t) %}
+{% if t.inner_type.bit_length_set.max > 0 %}
+    {{ _deserialize_impl(t) }}
+{% else %}
+    (void)(in_buffer);
+    return 0;
+{% endif %}
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _deserialize_impl(t) %}
+    const auto capacity_bits = in_buffer.size();
+{% if t.inner_type is StructureType %}
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
+        {%- if loop.first %}
+            {%- assert f.data_type.alignment_requirement <= t.inner_type.alignment_requirement %}
+        {%- else %}
+    {{ _pad_to_alignment(f.data_type.alignment_requirement) }}
+        {%- endif %}
+    // {{ f }}
+    {{ _deserialize_any(f.data_type, (f|id), offset)|trim|remove_blank_lines }}
+    {% endfor %}
+{% elif t.inner_type is UnionType %}
+    // Union tag field: {{ t.inner_type.tag_field_type }}
+    {#{{ _deserialize_integer(t.inner_type.tag_field_type, 'out_obj->_tag_', 0|bit_length_set)|trim|remove_blank_lines }}
+    {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
+    {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == out_obj->_tag_)  // {{ f }}
+    {
+        {%- assert f.data_type.alignment_requirement <= (offset.min) %}
+        {{ _deserialize_any(f.data_type, (f|id), offset)|trim|remove_blank_lines|indent }}
+    }
+    {%- endfor %}
+    else
+    {
+        return -nunavut::support::Error::REPRESENTATION_BAD_UNION_TAG;
+    }#}
+{% else %}{% assert False %}
+{% endif %}
+    {{ _pad_to_alignment(t.inner_type.alignment_requirement) }}
+    {{ assert('in_buffer.offset() % 8U == 0U') }}
+    auto _bits_got_ = std::min<{{ typename_unsigned_bit_length }}>(in_buffer.offset(), capacity_bits);
+    {{ assert('capacity_bits >= _bits_got_') }}
+    return { static_cast<{{ typename_unsigned_length }}>(_bits_got_ / 8U) };
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _pad_to_alignment(n_bits) %}
+{%- if n_bits > 1 -%}
+    {%- assert n_bits in (8, 16, 32, 64) -%}
+    in_buffer.align_offset_to<{{ n_bits }}U>();
+{%- endif -%}
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _deserialize_any(t, reference, offset) %}
+{% if t.alignment_requirement > 1 %}
+    {{ assert('in_buffer.offset_alings_to(%dU)'|format(t.alignment_requirement)) }}
+{% endif %}
+{% if offset.is_aligned_at_byte() %}
+    {{ assert('in_buffer.offset_alings_to_byte()') }}
+{% endif %}
+{%   if t is VoidType %}                {{- _deserialize_void                 (t,            offset) }}
+{% elif t is BooleanType %}             {{- _deserialize_boolean              (t, reference, offset) }}
+{% elif t is IntegerType %}             {{- _deserialize_integer              (t, reference, offset) }}
+{% elif t is FloatType %}               {{- _deserialize_float                (t, reference, offset) }}
+{% elif t is FixedLengthArrayType %}    {{- _deserialize_fixed_length_array   (t, reference, offset) }}
+{% elif t is VariableLengthArrayType %} {{- _deserialize_variable_length_array(t, reference, offset) }}
+{% elif t is CompositeType %}           {{- _deserialize_composite            (t, reference, offset) }}
+{% else %}{% assert False %}
+{% endif %}
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _deserialize_void(t, offset) %}
+    in_buffer.add_offset({{ t.bit_length }});
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _deserialize_boolean(t, reference, offset) %}
+    {{ reference }} = in_buffer.getBit();
+    in_buffer.add_offset(1U);
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _deserialize_integer(t, reference, offset) %}
+{% set getter = 'get%s%d'|format('U' if t is UnsignedIntegerType else 'I', t|to_standard_bit_length) %}
+{# Mem-copy optimization is difficult to perform on non-standard-size signed integers because the C standard does
+ # not define a portable way of unsigned-to-signed conversion (but the other way around is well-defined).
+ # See 6.3.1.8 Usual arithmetic conversions, 6.3.1.3 Signed and unsigned integers.
+ # This template can be greatly expanded with additional special cases if needed.
+ #}
+{#{% if offset.is_aligned_at_byte() and t is UnsignedIntegerType and t.bit_length <= 8 %}
+    if ((offset_bits + {{ t.bit_length }}U) <= capacity_bits)
+    {
+        {{ reference }} = buffer[offset_bits / 8U] & {{ 2 ** t.bit_length - 1 }}U;
+    }
+    else
+    {
+        {{ reference }} = 0U;
+    }
+{% else %}}#}
+    {{ reference }} = in_buffer.{{ getter }}({{ t.bit_length }}U);
+{#{% endif %}#}
+    in_buffer.add_offset({{ t.bit_length }}U);
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _deserialize_float(t, reference, offset) %}
+    {# TODO: apply special case optimizations for aligned data and little-endian IEEE754-conformant platforms. #}
+    {{ reference }} = in_buffer.getF{{ t.bit_length }}();
+    in_buffer.add_offset({{ t.bit_length }}U);
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _deserialize_fixed_length_array(t, reference, offset) %}
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _deserialize_variable_length_array(t, reference, offset) %}
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _deserialize_composite(t, reference, offset) %}
+
+{% endmacro %}

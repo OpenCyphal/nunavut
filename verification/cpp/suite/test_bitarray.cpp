@@ -1,4 +1,12 @@
-#include "gmock/gmock.h"
+/*
+ * Copyright (c) 2022 UAVCAN Development Team.
+ * Authors: Pavel Pletenev <cpp.create@gmail.com>
+ * This software is distributed under the terms of the MIT License.
+ *
+ * Tests of serialization
+ */
+
+#include "test_helpers.hpp"
 #include "nunavut/support/serialization.hpp"
 
 
@@ -23,6 +31,15 @@ TEST(BitSpan, Constructor) {
         nunavut::support::const_bitspan sp{csrcArray};
         ASSERT_EQ(sp.size(), 5U*8U);
     }
+}
+
+TEST(BitSpan, SetZeros)
+{
+    std::array<uint8_t,2> srcArray{ 0xAA, 0xFF };
+    nunavut::support::bitspan sp(srcArray, 10U);
+    auto res = sp.padAndMoveToAlignment(8U);
+    ASSERT_TRUE(res) << "Error was " << res.error();
+    ASSERT_EQ(srcArray[1], 0x03);
 }
 
 TEST(BitSpan, AlignedPtr) {
@@ -66,9 +83,7 @@ TEST(BitSpan, CopyBits) {
     std::array<uint8_t,6> dst{};
     memset(dst.data(), 0, dst.size());
 
-    nunavut::support::const_bitspan sp{src};
-    nunavut::support::bitspan dstSp{dst};
-    sp.copyTo(dstSp);
+    nunavut::support::const_bitspan{src}.copyTo(nunavut::support::bitspan{dst});
     for(size_t i = 0; i < src.size(); ++i)
     {
         ASSERT_EQ(src[i], dst[i]);
@@ -76,7 +91,7 @@ TEST(BitSpan, CopyBits) {
 }
 
 TEST(BitSpan, CopyBitsWithAlignedOffset) {
-    std::array<uint8_t,5> src{ 1, 2, 3, 4, 5 };
+    std::array<uint8_t,5> src{ 0x11, 0x22, 0x33, 0x44, 0x55 };
     std::array<uint8_t,6> dst{};
     memset(dst.data(), 0, dst.size());
 
@@ -97,6 +112,29 @@ TEST(BitSpan, CopyBitsWithAlignedOffset) {
         ASSERT_EQ(src[i], dst[i+1]);
     }
     ASSERT_EQ(0, dst[0]);
+
+    memset(dst.data(), 0xA, dst.size());
+
+    nunavut::support::const_bitspan{src, 0}.copyTo(nunavut::support::bitspan{dst, 8}, 3U*8U+4U);
+
+    for(size_t i = 0; i < src.size() - 2; ++i)
+    {
+        ASSERT_EQ(src[i], dst[i+1]);
+    }
+    EXPECT_EQ(src[3] & 0x0F, dst[4]);
+    ASSERT_EQ(0xA, dst[0]);
+}
+
+TEST(BitSpan, CopyBitsWithAlignedOffsetNonByteLen) {
+    std::array<uint8_t,7> src{ 0x0, 0x0, 0x11, 0x22, 0x33, 0x44, 0x55 };
+    std::array<uint8_t,1> dst{};
+    memset(dst.data(), 0, dst.size());
+
+    nunavut::support::const_bitspan(src, 2U * 8U).copyTo(nunavut::support::bitspan{dst}, 4);
+    ASSERT_EQ(0x1U, dst[0]);
+
+    nunavut::support::const_bitspan(src, 3U * 8U).copyTo(nunavut::support::bitspan{dst}, 4);
+    ASSERT_EQ(0x2U, dst[0]);
 }
 
 TEST(BitSpan, CopyBitsWithUnalignedOffset){
@@ -323,8 +361,14 @@ TEST(BitSpan, GetU16_tooSmall)
 
 TEST(BitSpan, GetU32)
 {
-    const uint8_t data[] = {0xAA, 0xAA, 0xAA, 0xAA};
-    ASSERT_EQ(0xAAAAAAAAU, nunavut::support::const_bitspan(data, 0).getU32(32U));
+    {
+        const uint8_t data[] = {0xAA, 0xAA, 0xAA, 0xAA};
+        ASSERT_EQ(0xAAAAAAAAU, nunavut::support::const_bitspan(data, 0).getU32(32U));
+    }
+    {
+        const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF};
+        ASSERT_EQ(0xFFFFFFFFU, nunavut::support::const_bitspan(data, 0).getU32(32U));
+    }
 }
 
 TEST(BitSpan, GetU32_tooSmall)
@@ -339,8 +383,14 @@ TEST(BitSpan, GetU32_tooSmall)
 
 TEST(BitSpan, GetU64)
 {
-    const uint8_t data[] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-    ASSERT_EQ(0xAAAAAAAAAAAAAAAAU, nunavut::support::const_bitspan(data, 0).getU64(64U));
+    {
+        const uint8_t data[] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+        ASSERT_EQ(0xAAAAAAAAAAAAAAAAU, nunavut::support::const_bitspan(data, 0).getU64(64U));
+    }
+    {
+        const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        ASSERT_EQ(0xFFFFFFFFFFFFFFFFU, nunavut::support::const_bitspan(data, 0).getU64(64U));
+    }
 }
 
 TEST(BitSpan, GetU64_tooSmall)
@@ -459,6 +509,178 @@ TEST(BitSpan, GetI64_zeroDataLen)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
     ASSERT_EQ(0, nunavut::support::const_bitspan(data, 0).getI64(0U));
+}
+
+// +--------------------------------------------------------------------------+
+// | GetU/I*(8/16/32/64) out of range
+// +--------------------------------------------------------------------------+
+
+TEST(BitSpan, GetU8_outofrange)
+{
+    const uint8_t data[] = {0xFF};
+    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, 1U * 8U+1).getU8(8U));
+}
+
+TEST(BitSpan, GetU16_outofrange)
+{
+    const uint8_t data[] = {0xFF};
+    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, 2U * 8U+1).getU16(16U));
+}
+
+TEST(BitSpan, GetU32_outofrange)
+{
+    const uint8_t data[] = {0xFF};
+    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, 4U * 8U+1).getU32(32U));
+}
+
+TEST(BitSpan, GetU64_outofrange)
+{
+    const uint8_t data[] = {0xFF};
+    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, 4U * 8U+1).getU64(64U));
+}
+
+TEST(BitSpan, GetI8_outofrange)
+{
+    const uint8_t data[] = {0xFF};
+    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, 1U * 8U+1).getI8(8U));
+}
+
+TEST(BitSpan, GetI16_outofrange)
+{
+    const uint8_t data[] = {0xFF};
+    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, 2U * 8U+1).getI16(16U));
+}
+
+TEST(BitSpan, GetI32_outofrange)
+{
+    const uint8_t data[] = {0xFF};
+    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, 4U * 8U+1).getI32(32U));
+}
+
+TEST(BitSpan, GetI64_outofrange)
+{
+    const uint8_t data[] = {0xFF};
+    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, 4U * 8U+1).getI64(64U));
+}
+
+// +--------------------------------------------------------------------------+
+// | SetGet(U/I)(8/16/32/64)
+// +--------------------------------------------------------------------------+
+
+constexpr static size_t getset_n_tries = 10;
+
+using namespace nunavut::testing;
+
+TEST(BitSpan, SetGetU8)
+{
+    uint8_t data[getset_n_tries * 64]{0};
+    for (size_t i = 0U; i < getset_n_tries; i++)
+    {
+        auto ref = randU8();
+        const auto offset = i * sizeof(ref) * 8U;
+        auto rslt = nunavut::support::bitspan({data}, offset).setUxx(ref, 8U);
+        ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
+        auto act = nunavut::support::const_bitspan(data, offset).getU8(8U);
+        ASSERT_EQ(hex(ref), hex(act)) << i;
+    }
+}
+
+TEST(BitSpan, SetGetU16)
+{
+    uint8_t data[getset_n_tries * 64]{0};
+    for (size_t i = 0U; i < getset_n_tries; i++)
+    {
+        auto ref = randU16();
+        const auto offset = i * sizeof(ref) * 8U;
+        auto rslt = nunavut::support::bitspan({data}, offset).setUxx(ref, 16U);
+        ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
+        auto act = nunavut::support::const_bitspan(data, offset).getU16(16U);
+        ASSERT_EQ(hex(ref), hex(act)) << i;
+    }
+}
+
+TEST(BitSpan, SetGetU32)
+{
+    uint8_t data[getset_n_tries * 64]{0};
+    for (size_t i = 0U; i < getset_n_tries; i++)
+    {
+        auto ref = randU32();
+        const auto offset = i * sizeof(ref) * 8U;
+        auto rslt = nunavut::support::bitspan({data}, offset).setUxx(ref, 32U);
+        ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
+        auto act = nunavut::support::const_bitspan(data, offset).getU32(32U);
+        ASSERT_EQ(hex(ref), hex(act)) << i;
+    }
+}
+
+TEST(BitSpan, SetGetU64)
+{
+    uint8_t data[getset_n_tries * 64]{0};
+    for (size_t i = 0U; i < getset_n_tries; i++)
+    {
+        auto ref = randU64();
+        const auto offset = i * sizeof(ref) * 8U;
+        auto rslt = nunavut::support::bitspan({data}, offset).setUxx(ref, 64U);
+        ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
+        auto act = nunavut::support::const_bitspan(data, offset).getU64(64U);
+        ASSERT_EQ(hex(ref), hex(act)) << i;
+    }
+}
+
+TEST(BitSpan, SetGetI8)
+{
+    uint8_t data[getset_n_tries * 64]{0};
+    for (size_t i = 0U; i < getset_n_tries; i++)
+    {
+        auto ref = randI8();
+        const auto offset = i * sizeof(ref) * 8U;
+        auto rslt = nunavut::support::bitspan({data}, offset).setIxx(ref, 8U);
+        ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
+        auto act = nunavut::support::const_bitspan(data, offset).getI8(8U);
+        ASSERT_EQ(hex(ref), hex(act)) << i;
+    }
+}
+
+TEST(BitSpan, SetGetI16)
+{
+    uint8_t data[getset_n_tries * 64]{0};
+    for (size_t i = 0U; i < getset_n_tries; i++)
+    {
+        auto ref = randI16();
+        const auto offset = i * sizeof(ref) * 8U;
+        auto rslt = nunavut::support::bitspan({data}, offset).setIxx(ref, 16U);
+        ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
+        auto act = nunavut::support::const_bitspan(data, offset).getI16(16U);
+        ASSERT_EQ(hex(ref), hex(act)) << i;
+    }
+}
+
+TEST(BitSpan, SetGetI32)
+{
+    uint8_t data[getset_n_tries * 64]{0};
+    for (size_t i = 0U; i < getset_n_tries; i++)
+    {
+        auto ref = randI32();
+        const auto offset = i * sizeof(ref) * 8U;
+        auto rslt = nunavut::support::bitspan({data}, offset).setIxx(ref, 32U);
+        ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
+        auto act = nunavut::support::const_bitspan(data, offset).getI32(32U);
+        ASSERT_EQ(hex(ref), hex(act)) << i;
+    }
+}
+
+TEST(BitSpan, SetGetI64)
+{
+    uint8_t data[getset_n_tries * 64]{0};
+    for (size_t i = 0U; i < getset_n_tries; i++)
+    {
+        auto ref = randI64();
+        const auto offset = i * sizeof(ref) * 8U;
+        auto rslt = nunavut::support::bitspan({data}, offset).setIxx(ref, 64U);
+        ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
+        auto act = nunavut::support::const_bitspan(data, offset).getI64(64U);
+        ASSERT_EQ(hex(ref), hex(act)) << i;
+    }
 }
 
 // +--------------------------------------------------------------------------+

@@ -9,6 +9,7 @@
 """
 
 import functools
+import fractions
 import io
 import re
 import textwrap
@@ -161,6 +162,19 @@ def filter_constant_value(language: Language, constant: pydsdl.Constant) -> str:
     Renders the specified value of the specified type as a literal.
     """
     return c_filter_literal(language, constant.value.native_value, constant.data_type, "static_cast<{type}>({value})")
+
+
+@template_language_filter(__name__)
+def filter_literal(
+    language: Language,
+    value: typing.Union[fractions.Fraction, bool, int],
+    ty: pydsdl.Any,
+    cast_format: str = "static_cast<{type}>({value})",
+) -> str:
+    """
+    Renders the specified value of the specified type as a literal.
+    """
+    return c_filter_literal(language, value, ty, cast_format)
 
 
 def filter_to_standard_bit_length(t: pydsdl.PrimitiveType) -> int:
