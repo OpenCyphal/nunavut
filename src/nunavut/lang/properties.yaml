@@ -245,6 +245,7 @@ nunavut.lang.c:
         omit_float_serialization_support: false
         enable_serialization_asserts: false
         enable_override_variable_array_capacity: false
+        cast_format: "(({type}) {value})"
 
 nunavut.lang.cpp:
     extension: .hpp
@@ -312,6 +313,8 @@ nunavut.lang.cpp:
         enable_override_variable_array_capacity: false
         std: c++14
         variable_array_type: "std::vector<{TYPE},std::allocator<{TYPE}>>"
+        cast_format: "static_cast<{type}>({value})"
+
 
 nunavut.lang.py:
     extension: .py

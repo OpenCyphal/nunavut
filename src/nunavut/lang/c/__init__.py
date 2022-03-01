@@ -837,11 +837,17 @@ def filter_literal(
     language: Language,
     value: typing.Union[fractions.Fraction, bool, int],
     ty: pydsdl.Any,
-    cast_format: str = "(({type}) {value})",
+    cast_format: typing.Optional[str] = None,
 ) -> str:
     """
     Renders the specified value of the specified type as a literal.
     """
+    if cast_format is None:
+        maybe_cast_format = language.get_option("cast_format")
+        if not isinstance(maybe_cast_format, str):
+            raise RuntimeError("cast_format language option was missing or invalid.")
+        cast_format = maybe_cast_format
+        del maybe_cast_format
     if isinstance(ty, pydsdl.BooleanType):
         return str(language.valuetoken_true if value else language.valuetoken_false)
 

@@ -161,7 +161,7 @@ def filter_constant_value(language: Language, constant: pydsdl.Constant) -> str:
     """
     Renders the specified value of the specified type as a literal.
     """
-    return c_filter_literal(language, constant.value.native_value, constant.data_type, "static_cast<{type}>({value})")
+    return c_filter_literal(language, constant.value.native_value, constant.data_type)
 
 
 @template_language_filter(__name__)
@@ -169,7 +169,7 @@ def filter_literal(
     language: Language,
     value: typing.Union[fractions.Fraction, bool, int],
     ty: pydsdl.Any,
-    cast_format: str = "static_cast<{type}>({value})",
+    cast_format: typing.Optional[str] = None,
 ) -> str:
     """
     Renders the specified value of the specified type as a literal.
