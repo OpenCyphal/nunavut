@@ -248,10 +248,12 @@ TEST(Serialization, StructReference)
     ASSERT_EQ(0, obj.aligned_bitpacked_3[1]);
     ASSERT_EQ(0, obj.aligned_bitpacked_3[2]);
     ASSERT_EQ(0U, obj.unaligned_bitpacked_lt3.size());
+
     // ASSERT_EQ(0, obj.delimited_var_2[0]._tag_);
-    ASSERT_NEAR(0, obj.delimited_var_2[0].f16, 1e-9);
+    ASSERT_TRUE(CompareFloatsNear(0.f, obj.delimited_var_2[0].f16, 1e-9f));
     // ASSERT_EQ(0, obj.delimited_var_2[1]._tag_);
-    ASSERT_NEAR(0, obj.delimited_var_2[1].f16, 1e-9);
+    ASSERT_TRUE(CompareFloatsNear(0.f, obj.delimited_var_2[1].f16, 1e-9f));
+
     ASSERT_EQ(0U, obj.aligned_bitpacked_le3.size());
 
     // // Deserialize the above reference representation and compare the result against the original object.
@@ -263,7 +265,7 @@ TEST(Serialization, StructReference)
     // ASSERT_EQ(-512, obj.i10_4[1]);                              // saturated
     // ASSERT_EQ(+0x55, obj.i10_4[2]);
     // ASSERT_EQ(-0xAA, obj.i10_4[3]);
-    // ASSERT_NEAR(-65504.0, obj.f16_le2.elements[0], 1e-3);
+    // ASSERT_TRUE(CompareFloatsNear(-65504.0f, obj.f16_le2.elements[0], 1e-3f));
     // TEST_ASSERT_FLOAT_IS_INF(obj.f16_le2.elements[1]);
     // ASSERT_EQ(2, obj.f16_le2.count);
     // ASSERT_EQ(5, obj.unaligned_bitpacked_3_bitpacked_[0]);      // unused MSB are zero-padded
@@ -300,7 +302,7 @@ TEST(Serialization, StructReference)
     // ASSERT_EQ(-512, obj.i10_4[1]);                              // saturated
     // ASSERT_EQ(+0x55, obj.i10_4[2]);
     // ASSERT_EQ(-0xAA, obj.i10_4[3]);
-    // ASSERT_NEAR(-65504.0, obj.f16_le2.elements[0], 1e-3);
+    // ASSERT_TRUE(CompareFloatsNear(-65504.0, obj.f16_le2.elements[0], 1e-3));
     // TEST_ASSERT_FLOAT_IS_INF(obj.f16_le2.elements[1]);
     // ASSERT_EQ(2, obj.f16_le2.count);
     // ASSERT_EQ(5, obj.unaligned_bitpacked_3_bitpacked_[0]);      // unused MSB are zero-padded
@@ -320,9 +322,9 @@ TEST(Serialization, StructReference)
     // ASSERT_EQ(0, obj.aligned_bitpacked_3_bitpacked_[0]);        //      ZEROS
     // ASSERT_EQ(0, obj.unaligned_bitpacked_lt3.count);            //          ALL
     // ASSERT_EQ(0, obj.delimited_var_2[0]._tag_);                 //              THE
-    // ASSERT_NEAR(0, obj.delimited_var_2[0].f16, 1e-9);      //                  WAY
+    // ASSERT_TRUE(CompareFloatsNear(0, obj.delimited_var_2[0].f16, 1e-9);      //                  WA)Y
     // ASSERT_EQ(0, obj.delimited_var_2[1]._tag_);                 //                      DOWN
-    // ASSERT_NEAR(0, obj.delimited_var_2[1].f16, 1e-9);
+    // ASSERT_TRUE(CompareFloatsNear(0, obj.delimited_var_2[1].f16, 1e-9));
     // ASSERT_EQ(0, obj.aligned_bitpacked_le3.count);
 }
 

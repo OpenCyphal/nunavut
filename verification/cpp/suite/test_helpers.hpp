@@ -106,3 +106,10 @@ inline double randF64(void)
 {
     return static_cast<double>(randI64());
 }
+
+::testing::AssertionResult CompareFloatsNear(float f1, float f2, float delta) {
+  if (std::abs(f1-f2) < delta)
+    return testing::AssertionSuccess();
+  else
+    return testing::AssertionFailure() << "Value " << f1 << " is not equal to " << f2 << " up to " << delta;
+}

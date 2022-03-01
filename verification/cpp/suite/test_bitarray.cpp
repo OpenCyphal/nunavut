@@ -753,10 +753,10 @@ TEST(BitSpan, Float16Unpack)
 {
     // >>> hex(int.from_bytes(np.array([-np.float16('3.14')]).tobytes(), 'little'))
     // '0xc248'
-    ASSERT_NEAR(-3.14f, nunavut::support::float16Unpack(0xC248), 0.001f);
+    ASSERT_TRUE(CompareFloatsNear(-3.14f, nunavut::support::float16Unpack(0xC248), 0.001f));
     // >>> hex(int.from_bytes(np.array([np.float16('3.14')]).tobytes(), 'little'))
     // '0x4248'
-    ASSERT_NEAR(3.14f, nunavut::support::float16Unpack(0x4248), 0.001f);
+    ASSERT_TRUE(CompareFloatsNear(3.14f, nunavut::support::float16Unpack(0x4248), 0.001f));
     // >>> hex(int.from_bytes(np.array([np.float16('nan')]).tobytes(), 'little'))
     // '0x7e00'
     ASSERT_TRUE(std::isnan(nunavut::support::float16Unpack(0x7e00)));
@@ -765,16 +765,16 @@ TEST(BitSpan, Float16Unpack)
     ASSERT_TRUE(std::isnan(nunavut::support::float16Unpack(0xfe00)));
     // >>> hex(int.from_bytes(np.array([np.float16('infinity')]).tobytes(), 'little'))
     // '0x7c00'
-    ASSERT_FLOAT_EQ(INFINITY, nunavut::support::float16Unpack(0x7c00));
+    ASSERT_FLOAT_EQ(std::numeric_limits<float>::infinity(), nunavut::support::float16Unpack(0x7c00));
     // >>> hex(int.from_bytes(np.array([-np.float16('infinity')]).tobytes(), 'little'))
     // '0xfc00'
-    ASSERT_FLOAT_EQ(-INFINITY, nunavut::support::float16Unpack(0xfc00));
+    ASSERT_FLOAT_EQ(-std::numeric_limits<float>::infinity(), nunavut::support::float16Unpack(0xfc00));
 }
 
 TEST(BitSpan, Float16Unpack_INFINITY)
 {
-    ASSERT_FLOAT_EQ(INFINITY, nunavut::support::float16Unpack(0x7C00));
-    ASSERT_FLOAT_EQ(-INFINITY, nunavut::support::float16Unpack(0xFC00));
+    ASSERT_FLOAT_EQ(std::numeric_limits<float>::infinity(), nunavut::support::float16Unpack(0x7C00));
+    ASSERT_FLOAT_EQ(-std::numeric_limits<float>::infinity(), nunavut::support::float16Unpack(0xFC00));
 }
 
 // +--------------------------------------------------------------------------+
@@ -817,8 +817,8 @@ TEST(BitSpan, Float16PackUnpack)
     ASSERT_TRUE(helperPackUnpack(*(reinterpret_cast<const float*>(&signalling_nan_bits)), 0xFF00, 10));
     ASSERT_TRUE(helperPackUnpack(*(reinterpret_cast<const float*>(&signalling_negative_nan_bits)), 0xFF00, 10));
 #pragma GCC diagnostic pop
-    ASSERT_TRUE(helperPackUnpack(INFINITY, 0xFF00, 10));
-    ASSERT_TRUE(helperPackUnpack(-INFINITY, 0xFF00, 10));
+    ASSERT_TRUE(helperPackUnpack(std::numeric_limits<float>::infinity(), 0xFF00, 10));
+    ASSERT_TRUE(helperPackUnpack(-std::numeric_limits<float>::infinity(), 0xFF00, 10));
 }
 
 TEST(BitSpan, Float16PackUnpack_NAN)
@@ -853,7 +853,7 @@ TEST(BitSpan, Get16)
     // '0x4248'
     const uint8_t buf[3] = {0x48, 0x42, 0x00};
     const float result = nunavut::support::const_bitspan{ { buf, sizeof(buf) } }.getF16( );
-    ASSERT_NEAR(3.14f, result, 0.001f);
+    ASSERT_TRUE(CompareFloatsNear(3.14f, result, 0.001f));
 }
 
 
@@ -905,11 +905,11 @@ TEST(BitSpan, SetF32)
 
     memset(buffer, 0, sizeof(buffer));
     nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( INFINITY);
-    helperAssertSerFloat32SameAsIEEE(INFINITY, buffer);
+    helperAssertSerFloat32SameAsIEEE(std::numeric_limits<float>::infinity(), buffer);
 
     memset(buffer, 0, sizeof(buffer));
     nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( -INFINITY);
-    helperAssertSerFloat32SameAsIEEE(-INFINITY, buffer);
+    helperAssertSerFloat32SameAsIEEE(-std::numeric_limits<float>::infinity(), buffer);
 }
 
 // +--------------------------------------------------------------------------+
@@ -922,13 +922,13 @@ TEST(BitSpan, GetF32)
     // '0xff800000'
     const uint8_t buffer_neg_inf[] = {0x00, 0x00, 0x80, 0xFF};
     float result = nunavut::support::const_bitspan{ { buffer_neg_inf, sizeof(buffer_neg_inf) } }.getF32( );
-    ASSERT_FLOAT_EQ(-INFINITY, result);
+    ASSERT_FLOAT_EQ(-std::numeric_limits<float>::infinity(), result);
 
     // >>> hex(int.from_bytes(np.array([np.float32('infinity')]).tobytes(), 'little'))
     // '0x7f800000'
     const uint8_t buffer_inf[] = {0x00, 0x00, 0x80, 0x7F};
     result = nunavut::support::const_bitspan{ { buffer_inf, sizeof(buffer_inf) } }.getF32( );
-    ASSERT_FLOAT_EQ(INFINITY, result);
+    ASSERT_FLOAT_EQ(std::numeric_limits<float>::infinity(), result);
 
     // >>> hex(int.from_bytes(np.array([np.float32('nan')]).tobytes(), 'little'))
     // '0x7fc00000'
@@ -960,13 +960,13 @@ TEST(BitSpan, GetF64)
     // '0x7ff0000000000000'
     const uint8_t buffer_inf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x7F};
     result = nunavut::support::const_bitspan{ { buffer_inf, sizeof(buffer_inf) } }.getF64( );
-    ASSERT_DOUBLE_EQ(INFINITY, result);
+    ASSERT_DOUBLE_EQ(std::numeric_limits<double>::infinity(), result);
 
     // >>> hex(int.from_bytes(np.array([-np.float64('infinity')]).tobytes(), 'little'))
     // '0xfff0000000000000'
     const uint8_t buffer_neg_inf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xFF};
     result = nunavut::support::const_bitspan{ { buffer_neg_inf, sizeof(buffer_neg_inf) } }.getF64( );
-    ASSERT_DOUBLE_EQ(-INFINITY, result);
+    ASSERT_DOUBLE_EQ(-std::numeric_limits<double>::infinity(), result);
 
     // >>> hex(int.from_bytes(np.array([np.float64('nan')]).tobytes(), 'little'))
     // '0x7ff8000000000000'
@@ -1019,18 +1019,18 @@ TEST(BitSpan, SetF64)
     ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(-3.141592653589793, buffer));
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( -NAN);
-    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(-NAN, buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( -std::numeric_limits<double>::quiet_NaN());
+    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(-std::numeric_limits<double>::quiet_NaN(), buffer));
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( NAN);
-    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(NAN, buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( std::numeric_limits<double>::quiet_NaN());
+    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(std::numeric_limits<double>::quiet_NaN(), buffer));
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( INFINITY);
-    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(INFINITY, buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( std::numeric_limits<double>::infinity());
+    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(std::numeric_limits<double>::infinity(), buffer));
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( -INFINITY);
-    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(-INFINITY, buffer));
+    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( -std::numeric_limits<double>::infinity());
+    ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(-std::numeric_limits<double>::infinity(), buffer));
 }

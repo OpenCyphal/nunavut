@@ -227,8 +227,8 @@ public:
 } // namespace detail
 
 struct bitspan: public detail::any_bitspan<bitspan>{
-    friend class detail::any_bitspan<bitspan>;
-    friend class const_bitspan;
+    friend struct detail::any_bitspan<bitspan>;
+    friend struct const_bitspan;
 private:
     bytespan data_;
     {{ typename_unsigned_bit_length }} offset_bits_;
@@ -263,7 +263,7 @@ public:
 };
 
 struct const_bitspan: public detail::any_bitspan<const_bitspan>{
-    friend class detail::any_bitspan<const_bitspan>;
+    friend struct detail::any_bitspan<const_bitspan>;
 private:
     const_bytespan data_;
     {{ typename_unsigned_bit_length }} offset_bits_;
