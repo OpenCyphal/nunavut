@@ -42,6 +42,33 @@ TEST(BitSpan, SetZeros)
     ASSERT_EQ(srcArray[1], 0x03);
 }
 
+TEST(BitSpan, Subspan)
+{
+    std::array<uint8_t,2> srcArray{ 0xAA, 0xFF };
+    nunavut::support::bitspan sp(srcArray);
+    auto res = sp.subspan(0U, 8U);
+    ASSERT_TRUE(res) << "Error was " << res.error();
+    ASSERT_EQ(0U, res.value().offset());
+    ASSERT_EQ(8U, res.value().size());
+    ASSERT_EQ(0xAAU, res.value().aligned_ref());
+
+    res = sp.subspan(8U, 8U);
+    ASSERT_TRUE(res) << "Error was " << res.error();
+    ASSERT_EQ(0U, res.value().offset());
+    ASSERT_EQ(8U, res.value().size());
+    ASSERT_EQ(0xFFU, res.value().aligned_ref());
+
+    res = sp.subspan(12U, 4U);
+    ASSERT_TRUE(res) << "Error was " << res.error();
+    ASSERT_EQ(4U, res.value().offset());
+    ASSERT_EQ(4U, res.value().size());
+    ASSERT_EQ(0xFFU, res.value().aligned_ref());
+
+    res = sp.subspan(0U, 32U);
+    ASSERT_FALSE(res);
+    ASSERT_EQ(nunavut::support::Error::SERIALIZATION_BUFFER_TOO_SMALL, res.error());
+}
+
 TEST(BitSpan, AlignedPtr) {
     std::array<uint8_t,5> srcArray{ 1, 2, 3, 4, 5 };
     {

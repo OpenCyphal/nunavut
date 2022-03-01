@@ -106,6 +106,11 @@
             static constexpr const std::size_t {{ field.name | id }} = {{ loop.index0 }}U;
 {%- endfor %}
         };
+        static constexpr const std::size_t MAX_INDEX = {{ composite_type.fields_except_padding  | length }}U;
+
+        size_t index() const{
+            return tag_;
+        }
 
         template<std::size_t I, class...Types> struct alternative;
 

@@ -50,22 +50,24 @@
     }
     {%- endfor %}
 {% elif t.inner_type is UnionType %}
-{#
+    {% set ref_index = 'index'|to_template_unique_name %}
+    const auto {{ ref_index }} = union_value.index();
     {   // Union tag field: {{ t.inner_type.tag_field_type }}
         {{
-            _serialize_integer(t.inner_type.tag_field_type, 'obj->_tag_', 0|bit_length_set)
+            _serialize_integer(t.inner_type.tag_field_type, ref_index, 0|bit_length_set)
            |trim|remove_blank_lines|indent
         }}
     }
     {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
-    {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == obj->_tag_)  // {{ f }}
+    {{ 'if' if loop.first else 'else if' }} (VariantType::IndexOf::{{ f| id }} == {{ ref_index }})
     {
+        {% set ref_ptr = 'ptr'|to_template_unique_name %}
+        auto {{ ref_ptr }} = get_{{ f| id }}_if();
         {%- assert f.data_type.alignment_requirement <= (offset.min) %}
-        {{ _serialize_any(f.data_type, (f|id), offset)|trim|remove_blank_lines|indent }}
+        {{ _serialize_any(f.data_type, '(*%s)' | format(ref_ptr), offset)|trim|remove_blank_lines|indent }}
     }
     {%- endfor %}
     else
-#}
     {
         return -nunavut::support::Error::REPRESENTATION_BAD_UNION_TAG;
     }
@@ -224,14 +226,60 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_fixed_length_array(t, reference, offset) %}
+    (void)({{reference}});
 {% endmacro %}
 
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_variable_length_array(t, reference, offset) %}
+    (void)({{reference}});
 {% endmacro %}
 
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_composite(t, reference, offset) %}
+{% set ref_subspan          = 'subspan'    |to_template_unique_name %}
+{% set ref_err              = 'err'        |to_template_unique_name %}
+{% set ref_size_bytes       = 'size_bytes' |to_template_unique_name %}
+{% set is_variable_size     = not t.inner_type.bit_length_set.fixed_length %}
+{% set size_bytes           = t.inner_type.bit_length_set.max|bits2bytes_ceil %}
+    {{ typename_unsigned_length }} {{ ref_size_bytes }} = {{ size_bytes }}UL;  // Nested object (max) size, in bytes.
+{# PROLOGUE #}
+{% if t is DelimitedType %}
+    // Reserve space for the delimiter header.
+    auto {{ ref_subspan }} = out_buffer.subspan({{ t.delimiter_header_type.bit_length }}U, {{ ref_size_bytes }} * 8U);
+    {%- if not is_variable_size %}
+        {%- assert size_bytes * 8 == (t.inner_type.bit_length_set.min) == (t.inner_type.bit_length_set.max) %}
+    {%- endif %}
+{% else %}
+    auto {{ ref_subspan }} = out_buffer.subspan(0U, {{ ref_size_bytes }} * 8U);
+{% endif %}
+    if(not {{ ref_subspan }}){
+        return -{{ ref_subspan }}.error();
+    }
+
+{# NESTED OBJECT SERIALIZATION #}
+    {{ assert('%s->offset_alings_to_byte()' | format(ref_subspan)) }}
+    auto {{ ref_err }} = {{ reference }}.serialize({{ ref_subspan }}.value());
+    if (not {{ ref_err }})
+    {
+        return {{ ref_err }};
+    }
+    {{ ref_size_bytes }} = {{ ref_err }}.value();
+    // It is assumed that we know the exact type of the serialized entity, hence we expect the size to match.
+{% if not t.inner_type.bit_length_set.fixed_length %}
+    {{ assert('(%s * 8U) >= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set.min)) }}
+    {{ assert('(%s * 8U) <= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set.max)) }}
+{% else %}
+    {{ assert('(%s * 8U) == %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set.max)) }}
+{% endif %}
+
+{# EPILOGUE #}
+{% if t is DelimitedType %}
+    // Jump back to write the delimiter header after the nested object is serialized and its length is known.
+    {{ _serialize_integer(t.delimiter_header_type, ref_size_bytes, offset)|trim }}
+{% endif %}
+
+    out_buffer.add_offset({{ ref_size_bytes }} * 8U);
+    {{ assert('out_buffer.size() >= 0') }}
 {% endmacro %}

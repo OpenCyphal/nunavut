@@ -119,11 +119,8 @@ TEST(Serialization, StructReference)
     obj.unaligned_bitpacked_lt3.emplace_back(1);
     obj.unaligned_bitpacked_lt3.emplace_back(0);
     ASSERT_EQ(2U, obj.unaligned_bitpacked_lt3.size());              // 0b01, rest truncated
-    // obj.delimited_var_2[0].f16
-    // regulated_basics_DelimitedVariableSize_0_1_select_f16_(&obj.delimited_var_2[0]);
-    // obj.delimited_var_2[0].f16 = +1e9F;                 // truncated to infinity
-    // regulated_basics_DelimitedVariableSize_0_1_select_f64_(&obj.delimited_var_2[1]);
-    // obj.delimited_var_2[1].f64 = -1e40;                 // retained
+    obj.delimited_var_2[0].set_f16(+1e9F);    // truncated to infinity
+    obj.delimited_var_2[1].set_f16(-1e40);    // retained
     obj.aligned_bitpacked_le3.emplace_back(1);
     ASSERT_EQ(1U, obj.aligned_bitpacked_le3.size());                // only lsb is set, other truncated
 
@@ -250,9 +247,16 @@ TEST(Serialization, StructReference)
     ASSERT_EQ(0U, obj.unaligned_bitpacked_lt3.size());
 
     // ASSERT_EQ(0, obj.delimited_var_2[0]._tag_);
-    ASSERT_TRUE(CompareFloatsNear(0.f, obj.delimited_var_2[0].f16, 1e-9f));
-    // ASSERT_EQ(0, obj.delimited_var_2[1]._tag_);
-    ASSERT_TRUE(CompareFloatsNear(0.f, obj.delimited_var_2[1].f16, 1e-9f));
+    {
+        auto ptr_f16 = obj.delimited_var_2[0].get_f16_if();
+        ASSERT_NE(nullptr, ptr_f16);
+        ASSERT_TRUE(CompareFloatsNear(0.f, *ptr_f16, 1e-9f));
+    }
+    {
+        auto ptr_f16 = obj.delimited_var_2[1].get_f16_if();
+        ASSERT_NE(nullptr, ptr_f16);
+        ASSERT_TRUE(CompareFloatsNear(0.f, *ptr_f16, 1e-9f));
+    }
 
     ASSERT_EQ(0U, obj.aligned_bitpacked_le3.size());
 

@@ -140,15 +140,6 @@ public:
         return derived_bitspan(self.data_, self.offset_bits_ + bits);
     }
 
-    derived_bitspan subspan({{ typename_unsigned_bit_length }} bits_at=0) const noexcept {
-        auto& self  = *static_cast<const derived_bitspan*>(this);
-        const {{ typename_unsigned_bit_length }} offset_bits = self.offset_bits_ + bits_at;
-        const {{ typename_unsigned_length }} offset_bytes = offset_bits / 8U;
-        {{ assert('offset_bytes * 8U <= offset_bits') }}
-        const {{ typename_unsigned_length }} new_offset_bits = offset_bits - offset_bytes * 8U;
-        {{ assert('offset_bytes <= self.data_.size()') }}
-        return derived_bitspan({ self.data_.data() + offset_bytes, self.data_.size() - offset_bytes}, new_offset_bits);
-    }
 
     void add_offset({{ typename_unsigned_bit_length }} bits) noexcept{
         auto& self  = *static_cast<derived_bitspan*>(this);
@@ -236,6 +227,9 @@ public:
     bitspan(bytespan data, {{ typename_unsigned_bit_length }} offset_bits=0)
         :data_(std::move(data)), offset_bits_(offset_bits){
     }
+
+    Result<bitspan> subspan({# -#}
+        {{ typename_unsigned_bit_length }} bits_at, {{ typename_unsigned_bit_length }} size_bits) const noexcept;
     // ---------------------------------------------------- INTEGER ----------------------------------------------------
     /// Serialize a DSDL field value at the specified bit offset from the beginning of the destination buffer.
     /// The behavior is undefined if the input pointer is nullprt. The time complexity is linear of the bit length.
@@ -271,6 +265,8 @@ public:
     const_bitspan(const_bytespan data, {{ typename_unsigned_bit_length }} offset_bits=0)
         :data_(std::move(data)), offset_bits_(offset_bits){
     }
+
+
     /// Copy the specified number of bits from the source buffer into the destination buffer in accordance with the
     /// DSDL bit-level serialization specification. The offsets may be arbitrary (may exceed 8 bits).
     /// If both offsets are byte-aligned, the function invokes memmove() and possibly adjusts the last byte separately.
@@ -472,6 +468,25 @@ VoidResult bitspan::padAndMoveToAlignment({{ typename_unsigned_bit_length }} n_b
         {{ assert('offset_alings_to(n_bits)') }}
     }
     return {};
+}
+
+
+Result<bitspan> bitspan::subspan({# -#}
+        {{ typename_unsigned_bit_length }} bits_at, {{ typename_unsigned_bit_length }} size_bits) const noexcept {
+    const {{ typename_unsigned_bit_length }} offset_bits = offset_bits_ + bits_at;
+    const {{ typename_unsigned_length }} offset_bytes = offset_bits / 8U;
+    const {{ typename_unsigned_length }} new_offset_bits = offset_bits % 8U;
+    {{ assert('offset_bytes * 8U <= offset_bits') }}
+    if(offset_bytes > data_.size()){
+        return -Error::SERIALIZATION_BUFFER_TOO_SMALL;
+    }
+    const {{ typename_unsigned_length }} new_size_bits = new_offset_bits + size_bits;
+    const {{ typename_unsigned_length }} size_available_bits = (data_.size() - offset_bytes) * 8U;
+    if(new_size_bits > size_available_bits){
+        return -Error::SERIALIZATION_BUFFER_TOO_SMALL;
+    }
+    const {{ typename_unsigned_length }} new_size_bytes = new_size_bits / 8U;
+    return bitspan({ data_.data() + offset_bytes, new_size_bytes }, new_offset_bits);
 }
 
 
