@@ -9,18 +9,18 @@
 #include "gmock/gmock.h"
 #include "nunavut/support/serialization.hpp"
 
-#if __cplusplus > 201703L
-#include "magic_enum.hpp"
 testing::Message& operator<<(testing::Message& s, const nunavut::support::Error& e){
-    s << magic_enum::enum_name(e);
+    using namespace nunavut::support;
+    switch(e){
+    case Error::SERIALIZATION_INVALID_ARGUMENT: s << "SERIALIZATION_INVALID_ARGUMENT"; break;
+    case Error::SERIALIZATION_BUFFER_TOO_SMALL: s << "SERIALIZATION_BUFFER_TOO_SMALL"; break;
+    case Error::REPRESENTATION_BAD_ARRAY_LENGTH: s << "REPRESENTATION_BAD_ARRAY_LENGTH"; break;
+    case Error::REPRESENTATION_BAD_UNION_TAG: s << "REPRESENTATION_BAD_UNION_TAG"; break;
+    case Error::REPRESENTATION_BAD_DELIMITER_HEADER: s << "REPRESENTATION_BAD_DELIMITER_HEADER"; break;
+    }
     return s;
 }
-#else
-testing::Message& operator<<(testing::Message& s, const nunavut::support::Error& e){
-    s << static_cast<std::underlying_type_t<nunavut::support::Error>>(e);
-    return s;
-}
-#endif
+
 
 namespace nunavut{
 namespace testing{

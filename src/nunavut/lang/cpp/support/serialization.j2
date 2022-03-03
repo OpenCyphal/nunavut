@@ -85,10 +85,41 @@ using std::bitcast;
 
 #endif // def __cpp_lib_bit_cast
 
-
+#ifdef NUNAVUT_USE_SPAN_LITE
 using nonstd::span;
+#else
+
+template<typename T>
+class span{
+    T* ptr_;
+    {{ typename_unsigned_length }} size_;
+public:
+    template<{{ typename_unsigned_length }} N>
+    span(std::array<T, N>& data): ptr_(data.data()), size_(data.size()){}
+    template<{{ typename_unsigned_length }} N>
+    span(const std::array<T, N>& data): ptr_(data.data()), size_(data.size()){}
+    template<{{ typename_unsigned_length }} N>
+    span(T (&data)[N]): ptr_(data), size_(N){}
+    span(T* ptr,  {{ typename_unsigned_length }} size): ptr_(ptr), size_(size){}
+
+    T* data(){ return ptr_;}
+    T* data() const { return ptr_;}
+    {{ typename_unsigned_length }} size() const{ return size_; }
+    T& operator[]({{ typename_unsigned_length }} index){
+        {{ assert('index < size_') }}
+        return ptr_[index];
+    }
+    T& operator[]({{ typename_unsigned_length }} index) const {
+        {{ assert('index < size_') }}
+        return ptr_[index];
+    }
+};
+
+#endif
 using bytespan = span<{{ typename_byte }}> ;
 using const_bytespan = span<const {{ typename_byte }}> ;
+
+
 #if span_FEATURE( MAKE_SPAN )
 using nonstd::make_span;
 #endif  // span_FEATURE( MAKE_SPAN )
@@ -106,14 +137,90 @@ enum class Error{
     REPRESENTATION_BAD_DELIMITER_HEADER=12
 };
 
-inline tl::unexpected<Error> operator-(const Error& e){
-    return tl::unexpected<Error>{e};
-}
-
+#ifdef NUNAVUT_USE_TL_EXPECTED
+template<typename Err>
+using unexpected = tl::unexpected<Err>;
 template<typename Ret>
 using Result = tl::expected<Ret, Error>;
+#else
+template<typename Err>
+struct unexpected{
+    Err value;
+
+    explicit unexpected(Err e):value(e){}
+};
+
+/// This is a dumbed down version of C++23 std::expected, made better suited for
+/// embedded applications. It never throws, but uses NUNAVUT_ASSERT to signal
+/// exceptional cases.
+/// All versions of Ret are expected to be non-throwing.
+template<typename Ret>
+class expected{
+    // We can use a maximum of all types.
+    using storage_t = typename std::aligned_storage<
+        (std::max(sizeof(Ret), sizeof(Error))),
+        (std::max(alignof(Ret), alignof(Error)))>::type;
+    storage_t storage;
+    bool is_expected_;
+private:
+    Ret* ret_ptr() { return reinterpret_cast<Ret*>(&storage); }
+    const Ret* ret_ptr() const { return reinterpret_cast<const Ret*>(&storage); }
+    Error* error_ptr() { return reinterpret_cast<Error*>(&storage); }
+    const Error* error_ptr() const { return reinterpret_cast<const Error*>(&storage); }
+public:
+    expected():is_expected_(true){ new(ret_ptr()) Ret(); }
+    expected(Ret r):is_expected_(true){ new(ret_ptr()) Ret(std::move(r)); }
+    expected& operator=(Ret other){ this->~expected(); return *new(this) expected(std::move(other)); }
+    expected(unexpected<Error> err):is_expected_(false){ new(error_ptr()) Error(std::move(err.value)); }
+    expected(const expected& other): is_expected_(other.is_expected_){
+        if(is_expected_){ new(ret_ptr()) Ret(*other.ret_ptr()); }
+        else { new(error_ptr()) Error(*other.error_ptr()); }
+    }
+    expected& operator=(const expected& other){
+        this->~expected(); return *new(this) expected(other);
+    }
+    ~expected(){
+        if(is_expected_){ ret_ptr()->~Ret(); }
+        else{ error_ptr()->~Error(); }
+    }
+
+    Ret& value(){ {{ assert('is_expected_') }} return *ret_ptr(); }
+    const Ret& value() const { {{ assert('is_expected_') }} return *ret_ptr(); }
+    Ret& operator*(){ return value(); }
+    const Ret& operator*()const { return value(); }
+    Ret* operator->(){ {{ assert('is_expected_') }} return ret_ptr(); }
+    const Ret* operator->() const { {{ assert('is_expected_') }} return ret_ptr(); }
+    Error& error(){ {{ assert('not is_expected_') }} return *error_ptr(); }
+    const Error& error() const { {{ assert('not is_expected_') }} return *error_ptr(); }
+
+    bool has_value() const { return is_expected_; }
+    operator bool() const { return has_value(); }
+};
+
+template<>
+class expected<void>{
+    using underlying_type = typename std::underlying_type<Error>::type;
+    underlying_type e;
+public:
+    expected():e(0){}
+    expected(unexpected<Error> err):e(static_cast<underlying_type>(err.value)){ }
+    Error error() const { {{ assert('not has_value()') }} return static_cast<Error>(e); }
+
+    bool has_value() const { return e == 0; }
+    operator bool() const { return has_value(); }
+};
+
+template<typename Ret>
+using Result = expected<Ret>;
+#endif
+
+
 using VoidResult = Result<void>;
 using SerializeResult = Result<{{ typename_unsigned_length }}>;
+
+inline unexpected<Error> operator-(const Error& e){
+    return unexpected<Error>{e};
+}
 
 namespace options
 {

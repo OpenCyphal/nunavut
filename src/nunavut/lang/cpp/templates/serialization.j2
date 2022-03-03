@@ -226,13 +226,93 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_fixed_length_array(t, reference, offset) %}
-    (void)({{reference}});
+{# SPECIAL CASE: PACKED BIT ARRAY #}
+{#{% if t.element_type is BooleanType %}
+    {% if offset.is_aligned_at_byte() %}
+    // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
+    {% endif %}
+    nunavutCopyBits(&buffer[0], offset_bits, {{ t.capacity }}UL, &{{ reference }}_bitpacked_[0], 0U);
+    out_buffer.add_offset({{ t.capacity }}UL);
+#}
+{# SPECIAL CASE: BYTES-LIKE ARRAY #}
+{#
+{% elif t.element_type is PrimitiveType and t.element_type.bit_length == 8 and t.element_type is zero_cost_primitive %}
+    {% if offset.is_aligned_at_byte() %}
+    // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
+    {% endif %}
+    nunavutCopyBits(&buffer[0], offset_bits, {{ t.capacity }}UL * 8U, &{{ reference }}[0], 0U);
+    out_buffer.add_offset({{ t.capacity }}UL * 8U);
+#}
+{# SPECIAL CASE: ZERO-COST PRIMITIVES #}
+{#
+{% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
+    // Saturation code not emitted -- assume the native representation is conformant.
+    {% if t.element_type is FloatType %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
+        {% if t.element_type.bit_length > 32 %}
+    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
+        {% endif %}
+    {% endif %}
+    {% if offset.is_aligned_at_byte() %}
+    // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
+    {% endif %}
+    nunavutCopyBits(&buffer[0], offset_bits, {{ t.capacity }}UL * {{ t.element_type.bit_length }}UL, {# -#}
+{#                    &{{ reference }}[0], 0U);
+    out_buffer.add_offset({{ t.capacity }}UL * {{ t.element_type.bit_length }}UL);
+#}
+{# GENERAL CASE #}
+{# {% else %} #}
+    {% set ref_origin_offset = 'origin'|to_template_unique_name %}
+    const {{ typename_unsigned_bit_length }} {{ ref_origin_offset }} = out_buffer.offset();
+    {# Element offset is the superposition of each individual element offset plus the array's own offset.
+     # For example, an array like uint8[3] offset by 16 bits would have its element_offset = {16, 24, 32}.
+     # We can also unroll element deserialization for small arrays (e.g., below ~10 elements) to take advantage of
+     # spurious alignment of elements but the benefit of such optimization is believed to be negligible. #}
+    {% set element_offset = offset + t.element_type.bit_length_set.repeat_range(t.capacity - 1) %}
+    {% set ref_index = 'index'|to_template_unique_name %}
+    for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ t.capacity }}UL; ++{{ ref_index }})
+    {
+        {{ _serialize_any(t.element_type, reference + ('[%s]'|format(ref_index)), element_offset)|trim|indent }}
+    }
+    // It is assumed that we know the exact type of the serialized entity, hence we expect the size to match.
+    {% if not t.bit_length_set.fixed_length %}
+    {{ assert('(out_buffer.offset() - %s) >= %sULL'|format(ref_origin_offset, t.bit_length_set.min)) }}
+    {{ assert('(out_buffer.offset() - %s) <= %sULL'|format(ref_origin_offset, t.bit_length_set.max)) }}
+    {% else %}
+    {{ assert('(out_buffer.offset() - %s) == %sULL'|format(ref_origin_offset, t.bit_length_set.max)) }}
+    {% endif %}
+    (void) {{ ref_origin_offset }};
+{# {% endif %} #}
 {% endmacro %}
 
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_variable_length_array(t, reference, offset) %}
-    (void)({{reference}});
+    if ({{ reference }}.size() > {{ t.capacity }})
+    {
+        return -nunavut::support::Error::REPRESENTATION_BAD_ARRAY_LENGTH;
+    }
+    // Array length prefix: {{ t.length_field_type }}
+    {{ _serialize_integer(t.length_field_type, reference + '.size()', offset) }}
+
+{# COMPUTE THE ARRAY ELEMENT OFFSETS #}
+{# NOTICE: The offset is no longer valid at this point because we just emitted the array length prefix. #}
+{% set element_offset = offset + t.bit_length_set %}
+{% set first_element_offset = offset + t.length_field_type.bit_length %}
+{% assert (element_offset.min) == (first_element_offset.min) %}
+{% if first_element_offset.is_aligned_at_byte() %}
+    {{ assert('out_buffer.offset_alings_to_byte()') }}
+{% endif %}
+
+{# GENERAL CASE #}
+    {% set ref_index = 'index'|to_template_unique_name %}
+    for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ reference }}.size(); ++{{ ref_index }})
+    {
+        {{
+            _serialize_any(t.element_type, reference + ('[%s]'|format(ref_index)), element_offset)
+           |trim|indent
+        }}
+    }
 {% endmacro %}
 
 
@@ -281,5 +361,5 @@
 {% endif %}
 
     out_buffer.add_offset({{ ref_size_bytes }} * 8U);
-    {{ assert('out_buffer.size() >= 0') }}
+    // {{ assert('out_buffer.size() >= 0') }}
 {% endmacro %}

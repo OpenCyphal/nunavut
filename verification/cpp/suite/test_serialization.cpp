@@ -82,7 +82,6 @@ TEST(Serialization, BasicSerialize) {
 ///     print('\n'.join(f'0x{x:02X}U,' for x in sr))
 TEST(Serialization, StructReference)
 {
-    return;
     regulated::basics::Struct__0_1 obj{};
 
     // Initialize a reference object, serialize, and compare against the reference serialized representation.
@@ -120,80 +119,79 @@ TEST(Serialization, StructReference)
     obj.unaligned_bitpacked_lt3.emplace_back(0);
     ASSERT_EQ(2U, obj.unaligned_bitpacked_lt3.size());              // 0b01, rest truncated
     obj.delimited_var_2[0].set_f16(+1e9F);    // truncated to infinity
-    obj.delimited_var_2[1].set_f16(-1e40);    // retained
+    obj.delimited_var_2[1].set_f64(-1e40);    // retained
     obj.aligned_bitpacked_le3.emplace_back(1);
     ASSERT_EQ(1U, obj.aligned_bitpacked_le3.size());                // only lsb is set, other truncated
 
     const uint8_t reference[] = {
-        0xFEU,  // void1, true, 6 lsb of int10 = 511
-        0x07U,  // 4 msb of int10 = 511, 4 lsb of -512 = 0b_10_0000_0000
-        0x60U,  // 6 msb of -512 (0x60 = 0b_0110_0000), 2 lsb of 0x0055 = 0b0001010101
-        0x15U,  // 8 msb of 0b_00_0101_0101,                       0x15 = 0b00010101
-        0x56U,  // ALIGNED; -0x00AA in two's complement is 0x356 = 0b_11_01010110
-        0x0BU,  // 2 msb of the above (0b11) followed by 8 bit of length prefix (2) of float16[<=2] f16_le2
-        0xFCU,  // 2 msb of the length prefix followed by 6 lsb of (float16.min = 0xfbff = 0b_11111011_11111111)
-        0xEFU,  // 0b_xx_111011_11xxxxxx (continuation of the float16)
-        0x03U,  // 2 msb of the above (0b11) and the next float16 = +inf, represented 0x7C00 = 0b_01111100_00000000
-        0xF0U,  // 0b_xx111100_00xxxxxx (continuation of the infinity)
-        0x15U,  // 2 msb of the above (0b01) followed by bool[3] unaligned_bitpacked_3 = [1, 0, 1], then PADDING
-        0x02U,  // ALIGNED; empty struct not manifested, here we have length = 2 of uint8[<3] bytes_lt3
-        0x6FU,  // bytes_lt3[0] = 111
-        0xDEU,  // bytes_lt3[1] = 222
-        0x89U,  // bytes_3[0] = -0x77 (two's complement)
-        0xEFU,  // bytes_3[1] = -0x11 (two's complement)
-        0x77U,  // bytes_3[2] = +0x77
-        0x03U,  // length = 3 of truncated uint2[<=4] u2_le4
-        0x36U,  // 0b_00_11_01_10: u2_le4[0] = 0b10, u2_le4[1] = 0b01, u2_le4[2] = 0b11, then dynamic padding
-        0x01U,  // ALIGNED; length = 1 of DelimitedFixedSize.0.1[<=2] delimited_fix_le2
-        0x00U,  // Constant DH of DelimitedFixedSize.0.1
-        0x00U,  // ditto
-        0x00U,  // ditto
-        0x00U,  // ditto
-        0x34U,  // uint16[2] u16_2; first element = 0x1234
-        0x12U,  // continuation
-        0x78U,  // second element = 0x5678
-        0x56U,  // continuation
-        0x11U,  // bool[3] aligned_bitpacked_3 = [1, 0, 0]; then 5 lsb of length = 2 of bool[<3] unaligned_bitpacked_lt3
-        0x08U,  // 3 msb of length = 2 (i.e., zeros), then values [1, 0], then 1 bit of padding before composite
-        0x03U,  // DH = 3 of the first element of DelimitedVariableSize.0.1[2] delimited_var_2
-        0x00U,  // ditto
-        0x00U,  // ditto
-        0x00U,  // ditto
-        0x00U,  // union tag = 0, f16 selected
-        0x00U,  // f16 truncated to positive infinity; see representation above
-        0x7CU,  // ditto
-        0x09U,  // DH = (8 + 1) of the second element of DelimitedVariableSize.0.1[2] delimited_var_2
-        0x00U,  // ditto
-        0x00U,  // ditto
-        0x00U,  // ditto
-        0x02U,  // union tag = 2, f64 selected (notice that union tags are always aligned by design)
-        0xA5U,  // float64 = -1e40 is 0xc83d6329f1c35ca5, this is the LSB
-        0x5CU,  // ditto
-        0xC3U,  // ditto
-        0xF1U,  // ditto
-        0x29U,  // ditto
-        0x63U,  // ditto
-        0x3DU,  // ditto
-        0xC8U,  // ditto
-        0x01U,  // length = 1 of bool[<=3] aligned_bitpacked_le3
-        0x01U,  // the one single bit of the above, then 7 bits of dynamic padding to byte
-        // END OF SERIALIZED REPRESENTATION
-        0x55U,  // canary  1
-        0x55U,  // canary  2
-        0x55U,  // canary  3
-        0x55U,  // canary  4
-        0x55U,  // canary  5
-        0x55U,  // canary  6
-        0x55U,  // canary  7
-        0x55U,  // canary  8
-        0x55U,  // canary  9
-        0x55U,  // canary 10
-        0x55U,  // canary 11
-        0x55U,  // canary 12
-        0x55U,  // canary 13
-        0x55U,  // canary 14
-        0x55U,  // canary 15
-        0x55U,  // canary 16
+        0xFEU,  // byte 0: void1, true, 6 lsb of int10 = 511
+        0x07U,  // byte 1: 4 msb of int10 = 511, 4 lsb of -512 = 0b_10_0000_0000
+        0x60U,  // byte 2: 6 msb of -512 (0x60 = 0b_0110_0000), 2 lsb of 0x0055 = 0b0001010101
+        0x15U,  // byte 3: 8 msb of 0b_00_0101_0101,                       0x15 = 0b00010101
+        0x56U,  // byte 4: ALIGNED; -0x00AA in two's complement is 0x356 = 0b_11_01010110
+        0x0BU,  // byte 5: 2 msb of the above (0b11) followed by 8 bit of length prefix (2) of float16[<=2] f16_le2
+        0xFCU,  // byte 6: 2 msb of the length prefix followed by 6 lsb of (float16.min = 0xfbff = 0b_11111011_11111111)
+        0xEFU,  // byte 7: 0b_xx_111011_11xxxxxx (continuation of the float16)
+        0x03U,  // byte 8: 2 msb of the above (0b11) and the next float16 = +inf, represented 0x7C00 = 0b_01111100_00000000
+        0xF0U,  // byte 9: 0b_xx111100_00xxxxxx (continuation of the infinity)
+        0x15U,  // byte 10: 2 msb of the above (0b01) followed by bool[3] unaligned_bitpacked_3 = [1, 0, 1], then PADDING
+        0x02U,  // byte 11: ALIGNED; empty struct not manifested, here we have length = 2 of uint8[<3] bytes_lt3
+        0x6FU,  // byte 12: bytes_lt3[0] = 111
+        0xDEU,  // byte 13: bytes_lt3[1] = 222
+        0x89U,  // byte 14: bytes_3[0] = -0x77 (two's complement)
+        0xEFU,  // byte 15: bytes_3[1] = -0x11 (two's complement)
+        0x77U,  // byte 16: bytes_3[2] = +0x77
+        0x03U,  // byte 17: length = 3 of truncated uint2[<=4] u2_le4
+        0x36U,  // byte 18: 0b_00_11_01_10: u2_le4[0] = 0b10, u2_le4[1] = 0b01, u2_le4[2] = 0b11, then dynamic padding
+        0x01U,  // byte 19: ALIGNED; length = 1 of DelimitedFixedSize.0.1[<=2] delimited_fix_le2
+        0x00U,  // byte 20: Constant DH of DelimitedFixedSize.0.1
+        0x00U,  // byte 21: ditto
+        0x00U,  // byte 22: ditto
+        0x00U,  // byte 23: ditto
+        0x34U,  // byte 24: uint16[2] u16_2; first element = 0x1234
+        0x12U,  // byte 25: continuation
+        0x78U,  // byte 26: second element = 0x5678
+        0x56U,  // byte 27: continuation
+        0x11U,  // byte 28: bool[3] aligned_bitpacked_3 = [1, 0, 0]; then 5 lsb of length = 2 of bool[<3] unaligned_bitpacked_lt3
+        0x08U,  // byte 29: 3 msb of length = 2 (i.e., zeros), then values [1, 0], then 1 bit of padding before composite
+        0x03U,  // byte 30: DH = 3 of the first element of DelimitedVariableSize.0.1[2] delimited_var_2
+        0x00U,  // byte 31: ditto
+        0x00U,  // byte 32: ditto
+        0x00U,  // byte 33: ditto
+        0x00U,  // byte 34: union tag = 0, f16 selected
+        0x00U,  // byte 35: f16 truncated to positive infinity; see representation above
+        0x7CU,  // byte 36: ditto
+        0x09U,  // byte 37: DH = (8 + 1) of the second element of DelimitedVariableSize.0.1[2] delimited_var_2
+        0x00U,  // byte 38: ditto
+        0x00U,  // byte 39: ditto
+        0x00U,  // byte 40: ditto
+        0x02U,  // byte 41: union tag = 2, f64 selected (notice that union tags are always aligned by design)
+        0xA5U,  // byte 42: float64 = -1e40 is 0xc83d6329f1c35ca5, this is the LSB
+        0x5CU,  // byte 43: ditto
+        0xC3U,  // byte 44: ditto
+        0xF1U,  // byte 45: ditto
+        0x29U,  // byte 46: ditto
+        0x63U,  // byte 47: ditto
+        0x3DU,  // byte 48: ditto
+        0xC8U,  // byte 49: ditto
+        0x01U,  // byte 50: length = 1 of bool[<=3] aligned_bitpacked_le3
+        0x01U,  // byte 51: the one single bit of the above, then 7 bits of dynamic padding to byte// byte 51: END OF SERIALIZED REPRESENTATION
+        0x55U,  // byte 52: canary  1
+        0x55U,  // byte 53: canary  2
+        0x55U,  // byte 54: canary  3
+        0x55U,  // byte 55: canary  4
+        0x55U,  // byte 56: canary  5
+        0x55U,  // byte 57: canary  6
+        0x55U,  // byte 58: canary  7
+        0x55U,  // byte 59: canary  8
+        0x55U,  // byte 60: canary  9
+        0x55U,  // byte 61: canary 10
+        0x55U,  // byte 62: canary 11
+        0x55U,  // byte 63: canary 12
+        0x55U,  // byte 64: canary 13
+        0x55U,  // byte 65: canary 14
+        0x55U,  // byte 66: canary 15
+        0x55U,  // byte 67: canary 16
     };
 
     uint8_t buf[sizeof(reference)];
@@ -202,33 +200,33 @@ TEST(Serialization, StructReference)
     auto result = obj.serialize({{buf, sizeof(buf)}});
     ASSERT_TRUE(result) << "Error is " << static_cast<int>(result.error());
 
-    ASSERT_EQ(sizeof(reference) - 16U, result.value());
+    EXPECT_EQ(sizeof(reference) - 16U, result.value());
 
     for(size_t i=0; i< sizeof(reference); i++){
         ASSERT_EQ(reference[i], buf[i]) << "Failed at " << i;
     }
 
-
     // Check union manipulation functions.
-    // TEST_ASSERT_TRUE(regulated_basics_DelimitedVariableSize_0_1_is_f16_(&obj.delimited_var_2[0]));
-    // TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f32_(&obj.delimited_var_2[0]));
-    // TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f64_(&obj.delimited_var_2[0]));
-    // TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f64_(NULL));
-    // regulated_basics_DelimitedVariableSize_0_1_select_f32_(NULL);        // No action; same state retained.
-    // TEST_ASSERT_TRUE(regulated_basics_DelimitedVariableSize_0_1_is_f16_(&obj.delimited_var_2[0]));
-    // TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f32_(&obj.delimited_var_2[0]));
-    // TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f64_(&obj.delimited_var_2[0]));
-    // TEST_ASSERT_FALSE(regulated_basics_DelimitedVariableSize_0_1_is_f64_(NULL));
+    ASSERT_TRUE(obj.delimited_var_2[0].is_f16());
+    ASSERT_FALSE(obj.delimited_var_2[0].is_f32());
+    ASSERT_FALSE(obj.delimited_var_2[0].is_f64());
+    obj.delimited_var_2[0].set_f32();
+    ASSERT_FALSE(obj.delimited_var_2[0].is_f16());
+    ASSERT_TRUE(obj.delimited_var_2[0].is_f32());
+    ASSERT_FALSE(obj.delimited_var_2[0].is_f64());
+    obj.delimited_var_2[0].set_f64();
+    ASSERT_FALSE(obj.delimited_var_2[0].is_f16());
+    ASSERT_FALSE(obj.delimited_var_2[0].is_f32());
+    ASSERT_TRUE(obj.delimited_var_2[0].is_f64());
 
     // Test default initialization.
-    // (void) memset(&obj, 0x55, sizeof(obj));             // Fill using a non-zero pattern.
     obj.regulated::basics::Struct__0_1::~Struct__0_1();
     new (&obj)regulated::basics::Struct__0_1();
     ASSERT_EQ(false, obj.boolean);
-    // ASSERT_EQ(0, obj.i10_4[0]);
-    // ASSERT_EQ(0, obj.i10_4[1]);
-    // ASSERT_EQ(0, obj.i10_4[2]);
-    // ASSERT_EQ(0, obj.i10_4[3]);
+    ASSERT_EQ(0, obj.i10_4[0]);
+    ASSERT_EQ(0, obj.i10_4[1]);
+    ASSERT_EQ(0, obj.i10_4[2]);
+    ASSERT_EQ(0, obj.i10_4[3]);
     ASSERT_EQ(0U, obj.f16_le2.size());
     ASSERT_EQ(0, obj.unaligned_bitpacked_3[0]);
     ASSERT_EQ(0, obj.unaligned_bitpacked_3[1]);
@@ -261,8 +259,10 @@ TEST(Serialization, StructReference)
     ASSERT_EQ(0U, obj.aligned_bitpacked_le3.size());
 
     // // Deserialize the above reference representation and compare the result against the original object.
+    result = obj.deserialize({{reference}, 0U});
+    ASSERT_TRUE(result) << "Error was " << result.error();
     // ASSERT_EQ(0, regulated_basics_Struct__0_1_deserialize_(&obj, &reference[0], &size));
-    // ASSERT_EQ(sizeof(reference) - 16U, size);   // 16 trailing bytes implicitly truncated away
+    ASSERT_EQ(sizeof(reference) - 16U, result.value());   // 16 trailing bytes implicitly truncated away
 
     // ASSERT_EQ(true, obj.boolean);
     // ASSERT_EQ(+511, obj.i10_4[0]);                              // saturated

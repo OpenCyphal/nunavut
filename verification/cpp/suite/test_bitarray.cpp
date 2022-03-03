@@ -22,7 +22,7 @@ TEST(BitSpan, Constructor) {
         ASSERT_EQ(sp.size(), 5U*8U);
     }
     const uint8_t csrcVar = 0x8F;
-    const std::array<uint8_t,5> csrcArray{ 1, 2, 3, 4, 5 };
+    const std::array<const uint8_t,5> csrcArray{ 1, 2, 3, 4, 5 };
     {
         nunavut::support::const_bitspan sp{{&csrcVar, 1}};
         ASSERT_EQ(sp.size(), 1U*8U);
@@ -72,23 +72,23 @@ TEST(BitSpan, Subspan)
 TEST(BitSpan, AlignedPtr) {
     std::array<uint8_t,5> srcArray{ 1, 2, 3, 4, 5 };
     {
-        auto actualPtr = nunavut::support::bitspan{srcArray}.aligned_ptr();
+        auto actualPtr = nunavut::support::bitspan(srcArray).aligned_ptr();
         ASSERT_EQ(actualPtr, srcArray.data());
     }
     {
-        auto actualPtr = nunavut::support::bitspan{srcArray, 1}.aligned_ptr();
+        auto actualPtr = nunavut::support::bitspan(srcArray, 1).aligned_ptr();
         ASSERT_EQ(actualPtr, srcArray.data());
     }
     {
-        auto actualPtr = nunavut::support::bitspan{srcArray, 5}.aligned_ptr();
+        auto actualPtr = nunavut::support::bitspan(srcArray, 5).aligned_ptr();
         ASSERT_EQ(actualPtr, srcArray.data());
     }
     {
-        auto actualPtr = nunavut::support::bitspan{srcArray, 7}.aligned_ptr();
+        auto actualPtr = nunavut::support::bitspan(srcArray, 7).aligned_ptr();
         ASSERT_EQ(actualPtr, srcArray.data());
     }
     {
-        auto actualPtr = nunavut::support::bitspan{srcArray}.aligned_ptr(8);
+        auto actualPtr = nunavut::support::bitspan(srcArray).aligned_ptr(8);
         ASSERT_EQ(actualPtr, &srcArray[1]);
     }
 }
@@ -103,10 +103,19 @@ TEST(BitSpan, TestSize) {
         nunavut::support::bitspan sp{src, 1};
         ASSERT_EQ(sp.size(), 5U*8U - 1U);
     }
+    std::array<const uint8_t,5> csrc{ 1, 2, 3, 4, 5 };
+    {
+        nunavut::support::const_bitspan sp{csrc};
+        ASSERT_EQ(sp.size(), 5U*8U);
+    }
+    {
+        nunavut::support::const_bitspan sp{csrc, 1};
+        ASSERT_EQ(sp.size(), 5U*8U - 1U);
+    }
 }
 
 TEST(BitSpan, CopyBits) {
-    std::array<uint8_t,5> src{ 1, 2, 3, 4, 5 };
+    std::array<const uint8_t,5> src{ 1, 2, 3, 4, 5 };
     std::array<uint8_t,6> dst{};
     memset(dst.data(), 0, dst.size());
 
@@ -118,7 +127,7 @@ TEST(BitSpan, CopyBits) {
 }
 
 TEST(BitSpan, CopyBitsWithAlignedOffset) {
-    std::array<uint8_t,5> src{ 0x11, 0x22, 0x33, 0x44, 0x55 };
+    std::array<const uint8_t,5> src{ 0x11, 0x22, 0x33, 0x44, 0x55 };
     std::array<uint8_t,6> dst{};
     memset(dst.data(), 0, dst.size());
 
@@ -153,19 +162,19 @@ TEST(BitSpan, CopyBitsWithAlignedOffset) {
 }
 
 TEST(BitSpan, CopyBitsWithAlignedOffsetNonByteLen) {
-    std::array<uint8_t,7> src{ 0x0, 0x0, 0x11, 0x22, 0x33, 0x44, 0x55 };
+    std::array<const uint8_t,7> src{ 0x0, 0x0, 0x11, 0x22, 0x33, 0x44, 0x55 };
     std::array<uint8_t,1> dst{};
     memset(dst.data(), 0, dst.size());
 
-    nunavut::support::const_bitspan(src, 2U * 8U).copyTo(nunavut::support::bitspan{dst}, 4);
+    nunavut::support::const_bitspan({src}, 2U * 8U).copyTo(nunavut::support::bitspan{dst}, 4);
     ASSERT_EQ(0x1U, dst[0]);
 
-    nunavut::support::const_bitspan(src, 3U * 8U).copyTo(nunavut::support::bitspan{dst}, 4);
+    nunavut::support::const_bitspan({src}, 3U * 8U).copyTo(nunavut::support::bitspan{dst}, 4);
     ASSERT_EQ(0x2U, dst[0]);
 }
 
 TEST(BitSpan, CopyBitsWithUnalignedOffset){
-    std::array<uint8_t,6> src{ 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA };
+    std::array<const uint8_t,6> src{ 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA };
     std::array<uint8_t,6> dst{};
     memset(dst.data(), 0, dst.size());
 
@@ -193,7 +202,7 @@ TEST(BitSpan, CopyBitsWithUnalignedOffset){
 TEST(BitSpan, SaturateBufferFragmentBitLength)
 {
     using namespace nunavut::support;
-    std::array<uint8_t, 4> data{};
+    std::array<const uint8_t, 4> data{};
     ASSERT_EQ(32U, const_bitspan(data,  0U).saturateBufferFragmentBitLength(32));
     ASSERT_EQ(31U, const_bitspan(data,  1U).saturateBufferFragmentBitLength(32));
     ASSERT_EQ(16U, const_bitspan(data,  0U).saturateBufferFragmentBitLength(16));
@@ -204,7 +213,7 @@ TEST(BitSpan, SaturateBufferFragmentBitLength)
 
 TEST(BitSpan, GetBits)
 {
-    std::array<uint8_t, 16> src{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF };
+    std::array<const uint8_t, 16> src{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF };
     std::array<uint8_t, 6> dst{};
     memset(dst.data(), 0xAA, dst.size());
     nunavut::support::const_bitspan{{src.data(), 6U}, 0}.getBits(dst, 0);
@@ -305,7 +314,7 @@ TEST(BitSpan, SetIxx_bufferOverflow)
     ASSERT_EQ(0xAA, buffer[2]);
     rc = nunavut::support::bitspan{{buffer, 2U}, 2U*8U}.setIxx(0xAA, 8);
     ASSERT_FALSE(rc);
-    ASSERT_EQ(-nunavut::support::Error::SERIALIZATION_BUFFER_TOO_SMALL, rc);
+    ASSERT_EQ(nunavut::support::Error::SERIALIZATION_BUFFER_TOO_SMALL, rc.error());
     ASSERT_EQ(0xAA, buffer[2]);
 }
 
