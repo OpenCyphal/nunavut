@@ -66,13 +66,38 @@ class Language(BaseLanguage):
             encoding_failure_handler=self._handle_stropping_or_encoding_failure,
         )
 
-    def _has_variant(self) -> bool:
+    def _standard_version(self) -> int:
         """
         .. invisible-code-block: python
 
            from nunavut.lang import LanguageLoader
 
+           # test c++17
            language = LanguageLoader().load_language('cpp', True, {'std': 'c++17'})
+           assert language._standard_version() == 17
+
+           # test c++14
+           language = LanguageLoader().load_language('cpp', True, {'std': 'c++14'})
+           assert language._standard_version() == 14
+
+           # test gnu++20
+           language = LanguageLoader().load_language('cpp', True, {'std': 'gnu++20'})
+           assert language._standard_version() == 20
+        """
+        std = str(self.get_option("std", ""))
+
+        match = self.CPP_STD_EXTRACT_NUMBER_PATTERN.match(std)
+
+        if match is not None and len(match.groups()) >= 1:
+            return int(match.group(1))
+        else:
+            return 0
+
+    def _has_variant(self) -> bool:
+        """
+        .. invisible-code-block: python
+
+           from nunavut.lang import LanguageLoader
 
            # test c++17
            language = LanguageLoader().load_language('cpp', True, {'std': 'c++17'})
@@ -86,16 +111,7 @@ class Language(BaseLanguage):
            language = LanguageLoader().load_language('cpp', True, {'std': 'gnu++20'})
            assert language._has_variant()
         """
-        std = str(self.get_option("std", ""))
-
-        match = self.CPP_STD_EXTRACT_NUMBER_PATTERN.match(std)
-
-        if match is not None and len(match.groups()) >= 1:
-            std_number = int(match.group(1))
-        else:
-            std_number = 0
-
-        return std_number >= 17
+        return self._standard_version() >= 17
 
     def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
         std_includes = []  # type: typing.List[str]
@@ -506,6 +522,54 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
 
     full_path = ns + [language.filter_short_reference_name(t)]
     return "::".join(full_path)
+
+
+@template_language_filter(__name__)
+def filter_full_macro_name(language: Language, t: pydsdl.CompositeType) -> str:
+    """
+    Provides a string usable as part of a macro name that is the full namespace, typename, major, and minor version
+    for a given composite type.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_full_macro_name
+        from unittest.mock import MagicMock
+        import pydsdl
+
+        my_obj = MagicMock()
+        my_obj.has_parent_service = False
+        my_obj.version = MagicMock()
+
+    .. code-block:: python
+
+        # Given a type with illegal characters for C++
+        my_obj.full_name = 'any.int.2Foo'
+        my_obj.version.major = 1
+        my_obj.version.minor = 2
+
+        # and
+        template = '{{ my_obj | full_macro_name }}'
+
+        # then, with stropping enabled
+        rendered = 'any__int__2Foo_1_2'
+
+    .. invisible-code-block: python
+
+        my_obj.short_name = my_obj.full_name.split('.')[-1]
+        my_obj.full_namespace = '.'.join(my_obj.full_name.split('.')[:-1])
+
+        jinja_filter_tester(filter_full_macro_name, template, rendered, 'cpp', my_obj=my_obj)
+
+    :param pydsdl.CompositeType t: The DSDL type to get the fully-resolved reference name for.
+    """
+    ns_parts = t.full_namespace.split(".")
+    if language.enable_stropping:
+        ns = list(map(functools.partial(filter_id, language), ns_parts))
+    else:
+        ns = ns_parts
+
+    full_path = ns + [language.filter_short_reference_name(t)]
+    return "_".join(full_path)
 
 
 @template_language_filter(__name__)

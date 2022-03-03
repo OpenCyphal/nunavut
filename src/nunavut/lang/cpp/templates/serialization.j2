@@ -25,14 +25,14 @@
     const {{ typename_unsigned_length }} capacity_bits = out_buffer.size();
 
 {%- if options.enable_override_variable_array_capacity %}
-#ifndef {{ t | full_reference_name }}_DISABLE_SERIALIZATION_BUFFER_CHECK_
+#ifndef {{ t | full_macro_name }}_DISABLE_SERIALIZATION_BUFFER_CHECK_
 {% endif %}
     if ((static_cast<{{ typename_unsigned_bit_length }}>(capacity_bits)) < {{ t.inner_type.bit_length_set.max }}UL)
     {
         return -nunavut::support::Error::SERIALIZATION_BUFFER_TOO_SMALL;
     }
 {%- if options.enable_override_variable_array_capacity %}
-#endif
+#endif // ndef {{ t | full_macro_name }}_DISABLE_SERIALIZATION_BUFFER_CHECK_
 {% endif %}
 
     // Notice that fields that are not an integer number of bytes long may overrun the space allocated for them
