@@ -61,8 +61,6 @@ static_assert(__cplusplus >= 201100L,
 #include <cmath>  // For isfinite().
 {% endif -%}
 #include <cstdint>
-#include "span_lite.hpp"
-#include "tl_expected.hpp"
 #ifdef __cpp_lib_bit_cast
 #include <bit>
 #endif // def __cpp_lib_bit_cast
@@ -84,10 +82,6 @@ using std::bitcast;
 #else // def __cpp_lib_bit_cast
 
 #endif // def __cpp_lib_bit_cast
-
-#ifdef NUNAVUT_USE_SPAN_LITE
-using nonstd::span;
-#else
 
 template<typename T>
 class span{
@@ -115,14 +109,9 @@ public:
     }
 };
 
-#endif
 using bytespan = span<{{ typename_byte }}> ;
 using const_bytespan = span<const {{ typename_byte }}> ;
 
-
-#if span_FEATURE( MAKE_SPAN )
-using nonstd::make_span;
-#endif  // span_FEATURE( MAKE_SPAN )
 
 
 /// Nunavut serialization will never define more than 127 errors and the reserved error numbers are [1,127]
@@ -137,16 +126,10 @@ enum class Error{
     REPRESENTATION_BAD_DELIMITER_HEADER=12
 };
 
-#ifdef NUNAVUT_USE_TL_EXPECTED
-template<typename Err>
-using unexpected = tl::unexpected<Err>;
-template<typename Ret>
-using Result = tl::expected<Ret, Error>;
-#else
+
 template<typename Err>
 struct unexpected{
     Err value;
-
     explicit unexpected(Err e):value(e){}
 };
 
@@ -212,8 +195,6 @@ public:
 
 template<typename Ret>
 using Result = expected<Ret>;
-#endif
-
 
 using VoidResult = Result<void>;
 using SerializeResult = Result<{{ typename_unsigned_length }}>;
