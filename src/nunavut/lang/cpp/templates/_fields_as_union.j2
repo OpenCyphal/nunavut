@@ -5,30 +5,30 @@
 #}
     class VariantType final
     {
+        std::size_t tag_;
+
+        union internal_union_t
+        {
+{%- for field in composite_type.fields_except_padding %}
+            {{ field.doc | block_comment('cpp-doxygen', 12, 120) }}
+            std::aligned_storage<sizeof({{ field.data_type | declaration }}), alignof({{ field.data_type | declaration }})>::type {{ field.name | id }};
+{%- endfor %}
+        } internal_union_value_;
+
     public:
         static const constexpr std::size_t variant_npos = -1;
 
         VariantType()
             : tag_(0)
             , internal_union_value_()
-            , storage_index_{
-{%- for field in composite_type.fields_except_padding %}
-                {% if not loop.first %}, {% else %}  {% endif %}&internal_union_value_.{{ field.name | id }}
-{%- endfor %}
-            }
         {
             // This is how the C++17 standard library does it; default initialization as the 0th index.
-            new (storage_index_[0]) typename alternative<0>::type();
+            emplace<0>();
         }
 
         VariantType(const VariantType& rhs)
             : tag_(variant_npos)
             , internal_union_value_()
-            , storage_index_{
-{%- for field in composite_type.fields_except_padding %}
-                {% if not loop.first %}, {% else %}  {% endif %}&internal_union_value_.{{ field.name | id }}
-{%- endfor %}
-            }
         {
 {%- for field in composite_type.fields_except_padding %}
             {% if not loop.first %}else {% endif %}if(rhs.tag_ == {{ loop.index0 }})
@@ -44,11 +44,6 @@
         VariantType(VariantType&& rhs)
             : tag_(variant_npos)
             , internal_union_value_()
-            , storage_index_{
-{%- for field in composite_type.fields_except_padding %}
-                {% if not loop.first %}, {% else %}  {% endif %}&internal_union_value_.{{ field.name | id }}
-{%- endfor %}
-            }
         {
 {%- for field in composite_type.fields_except_padding %}
             {% if not loop.first %}else {% endif %}if(rhs.tag_ == {{ loop.index0 }})
@@ -99,6 +94,10 @@
             destroy_current();
         }
 
+        size_t index() const{
+            return tag_;
+        }
+
         struct IndexOf final
         {
             IndexOf() = delete;
@@ -108,16 +107,13 @@
         };
         static constexpr const std::size_t MAX_INDEX = {{ composite_type.fields_except_padding  | length }}U;
 
-        size_t index() const{
-            return tag_;
-        }
-
         template<std::size_t I, class...Types> struct alternative;
 
 {% for field in composite_type.fields_except_padding %}
         template<class...Types> struct alternative<{{ loop.index0 }}U, Types...>
         {
             using type = {{ field.data_type | declaration }};
+            static constexpr auto pointer = &VariantType::internal_union_t::{{ field.name | id }};
         };
 {%- endfor %}
 
@@ -144,24 +140,32 @@
     private:
         template<std::size_t I, class... Args> typename VariantType::alternative<I, VariantType>::type& do_emplace(Args&&... v)
         {
-            return *(new (storage_index_[I]) typename alternative<I>::type(std::forward<typename alternative<I>::type>(v...)));
+            return *(new (&(internal_union_value_.*(alternative<I>::pointer)) ) {# -#}
+                typename alternative<I>::type(std::forward<Args>(v)...));
         }
 
         template<std::size_t I, class... Args> typename VariantType::alternative<I, VariantType>::type& do_copy(const Args&... v)
         {
-            return *(new (storage_index_[I]) typename alternative<I>::type(typename alternative<I>::type(v...)));
+            return *(new (&(internal_union_value_.*(alternative<I>::pointer)) ) {# -#}
+                typename alternative<I>::type(typename alternative<I>::type(v...)));
         }
 
         template<std::size_t I, class... Types>
         constexpr typename VariantType::alternative<I, VariantType>::type* do_get_if() noexcept
         {
-            return (tag_ == I) ? reinterpret_cast<typename std::add_pointer<typename VariantType::alternative<I>::type>::type>(storage_index_[I]) : nullptr;
+            return (tag_ == I) ? {# -#}
+                reinterpret_cast<typename std::add_pointer<typename VariantType::alternative<I>::type>::type>({# -#}
+                    &(internal_union_value_.*(alternative<I>::pointer)){# -#}
+                ) : nullptr;
         }
 
         template<std::size_t I, class... Types>
         constexpr const typename VariantType::alternative<I, VariantType>::type* do_get_if_const() const noexcept
         {
-            return (tag_ == I) ? reinterpret_cast<typename std::add_pointer<const typename VariantType::alternative<I>::type>::type>(storage_index_[I]) : nullptr;
+            return (tag_ == I) ? {# -#}
+                reinterpret_cast<typename std::add_pointer<const typename VariantType::alternative<I>::type>::type>({# -#}
+                    &(internal_union_value_.*(alternative<I>::pointer)){# -#}
+            ) : nullptr;
         }
 
         void destroy_current()
@@ -174,17 +178,6 @@
 {%- endfor %}
         }
 
-        std::size_t tag_;
-
-        union
-        {
-{%- for field in composite_type.fields_except_padding %}
-            {{ field.doc | block_comment('cpp-doxygen', 12, 120) }}
-            std::aligned_storage<sizeof({{ field.data_type | declaration }}), alignof({{ field.data_type | declaration }})>::type {{ field.name | id }};
-{%- endfor %}
-        } internal_union_value_;
-
-        void* storage_index_[{{ composite_type.fields_except_padding  | length }}];
     };
 
     VariantType union_value;

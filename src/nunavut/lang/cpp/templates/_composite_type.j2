@@ -74,6 +74,10 @@
 {% include '_fields_as_union.j2' %}
 {%- endifuses -%}
 {%- for field in composite_type.fields_except_padding %}
+    bool is_{{ field.name | id }}() const {
+        return VariantType::IndexOf::{{ field.name | id }} == union_value.index();
+    }
+
     typename std::add_pointer<{{ field.data_type | declaration }}>::type get_{{ field.name | id }}_if(){
         return VariantType::get_if<VariantType::IndexOf::{{ field.name | id }}>(&union_value);
     }
