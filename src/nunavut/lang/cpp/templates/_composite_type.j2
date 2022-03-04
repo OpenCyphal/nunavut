@@ -39,6 +39,25 @@
     /// This type does not have a fixed port-ID. See https://forum.uavcan.org/t/choosing-message-and-service-ids/889
     static constexpr bool HasFixedPortID = false;
 {% endif -%}
+    {%- assert composite_type.extent % 8 == 0 %}
+    {%- assert composite_type.inner_type.extent % 8 == 0 %}
+    /// Extent is the minimum amount of memory required to hold any serialized representation of any compatible
+    /// version of the data type; or, on other words, it is the the maximum possible size of received objects of this type.
+    /// The size is specified in bytes (rather than bits) because by definition, extent is an integer number of bytes long.
+    /// When allocating a deserialization (RX) buffer for this data type, it should be at least extent bytes large.
+    /// When allocating a serialization (TX) buffer, it is safe to use the size of the largest serialized representation
+    /// instead of the extent because it provides a tighter bound of the object size; it is safe because the concrete type
+    /// is always known during serialization (unlike deserialization). If not sure, use extent everywhere.
+
+    static constexpr {{ typename_unsigned_length }} EXTENT_BYTES                    = {#- -#}
+        {{ composite_type.extent // 8 }}UL;
+    static constexpr {{ typename_unsigned_length }} SERIALIZATION_BUFFER_SIZE_BYTES = {#- -#}
+        {{ composite_type.inner_type.extent // 8 }}UL;
+    static_assert(EXTENT_BYTES >= SERIALIZATION_BUFFER_SIZE_BYTES, "Internal constraint violation");
+    static_assert({# -#}
+        EXTENT_BYTES < (std::numeric_limits<{{ typename_unsigned_bit_length }}>::max() /8U), {# -#}
+        "This message is too large to be handled by current types!");
+
 {%- for constant in composite_type.constants %}
     {% if loop.first %}
     // +---------------------------------------------------------------------------------------------------------------+
@@ -48,21 +67,47 @@
     {{ constant.doc | block_comment('cpp-doxygen', 4, 120) }}
     static constexpr {{ constant.data_type | declaration }} {{ constant.name | id }} = {{ constant | constant_value }};
 {%- endfor -%}
-{%- if composite_type is UnionType -%}
+{%- if composite_type.inner_type is UnionType -%}
 {%- ifuses "std_variant" -%}
 {% include '_fields_as_variant.j2' %}
 {%- else -%}
 {% include '_fields_as_union.j2' %}
 {%- endifuses -%}
+{%- for field in composite_type.fields_except_padding %}
+    bool is_{{ field.name | id }}() const {
+        return VariantType::IndexOf::{{ field.name | id }} == union_value.index();
+    }
+
+    typename std::add_pointer<{{ field.data_type | declaration }}>::type get_{{ field.name | id }}_if(){
+        return VariantType::get_if<VariantType::IndexOf::{{ field.name | id }}>(&union_value);
+    }
+
+    typename std::add_pointer<const {{ field.data_type | declaration }}>::type get_{{ field.name | id }}_if() const{
+        return VariantType::get_if<VariantType::IndexOf::{{ field.name | id }}>(&union_value);
+    }
+
+    template<class... Args> typename std::add_lvalue_reference<{{ field.data_type | declaration }}>::type
+    set_{{ field.name | id }}(Args&&...v){
+        return union_value.emplace<VariantType::IndexOf::{{ field.name | id }}>(v...);
+    }
+{%- endfor %}
 {%- else -%}
 {% include '_fields.j2' %}
 {%- endif -%}
 {%- if not nunavut.support.omit %}
-    {{ typename_unsigned_length }} serialize(std::size_t todo_ser = 0)
+
+    nunavut::support::SerializeResult
+    serialize(nunavut::support::bitspan out_buffer) const
     {
-        // TODO: implement this routine
-        (void)todo_ser;
-        return 0;
+        {% from 'serialization.j2' import serialize -%}
+        {{ serialize(composite_type) | trim | remove_blank_lines | indent }}
+    }
+
+    nunavut::support::SerializeResult
+    deserialize(nunavut::support::const_bitspan in_buffer)
+    {
+        {% from 'deserialization.j2' import deserialize -%}
+        {{ deserialize(composite_type) | trim | remove_blank_lines | indent }}
     }
 {%- endif %}
 }{{ composite_type | definition_end }}

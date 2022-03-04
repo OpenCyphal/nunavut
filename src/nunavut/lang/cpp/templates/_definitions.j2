@@ -1,0 +1,12 @@
+{%- macro assert(expression) -%}
+    {%- if options.enable_serialization_asserts -%}
+    NUNAVUT_ASSERT({{ expression }});
+    {%- endif -%}
+{%- endmacro -%}
+
+{% if options.target_endianness == 'little' %}
+    {% set LITTLE_ENDIAN = True %}
+{% elif options.target_endianness in ('any', 'big') %}
+    {% set LITTLE_ENDIAN = False %}
+{% else %}{% assert False %}
+{% endif %}
