@@ -6,8 +6,10 @@
 """
 Contains supporting Python routines to distribute with generated types.
 """
+from __future__ import annotations
 import pathlib
 import typing
+
 from nunavut._utilities import iter_package_resources
 
 # Re-export support utilities for use in pyuavcan.dsdl
@@ -37,7 +39,7 @@ __version__ = "1.0.0"
 """Version of the Python support routines."""
 
 
-def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
+def list_support_files() -> typing.Generator[tuple[pathlib.Path, pathlib.Path], None, None]:
     """
     Get a list of Python support routines embedded in this package.
 

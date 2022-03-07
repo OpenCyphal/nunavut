@@ -106,6 +106,7 @@ def iter_package_resources(
 
     """
     root = importlib_resources.files(pkg_name)
+    print(root.rglob("*"))
     for resource in root.rglob("*"):
         if any(suffix == resource.suffix for suffix in suffix_filters):
             yield (root, resource)

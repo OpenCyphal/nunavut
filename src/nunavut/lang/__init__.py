@@ -8,6 +8,7 @@
 This package contains modules that provide specific support for generating
 source for various languages using templates.
 """
+from __future__ import annotations
 import abc
 import functools
 import importlib
@@ -51,7 +52,7 @@ class LanguageLoader:
     @classmethod
     def _load_config(cls, *additional_config_files: pathlib.Path) -> LanguageConfig:
         parser = LanguageConfig()
-        for root, resource in iter_package_resources(__name__, ".yaml"):
+        for _, resource in iter_package_resources(__name__, ".yaml"):
             ini_string = resource.read_text()
             parser.read_string(ini_string)
         for additional_path in additional_config_files:
@@ -499,9 +500,9 @@ class Language(metaclass=abc.ABCMeta):
             return list_support_files()
         else:
             # No serialization support for this language
-            def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
+            def list_support_files() -> typing.Generator[tuple[pathlib.Path, pathlib.Path], None, None]:
                 # This makes both MyPy and sonarqube happy.
-                return typing.cast(typing.Generator[pathlib.Path, None, None], iter(()))
+                return typing.cast(typing.Generator[tuple[pathlib.Path, pathlib.Path], None, None], iter(()))
 
             return list_support_files()
 
