@@ -9,6 +9,7 @@ Generators abstract the code generation technology used to transform
 pydsdl AST into source code.
 """
 
+from __future__ import annotations
 import abc
 import pathlib
 import typing
@@ -64,7 +65,7 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
         return self._generate_namespace_types
 
     @abc.abstractmethod
-    def get_templates(self) -> typing.Iterable[pathlib.Path]:
+    def get_templates(self) -> typing.Iterable[tuple[pathlib.Path, pathlib.Path]]:
         """
         Enumerate all templates found in the templates path.
         :return: A list of paths to all templates found by this Generator object.

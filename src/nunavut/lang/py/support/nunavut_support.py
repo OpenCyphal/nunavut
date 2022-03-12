@@ -815,17 +815,17 @@ class Deserializer(abc.ABC):
         return int(x - 2**64) if x >= 2**63 else x  # wrapped in int() to appease MyPy
 
     def fetch_aligned_f16(self) -> float:  # noinspection PyTypeChecker
-        (out,) = struct.unpack("<e", self.fetch_aligned_bytes(2))  # type: ignore
+        (out,) = struct.unpack("<e", self.fetch_aligned_bytes(2))
         assert isinstance(out, float)
         return out
 
     def fetch_aligned_f32(self) -> float:  # noinspection PyTypeChecker
-        (out,) = struct.unpack("<f", self.fetch_aligned_bytes(4))  # type: ignore
+        (out,) = struct.unpack("<f", self.fetch_aligned_bytes(4))
         assert isinstance(out, float)
         return out
 
     def fetch_aligned_f64(self) -> float:  # noinspection PyTypeChecker
-        (out,) = struct.unpack("<d", self.fetch_aligned_bytes(8))  # type: ignore
+        (out,) = struct.unpack("<d", self.fetch_aligned_bytes(8))
         assert isinstance(out, float)
         return out
 
@@ -914,17 +914,17 @@ class Deserializer(abc.ABC):
         return out
 
     def fetch_unaligned_f16(self) -> float:  # noinspection PyTypeChecker
-        (out,) = struct.unpack("<e", self.fetch_unaligned_bytes(2))  # type: ignore
+        (out,) = struct.unpack("<e", self.fetch_unaligned_bytes(2))
         assert isinstance(out, float)
         return out
 
     def fetch_unaligned_f32(self) -> float:  # noinspection PyTypeChecker
-        (out,) = struct.unpack("<f", self.fetch_unaligned_bytes(4))  # type: ignore
+        (out,) = struct.unpack("<f", self.fetch_unaligned_bytes(4))
         assert isinstance(out, float)
         return out
 
     def fetch_unaligned_f64(self) -> float:  # noinspection PyTypeChecker
-        (out,) = struct.unpack("<d", self.fetch_unaligned_bytes(8))  # type: ignore
+        (out,) = struct.unpack("<d", self.fetch_unaligned_bytes(8))
         assert isinstance(out, float)
         return out
 
@@ -1182,7 +1182,7 @@ def _unittest_deserializer_aligned() -> None:
     des.skip_bits(3 * 8)
     assert des.remaining_bit_length == 0
 
-    assert all([False] * 100 == des.fetch_aligned_array_of_bits(100))  # type: ignore
+    assert all([False] * 100 == des.fetch_aligned_array_of_bits(100))
     assert des.remaining_bit_length == -100
     des.skip_bits(4)
     assert des.remaining_bit_length == -104

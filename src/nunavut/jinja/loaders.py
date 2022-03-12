@@ -131,7 +131,7 @@ class DSDLTemplateLoader(BaseLoader):
             template_sets.append(("package", self._templates_package_name, vr.version))
         return template_sets
 
-    def get_templates(self) -> typing.Iterable[pathlib.Path]:
+    def get_templates(self) -> typing.Iterable[tuple[pathlib.Path, pathlib.Path]]:
         """
         Enumerate all templates found in the templates path.
         :data:`~TEMPLATE_SUFFIX` as the suffix for the filename. This method differs from the :class:`BaseLoader`

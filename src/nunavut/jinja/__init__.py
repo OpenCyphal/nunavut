@@ -7,6 +7,7 @@
     jinja-based :class:`~nunavut.generators.AbstractGenerator` implementation.
 """
 
+from __future__ import annotations
 import datetime
 import io
 import logging
@@ -208,7 +209,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
     # | AbstractGenerator
     # +-----------------------------------------------------------------------+
 
-    def get_templates(self) -> typing.Iterable[pathlib.Path]:
+    def get_templates(self) -> typing.Iterable[tuple[pathlib.Path, pathlib.Path]]:
         """
         Enumerate all templates found in the templates path.
         :data:`~TEMPLATE_SUFFIX` as the suffix for the filename.
@@ -797,8 +798,8 @@ class SupportGenerator(CodeGenerator):
         target_language = self.language_context.get_target_language()
 
         if target_language is not None:
-            for resource in target_language.support_files:
-                files.append(resource)
+            for root, resource in target_language.support_files:
+                files.append((root, resource))
         return files
 
     def generate_all(self, is_dryrun: bool = False, allow_overwrite: bool = True) -> typing.Iterable[pathlib.Path]:
@@ -815,7 +816,7 @@ class SupportGenerator(CodeGenerator):
 
     def _generate_all(
         self, target_language: nunavut.lang.Language, sub_folders: pathlib.Path, is_dryrun: bool, allow_overwrite: bool
-    ) -> typing.Iterable[tuple[pathlib.Path, pathlib.Path]]:
+    ) -> typing.Iterable[pathlib.Path]:
         target_path = pathlib.Path(self.namespace.get_support_output_folder()) / sub_folders
 
         line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']

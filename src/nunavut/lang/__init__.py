@@ -469,7 +469,7 @@ class Language(metaclass=abc.ABCMeta):
         return self._omit_serialization_support
 
     @property
-    def support_files(self) -> typing.Generator[pathlib.Path, None, None]:
+    def support_files(self) -> typing.Generator[tuple[pathlib.Path, pathlib.Path], None, None]:
         """
         Iterates over non-templated supporting files embedded within the Nunavut distribution.
 
@@ -496,7 +496,7 @@ class Language(metaclass=abc.ABCMeta):
             # to allow the copy generator access to the packaged support files.
             list_support_files = getattr(
                 module, "list_support_files"
-            )  # type: typing.Callable[[], typing.Generator[pathlib.Path, None, None]]
+            )  # type: typing.Callable[[], typing.Generator[tuple[pathlib.Path, pathlib.Path], None, None]]
             return list_support_files()
         else:
             # No serialization support for this language
