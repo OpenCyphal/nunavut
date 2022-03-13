@@ -162,12 +162,13 @@ class DSDLTemplateLoader(BaseLoader):
         if self._fsloader is not None:
             for template_dir in self._fsloader.searchpath:
                 for template in pathlib.Path(template_dir).glob("**/*{}".format(TEMPLATE_SUFFIX)):
-                    files.add(template)
+                    files.add((template_dir, template))
         if self._package_loader is not None and self._templates_package_name is not None:
             templates_module = importlib.import_module(self._templates_package_name)
-            templates_base_path = pathlib.Path(templates_module.__file__).parent
-            for t in self._package_loader.list_templates():
-                files.add(templates_base_path / pathlib.Path(t))
+            if templates_module.__file__ is not None:
+                templates_base_path = pathlib.Path(templates_module.__file__).parent
+                for t in self._package_loader.list_templates():
+                    files.add((templates_base_path, templates_base_path / pathlib.Path(t)))
         return sorted(files)
 
     def type_to_template(self, value_type: typing.Type) -> typing.Optional[pathlib.Path]:

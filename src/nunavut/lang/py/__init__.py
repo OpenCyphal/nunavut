@@ -21,6 +21,7 @@ import pydsdl
 
 from ...templates import (
     SupportsTemplateContext,
+    GenericTemplateLanguageFilter,
     template_context_filter,
     template_language_filter,
     template_language_int_filter,
@@ -366,7 +367,7 @@ def filter_numpy_scalar_type(language: Language, t: pydsdl.Any) -> str:
     return "object"  # TODO: numpy.object is deprecated in v1.20
 
 
-@template_language_filter(__name__)
+@GenericTemplateLanguageFilter[Sequence[tuple[str, pydsdl.CompositeType]]](__name__)
 def filter_newest_minor_version_aliases(
     language: Language,
     tys: Iterable[pydsdl.CompositeType],
