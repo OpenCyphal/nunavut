@@ -1,6 +1,6 @@
 /*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
+ * Authors: Scott Dixon <dixonsco@amazon.com>, Pavel Pletenev <cpp.create@gmail.com>
  * Sanity tests.
  */
 #include "gmock/gmock.h"

@@ -424,37 +424,37 @@ static void testNunavutFloat16Pack_NAN_cmath(void)
 {
     uint16_t packed_float = nunavutFloat16Pack(NAN);
     TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00UL & packed_float), "Exponent bits were not all set for NAN.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x80000UL & packed_float), "NAN sign bit was negative.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0000, (0x8000UL & packed_float), "NAN sign bit was negative.");
 
     packed_float = nunavutFloat16Pack(-NAN);
     TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00UL & packed_float), "Exponent bits were not all set for -NAN.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x80000, (0x80000UL & packed_float), "-NAN sign bit was positive.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x8000, (0x8000UL & packed_float), "-NAN sign bit was positive.");
 }
 
 static void testNunavutFloat16Pack_infinity(void)
 {
     uint16_t packed_float = nunavutFloat16Pack(INFINITY);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x3FF & packed_float), "Mantessa bits were not 0 for INFINITY.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0000, (0x03FF & packed_float), "Mantessa bits were not 0 for INFINITY.");
     TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "INFINITY did not set bits G5 - G4+w");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x80000 & packed_float), "INFINITY sign bit was negative.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0000, (0x8000 & packed_float), "INFINITY sign bit was negative.");
 
     packed_float = nunavutFloat16Pack(-INFINITY);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x3FF & packed_float), "Mantessa bits were not 0 for -INFINITY.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0000, (0x03FF & packed_float), "Mantessa bits were not 0 for -INFINITY.");
     TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x7C00, (0x7C00 & packed_float), "-INFINITY did not set bits G5 - G4+w");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x80000, (0x80000 & packed_float), "-INFINITY sign bit was positive.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x8000, (0x8000 & packed_float), "-INFINITY sign bit was positive.");
 }
 
 static void testNunavutFloat16Pack_zero(void)
 {
     uint16_t packed_float = nunavutFloat16Pack(0.0f);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x3FF & packed_float), "0.0f had bits in significand.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x7C00 & packed_float), "0.0f had bits in exponent.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x80000 & packed_float), "0.0f sign bit was negative.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0000, (0x03FF & packed_float), "0.0f had bits in significand.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0000, (0x7C00 & packed_float), "0.0f had bits in exponent.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0000, (0x8000 & packed_float), "0.0f sign bit was negative.");
 
     packed_float = nunavutFloat16Pack(-0.0f);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x3FF & packed_float), "-0.0f had bits in significand.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0, (0x7C00 & packed_float), "-0.0f had bits in exponent.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x80000, (0x80000 & packed_float), "-0.0f sign bit was not negative.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0000, (0x03FF & packed_float), "-0.0f had bits in significand.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x0000, (0x7C00 & packed_float), "-0.0f had bits in exponent.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE(0x8000, (0x8000 & packed_float), "-0.0f sign bit was not negative.");
 }
 
 // +--------------------------------------------------------------------------+

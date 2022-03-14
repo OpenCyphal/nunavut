@@ -101,7 +101,7 @@ jobs:
     needs: test
     strategy:
       matrix:
-        python3-version: ['5', '6', '7', '8']
+        python3-version: ['6', '7', '8', '9', '10']
     steps:
     - uses: actions/checkout@v2
       with:
