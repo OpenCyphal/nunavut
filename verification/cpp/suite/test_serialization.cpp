@@ -244,7 +244,7 @@ TEST(Serialization, StructReference)
     ASSERT_EQ(0, obj.aligned_bitpacked_3[2]);
     ASSERT_EQ(0U, obj.unaligned_bitpacked_lt3.size());
 
-    // ASSERT_EQ(0, obj.delimited_var_2[0]._tag_);
+    // ASSERT_EQ(0, obj.delimited_var_2[0].union_value.index());
     {
         auto ptr_f16 = obj.delimited_var_2[0].get_f16_if();
         ASSERT_NE(nullptr, ptr_f16);
@@ -261,75 +261,80 @@ TEST(Serialization, StructReference)
     // // Deserialize the above reference representation and compare the result against the original object.
     result = obj.deserialize({{reference}, 0U});
     ASSERT_TRUE(result) << "Error was " << result.error();
-    // ASSERT_EQ(0, regulated_basics_Struct__0_1_deserialize_(&obj, &reference[0], &size));
     ASSERT_EQ(sizeof(reference) - 16U, result.value());   // 16 trailing bytes implicitly truncated away
 
-    // ASSERT_EQ(true, obj.boolean);
-    // ASSERT_EQ(+511, obj.i10_4[0]);                              // saturated
-    // ASSERT_EQ(-512, obj.i10_4[1]);                              // saturated
-    // ASSERT_EQ(+0x55, obj.i10_4[2]);
-    // ASSERT_EQ(-0xAA, obj.i10_4[3]);
-    // ASSERT_TRUE(CompareFloatsNear(-65504.0f, obj.f16_le2.elements[0], 1e-3f));
-    // TEST_ASSERT_FLOAT_IS_INF(obj.f16_le2.elements[1]);
-    // ASSERT_EQ(2, obj.f16_le2.count);
+    ASSERT_EQ(true, obj.boolean);
+    ASSERT_EQ(+511, obj.i10_4[0]);                              // saturated
+    ASSERT_EQ(-512, obj.i10_4[1]);                              // saturated
+    ASSERT_EQ(+0x55, obj.i10_4[2]);
+    ASSERT_EQ(-0xAA, obj.i10_4[3]);
+    ASSERT_EQ(2U, obj.f16_le2.size());
+    ASSERT_TRUE(CompareFloatsNear(-65504.0f, obj.f16_le2[0], 1e-3f));
+    ASSERT_FLOAT_EQ(std::numeric_limits<float>::infinity(), obj.f16_le2[1]);
     // ASSERT_EQ(5, obj.unaligned_bitpacked_3_bitpacked_[0]);      // unused MSB are zero-padded
-    // ASSERT_EQ(111, obj.bytes_lt3.elements[0]);
-    // ASSERT_EQ(222, obj.bytes_lt3.elements[1]);
-    // ASSERT_EQ(2, obj.bytes_lt3.count);
-    // ASSERT_EQ(-0x77, obj.bytes_3[0]);
-    // ASSERT_EQ(-0x11, obj.bytes_3[1]);
-    // ASSERT_EQ(+0x77, obj.bytes_3[2]);
-    // ASSERT_EQ(2, obj.u2_le4.elements[0]);
-    // ASSERT_EQ(1, obj.u2_le4.elements[1]);
-    // ASSERT_EQ(3, obj.u2_le4.elements[2]);
-    // ASSERT_EQ(3, obj.u2_le4.count);
-    // ASSERT_EQ(1, obj.delimited_fix_le2.count);
-    // ASSERT_EQ(0x1234, obj.u16_2[0]);
-    // ASSERT_EQ(0x5678, obj.u16_2[1]);
+    ASSERT_EQ(2U, obj.bytes_lt3.size());
+    ASSERT_EQ(111, obj.bytes_lt3[0]);
+    ASSERT_EQ(222, obj.bytes_lt3[1]);
+    ASSERT_EQ(-0x77, obj.bytes_3[0]);
+    ASSERT_EQ(-0x11, obj.bytes_3[1]);
+    ASSERT_EQ(+0x77, obj.bytes_3[2]);
+    ASSERT_EQ(3U, obj.u2_le4.size());
+    ASSERT_EQ(2, obj.u2_le4[0]);
+    ASSERT_EQ(1, obj.u2_le4[1]);
+    ASSERT_EQ(3, obj.u2_le4[2]);
+    ASSERT_EQ(1U, obj.delimited_fix_le2.size());
+    ASSERT_EQ(0x1234, obj.u16_2[0]);
+    ASSERT_EQ(0x5678, obj.u16_2[1]);
     // ASSERT_EQ(1, obj.aligned_bitpacked_3_bitpacked_[0]);        // unused MSB are zero-padded
     // ASSERT_EQ(1, obj.unaligned_bitpacked_lt3.bitpacked[0]);     // unused MSB are zero-padded
-    // ASSERT_EQ(2, obj.unaligned_bitpacked_lt3.count);
-    // ASSERT_EQ(0, obj.delimited_var_2[0]._tag_);
-    // TEST_ASSERT_FLOAT_IS_INF(obj.delimited_var_2[0].f16);
-    // ASSERT_EQ(2, obj.delimited_var_2[1]._tag_);
+    ASSERT_EQ(2U, obj.unaligned_bitpacked_lt3.size());
+    ASSERT_EQ(0U, obj.delimited_var_2[0].union_value.index());
+    ASSERT_FLOAT_EQ(std::numeric_limits<float>::infinity(), *obj.delimited_var_2[0].get_f16_if());
+    ASSERT_EQ(2U, obj.delimited_var_2[1].union_value.index());
     // TEST_ASSERT_DOUBLE_WITHIN(0.5, -1e+40, obj.delimited_var_2[1].f64);
+    // ASSERT_EQ(1, obj.aligned_bitpacked_le3.size());
     // ASSERT_EQ(1, obj.aligned_bitpacked_le3.bitpacked[0]);       // unused MSB are zero-padded
-    // ASSERT_EQ(1, obj.aligned_bitpacked_le3.count);
 
-    // // Repeat the above, but apply implicit zero extension somewhere in the middle.
-    // size = 25U;
-    // ASSERT_EQ(0, regulated_basics_Struct__0_1_deserialize_(&obj, &reference[0], &size));
-    // ASSERT_EQ(25, size);   // the returned size shall not exceed the buffer size
+    // Repeat the above, but apply implicit zero extension somewhere in the middle.
+    result = obj.deserialize({{reference, 25U}, 0U});
+    ASSERT_TRUE(result) << "Error was " << result.error();
+    ASSERT_EQ(25U, result.value());   // the returned size shall not exceed the buffer size
 
-    // ASSERT_EQ(true, obj.boolean);
-    // ASSERT_EQ(+511, obj.i10_4[0]);                              // saturated
-    // ASSERT_EQ(-512, obj.i10_4[1]);                              // saturated
-    // ASSERT_EQ(+0x55, obj.i10_4[2]);
-    // ASSERT_EQ(-0xAA, obj.i10_4[3]);
-    // ASSERT_TRUE(CompareFloatsNear(-65504.0, obj.f16_le2.elements[0], 1e-3));
-    // TEST_ASSERT_FLOAT_IS_INF(obj.f16_le2.elements[1]);
-    // ASSERT_EQ(2, obj.f16_le2.count);
-    // ASSERT_EQ(5, obj.unaligned_bitpacked_3_bitpacked_[0]);      // unused MSB are zero-padded
-    // ASSERT_EQ(111, obj.bytes_lt3.elements[0]);
-    // ASSERT_EQ(222, obj.bytes_lt3.elements[1]);
-    // ASSERT_EQ(2, obj.bytes_lt3.count);
-    // ASSERT_EQ(-0x77, obj.bytes_3[0]);
-    // ASSERT_EQ(-0x11, obj.bytes_3[1]);
-    // ASSERT_EQ(+0x77, obj.bytes_3[2]);
-    // ASSERT_EQ(2, obj.u2_le4.elements[0]);
-    // ASSERT_EQ(1, obj.u2_le4.elements[1]);
-    // ASSERT_EQ(3, obj.u2_le4.elements[2]);
-    // ASSERT_EQ(3, obj.u2_le4.count);
-    // ASSERT_EQ(1, obj.delimited_fix_le2.count);
-    // ASSERT_EQ(0x0034, obj.u16_2[0]);                            // <-- IMPLICIT ZERO EXTENSION STARTS HERE
-    // ASSERT_EQ(0x0000, obj.u16_2[1]);                            // IT'S
+    ASSERT_EQ(true, obj.boolean);
+    ASSERT_EQ(+511, obj.i10_4[0]);                              // saturated
+    ASSERT_EQ(-512, obj.i10_4[1]);                              // saturated
+    ASSERT_EQ(+0x55, obj.i10_4[2]);
+    ASSERT_EQ(-0xAA, obj.i10_4[3]);
+    ASSERT_TRUE(CompareFloatsNear(-65504.0, obj.f16_le2[0], 1e-3f));
+    // ASSERT_FLOAT_EQ(std::numeric_limits<float>::infinity(), obj.f16_le2[1]);
+    ASSERT_EQ(2U, obj.f16_le2.size());
+    // ASSERT_EQ(5, obj.unaligned_bitpacked_3.);      // unused MSB are zero-padded
+    ASSERT_EQ(1, obj.unaligned_bitpacked_3[0]);
+    ASSERT_EQ(0, obj.unaligned_bitpacked_3[1]);
+    ASSERT_EQ(1, obj.unaligned_bitpacked_3[2]);
+    ASSERT_EQ(111, obj.bytes_lt3[0]);
+    ASSERT_EQ(222, obj.bytes_lt3[1]);
+    ASSERT_EQ(2U, obj.bytes_lt3.size());
+    ASSERT_EQ(-0x77, obj.bytes_3[0]);
+    ASSERT_EQ(-0x11, obj.bytes_3[1]);
+    ASSERT_EQ(+0x77, obj.bytes_3[2]);
+    ASSERT_EQ(2, obj.u2_le4[0]);
+    ASSERT_EQ(1, obj.u2_le4[1]);
+    ASSERT_EQ(3, obj.u2_le4[2]);
+    ASSERT_EQ(3U, obj.u2_le4.size());
+    ASSERT_EQ(1U, obj.delimited_fix_le2.size());
+    ASSERT_EQ(0x0034, obj.u16_2[0]);                            // <-- IMPLICIT ZERO EXTENSION STARTS HERE
+    ASSERT_EQ(0x0000, obj.u16_2[1]);                            // IT'S
     // ASSERT_EQ(0, obj.aligned_bitpacked_3_bitpacked_[0]);        //      ZEROS
-    // ASSERT_EQ(0, obj.unaligned_bitpacked_lt3.count);            //          ALL
-    // ASSERT_EQ(0, obj.delimited_var_2[0]._tag_);                 //              THE
-    // ASSERT_TRUE(CompareFloatsNear(0, obj.delimited_var_2[0].f16, 1e-9);      //                  WA)Y
-    // ASSERT_EQ(0, obj.delimited_var_2[1]._tag_);                 //                      DOWN
-    // ASSERT_TRUE(CompareFloatsNear(0, obj.delimited_var_2[1].f16, 1e-9));
-    // ASSERT_EQ(0, obj.aligned_bitpacked_le3.count);
+    ASSERT_EQ(0, obj.aligned_bitpacked_3[0]);
+    ASSERT_EQ(0, obj.aligned_bitpacked_3[1]);
+    ASSERT_EQ(0, obj.aligned_bitpacked_3[2]);
+    ASSERT_EQ(0U, obj.unaligned_bitpacked_lt3.size());            //          ALL
+    ASSERT_EQ(0U, obj.delimited_var_2[0].union_value.index());                 //              THE
+    ASSERT_TRUE(CompareFloatsNear(0, *obj.delimited_var_2[0].get_f16_if(), 1e-9f));      //                  WA)Y
+    ASSERT_EQ(0U, obj.delimited_var_2[1].union_value.index());                 //                      DOWN
+    ASSERT_TRUE(CompareFloatsNear(0, *obj.delimited_var_2[1].get_f16_if(), 1e-9f));
+    ASSERT_EQ(0U, obj.aligned_bitpacked_le3.size());
 }
 
 
@@ -409,5 +414,108 @@ TEST(Serialization, Primitive)
         EXPECT_DOUBLE_EQ(ref.n_f64 , obj.n_f64 );
         EXPECT_FLOAT_EQ(ref.n_f32  , obj.n_f32 );
         EXPECT_FLOAT_EQ(ref.n_f16  , obj.n_f16 );
+    }
+}
+
+
+#include "regulated/zubax/actuator/esc/Status_0_1.hpp"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include "regulated/zubax/actuator/esc/Status_0_1.h"
+#pragma GCC diagnostic pop
+
+TEST(Serialization, CCppBackAndForth)
+{
+    static_assert(regulated::zubax::actuator::esc::Status_0_1::MAX_PUBLICATION_PERIOD == 1, "Wrong value!");
+    for (uint32_t i = 0U; i < 10; i++)
+    {
+        // We first create a real-world structure with random data:
+        regulated::zubax::actuator::esc::Status_0_1 cpp_part;
+        cpp_part.index = randI8() & 0x3F;
+        cpp_part.demand_factor = randI8();
+        cpp_part.dc_voltage_warning = randI8() & 0x1;
+        cpp_part.overload_warning = randI8() & 0x1;
+        cpp_part.motor_temperature_warning = randI8() & 0x1;
+        cpp_part.inverter_temperature_warning = randI8() & 0x1;
+        cpp_part.error_count = randI32();
+        cpp_part.motor_mechanical_angular_velocity.radian_per_second = randF32();
+        cpp_part.motor_torque.newton_meter = randF32();
+        cpp_part.motor_electrical_frequency.hertz = randF32();
+        cpp_part.dc_link_power.voltage.volt = randF32();
+        cpp_part.dc_link_power.current.ampere = randF32();
+        cpp_part.motor_temperature = randF16();
+        cpp_part.inverter_temperature = randF16();
+
+        // We create an empty buffer to hold it's serialized structure:
+        uint8_t buf[regulated::zubax::actuator::esc::Status_0_1::SERIALIZATION_BUFFER_SIZE_BYTES];
+        std::memset(buf, 0, sizeof(buf));
+
+        // We serialize structure from C++
+        auto result = cpp_part.serialize({{buf, sizeof(buf)}, 0});
+        ASSERT_TRUE(result) << "Error is " << result.error();
+        ASSERT_EQ(
+            static_cast<size_t>(regulated::zubax::actuator::esc::Status_0_1::SERIALIZATION_BUFFER_SIZE_BYTES), result.value());
+
+        // And deserialize in C
+        regulated_zubax_actuator_esc_Status_0_1 c_parsed;
+        size_t size = sizeof(buf);
+        auto c_result = regulated_zubax_actuator_esc_Status_0_1_deserialize_(&c_parsed, buf, &size);
+        ASSERT_EQ(NUNAVUT_SUCCESS, c_result);
+        ASSERT_EQ(regulated_zubax_actuator_esc_Status_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_, size);
+
+        // Both C and C++ structures should contain equvalent data
+        ASSERT_EQ(cpp_part.index,                           c_parsed.index);
+        ASSERT_EQ(cpp_part.demand_factor,                   c_parsed.demand_factor);
+        ASSERT_EQ(cpp_part.dc_voltage_warning,              c_parsed.dc_voltage_warning);
+        ASSERT_EQ(cpp_part.overload_warning,                c_parsed.overload_warning);
+        ASSERT_EQ(cpp_part.motor_temperature_warning,       c_parsed.motor_temperature_warning);
+        ASSERT_EQ(cpp_part.inverter_temperature_warning,    c_parsed.inverter_temperature_warning);
+        ASSERT_EQ(cpp_part.error_count,                     c_parsed.error_count);
+        ASSERT_FLOAT_EQ(
+            cpp_part.motor_mechanical_angular_velocity.radian_per_second,
+            c_parsed.motor_mechanical_angular_velocity.radian_per_second);
+        ASSERT_FLOAT_EQ(cpp_part.motor_torque.newton_meter,         c_parsed.motor_torque.newton_meter);
+        ASSERT_FLOAT_EQ(cpp_part.motor_electrical_frequency.hertz,  c_parsed.motor_electrical_frequency.hertz);
+        ASSERT_FLOAT_EQ(cpp_part.dc_link_power.voltage.volt,        c_parsed.dc_link_power.voltage.volt);
+        ASSERT_FLOAT_EQ(cpp_part.dc_link_power.current.ampere,      c_parsed.dc_link_power.current.ampere);
+        ASSERT_FLOAT_EQ(cpp_part.motor_temperature,                 c_parsed.motor_temperature);
+        ASSERT_FLOAT_EQ(cpp_part.inverter_temperature,              c_parsed.inverter_temperature);
+
+        // We have successfully exchanged data with C. Now let's do it the other way around:
+        // Clearing the buffer
+        std::memset(buf, 0, sizeof(buf));
+
+        // Now serialize again from C
+        size = sizeof(buf);
+        c_result = regulated_zubax_actuator_esc_Status_0_1_serialize_(&c_parsed, buf, &size);
+        ASSERT_EQ(NUNAVUT_SUCCESS, c_result);
+        ASSERT_EQ(regulated_zubax_actuator_esc_Status_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_, size);
+
+        // And deserialize again in C++
+        regulated::zubax::actuator::esc::Status_0_1 cpp_parsed;
+        result = cpp_parsed.deserialize({ {buf, sizeof(buf)} });
+        ASSERT_TRUE(result);
+        EXPECT_EQ(
+            static_cast<size_t>(regulated::zubax::actuator::esc::Status_0_1::SERIALIZATION_BUFFER_SIZE_BYTES),
+            result.value());
+
+        // Both C and C++ structures should contain equvalent data
+        EXPECT_EQ(c_parsed.index,                           cpp_parsed.index);
+        EXPECT_EQ(c_parsed.demand_factor,                   cpp_parsed.demand_factor);
+        EXPECT_EQ(c_parsed.dc_voltage_warning,              cpp_parsed.dc_voltage_warning);
+        EXPECT_EQ(c_parsed.overload_warning,                cpp_parsed.overload_warning);
+        EXPECT_EQ(c_parsed.motor_temperature_warning,       cpp_parsed.motor_temperature_warning);
+        EXPECT_EQ(c_parsed.inverter_temperature_warning,    cpp_parsed.inverter_temperature_warning);
+        EXPECT_EQ(c_parsed.error_count,                     cpp_parsed.error_count);
+        EXPECT_FLOAT_EQ(
+            c_parsed.motor_mechanical_angular_velocity.radian_per_second,
+            cpp_parsed.motor_mechanical_angular_velocity.radian_per_second);
+        EXPECT_FLOAT_EQ(c_parsed.motor_torque.newton_meter,         cpp_parsed.motor_torque.newton_meter);
+        EXPECT_FLOAT_EQ(c_parsed.motor_electrical_frequency.hertz,  cpp_parsed.motor_electrical_frequency.hertz);
+        EXPECT_FLOAT_EQ(c_parsed.dc_link_power.voltage.volt,        cpp_parsed.dc_link_power.voltage.volt);
+        EXPECT_FLOAT_EQ(c_parsed.dc_link_power.current.ampere,      cpp_parsed.dc_link_power.current.ampere);
+        EXPECT_FLOAT_EQ(c_parsed.motor_temperature,                 cpp_parsed.motor_temperature);
+        EXPECT_FLOAT_EQ(c_parsed.inverter_temperature,              cpp_parsed.inverter_temperature);
     }
 }

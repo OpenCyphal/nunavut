@@ -314,6 +314,7 @@ nunavut.lang.cpp:
         std: c++14
         variable_array_type: "std::vector<{TYPE},std::allocator<{TYPE}>>"
         cast_format: "static_cast<{type}>({value})"
+        enable_allocator_support: false
 
 
 nunavut.lang.py:

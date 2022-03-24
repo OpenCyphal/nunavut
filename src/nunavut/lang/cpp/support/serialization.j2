@@ -38,14 +38,6 @@ static_assert(__cplusplus >= 201100L,
               "Unsupported language: ISO C11, C++11, or a newer version of either is required.");
 
 
-{% if not options.omit_float_serialization_support -%}
-/// Detect whether the target platform is compatible with IEEE 754.
-#define NUNAVUT_PLATFORM_IEEE754_FLOAT \
-    ((FLT_RADIX == 2) && (FLT_MANT_DIG == 24) && (FLT_MIN_EXP == -125) && (FLT_MAX_EXP == 128))
-#define NUNAVUT_PLATFORM_IEEE754_DOUBLE \
-    ((FLT_RADIX == 2) && (DBL_MANT_DIG == 53) && (DBL_MIN_EXP == -1021) && (DBL_MAX_EXP == 1024))
-{% endif -%}
-
 {%- if options.enable_serialization_asserts %}
 #ifndef NUNAVUT_ASSERT
 // By default Nunavut does not generate assert statements since the logic to halt a program is platform
@@ -57,13 +49,21 @@ static_assert(__cplusplus >= 201100L,
 {% endif -%}
 
 #include <cstring> // for std::size_t
-{% if not options.omit_float_serialization_support %}
+{% if not options.omit_float_serialization_support -%}
 #include <cmath>  // For isfinite().
+#include <climits>
+#include <cfloat>
 {% endif -%}
 #include <cstdint>
-#ifdef __cpp_lib_bit_cast
-#include <bit>
-#endif // def __cpp_lib_bit_cast
+
+{% if not options.omit_float_serialization_support -%}
+/// Detect whether the target platform is compatible with IEEE 754.
+#define NUNAVUT_PLATFORM_IEEE754_FLOAT \
+    ((FLT_RADIX == 2) && (FLT_MANT_DIG == 24) && (FLT_MIN_EXP == -125) && (FLT_MAX_EXP == 128))
+#define NUNAVUT_PLATFORM_IEEE754_DOUBLE \
+    ((FLT_RADIX == 2) && (DBL_MANT_DIG == 53) && (DBL_MIN_EXP == -1021) && (DBL_MAX_EXP == 1024))
+{% endif -%}
+
 
 static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_unsigned_length }}),
     "The bit-length type used by Nunavut, {{ typename_unsigned_bit_length }}, "
@@ -77,11 +77,6 @@ namespace nunavut
 namespace support
 {
 
-#ifdef __cpp_lib_bit_cast
-using std::bitcast;
-#else // def __cpp_lib_bit_cast
-
-#endif // def __cpp_lib_bit_cast
 
 template<typename T>
 class span{
@@ -228,6 +223,20 @@ public:
         return derived_bitspan(self.data_, self.offset_bits_ + bits);
     }
 
+    /// Create a copy of current bitspan, converting current offset into moving pointer
+    /// and shrinking size of underlying byte span.
+    /// This operation is safe even on empty containers since we are only creating
+    /// an invalid pointer, but dont dereference it - it is guarded by asserts in this
+    /// class and in byte span.
+    derived_bitspan subspan({{ typename_unsigned_bit_length }} bits=0) const noexcept{
+        auto& self  = *static_cast<const derived_bitspan*>(this);
+        const {{ typename_unsigned_bit_length }} offset_bits = self.offset_bits_ + bits;
+        const {{ typename_unsigned_length }} offset_bytes = (offset_bits) / 8U;
+        const {{ typename_unsigned_bit_length }} offset_bits_mod = (offset_bits) % 8U;
+        const {{ typename_unsigned_length }} newSize = {# -#}
+            (offset_bytes < self.data_.size())?(self.data_.size() - offset_bytes):(0U);
+        return derived_bitspan({self.data_.data() + offset_bytes, newSize}, offset_bits_mod);
+    }
 
     void add_offset({{ typename_unsigned_bit_length }} bits) noexcept{
         auto& self  = *static_cast<derived_bitspan*>(this);
