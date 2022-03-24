@@ -222,9 +222,11 @@ string(TOLOWER ${NUNAVUT_VERIFICATION_LANG} LOCAL_VERIFICATION_LANG)
 if (LOCAL_VERIFICATION_LANG STREQUAL "c")
      set(LOCAL_VERIFICATION_LANG_STANDARD_C "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
      set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "")
+     list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS "")
 elseif(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
      set(LOCAL_VERIFICATION_LANG_STANDARD_C "")
      set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
+     list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS dsdl-regulated-c dsdl-test-c)
      #
      # Generate serialization support headers
      #
@@ -284,6 +286,7 @@ elseif(NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "")
 else()
     set(LOCAL_VERIFICATION_LANG_STANDARD_C "")
     set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "")
+    list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS "")
 endif()
 
 #
@@ -346,8 +349,7 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
                             "${${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS}"
                             dsdl-regulated
                             dsdl-test
-                            dsdl-regulated-c
-                            dsdl-test-c
+                            ${LOCAL_ADDITIONAL_DSDL_LIBS}
                             o1heap)
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
