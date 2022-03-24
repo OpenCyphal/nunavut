@@ -222,9 +222,63 @@ string(TOLOWER ${NUNAVUT_VERIFICATION_LANG} LOCAL_VERIFICATION_LANG)
 if (LOCAL_VERIFICATION_LANG STREQUAL "c")
      set(LOCAL_VERIFICATION_LANG_STANDARD_C "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
      set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "")
+     list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS "")
 elseif(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
      set(LOCAL_VERIFICATION_LANG_STANDARD_C "")
      set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
+     list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS dsdl-regulated-c dsdl-test-c)
+     #
+     # Generate serialization support headers
+     #
+     create_dsdl_target(nunavut-support-c
+                        "c"
+                        "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
+                        ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
+                        ""
+                        OFF
+                        ${NUNAVUT_VERIFICATION_SER_ASSERT}
+                        ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
+                        ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
+                        ON
+                        "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
+                        "only")
+
+     #
+     # Generate types for the UAVCAN v1 public_regulated_data_types set.
+     #
+     create_dsdl_target(dsdl-regulated-c
+                        "c"
+                        "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
+                        ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
+                        ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
+                        OFF
+                        ${NUNAVUT_VERIFICATION_SER_ASSERT}
+                        ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
+                        ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
+                        ON
+                        "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
+                        "never")
+
+     add_dependencies(dsdl-regulated-c nunavut-support-c)
+
+     #
+     # Generate additional types for verification
+     #
+     create_dsdl_target(dsdl-test-c
+                        "c"
+                        "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
+                        ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
+                        ${CMAKE_SOURCE_DIR}/nunavut_test_types/test0/regulated
+                        OFF
+                        ${NUNAVUT_VERIFICATION_SER_ASSERT}
+                        ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
+                        ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
+                        ON
+                        "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
+                        "never"
+                        ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
+
+     add_dependencies(dsdl-test-c nunavut-support-c)
 elseif(NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "")
      message(FATAL_ERROR "NUNAVUT_VERIFICATION_LANG_STANDARD was set to ${NUNAVUT_VERIFICATION_LANG_STANDARD} but "
                          "NUNAVUT_VERIFICATION_LANG language was ${NUNAVUT_VERIFICATION_LANG} which does not "
@@ -232,6 +286,7 @@ elseif(NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "")
 else()
     set(LOCAL_VERIFICATION_LANG_STANDARD_C "")
     set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "")
+    list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS "")
 endif()
 
 #
@@ -294,6 +349,7 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
                             "${${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS}"
                             dsdl-regulated
                             dsdl-test
+                            ${LOCAL_ADDITIONAL_DSDL_LIBS}
                             o1heap)
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)

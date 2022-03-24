@@ -230,7 +230,7 @@
 
         {{ assert('in_buffer.offset_alings_to_byte()') }}
         {
-            const auto {{ ref_err }} = {{ reference }}.deserialize(in_buffer);
+            const auto {{ ref_err }} = {{ reference }}.deserialize(in_buffer.subspan());
             if({{ ref_err }}){
                 {{ ref_size_bytes }} = {{ ref_err }}.value();
             }else{
