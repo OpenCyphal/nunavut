@@ -37,8 +37,7 @@
 static_assert(__cplusplus >= 201100L,
               "Unsupported language: ISO C11, C++11, or a newer version of either is required.");
 
-
-{%- if options.enable_serialization_asserts %}
+{% if options.enable_serialization_asserts %}
 #ifndef NUNAVUT_ASSERT
 // By default Nunavut does not generate assert statements since the logic to halt a program is platform
 // dependent and because this header requires an absolute minimum from a platform and from the C standard library.
@@ -223,7 +222,7 @@ public:
         return derived_bitspan(self.data_, self.offset_bits_ + bits);
     }
 
-    /// Create a copy of current bitspan, converting current offset into moving pointer
+    /// Create a copy of current bitspan, converting current offset into  pointer
     /// and shrinking size of underlying byte span.
     /// This operation is safe even on empty containers since we are only creating
     /// an invalid pointer, but dont dereference it - it is guarded by asserts in this
