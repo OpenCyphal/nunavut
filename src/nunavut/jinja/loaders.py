@@ -174,7 +174,7 @@ class DSDLTemplateLoader(BaseLoader):
                 raise RuntimeError("Unknown template package origin?")
             templates_base_path = pathlib.Path(file_perhaps).parent
             for t in self._package_loader.list_templates():
-                files.add(templates_base_path / pathlib.Path(t))
+                files.add((templates_base_path, templates_base_path / pathlib.Path(t)))
 
         return sorted(files)
 
