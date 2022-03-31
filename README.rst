@@ -102,7 +102,7 @@ Partial example: generating a C struct
         *
         * Auto-generated, do not edit.
         *
-        * Source file: {{T.source_file_path | replace("\\", "\\\\")}}
+        * Source file: {{T.source_file_path.as_posix()}}
         */
 
         #ifndef {{T.full_name | ln.c.macrofy}}

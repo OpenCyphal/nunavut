@@ -245,11 +245,11 @@ class ArgparseRunner:
         if self._args.generate_support != "only":
             if self.generator.generate_namespace_types:
                 self._stdout_lister(
-                    [x for x, _ in self.root_namespace.get_all_types()], lambda p: str(p.source_file_path)
+                    [x for x, _ in self.root_namespace.get_all_types()], lambda p: p.source_file_path.as_posix()
                 )
             else:
                 self._stdout_lister(
-                    [x for x, _ in self.root_namespace.get_all_datatypes()], lambda p: str(p.source_file_path)
+                    [x for x, _ in self.root_namespace.get_all_datatypes()], lambda p: p.source_file_path.as_posix()
                 )
 
     def _generate(self) -> None:
