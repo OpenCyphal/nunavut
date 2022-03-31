@@ -295,14 +295,14 @@ def test_filter_full_reference_name(gen_paths, language_name, stropping, namespa
                                          attributes=[],
                                          deprecated=False,
                                          fixed_port_id=None,
-                                         source_file_path='',
+                                         source_file_path=Path(),
                                          has_parent_service=True)
     service_response_type = StructureType(name='register.getting.tired.of.Python',
                                           version=Version(0, 1),
                                           attributes=[],
                                           deprecated=False,
                                           fixed_port_id=None,
-                                          source_file_path='',
+                                          source_file_path=Path(),
                                           has_parent_service=True)
 
     service_type = ServiceType(service_request_type,
