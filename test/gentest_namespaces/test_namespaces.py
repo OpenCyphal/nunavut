@@ -138,7 +138,7 @@ def test_namespace_generation(gen_paths):  # type: ignore
     generator.generate_all()
     for nested_namespace in namespace.get_nested_namespaces():
         nested_namespace_path = Path(root_namespace_path) / Path(*nested_namespace.full_name.split('.')[1:])
-        assert nested_namespace.source_file_path == str(nested_namespace_path)
+        assert nested_namespace.source_file_path == nested_namespace_path
 
     outfile = gen_paths.find_outfile_in_namespace("scotec.mcu", namespace)
 
