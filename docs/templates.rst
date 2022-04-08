@@ -397,7 +397,7 @@ given a template ``common_header.j2``::
     *
     * Auto-generated, do not edit.
     *
-    * Source file: {{T.source_file_path | replace("\\", "\\\\")}}
+    * Source file: {{T.source_file_path.as_posix()}}
     * Generated at: {{now_utc}}
     * Template: {{ self._TemplateReference__context.name }}
     * deprecated: {{T.deprecated}}

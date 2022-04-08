@@ -15,7 +15,7 @@ A small collection of common utilities.
 import enum
 import logging
 import pathlib
-from typing import Generator
+from typing import Generator, cast
 
 import importlib_resources
 
@@ -104,5 +104,5 @@ def iter_package_resources(pkg_name: str, *suffix_filters: str) -> Generator[pat
 
     """
     for resource in importlib_resources.files(pkg_name).iterdir():
-        if any(suffix == resource.suffix for suffix in suffix_filters):
-            yield resource
+        if any(suffix == resource.suffix for suffix in suffix_filters):  # type: ignore
+            yield cast(pathlib.Path, resource)

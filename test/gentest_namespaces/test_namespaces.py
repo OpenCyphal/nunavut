@@ -93,7 +93,7 @@ def test_empty_namespace(gen_paths):  # type: ignore
     namespace = Namespace('', gen_paths.dsdl_dir, gen_paths.out_dir, LanguageContext(extension='.txt'))
     assert namespace.full_name == ''
     assert namespace.output_folder == gen_paths.out_dir
-    assert namespace.source_file_path == str(gen_paths.dsdl_dir)
+    assert namespace.source_file_path == gen_paths.dsdl_dir
     assert len(namespace.data_types) == 0
     assert (gen_paths.out_dir / Path('_')).with_suffix('.txt') == namespace.find_output_path_for_type(namespace)
     assert namespace == namespace
@@ -110,11 +110,11 @@ def parameterized_test_namespace_(gen_paths, templates_subdir):  # type: ignore
                                   generate_namespace_types=YesNoDefault.NO,
                                   templates_dir=gen_paths.templates_dir / Path(templates_subdir))
     generator.generate_all()
-    assert namespace.source_file_path == root_namespace_path
+    assert namespace.source_file_path == Path(root_namespace_path)
     assert namespace.full_name == 'scotec'
     for nested_namespace in namespace.get_nested_namespaces():
         nested_namespace_path = Path(root_namespace_path) / Path(*nested_namespace.full_name.split('.')[1:])
-        assert nested_namespace.source_file_path == str(nested_namespace_path)
+        assert nested_namespace.source_file_path == nested_namespace_path
 
 
 def test_namespace_any_template(gen_paths):  # type: ignore
@@ -138,7 +138,7 @@ def test_namespace_generation(gen_paths):  # type: ignore
     generator.generate_all()
     for nested_namespace in namespace.get_nested_namespaces():
         nested_namespace_path = Path(root_namespace_path) / Path(*nested_namespace.full_name.split('.')[1:])
-        assert nested_namespace.source_file_path == str(nested_namespace_path)
+        assert nested_namespace.source_file_path == nested_namespace_path
 
     outfile = gen_paths.find_outfile_in_namespace("scotec.mcu", namespace)
 

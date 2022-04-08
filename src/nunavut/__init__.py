@@ -236,8 +236,8 @@ class Namespace(pydsdl.Any):
         return self._full_namespace
 
     @property
-    def source_file_path(self) -> str:
-        return str(self._source_folder)
+    def source_file_path(self) -> pathlib.Path:
+        return self._source_folder
 
     @property
     def data_types(self) -> typing.KeysView[pydsdl.CompositeType]:
