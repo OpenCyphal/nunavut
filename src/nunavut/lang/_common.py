@@ -26,7 +26,9 @@ class IncludeGenerator:
     def generate_include_filepart_list(self, output_extension: str, sort: bool) -> typing.List[str]:
         dep_types = self._language.get_dependency_builder(self._type).direct()
 
-        path_list = [str(self.make_path(dt, self._language, output_extension)) for dt in dep_types.composite_types]
+        path_list = [
+            self.make_path(dt, self._language, output_extension).as_posix() for dt in dep_types.composite_types
+        ]
 
         if not self._language.omit_serialization_support:
             namespace_path = pathlib.Path("")
