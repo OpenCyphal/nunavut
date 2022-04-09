@@ -10,6 +10,7 @@ import abc
 import pathlib
 import typing
 import re
+import sys
 from subprocess import run as subprocess_run  # nosec
 
 # +---------------------------------------------------------------------------+
@@ -167,6 +168,11 @@ class ExternalProgramEditInPlace(FilePostProcessor):
 
     def __call__(self, generated: pathlib.Path) -> pathlib.Path:
         run_args = self._command_line + [str(generated)]
+        # If a python file is passed in we prepend the python executable currently in-use
+        # to reduce inconsistencies between the environment nunavut is running in and
+        # the default environment for a given system.
+        if len(run_args) > 0 and str(run_args[0]).endswith(".py"):
+            run_args = [sys.executable] + run_args
         subprocess_run(run_args, check=self._check)
         return generated
 

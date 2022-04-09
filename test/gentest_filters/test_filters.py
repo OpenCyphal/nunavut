@@ -42,7 +42,7 @@ def test_template_assert(gen_paths):  # type: ignore
 
 def test_type_to_include(gen_paths):  # type: ignore
     """Test the type_to_include filter."""
-    root_path = str(gen_paths.dsdl_dir / Path("uavcan"))
+    root_path = (gen_paths.dsdl_dir / Path("uavcan")).as_posix()
     output_path = gen_paths.out_dir / 'type_to_include'
     compound_types = read_namespace(root_path, [])
     language_context = LanguageContext(extension='.json')
@@ -192,8 +192,8 @@ def test_python_filter_includes(gen_paths, stropping, sort):  # type: ignore
     lctx = LanguageContext(target_language='cpp', extension='.h')
     lctx.config.set('nunavut.lang.cpp', 'enable_stropping', str(stropping))
 
-    uavcan_dir = str(gen_paths.dsdl_dir / pathlib.Path('uavcan'))
-    type_map = read_namespace(str(gen_paths.dsdl_dir / pathlib.Path('new')), [uavcan_dir])
+    uavcan_dir = (gen_paths.dsdl_dir / pathlib.Path('uavcan')).as_posix()
+    type_map = read_namespace((gen_paths.dsdl_dir / pathlib.Path('new')).as_posix(), [uavcan_dir])
     from nunavut.lang.cpp import filter_includes
 
     test_subject = next(filter(lambda type: (type.short_name == 'hotness'), type_map))

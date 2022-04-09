@@ -4,8 +4,10 @@
 # This software is distributed under the terms of the MIT License.
 #
 import json
+import os
 import pathlib
 import re
+import stat
 import subprocess
 import typing
 
@@ -174,7 +176,7 @@ def test_file_mode(gen_paths, run_nnvg):  # type: ignore
     """ Verify the --file-mode argument of nnvg.
     """
 
-    file_mode = 0o774
+    file_mode = 0o574
     nnvg_cmd = ['--templates', str(gen_paths.templates_dir),
                 '-O', str(gen_paths.out_dir),
                 '-e', '.json',
@@ -188,7 +190,11 @@ def test_file_mode(gen_paths, run_nnvg):  # type: ignore
         pathlib.Path('test') /\
         pathlib.Path('TestType_0_2').with_suffix('.json')
 
-    assert pathlib.Path(outfile).stat().st_mode & 0o777 == file_mode
+    outfile_stat_mode = pathlib.Path(outfile).stat().st_mode
+    if os.name != "nt":
+        assert outfile_stat_mode & 0o777 == file_mode
+    else:
+        assert outfile_stat_mode & stat.S_IWUSR == 0
 
 
 def test_move_file(gen_paths):  # type: ignore
