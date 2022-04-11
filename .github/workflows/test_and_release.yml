@@ -115,6 +115,25 @@ jobs:
     - name: python3.${{ matrix.python3-version }} test
       run: tox -e py3${{ matrix.python3-version }}-nnvg,py3${{ matrix.python3-version }}-test
 
+  compat-test-windows:
+    runs-on: windows-latest
+    needs: test
+    strategy:
+      matrix:
+        python3-version: ['9', '10']
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: setup python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.${{ matrix.python3-version }}
+    - name: setup tox
+      run: pip3 install tox
+    - name: python3.${{ matrix.python3-version }} test
+      run: tox -e py3${{ matrix.python3-version }}-nnvg,py3${{ matrix.python3-version }}-test
+
   language-verification-c:
     runs-on: ubuntu-latest
     needs: test
