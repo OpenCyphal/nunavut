@@ -28,7 +28,7 @@ TEST(CanardTests, float16Pack)
     // These are intrusive tests, they make assumptions about the specific implementation of the conversion logic.
     // Normally, one wouldn't be able to compare a NaN against a particular number because there are many ways to
     // represent it. We do not differentiate between sNaN and qNaN because there is no platform-agnostic way to do
-    // that; see https://github.com/UAVCAN/nunavut/pull/115#issuecomment-704185463
+    // that; see https://github.com/OpenCyphal/nunavut/pull/115#issuecomment-704185463
     EXPECT_TRUE(0b0111111000000000 == nunavutFloat16Pack(+std::numeric_limits<float>::quiet_NaN()));
     EXPECT_TRUE(0b1111111000000000 == nunavutFloat16Pack(-std::numeric_limits<float>::quiet_NaN()));
     EXPECT_TRUE(0b0111111000000000 == nunavutFloat16Pack(+std::numeric_limits<float>::signaling_NaN()));
@@ -66,7 +66,7 @@ TEST(CanardTests, canardDSDLFloat16)
     // These are intrusive tests, they make assumptions about the specific implementation of the conversion logic.
     // Normally, one wouldn't be able to compare a NaN against a particular number because there are many ways to
     // represent it. We do not differentiate between sNaN and qNaN because there is no platform-agnostic way to do
-    // that; see https://github.com/UAVCAN/nunavut/pull/115#issuecomment-704185463
+    // that; see https://github.com/OpenCyphal/nunavut/pull/115#issuecomment-704185463
     EXPECT_TRUE(0b0111111000000000 == nunavutFloat16Pack(nunavutFloat16Unpack(0b0111111111111111)));  // +qNaN
     EXPECT_TRUE(0b0111111000000000 == nunavutFloat16Pack(nunavutFloat16Unpack(0b0111110111111111)));  // +sNaN
     EXPECT_TRUE(0b1111111000000000 == nunavutFloat16Pack(nunavutFloat16Unpack(0b1111111111111111)));  // -qNaN

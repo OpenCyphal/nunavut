@@ -20,7 +20,7 @@ Nunavut: DSDL transpiler
 | community/support              | |badge_forum|_                    |
 +--------------------------------+-----------------------------------+
 
-Nunavut is a source-to-source compiler (transpiler) that automatically converts `UAVCAN`_ DSDL definitions
+Nunavut is a source-to-source compiler (transpiler) that automatically converts `OpenCyphal`_ DSDL definitions
 into source code in a specified target programming language.
 It is constructed as a template engine that exposes a `PyDSDL`_ abstract
 syntax tree to `Jinja2`_ templates allowing authors to generate code, schemas, metadata,
@@ -40,13 +40,12 @@ Currently, the following languages are supported out of the box:
 
 The following languages are currently on the roadmap:
 
-- **Python** (already supported in `PyUAVCAN`_, pending
-  `transplantation into Nunavut <https://github.com/UAVCAN/pyuavcan/issues/110>`_)
-- **C++ 14 and newer** (generates header-only libraries; `work-in-progress <https://github.com/UAVCAN/nunavut/issues/91>`_)
+- **Python** (already supported in `Pycyphal`_, pending
+  `transplantation into Nunavut <https://github.com/OpenCyphal/pycyphal/issues/110>`_)
+- **C++ 14 and newer** (generates header-only libraries; `work-in-progress <https://github.com/OpenCyphal/nunavut/issues/91>`_)
 
 Nunavut is named after the `Canadian territory`_. We chose the name because it
-is a beautiful word to say and read. Also, the name fits with a theme of "places
-in Canada" started with the `Yukon`_ project.
+is a beautiful word to say and read.
 
 ************************************************
 Installation
@@ -140,7 +139,7 @@ Where to find more examples to get started:
 
 1. See built-in templates under ``nunavut.lang.LANGUAGE.templates``.
 
-2. API usage examples can be found in the `PyUAVCAN`_ library.
+2. API usage examples can be found in the `Pycyphal`_ library.
 
 ************************************************
 Bundled third-party software
@@ -166,36 +165,35 @@ The documentation for Nunavut is hosted on readthedocs.io:
 
 Nunavut is part of the UAVCAN project:
 
-- `UAVCAN website`_
-- `UAVCAN forum`_
+- `OpenCyphal website`_
+- `OpenCyphal forum`_
 
 
-.. _`UAVCAN`: http://uavcan.org
-.. _`UAVCAN website`: http://uavcan.org
-.. _`UAVCAN forum`: https://forum.uavcan.org
+.. _`OpenCyphal`: http://opencyphal.org
+.. _`OpenCyphal website`: http://opencyphal.org
+.. _`OpenCyphal forum`: https://forum.opencyphal.org
 .. _`nunavut`: https://nunavut.readthedocs.io/en/latest/docs/api/modules.html
 .. _`nnvg`: https://nunavut.readthedocs.io/en/latest/docs/cli.html
-.. _`PyDSDL`: https://github.com/UAVCAN/pydsdl
-.. _`PyUAVCAN`: https://github.com/UAVCAN/pyuavcan
+.. _`PyDSDL`: https://github.com/OpenCyphal/pydsdl
+.. _`Pycyphal`: https://github.com/OpenCyphal/pycyphal
 .. _`nunavut template guide`: https://nunavut.readthedocs.io/en/latest/docs/templates.html
 .. _`nunavut contributors guide`: https://nunavut.readthedocs.io/en/latest/docs/dev.html
 .. _`nunavut licenses`: https://nunavut.readthedocs.io/en/latest/docs/appendix.html#licence
 .. _`Jinja2`: https://palletsprojects.com/p/jinja
 .. _`markupsafe`: https://palletsprojects.com/p/markupsafe
 .. _`Canadian territory`: https://en.wikipedia.org/wiki/Nunavut
-.. _`Yukon`: https://github.com/UAVCAN/Yukon
 
-.. |badge_forum| image:: https://img.shields.io/discourse/https/forum.uavcan.org/users.svg
-    :alt: UAVCAN forum
-.. _badge_forum: https://forum.uavcan.org
+.. |badge_forum| image:: https://img.shields.io/discourse/https/forum.opencyphal.org/users.svg
+    :alt: OpenCyphal forum
+.. _badge_forum: https://forum.opencyphal.org
 
 .. |badge_docs| image:: https://readthedocs.org/projects/nunavut/badge/?version=latest
     :alt: Documentation Status
 .. _badge_docs: https://nunavut.readthedocs.io/en/latest/?badge=latest
 
-.. |badge_build| image:: https://github.com/UAVCAN/nunavut/actions/workflows/test_and_release.yml/badge.svg
+.. |badge_build| image:: https://github.com/OpenCyphal/nunavut/actions/workflows/test_and_release.yml/badge.svg
     :alt: Build status
-.. _badge_build: https://github.com/UAVCAN/nunavut/actions/workflows/test_and_release.yml
+.. _badge_build: https://github.com/OpenCyphal/nunavut/actions/workflows/test_and_release.yml
 
 .. |badge_pypi_support| image:: https://img.shields.io/pypi/pyversions/nunavut.svg
     :alt: Supported Python Versions
@@ -207,16 +205,16 @@ Nunavut is part of the UAVCAN project:
 
 .. |badge_github_license| image:: https://img.shields.io/badge/license-MIT-blue.svg
     :alt: MIT license
-.. _badge_github_license: https://github.com/UAVCAN/nunavut/blob/main/LICENSE.rst
+.. _badge_github_license: https://github.com/OpenCyphal/nunavut/blob/main/LICENSE.rst
 
-.. |badge_analysis| image:: https://sonarcloud.io/api/project_badges/measure?project=UAVCAN_nunavut&metric=alert_status
+.. |badge_analysis| image:: https://sonarcloud.io/api/project_badges/measure?project=OpenCyphal_nunavut&metric=alert_status
     :alt: Sonarcloud Quality Gate
-.. _badge_analysis: https://sonarcloud.io/dashboard?id=UAVCAN_nunavut
+.. _badge_analysis: https://sonarcloud.io/dashboard?id=OpenCyphal_nunavut
 
-.. |badge_coverage| image:: https://sonarcloud.io/api/project_badges/measure?project=UAVCAN_nunavut&metric=coverage
+.. |badge_coverage| image:: https://sonarcloud.io/api/project_badges/measure?project=OpenCyphal_nunavut&metric=coverage
     :alt: Sonarcloud coverage
-.. _badge_coverage: https://sonarcloud.io/dashboard?id=UAVCAN_nunavut
+.. _badge_coverage: https://sonarcloud.io/dashboard?id=OpenCyphal_nunavut
 
-.. |badge_issues| image:: https://sonarcloud.io/api/project_badges/measure?project=UAVCAN_nunavut&metric=bugs
+.. |badge_issues| image:: https://sonarcloud.io/api/project_badges/measure?project=OpenCyphal_nunavut&metric=bugs
     :alt: Sonarcloud bugs
-.. _badge_issues: https://sonarcloud.io/dashboard?id=UAVCAN_nunavut
+.. _badge_issues: https://sonarcloud.io/dashboard?id=OpenCyphal_nunavut

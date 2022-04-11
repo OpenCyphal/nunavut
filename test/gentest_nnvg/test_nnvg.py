@@ -482,7 +482,7 @@ def test_generate_support(
 
 def test_issue_73(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """
-    Verify that https://github.com/UAVCAN/nunavut/issues/73 hasn't regressed.
+    Verify that https://github.com/OpenCyphal/nunavut/issues/73 hasn't regressed.
     """
     nnvg_args = [
         "--templates",
@@ -501,7 +501,7 @@ def test_issue_73(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
 def test_issue_116(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     """
     Verify nnvg will infer target language when given only a file extension.
-    See https://github.com/UAVCAN/nunavut/issues/116 for issue that this is a fix
+    See https://github.com/OpenCyphal/nunavut/issues/116 for issue that this is a fix
     for.
     """
     expected_output = [

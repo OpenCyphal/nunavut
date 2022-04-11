@@ -87,7 +87,7 @@ jobs:
     - name: report-pr
       if: ${{ github.event_name == 'pull_request' }}
       env:
-        SONARQUBE_TOKEN: 1a2ff4a4fd55f7ad584b24af7ca072c16fa7e3f4
+        SONARQUBE_TOKEN: 6526e88c286672a7852fea52056c4b6ea583aaf7
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         sonar-scanner -X \

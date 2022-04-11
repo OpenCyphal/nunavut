@@ -1,6 +1,8 @@
 Alignas
 Alignof
 Armin
+Cyphal
+pycyphal
 Doctest
 Kirienko
 Lenfesty
@@ -65,6 +67,7 @@ noindex
 noqa
 nosec
 nullptr
+OpenCyphal
 ptest
 pthreads
 pycache

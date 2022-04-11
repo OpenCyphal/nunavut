@@ -10,9 +10,9 @@ your dev environment setup.
     This is documentation for contributors developing nunavut. If you are
     a user of this software you can ignore everything here.
 
-    - To ask questions about nunavut or UAVCAN in general please see the `UAVCAN forum`_.
+    - To ask questions about nunavut or Cyphal in general please see the `OpenCyphal forum`_.
     - See `nunavut on read the docs`_ for the full set of nunavut documentation.
-    - See the `UAVCAN website`_ for documentation on the UAVCAN protocol.
+    - See the `OpenCyphal website`_ for documentation on the Cyphal protocol.
 
 .. warning::
 
@@ -329,8 +329,8 @@ json and we can get rid of this ugly hack. Sorry.
 
 .. _`read the docs`: https://readthedocs.org/
 .. _`tox`: https://tox.readthedocs.io/en/latest/
-.. _`sonarcloud`: https://sonarcloud.io/dashboard?id=UAVCAN_nunavut
-.. _`UAVCAN website`: http://uavcan.org
-.. _`UAVCAN forum`: https://forum.uavcan.org
+.. _`sonarcloud`: https://sonarcloud.io/dashboard?id=OpenCyphal_nunavut
+.. _`OpenCyphal website`: http://opencyphal.org
+.. _`OpenCyphal forum`: https://forum.opencyphal.org
 .. _`nunavut on read the docs`: https://nunavut.readthedocs.io/en/latest/index.html
 .. _`VSCode Remote Containers`: https://code.visualstudio.com/docs/remote/containers
