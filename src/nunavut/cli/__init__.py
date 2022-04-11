@@ -114,8 +114,8 @@ def _make_parser() -> argparse.ArgumentParser:
         namespace.
 
         Additional directories can also be specified through the environment variable
-        UAVCAN_DSDL_INCLUDE_PATH, where the path entries are
-        separated by colons ":" on posix systems and ";" on Windows.
+        DSDL_INCLUDE_PATH, where the path entries are separated by colons ":" on posix
+        systems and ";" on Windows.
 
     """
         ).lstrip(),
@@ -537,10 +537,11 @@ def main() -> int:
     logging.info("Running %s using sys.prefix: %s", pathlib.Path(__file__).name, sys.prefix)
 
     #
-    # Parse UAVCAN_DSDL_INCLUDE_PATH
+    # Parse DSDL_INCLUDE_PATH
     #
     extra_includes = args.lookup_dir
 
+    # legacy variable. We'll support this for a time.
     extra_includes_from_env = _extra_includes_from_env("UAVCAN_DSDL_INCLUDE_PATH")
     extra_includes_from_env += _extra_includes_from_env("DSDL_INCLUDE_PATH")
     extra_includes += sorted(extra_includes_from_env)
