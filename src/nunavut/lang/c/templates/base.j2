@@ -6,7 +6,7 @@
  #          Peter van der Perk <peter.vanderperk@nxp.com>
 -#}
 
-// This is an AUTO-GENERATED UAVCAN DSDL data type implementation. Curious? See https://uavcan.org.
+// This is an AUTO-GENERATED UAVCAN DSDL data type implementation. Curious? See https://opencyphal.org.
 // You shouldn't attempt to edit this file.
 //
 // Checking this file under version control is not recommended unless it is used as part of a high-SIL
@@ -65,7 +65,7 @@ extern "C" {
 #define {{ T | full_reference_name }}_HAS_FIXED_PORT_ID_ true
 #define {{ T | full_reference_name }}_FIXED_PORT_ID_     {{ T.fixed_port_id }}U
 {% else %}
-/// This type does not have a fixed port-ID. See https://forum.uavcan.org/t/choosing-message-and-service-ids/889
+/// This type does not have a fixed port-ID. See https://forum.opencyphal.org/t/choosing-message-and-service-ids/889
 #define {{ T | full_reference_name }}_HAS_FIXED_PORT_ID_ false
 {% endif %}
 

@@ -39,15 +39,15 @@ TEST(Serialization, BasicSerialize) {
 /// This was copied from C counterpart and modified for C++
 /// The reference array has been pedantically validated manually bit by bit (it did really took authors of
 /// C tests about three hours).
-/// The following Python script has been used to cross-check against PyUAVCAN, which has been cross-checked against
+/// The following Python script has been used to cross-check against Pycyphal, which has been cross-checked against
 /// earlier v0 implementations beforehand:
 ///
-///     import sys, pathlib, importlib, pyuavcan
+///     import sys, pathlib, importlib, pycyphal
 ///     sys.path.append(str(pathlib.Path.cwd()))
 ///     target, lookup = sys.argv[1], sys.argv[2:]
 ///     for lk in lookup:
-///         pyuavcan.dsdl.generate_package(lk, lookup)
-///     pyuavcan.dsdl.generate_package(target, lookup)
+///         pycyphal.dsdl.generate_package(lk, lookup)
+///     pycyphal.dsdl.generate_package(target, lookup)
 ///     from regulated.basics import Struct__0_1, DelimitedFixedSize_0_1, DelimitedVariableSize_0_1, Union_0_1
 ///     s = Struct__0_1()
 ///     s.boolean = True
@@ -77,7 +77,7 @@ TEST(Serialization, BasicSerialize) {
 ///     s.delimited_var_2[0].f16 = +float('inf')
 ///     s.delimited_var_2[1].f64 = -1e40                  # retained
 ///     s.aligned_bitpacked_le3 = [1]
-///     sr = b''.join(pyuavcan.dsdl.serialize(s))
+///     sr = b''.join(pycyphal.dsdl.serialize(s))
 ///     print(len(sr), 'bytes')
 ///     print('\n'.join(f'0x{x:02X}U,' for x in sr))
 TEST(Serialization, StructReference)

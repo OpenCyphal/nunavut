@@ -87,7 +87,7 @@ jobs:
     - name: report-pr
       if: ${{ github.event_name == 'pull_request' }}
       env:
-        SONARQUBE_TOKEN: 1a2ff4a4fd55f7ad584b24af7ca072c16fa7e3f4
+        SONARQUBE_TOKEN: 6526e88c286672a7852fea52056c4b6ea583aaf7
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         sonar-scanner -X \
@@ -102,6 +102,25 @@ jobs:
     strategy:
       matrix:
         python3-version: ['6', '7', '8', '9', '10']
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: setup python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.${{ matrix.python3-version }}
+    - name: setup tox
+      run: pip3 install tox
+    - name: python3.${{ matrix.python3-version }} test
+      run: tox -e py3${{ matrix.python3-version }}-nnvg,py3${{ matrix.python3-version }}-test
+
+  compat-test-windows:
+    runs-on: windows-latest
+    needs: test
+    strategy:
+      matrix:
+        python3-version: ['9', '10']
     steps:
     - uses: actions/checkout@v2
       with:

@@ -14,15 +14,15 @@
 #include <time.h>
 
 /// The reference array has been pedantically validated manually bit by bit (it did really took me about three hours).
-/// The following Python script has been used to cross-check against PyUAVCAN, which has been cross-checked against
+/// The following Python script has been used to cross-check against Pycyphal, which has been cross-checked against
 /// earlier v0 implementations beforehand:
 ///
-///     import sys, pathlib, importlib, pyuavcan
+///     import sys, pathlib, importlib, pycyphal
 ///     sys.path.append(str(pathlib.Path.cwd()))
 ///     target, lookup = sys.argv[1], sys.argv[2:]
 ///     for lk in lookup:
-///         pyuavcan.dsdl.generate_package(lk, lookup)
-///     pyuavcan.dsdl.generate_package(target, lookup)
+///         pycyphal.dsdl.generate_package(lk, lookup)
+///     pycyphal.dsdl.generate_package(target, lookup)
 ///     from regulated.basics import Struct__0_1, DelimitedFixedSize_0_1, DelimitedVariableSize_0_1, Union_0_1
 ///     s = Struct__0_1()
 ///     s.boolean = True
@@ -52,7 +52,7 @@
 ///     s.delimited_var_2[0].f16 = +float('inf')
 ///     s.delimited_var_2[1].f64 = -1e40                  # retained
 ///     s.aligned_bitpacked_le3 = [1]
-///     sr = b''.join(pyuavcan.dsdl.serialize(s))
+///     sr = b''.join(pycyphal.dsdl.serialize(s))
 ///     print(len(sr), 'bytes')
 ///     print('\n'.join(f'0x{x:02X}U,' for x in sr))
 static void testStructReference(void)
@@ -285,7 +285,7 @@ static void testStructReference(void)
     TEST_ASSERT_EQUAL(0, obj.aligned_bitpacked_le3.count);
 }
 
-/// The test is based on https://forum.uavcan.org/t/delimited-serialization-example/975
+/// The test is based on https://forum.opencyphal.org/t/delimited-serialization-example/975
 static void testStructDelimited(void)
 {
     regulated_delimited_A_1_0 obj;
@@ -394,7 +394,7 @@ static void testStructDelimited(void)
 static void testStructErrors(void)
 {
     regulated_basics_Struct__0_1 obj = {0};
-    // Construct a reference in Python for cross-validation: b''.join(pyuavcan.dsdl.serialize(Struct__0_1()))
+    // Construct a reference in Python for cross-validation: b''.join(pycyphal.dsdl.serialize(Struct__0_1()))
     // Default state -- all zeros except delimiter headers of the nested delimited objects:
     uint8_t sr[] = {
         0x00U,  // void1, boolean, i10_4[0]

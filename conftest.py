@@ -19,6 +19,7 @@ from doctest import ELLIPSIS
 import pydsdl
 import pytest
 from sybil import Sybil
+
 try:
     from sybil.parsers.codeblock import PythonCodeBlockParser
 except ImportError:
@@ -29,9 +30,52 @@ from sybil.parsers.doctest import DocTestParser
 from nunavut import Namespace
 
 
+class NamedTempFileWindowsSafe:
+    """
+    Replacement for Python's NamedTemporaryFile which doesn't really work properly on Windows.
+    """
+
+    def __init__(
+        self,
+        mode: str = "r",
+        encoding: str = "utf-8",
+        suffix: typing.Optional[str] = None,
+        newline: typing.Optional[str] = None,
+    ):
+        self._mode = mode
+        self._encoding = encoding
+        self._suffix = suffix
+        self._newline = newline
+        self._tempfile: typing.Optional[typing.IO] = None
+
+    def _generate_temporary_filename(self) -> str:
+        return os.urandom(32).hex()
+
+    def _new_temporary_filename(self) -> pathlib.Path:
+        filename = pathlib.Path(tempfile.gettempdir(), self._generate_temporary_filename())
+        if self._suffix is not None:
+            filename = filename.with_suffix(self._suffix)
+        if filename.exists():
+            raise RuntimeError("Temporary file {} already exists!?".format(str(filename)))
+        return filename
+
+    def __enter__(self) -> typing.IO:
+        filename = self._new_temporary_filename()
+        filename.touch()
+        self._tempfile = filename.open(mode=self._mode, encoding=self._encoding, newline=self._newline)
+        return self._tempfile
+
+    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
+        if self._tempfile is not None:
+            self._tempfile.close()
+            os.remove(self._tempfile.name)
+            self._tempfile = None
+
+
 # +-------------------------------------------------------------------------------------------------------------------+
 # | PYTEST HOOKS
 # +-------------------------------------------------------------------------------------------------------------------+
+
 
 def pytest_configure(config: typing.Any) -> None:
     """
@@ -39,17 +83,21 @@ def pytest_configure(config: typing.Any) -> None:
     """
     # pydsdl._dsdl_definition is reeeeeeealy verbose at the INFO level and below. Turn this down to reduce
     # scroll-blindness.
-    logging.getLogger('pydsdl._dsdl_definition').setLevel(logging.WARNING)
+    logging.getLogger("pydsdl._dsdl_definition").setLevel(logging.WARNING)
     # A lot of DEBUG noise in the other loggers so we'll tune this down to INFO and higher.
-    logging.getLogger('pydsdl._namespace').setLevel(logging.INFO)
-    logging.getLogger('pydsdl._data_type_builder').setLevel(logging.INFO)
+    logging.getLogger("pydsdl._namespace").setLevel(logging.INFO)
+    logging.getLogger("pydsdl._data_type_builder").setLevel(logging.INFO)
 
 
 def pytest_addoption(parser):  # type: ignore
     """
     See https://docs.pytest.org/en/6.2.x/reference.html#initialization-hooks
     """
-    parser.addoption("--keep-generated", action="store_true", help=textwrap.dedent('''
+    parser.addoption(
+        "--keep-generated",
+        action="store_true",
+        help=textwrap.dedent(
+            """
         If set then the temporary directory used to generate files for each test will be left after
         the test has completed. Normally this directory is temporary and therefore cleaned up automatically.
 
@@ -58,7 +106,10 @@ def pytest_addoption(parser):  # type: ignore
 
         :: WARNING ::
         Do not run tests in parallel when using this option.
-    '''))
+    """
+        ),
+    )
+
 
 # +-------------------------------------------------------------------------------------------------------------------+
 # | TEST FIXTURES
@@ -67,29 +118,29 @@ def pytest_addoption(parser):  # type: ignore
 
 @pytest.fixture
 def run_nnvg(request):  # type: ignore
-    def _run_nnvg(gen_paths: typing.Any,
-                  args: typing.List[str],
-                  check_result: bool = True,
-                  env: typing.Optional[typing.Dict[str, str]] = None,
-                  raise_called_process_error: bool = False) -> subprocess.CompletedProcess:
+    def _run_nnvg(
+        gen_paths: typing.Any,
+        args: typing.List[str],
+        check_result: bool = True,
+        env: typing.Optional[typing.Dict[str, str]] = None,
+        raise_called_process_error: bool = False,
+    ) -> subprocess.CompletedProcess:
         """
         Helper to invoke nnvg for unit testing within the proper python coverage wrapper.
         """
-        coverage_args = ['coverage', 'run', '--parallel-mode', '-m', 'nunavut']
+        coverage_args = ["coverage", "run", "--parallel-mode", "-m", "nunavut"]
         this_env = os.environ.copy()
         if env is not None:
             this_env.update(env)
         try:
-            return subprocess.run(coverage_args + args,
-                                  check=check_result,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE,
-                                  env=this_env)
+            return subprocess.run(
+                coverage_args + args, check=check_result, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=this_env
+            )
         except subprocess.CalledProcessError as e:
             if raise_called_process_error:
                 raise e
             else:
-                raise AssertionError(e.stderr.decode('utf-8'))
+                raise AssertionError(e.stderr.decode("utf-8"))
 
     return _run_nnvg
 
@@ -99,14 +150,14 @@ class GenTestPaths:
 
     def __init__(self, test_file: str, keep_temporaries: bool, node_name: str):
         test_file_path = pathlib.Path(test_file)
-        self.test_name = '{}_{}'.format(test_file_path.parent.stem, node_name)
+        self.test_name = "{}_{}".format(test_file_path.parent.stem, node_name)
         self.test_dir = test_file_path.parent
         search_dir = self.test_dir.resolve()
-        while search_dir.is_dir() and not (search_dir / pathlib.Path('src')).is_dir():
+        while search_dir.is_dir() and not (search_dir / pathlib.Path("src")).is_dir():
             search_dir = search_dir.parent
         self.root_dir = search_dir
-        self.templates_dir = self.test_dir / pathlib.Path('templates')
-        self.dsdl_dir = self.test_dir / pathlib.Path('dsdl')
+        self.templates_dir = self.test_dir / pathlib.Path("templates")
+        self.dsdl_dir = self.test_dir / pathlib.Path("dsdl")
 
         self._keep_temp = keep_temporaries
         self._out_dir = None  # type: typing.Optional[pathlib.Path]
@@ -114,7 +165,7 @@ class GenTestPaths:
         self._dsdl_dir = None  # type: typing.Optional[pathlib.Path]
         self._temp_dirs = []  # type: typing.List[tempfile.TemporaryDirectory]
         print('Paths for test "{}" under dir {}'.format(self.test_name, self.test_dir))
-        print('(root directory: {})'.format(self.root_dir))
+        print("(root directory: {})".format(self.root_dir))
 
     def test_path_finalizer(self) -> None:
         for temporary_dir in self._temp_dirs:
@@ -142,14 +193,13 @@ class GenTestPaths:
     @property
     def build_dir(self) -> pathlib.Path:
         if self._build_dir is None:
-            self._build_dir = self._ensure_dir(self.root_dir / pathlib.Path('build'))
+            self._build_dir = self._ensure_dir(self.root_dir / pathlib.Path("build"))
         return self._build_dir
 
     @staticmethod
-    def find_outfile_in_namespace(typename: str,
-                                  namespace: Namespace,
-                                  type_version: pydsdl.Version = None) \
-            -> typing.Optional[str]:
+    def find_outfile_in_namespace(
+        typename: str, namespace: Namespace, type_version: pydsdl.Version = None
+    ) -> typing.Optional[str]:
         found_outfile = None  # type: typing.Optional[str]
         for dsdl_type, outfile in namespace.get_all_types():
             if dsdl_type.full_name == typename:
@@ -160,8 +210,10 @@ class GenTestPaths:
                     # else ignore this since it's either a namespace or it's not the version
                     # of the type we're looking for.
                 elif found_outfile is not None:
-                    raise RuntimeError('Type {} had more than one version for this test but no type version argument'
-                                       ' was provided.'.format(typename))
+                    raise RuntimeError(
+                        "Type {} had more than one version for this test but no type version argument"
+                        " was provided.".format(typename)
+                    )
                 else:
                     found_outfile = str(outfile)
 
@@ -178,7 +230,7 @@ class GenTestPaths:
         return path_dir
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def gen_paths(request):  # type: ignore
     g = GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
     request.addfinalizer(g.test_path_finalizer)
@@ -186,7 +238,6 @@ def gen_paths(request):  # type: ignore
 
 
 class _UniqueNameEvaluator:
-
     def __init__(self) -> None:
         self._found_names = set()  # type: typing.Set[str]
 
@@ -196,7 +247,7 @@ class _UniqueNameEvaluator:
         self._found_names.add(actual_value)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def unique_name_evaluator(request):  # type: ignore
     """
     Class that defined ``assert_is_expected_and_unique`` allowing assertion that a set of values
@@ -226,10 +277,12 @@ def assert_language_config_value(request):  # type: ignore
     """
     from nunavut.lang import LanguageContext
 
-    def _assert_language_config_value(target_language: typing.Union[typing.Optional[str], LanguageContext],
-                                      key: str,
-                                      expected_value: typing.Any,
-                                      message: typing.Optional[str]) -> None:
+    def _assert_language_config_value(
+        target_language: typing.Union[typing.Optional[str], LanguageContext],
+        key: str,
+        expected_value: typing.Any,
+        message: typing.Optional[str],
+    ) -> None:
         if isinstance(target_language, LanguageContext):
             lctx = target_language
         else:
@@ -237,9 +290,10 @@ def assert_language_config_value(request):  # type: ignore
 
         language = lctx.get_target_language()
         if language is None:
-            raise AssertionError('Unable to determine target language from provided arguments.')
+            raise AssertionError("Unable to determine target language from provided arguments.")
         if expected_value != language.get_config_value(key):
             raise AssertionError(message)
+
     return _assert_language_config_value
 
 
@@ -264,23 +318,24 @@ def configurable_language_context_factory(request):  # type: ignore
     """
     from nunavut.lang import LanguageContext
 
-    def _make_configurable_language_context(config_overrides: typing.Mapping[str, typing.Mapping[str, typing.Any]],
-                                            target_language: typing.Optional[str] = None,
-                                            extension: typing.Optional[str] = None,
-                                            namespace_output_stem: typing.Optional[str] = None,
-                                            omit_serialization_support_for_target: bool = True) \
-            -> LanguageContext:
-        from tempfile import NamedTemporaryFile
+    def _make_configurable_language_context(
+        config_overrides: typing.Mapping[str, typing.Mapping[str, typing.Any]],
+        target_language: typing.Optional[str] = None,
+        extension: typing.Optional[str] = None,
+        namespace_output_stem: typing.Optional[str] = None,
+        omit_serialization_support_for_target: bool = True,
+    ) -> LanguageContext:
 
         from yaml import Dumper as YamlDumper
         from yaml import dump as yaml_dump
 
-        with NamedTemporaryFile(mode='w', encoding='utf-8', suffix='yaml', newline='\n') as config_override_file:
+        with NamedTempFileWindowsSafe(mode="w", encoding="utf-8", suffix=".yaml", newline="\n") as config_override_file:
             yaml_dump(config_overrides, config_override_file, Dumper=YamlDumper)
             config_override_file.flush()
-            return LanguageContext(target_language,
-                                   extension,
-                                   additional_config_files=[pathlib.Path(config_override_file.name)])
+            return LanguageContext(
+                target_language, extension, additional_config_files=[pathlib.Path(config_override_file.name)]
+            )
+
     return _make_configurable_language_context
 
 
@@ -321,13 +376,13 @@ def jinja_filter_tester(request):  # type: ignore
     from nunavut.jinja.jinja2 import DictLoader
     from nunavut.lang import LanguageContext
 
-    def _make_filter_test_template(filter_or_list_of_filters:
-                                   typing.Union[None, typing.Callable, typing.List[typing.Callable]],
-                                   body: str,
-                                   expected: str,
-                                   target_language_or_language_context:
-                                   typing.Union[typing.Optional[str], LanguageContext],
-                                   **globals: typing.Optional[typing.Dict[str, typing.Any]]) -> str:
+    def _make_filter_test_template(
+        filter_or_list_of_filters: typing.Union[None, typing.Callable, typing.List[typing.Callable]],
+        body: str,
+        expected: str,
+        target_language_or_language_context: typing.Union[typing.Optional[str], LanguageContext],
+        **globals: typing.Optional[typing.Dict[str, typing.Any]]
+    ) -> str:
         from nunavut.jinja import CodeGenEnvironment
 
         if isinstance(target_language_or_language_context, LanguageContext):
@@ -344,20 +399,24 @@ def jinja_filter_tester(request):  # type: ignore
         else:
             additional_filters = {filter_or_list_of_filters.__name__: filter_or_list_of_filters}
 
-        e = CodeGenEnvironment(lctx=lctx,
-                               loader=DictLoader({'test': body}),
-                               allow_filter_test_or_use_query_overwrite=True,
-                               additional_filters=additional_filters,
-                               additional_globals=globals)
+        e = CodeGenEnvironment(
+            lctx=lctx,
+            loader=DictLoader({"test": body}),
+            allow_filter_test_or_use_query_overwrite=True,
+            additional_filters=additional_filters,
+            additional_globals=globals,
+        )
 
-        rendered = str(e.get_template('test').render())
+        rendered = str(e.get_template("test").render())
         if expected != rendered:
-            msg = 'Unexpected template output\n\texpected : {}\n\twas      : {}'.format(
-                expected.replace('\n', '\\n'), rendered.replace('\n', '\\n'))
+            msg = "Unexpected template output\n\texpected : {}\n\twas      : {}".format(
+                expected.replace("\n", "\\n"), rendered.replace("\n", "\\n")
+            )
             raise AssertionError(msg)
         return rendered
 
     return _make_filter_test_template
+
 
 # +-------------------------------------------------------------------------------------------------------------------+
 # | SYBIL
@@ -369,22 +428,24 @@ _sy = Sybil(
         DocTestParser(optionflags=ELLIPSIS),
         PythonCodeBlockParser(),
     ],
-    pattern='**/*',
+    pattern="**/*",
     excludes=[
-        '**/markupsafe/*',
-        '**/jinja2/*',
-        '**/static/*',
-        '**/.*/*',
-        '**/.*',
-        '**/CONTRIBUTING.rst',
-        '**/verification/*',
-        '**/prof/*',
-        '*.png'
+        "**/markupsafe/*",
+        "**/jinja2/*",
+        "**/static/*",
+        "**/.*/*",
+        "**/.*",
+        "**/CONTRIBUTING.rst",
+        "**/verification/*",
+        "**/prof/*",
+        "*.png",
     ],
-    fixtures=['jinja_filter_tester',
-              'gen_paths',
-              'assert_language_config_value',
-              'configurable_language_context_factory']
+    fixtures=[
+        "jinja_filter_tester",
+        "gen_paths",
+        "assert_language_config_value",
+        "configurable_language_context_factory",
+    ],
 )
 
 

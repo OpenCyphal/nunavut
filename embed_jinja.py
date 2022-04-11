@@ -245,7 +245,7 @@ class PatchAction(GitAction):
             If --file is not supplied then this commit is pulled from the upstream
             repo and must be a valid commit in the branch we track. If  --file is
             supplied then this is assumed to be the upstream commit used to create
-            the patch file and will be the commit recorded if --record is set.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+            the patch file and will be the commit recorded if --record is set.
             ''')
 
         sub_parser.set_defaults(func=cls())
@@ -304,9 +304,9 @@ def main() -> int:
         # | DON\'T USE THIS SCRIPT!
         # +-------------------------------------------------------------------+
 
-        If you are still using this script then we have to assume you know what 
+        If you are still using this script then we have to assume you know what
         you are doing. Don't screw this up. Most importantly, make sure you do
-        not have any uncommitted changes in your local git repository. This 
+        not have any uncommitted changes in your local git repository. This
         script may destroy them.
 
         We use this script to maintain our embedded fork for jinja2. We maintain

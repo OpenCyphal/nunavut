@@ -114,8 +114,8 @@ def _make_parser() -> argparse.ArgumentParser:
         namespace.
 
         Additional directories can also be specified through the environment variable
-        UAVCAN_DSDL_INCLUDE_PATH, where the path entries are
-        separated by colons ":"
+        DSDL_INCLUDE_PATH, where the path entries are separated by colons ":" on posix
+        systems and ";" on Windows.
 
     """
         ).lstrip(),
@@ -508,6 +508,15 @@ def _make_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _extra_includes_from_env(env_var_name: str) -> typing.List[str]:
+    try:
+        extra_includes_from_env = os.environ[env_var_name].split(os.pathsep)
+        logging.info("Additional include directories from {}: %s", env_var_name, str(extra_includes_from_env))
+        return extra_includes_from_env
+    except KeyError:
+        return []
+
+
 def main() -> int:
     """
     Main entry point for this program.
@@ -528,17 +537,14 @@ def main() -> int:
     logging.info("Running %s using sys.prefix: %s", pathlib.Path(__file__).name, sys.prefix)
 
     #
-    # Parse UAVCAN_DSDL_INCLUDE_PATH
+    # Parse DSDL_INCLUDE_PATH
     #
     extra_includes = args.lookup_dir
 
-    try:
-        extra_includes_from_env = os.environ["UAVCAN_DSDL_INCLUDE_PATH"].split(":")
-
-        logging.info("Additional include directories from UAVCAN_DSDL_INCLUDE_PATH: %s", str(extra_includes_from_env))
-        extra_includes += extra_includes_from_env
-    except KeyError:
-        pass
+    # legacy variable. We'll support this for a time.
+    extra_includes_from_env = _extra_includes_from_env("UAVCAN_DSDL_INCLUDE_PATH")
+    extra_includes_from_env += _extra_includes_from_env("DSDL_INCLUDE_PATH")
+    extra_includes += sorted(extra_includes_from_env)
 
     from nunavut.cli.runners import ArgparseRunner
 

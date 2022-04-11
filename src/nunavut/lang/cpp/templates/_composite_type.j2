@@ -36,7 +36,7 @@
     static constexpr bool HasFixedPortID = true;
     static constexpr {{ typename_unsigned_port }} FixedPortId = {{ T.fixed_port_id }}U;
 {%- else %}
-    /// This type does not have a fixed port-ID. See https://forum.uavcan.org/t/choosing-message-and-service-ids/889
+    /// This type does not have a fixed port-ID. See https://forum.opencyphal.org/t/choosing-message-and-service-ids/889
     static constexpr bool HasFixedPortID = false;
 {% endif -%}
     {%- assert composite_type.extent % 8 == 0 %}

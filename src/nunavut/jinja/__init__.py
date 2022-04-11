@@ -401,9 +401,9 @@ class DSDLCodeGenerator(CodeGenerator):
 
         include_path = self.namespace.find_output_path_for_type(value)
         if resolve:
-            return str(include_path.resolve())
+            return include_path.resolve().as_posix()
         else:
-            return str(include_path.relative_to(self.namespace.output_folder.parent))
+            return include_path.relative_to(self.namespace.output_folder.parent).as_posix()
 
     @staticmethod
     def filter_typename(value: typing.Any) -> str:
