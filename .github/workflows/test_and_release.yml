@@ -217,9 +217,9 @@ jobs:
                           ${{ matrix.flag }}
 
   release:
-    if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.repository == 'UAVCAN/nunavut' }}
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.repository == 'OpenCyphal/nunavut' }}
     runs-on: ubuntu-latest
-    needs: [compat-test-python3, language-verification-cpp-14, language-verification-cpp-17, language-verification-c, sonar]
+    needs: [compat-test-python3, language-verification-cpp-14, language-verification-cpp-17, language-verification-c, sonar, compat-test-windows]
     steps:
     - uses: actions/setup-python@v2
       with:
