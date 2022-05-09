@@ -534,7 +534,7 @@ public:
     {{ typename_float_64 }} getF64();
 };
 
-VoidResult bitspan::setZeros({{ typename_unsigned_bit_length }} length){
+inline VoidResult bitspan::setZeros({{ typename_unsigned_bit_length }} length){
     if(length > size()){
         return -Error::SERIALIZATION_BUFFER_TOO_SMALL;
     }
@@ -551,7 +551,7 @@ VoidResult bitspan::setZeros({{ typename_unsigned_bit_length }} length){
     return {};
 }
 
-VoidResult bitspan::padAndMoveToAlignment({{ typename_unsigned_bit_length }} n_bits){
+inline VoidResult bitspan::padAndMoveToAlignment({{ typename_unsigned_bit_length }} n_bits){
     const auto padding = static_cast<uint8_t>(n_bits - offset_misalignment(n_bits));
     if (padding != n_bits)  // Pad to n_bits bits. TODO: Eliminate redundant padding checks.
     {
@@ -567,7 +567,7 @@ VoidResult bitspan::padAndMoveToAlignment({{ typename_unsigned_bit_length }} n_b
 }
 
 
-Result<bitspan> bitspan::subspan({# -#}
+inline Result<bitspan> bitspan::subspan({# -#}
         {{ typename_unsigned_bit_length }} bits_at, {{ typename_unsigned_bit_length }} size_bits) const noexcept {
     const {{ typename_unsigned_bit_length }} offset_bits = offset_bits_ + bits_at;
     const {{ typename_unsigned_length }} offset_bytes = offset_bits / 8U;
@@ -587,7 +587,7 @@ Result<bitspan> bitspan::subspan({# -#}
 
 
 
-uint8_t const_bitspan::getU8(const uint8_t len_bits) const noexcept
+inline uint8_t const_bitspan::getU8(const uint8_t len_bits) const noexcept
 {
     {{ assert('data_.data() != nullptr') }}
     const {{ typename_unsigned_bit_length }} bits = saturateBufferFragmentBitLength(std::min<uint8_t>(len_bits, 8U));
@@ -597,7 +597,7 @@ uint8_t const_bitspan::getU8(const uint8_t len_bits) const noexcept
     return val;
 }
 
-uint16_t const_bitspan::getU16(const uint8_t len_bits) const noexcept
+inline uint16_t const_bitspan::getU16(const uint8_t len_bits) const noexcept
 {
     {{ assert('data_.data() != nullptr') }}
     const {{ typename_unsigned_bit_length }} bits = saturateBufferFragmentBitLength(std::min<uint8_t>(len_bits, 16U));
@@ -614,7 +614,7 @@ uint16_t const_bitspan::getU16(const uint8_t len_bits) const noexcept
 {%- endif %}
 }
 
-uint32_t const_bitspan::getU32(const uint8_t len_bits) const noexcept
+inline uint32_t const_bitspan::getU32(const uint8_t len_bits) const noexcept
 {
     {{ assert('data_.data() != nullptr') }}
     const {{ typename_unsigned_bit_length }} bits = saturateBufferFragmentBitLength(std::min<uint8_t>(len_bits, 32U));
@@ -635,7 +635,7 @@ uint32_t const_bitspan::getU32(const uint8_t len_bits) const noexcept
 {%- endif %}
 }
 
-uint64_t const_bitspan::getU64(const uint8_t len_bits) const noexcept
+inline uint64_t const_bitspan::getU64(const uint8_t len_bits) const noexcept
 {
     {{ assert('data_.data() != nullptr') }}
     const {{ typename_unsigned_bit_length }} bits = saturateBufferFragmentBitLength(std::min<uint8_t>(len_bits, 64U));
@@ -659,7 +659,7 @@ uint64_t const_bitspan::getU64(const uint8_t len_bits) const noexcept
 {%- endif %}
 }
 
-int8_t const_bitspan::getI8(const uint8_t len_bits) const noexcept
+inline int8_t const_bitspan::getI8(const uint8_t len_bits) const noexcept
 {
     const uint8_t sat = std::min<uint8_t>(len_bits, 8U);
     uint8_t       val = getU8(sat);
@@ -668,7 +668,7 @@ int8_t const_bitspan::getI8(const uint8_t len_bits) const noexcept
     return neg ? static_cast<int8_t>(-static_cast<int8_t>(static_cast<uint8_t>(~val)) - 1) : static_cast<int8_t>(val);
 }
 
-int16_t const_bitspan::getI16(const uint8_t len_bits) const noexcept
+inline int16_t const_bitspan::getI16(const uint8_t len_bits) const noexcept
 {
     const uint8_t sat = std::min<uint8_t>(len_bits, 16U);
     uint16_t      val = getU16(sat);
@@ -677,7 +677,7 @@ int16_t const_bitspan::getI16(const uint8_t len_bits) const noexcept
     return neg ? static_cast<int16_t>(-static_cast<int16_t>(static_cast<uint16_t>(~val)) - 1) : static_cast<int16_t>(val);
 }
 
-int32_t const_bitspan::getI32(const uint8_t len_bits) const noexcept
+inline int32_t const_bitspan::getI32(const uint8_t len_bits) const noexcept
 {
     const uint8_t sat = std::min<uint8_t>(len_bits, 32U);
     uint32_t      val = getU32(sat);
@@ -686,7 +686,7 @@ int32_t const_bitspan::getI32(const uint8_t len_bits) const noexcept
     return neg ? static_cast<int32_t>((-static_cast<int32_t>(~val)) - 1) : static_cast<int32_t>(val);
 }
 
-int64_t const_bitspan::getI64(const uint8_t len_bits) const noexcept
+inline int64_t const_bitspan::getI64(const uint8_t len_bits) const noexcept
 {
     const uint8_t sat = std::min<uint8_t>(len_bits, 64U);
     uint64_t      val = getU64(sat);
@@ -695,7 +695,7 @@ int64_t const_bitspan::getI64(const uint8_t len_bits) const noexcept
     return neg ? static_cast<int64_t>((-static_cast<int64_t>(~val)) - 1) : static_cast<int64_t>(val);
 }
 
-VoidResult bitspan::setBit(const bool value)
+inline VoidResult bitspan::setBit(const bool value)
 {
     if ((data_.size() * 8U) <= offset_bits_)
     {
@@ -706,7 +706,7 @@ VoidResult bitspan::setBit(const bool value)
     return {};
 }
 
-VoidResult bitspan::setUxx(const uint64_t value, const uint8_t len_bits)
+inline VoidResult bitspan::setUxx(const uint64_t value, const uint8_t len_bits)
 {
     static_assert(64U == (sizeof(uint64_t) * 8U), "Unexpected size of uint64_t");
     if ((data_.size() * 8) < (offset_bits_ + len_bits))
@@ -734,7 +734,7 @@ VoidResult bitspan::setUxx(const uint64_t value, const uint8_t len_bits)
     return {};
 }
 
-VoidResult bitspan::setIxx(const int64_t value, const uint8_t len_bits)
+inline VoidResult bitspan::setIxx(const int64_t value, const uint8_t len_bits)
 {
     // The naive sign conversion is safe and portable according to the C++ Standard 4.7/2 :
     // If the destination type is unsigned, the resulting value is the least unsigned integer
@@ -817,12 +817,12 @@ static inline {{typename_float_32}} float16Unpack(const uint16_t value)
     return out.real;
 }
 
-VoidResult bitspan::setF16(const {{ typename_float_32 }} value)
+inline VoidResult bitspan::setF16(const {{ typename_float_32 }} value)
 {
     return setUxx(float16Pack(value), 16U);
 }
 
-{{typename_float_32}} const_bitspan::getF16()
+inline {{typename_float_32}} const_bitspan::getF16()
 {
     return float16Unpack(getU16(16U));
 }
@@ -833,7 +833,7 @@ static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT,
               "The target platform does not support IEEE754 floating point operations.");
 static_assert(32U == (sizeof({{typename_float_32}}) * 8U), "Unsupported floating point model");
 
-VoidResult bitspan::setF32(const {{ typename_float_32 }} value)
+inline VoidResult bitspan::setF32(const {{ typename_float_32 }} value)
 {
     // Intentional violation of MISRA: use union to perform fast conversion from an IEEE 754-compatible native
     // representation into a serializable integer. The assumptions about the target platform properties are made
@@ -846,7 +846,7 @@ VoidResult bitspan::setF32(const {{ typename_float_32 }} value)
     return setUxx(tmp.in, sizeof(tmp) * 8U);
 }
 
-{{typename_float_32}} const_bitspan::getF32()
+inline {{typename_float_32}} const_bitspan::getF32()
 {
     // Intentional violation of MISRA: use union to perform fast conversion to an IEEE 754-compatible native
     // representation into a serializable integer. The assumptions about the target platform properties are made
@@ -865,7 +865,7 @@ static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE,
               "The target platform does not support IEEE754 double-precision floating point operations.");
 static_assert(64U == (sizeof({{typename_float_64}}) * 8U), "Unsupported floating point model");
 
-VoidResult bitspan::setF64(const {{typename_float_64 }} value)
+inline VoidResult bitspan::setF64(const {{typename_float_64 }} value)
 {
     // Intentional violation of MISRA: use union to perform fast conversion from an IEEE 754-compatible native
     // representation into a serializable integer. The assumptions about the target platform properties are made
@@ -878,7 +878,7 @@ VoidResult bitspan::setF64(const {{typename_float_64 }} value)
     return setUxx(tmp.in, sizeof(tmp) * 8U);
 }
 
-{{typename_float_64}} const_bitspan::getF64()
+inline {{typename_float_64}} const_bitspan::getF64()
 {
     // Intentional violation of MISRA: use union to perform fast conversion to an IEEE 754-compatible native
     // representation into a serializable integer. The assumptions about the target platform properties are made
