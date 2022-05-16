@@ -637,7 +637,7 @@ TEST(BitSpan, SetGetU8)
     {
         auto ref = randU8();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setUxx(ref, 8U);
+        auto rslt = nunavut::support::bitspan(data, offset).setUxx(ref, 8U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
         auto act = nunavut::support::const_bitspan(data, offset).getU8(8U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
@@ -651,7 +651,7 @@ TEST(BitSpan, SetGetU16)
     {
         auto ref = randU16();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setUxx(ref, 16U);
+        auto rslt = nunavut::support::bitspan(data, offset).setUxx(ref, 16U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
         auto act = nunavut::support::const_bitspan(data, offset).getU16(16U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
@@ -665,7 +665,7 @@ TEST(BitSpan, SetGetU32)
     {
         auto ref = randU32();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setUxx(ref, 32U);
+        auto rslt = nunavut::support::bitspan(data, offset).setUxx(ref, 32U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
         auto act = nunavut::support::const_bitspan(data, offset).getU32(32U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
@@ -679,7 +679,7 @@ TEST(BitSpan, SetGetU64)
     {
         auto ref = randU64();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setUxx(ref, 64U);
+        auto rslt = nunavut::support::bitspan(data, offset).setUxx(ref, 64U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
         auto act = nunavut::support::const_bitspan(data, offset).getU64(64U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
@@ -693,7 +693,7 @@ TEST(BitSpan, SetGetI8)
     {
         auto ref = randI8();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setIxx(ref, 8U);
+        auto rslt = nunavut::support::bitspan(data, offset).setIxx(ref, 8U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
         auto act = nunavut::support::const_bitspan(data, offset).getI8(8U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
@@ -707,7 +707,7 @@ TEST(BitSpan, SetGetI16)
     {
         auto ref = randI16();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setIxx(ref, 16U);
+        auto rslt = nunavut::support::bitspan(data, offset).setIxx(ref, 16U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
         auto act = nunavut::support::const_bitspan(data, offset).getI16(16U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
@@ -721,7 +721,7 @@ TEST(BitSpan, SetGetI32)
     {
         auto ref = randI32();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setIxx(ref, 32U);
+        auto rslt = nunavut::support::bitspan(data, offset).setIxx(ref, 32U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
         auto act = nunavut::support::const_bitspan(data, offset).getI32(32U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
@@ -735,7 +735,7 @@ TEST(BitSpan, SetGetI64)
     {
         auto ref = randI64();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setIxx(ref, 64U);
+        auto rslt = nunavut::support::bitspan(data, offset).setIxx(ref, 64U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
         auto act = nunavut::support::const_bitspan(data, offset).getI64(64U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
