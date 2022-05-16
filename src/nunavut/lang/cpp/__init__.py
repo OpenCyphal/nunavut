@@ -675,7 +675,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
         if YesNoDefault.test_truth(YesNoDefault.DEFAULT, language.enable_stropping):
             return language.filter_id(t.short_name)
         else:
-            return t.short_name
+            return str(t.short_name)
     return language.filter_short_reference_name(t)
 
 
