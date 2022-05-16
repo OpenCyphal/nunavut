@@ -671,7 +671,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
     :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
     """
-    if isinstance(t, pydsdl.ServiceType) :
+    if isinstance(t, pydsdl.ServiceType):
         if YesNoDefault.test_truth(YesNoDefault.DEFAULT, language.enable_stropping):
             return language.filter_id(t.short_name)
         else:
