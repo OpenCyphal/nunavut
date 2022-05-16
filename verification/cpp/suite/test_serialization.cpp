@@ -9,8 +9,55 @@
 #include "test_helpers.hpp"
 #include "uavcan/time/TimeSystem_0_1.hpp"
 #include "regulated/basics/Struct__0_1.hpp"
+#include "regulated/basics/Service_0_1.hpp"
 #include "regulated/basics/Primitive_0_1.hpp"
 
+
+static_assert(
+    not regulated::basics::Struct__0_1::IsServiceType,
+    "Regular types are not service types");
+
+static_assert(
+    regulated::basics::Service::Request_0_1::IsServiceType,
+    "Request is a service type");
+static_assert(
+    regulated::basics::Service::Response_0_1::IsServiceType,
+    "Response is a service type");
+static_assert(
+    regulated::basics::Service::Service_0_1::IsServiceType,
+    "Service is a service type");
+
+static_assert(
+    not regulated::basics::Service::Request_0_1::IsService,
+    "Request is not a service");
+static_assert(
+    not regulated::basics::Service::Response_0_1::IsService,
+    "Response is not a service");
+static_assert(
+    regulated::basics::Service::Service_0_1::IsService,
+    "Service is a service");
+
+
+static_assert(
+    regulated::basics::Service::Request_0_1::IsRequest,
+    "Request is a request");
+static_assert(
+    not regulated::basics::Service::Response_0_1::IsRequest,
+    "Response is not a request");
+static_assert(
+    not regulated::basics::Service::Service_0_1::IsRequest,
+    "Service is not a request");
+
+
+static_assert(
+    not regulated::basics::Service::Request_0_1::IsResponse,
+    "Request is not a response");
+static_assert(
+    regulated::basics::Service::Response_0_1::IsResponse,
+    "Response is a response");
+static_assert(
+    not regulated::basics::Service::Service_0_1::IsResponse,
+    "Service is not a response");
 
 
 TEST(Serialization, BasicSerialize) {
