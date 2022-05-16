@@ -3,6 +3,7 @@
  # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
  # This software is distributed under the terms of the MIT License.
 -#}
+{%- from '_definitions.j2' import assert -%}
 {%- ifuses "std_variant" %}
 // +-------------------------------------------------------------------------------------------------------------------+
 // | This implementation uses the C++17 standard library variant type with wrappers for the emplace and
@@ -84,6 +85,16 @@
 
     typename std::add_pointer<const {{ field.data_type | declaration }}>::type get_{{ field.name | id }}_if() const{
         return VariantType::get_if<VariantType::IndexOf::{{ field.name | id }}>(&union_value);
+    }
+
+    typename std::add_lvalue_reference<{{ field.data_type | declaration }}>::type get_{{ field.name | id }}(){
+        {{ assert('is_%s()' | format(field.name | id)) }}
+        return *VariantType::get_if<VariantType::IndexOf::{{ field.name | id }}>(&union_value);
+    }
+
+    typename std::add_lvalue_reference<const {{ field.data_type | declaration }}>::type get_{{ field.name | id }}() const{
+        {{ assert('is_%s()' | format(field.name | id)) }}
+        return *VariantType::get_if<VariantType::IndexOf::{{ field.name | id }}>(&union_value);
     }
 
     template<class... Args> typename std::add_lvalue_reference<{{ field.data_type | declaration }}>::type
