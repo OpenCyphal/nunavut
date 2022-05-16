@@ -389,13 +389,13 @@ TEST(BitSpan, GetBit)
 TEST(BitSpan, GetU8)
 {
     const uint8_t data[] = {0xFE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    ASSERT_EQ(0xFE, nunavut::support::const_bitspan(data, 0).getU8(8U));
+    ASSERT_EQ(0xFE, nunavut::support::const_bitspan(data).getU8(8U));
 }
 
 TEST(BitSpan, GetU8_tooSmall)
 {
     const uint8_t data[] = {0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    ASSERT_EQ(0x7F, nunavut::support::const_bitspan(data, 0).getU8(7U));
+    ASSERT_EQ(0x7F, nunavut::support::const_bitspan(data).getU8(7U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -405,13 +405,13 @@ TEST(BitSpan, GetU8_tooSmall)
 TEST(BitSpan, GetU16)
 {
     const uint8_t data[] = {0xAA, 0xAA};
-    ASSERT_EQ(0xAAAAU, nunavut::support::const_bitspan(data, 0).getU16(16U));
+    ASSERT_EQ(0xAAAAU, nunavut::support::const_bitspan(data).getU16(16U));
 }
 
 TEST(BitSpan, GetU16_tooSmall)
 {
     const uint8_t data[] = {0xAA, 0xAA};
-    ASSERT_EQ(0x0055U, nunavut::support::const_bitspan(data, 9).getU16(16U));
+    ASSERT_EQ(0x0055U, nunavut::support::const_bitspan(data, sizeof(data), 9).getU16(16U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -422,18 +422,18 @@ TEST(BitSpan, GetU32)
 {
     {
         const uint8_t data[] = {0xAA, 0xAA, 0xAA, 0xAA};
-        ASSERT_EQ(0xAAAAAAAAU, nunavut::support::const_bitspan(data, 0).getU32(32U));
+        ASSERT_EQ(0xAAAAAAAAU, nunavut::support::const_bitspan(data).getU32(32U));
     }
     {
         const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF};
-        ASSERT_EQ(0xFFFFFFFFU, nunavut::support::const_bitspan(data, 0).getU32(32U));
+        ASSERT_EQ(0xFFFFFFFFU, nunavut::support::const_bitspan(data).getU32(32U));
     }
 }
 
 TEST(BitSpan, GetU32_tooSmall)
 {
     const uint8_t data[] = {0xAA, 0xAA, 0xAA, 0xAA};
-    ASSERT_EQ(0x00555555U, nunavut::support::const_bitspan(data, 9).getU32(32U));
+    ASSERT_EQ(0x00555555U, nunavut::support::const_bitspan(data, sizeof(data), 9).getU32(32U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -444,18 +444,18 @@ TEST(BitSpan, GetU64)
 {
     {
         const uint8_t data[] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-        ASSERT_EQ(0xAAAAAAAAAAAAAAAAU, nunavut::support::const_bitspan(data, 0).getU64(64U));
+        ASSERT_EQ(0xAAAAAAAAAAAAAAAAU, nunavut::support::const_bitspan(data).getU64(64U));
     }
     {
         const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        ASSERT_EQ(0xFFFFFFFFFFFFFFFFU, nunavut::support::const_bitspan(data, 0).getU64(64U));
+        ASSERT_EQ(0xFFFFFFFFFFFFFFFFU, nunavut::support::const_bitspan(data).getU64(64U));
     }
 }
 
 TEST(BitSpan, GetU64_tooSmall)
 {
     const uint8_t data[] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-    ASSERT_EQ(0x0055555555555555U, nunavut::support::const_bitspan(data, 9).getU64(64U));
+    ASSERT_EQ(0x0055555555555555U, nunavut::support::const_bitspan(data, sizeof(data), 9).getU64(64U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -465,25 +465,25 @@ TEST(BitSpan, GetU64_tooSmall)
 TEST(BitSpan, GetI8)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI8(8U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data).getI8(8U));
 }
 
 TEST(BitSpan, GetI8_tooSmall)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(127, nunavut::support::const_bitspan(data, 1).getI8(8U));
+    ASSERT_EQ(127, nunavut::support::const_bitspan(data, sizeof(data), 1).getI8(8U));
 }
 
 TEST(BitSpan, GetI8_tooSmallAndNegative)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI8(4U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, sizeof(data), 0).getI8(4U));
 }
 
 TEST(BitSpan, GetI8_zeroDataLen)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0, nunavut::support::const_bitspan(data, 0).getI8(0U));
+    ASSERT_EQ(0, nunavut::support::const_bitspan(data, sizeof(data), 0).getI8(0U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -493,25 +493,25 @@ TEST(BitSpan, GetI8_zeroDataLen)
 TEST(BitSpan, GetI16)
 {
     const uint8_t data[] = {0xFF, 0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI16(16U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data).getI16(16U));
 }
 
 TEST(BitSpan, GetI16_tooSmall)
 {
     const uint8_t data[] = {0xFF, 0xFF};
-    ASSERT_EQ(32767, nunavut::support::const_bitspan(data, 1).getI16(16U));
+    ASSERT_EQ(32767, nunavut::support::const_bitspan(data, sizeof(data), 1).getI16(16U));
 }
 
 TEST(BitSpan, GetI16_tooSmallAndNegative)
 {
     const uint8_t data[] = {0xFF, 0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI16(12U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data).getI16(12U));
 }
 
 TEST(BitSpan, GetI16_zeroDataLen)
 {
     const uint8_t data[] = {0xFF, 0xFF};
-    ASSERT_EQ(0, nunavut::support::const_bitspan(data, 0).getI16(0U));
+    ASSERT_EQ(0, nunavut::support::const_bitspan(data).getI16(0U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -521,25 +521,25 @@ TEST(BitSpan, GetI16_zeroDataLen)
 TEST(BitSpan, GetI32)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI32(32U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data).getI32(32U));
 }
 
 TEST(BitSpan, GetI32_tooSmall)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(2147483647, nunavut::support::const_bitspan(data, 1).getI32(32U));
+    ASSERT_EQ(2147483647, nunavut::support::const_bitspan(data, sizeof(data), 1).getI32(32U));
 }
 
 TEST(BitSpan, GetI32_tooSmallAndNegative)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI32(20U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data).getI32(20U));
 }
 
 TEST(BitSpan, GetI32_zeroDataLen)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(0, nunavut::support::const_bitspan(data, 0).getI32(0U));
+    ASSERT_EQ(0, nunavut::support::const_bitspan(data).getI32(0U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -549,25 +549,25 @@ TEST(BitSpan, GetI32_zeroDataLen)
 TEST(BitSpan, GetI64)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI64(64U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, sizeof(data), 0).getI64(64U));
 }
 
 TEST(BitSpan, GetI64_tooSmall)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(9223372036854775807, nunavut::support::const_bitspan(data, 1).getI64(64U));
+    ASSERT_EQ(9223372036854775807, nunavut::support::const_bitspan(data, sizeof(data), 1).getI64(64U));
 }
 
 TEST(BitSpan, GetI64_tooSmallAndNegative)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI64(60U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, sizeof(data), 0).getI64(60U));
 }
 
 TEST(BitSpan, GetI64_zeroDataLen)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(0, nunavut::support::const_bitspan(data, 0).getI64(0U));
+    ASSERT_EQ(0, nunavut::support::const_bitspan(data, sizeof(data), 0).getI64(0U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -577,49 +577,49 @@ TEST(BitSpan, GetI64_zeroDataLen)
 TEST(BitSpan, GetU8_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, 1U * 8U+1).getU8(8U));
+    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, sizeof(data), 1U * 8U+1).getU8(8U));
 }
 
 TEST(BitSpan, GetU16_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, 2U * 8U+1).getU16(16U));
+    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, sizeof(data), 2U * 8U+1).getU16(16U));
 }
 
 TEST(BitSpan, GetU32_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, 4U * 8U+1).getU32(32U));
+    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, sizeof(data), 4U * 8U+1).getU32(32U));
 }
 
 TEST(BitSpan, GetU64_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, 4U * 8U+1).getU64(64U));
+    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, sizeof(data), 4U * 8U+1).getU64(64U));
 }
 
 TEST(BitSpan, GetI8_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, 1U * 8U+1).getI8(8U));
+    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, sizeof(data), 1U * 8U+1).getI8(8U));
 }
 
 TEST(BitSpan, GetI16_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, 2U * 8U+1).getI16(16U));
+    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, sizeof(data), 2U * 8U+1).getI16(16U));
 }
 
 TEST(BitSpan, GetI32_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, 4U * 8U+1).getI32(32U));
+    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, sizeof(data), 4U * 8U+1).getI32(32U));
 }
 
 TEST(BitSpan, GetI64_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, 4U * 8U+1).getI64(64U));
+    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, sizeof(data), 4U * 8U+1).getI64(64U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -637,9 +637,9 @@ TEST(BitSpan, SetGetU8)
     {
         auto ref = randU8();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan(data, offset).setUxx(ref, 8U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setUxx(ref, 8U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getU8(8U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getU8(8U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -651,9 +651,9 @@ TEST(BitSpan, SetGetU16)
     {
         auto ref = randU16();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan(data, offset).setUxx(ref, 16U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setUxx(ref, 16U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getU16(16U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getU16(16U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -665,9 +665,9 @@ TEST(BitSpan, SetGetU32)
     {
         auto ref = randU32();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan(data, offset).setUxx(ref, 32U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setUxx(ref, 32U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getU32(32U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getU32(32U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -679,9 +679,9 @@ TEST(BitSpan, SetGetU64)
     {
         auto ref = randU64();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan(data, offset).setUxx(ref, 64U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setUxx(ref, 64U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getU64(64U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getU64(64U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -693,9 +693,9 @@ TEST(BitSpan, SetGetI8)
     {
         auto ref = randI8();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan(data, offset).setIxx(ref, 8U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setIxx(ref, 8U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getI8(8U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getI8(8U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -707,9 +707,9 @@ TEST(BitSpan, SetGetI16)
     {
         auto ref = randI16();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan(data, offset).setIxx(ref, 16U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setIxx(ref, 16U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getI16(16U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getI16(16U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -721,9 +721,9 @@ TEST(BitSpan, SetGetI32)
     {
         auto ref = randI32();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan(data, offset).setIxx(ref, 32U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setIxx(ref, 32U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getI32(32U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getI32(32U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -735,9 +735,9 @@ TEST(BitSpan, SetGetI64)
     {
         auto ref = randI64();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan(data, offset).setIxx(ref, 64U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setIxx(ref, 64U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getI64(64U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getI64(64U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
