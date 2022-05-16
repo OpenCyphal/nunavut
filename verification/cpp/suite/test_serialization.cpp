@@ -19,7 +19,7 @@ TEST(Serialization, BasicSerialize) {
     {
         a.value = 1;
         std::fill(std::begin(buffer), std::end(buffer), 0xAA);
-        const auto result = a.serialize({{buffer}});
+        const auto result = a.serialize(buffer);
         ASSERT_TRUE(result);
         ASSERT_EQ(1U, *result);
         ASSERT_EQ(1U, buffer[0]);
@@ -28,7 +28,7 @@ TEST(Serialization, BasicSerialize) {
     {
         a.value = 0xFF;
         std::fill(std::begin(buffer), std::end(buffer), 0xAA);
-        const auto result = a.serialize({{buffer}});
+        const auto result = a.serialize(buffer);
         ASSERT_TRUE(result);
         ASSERT_EQ(1U, *result);
         ASSERT_EQ(0x0FU, buffer[0]);
@@ -197,7 +197,7 @@ TEST(Serialization, StructReference)
     uint8_t buf[sizeof(reference)];
     (void) memset(&buf[0], 0x55U, sizeof(buf));  // fill out canaries
 
-    auto result = obj.serialize({{buf, sizeof(buf)}});
+    auto result = obj.serialize(buf);
     ASSERT_TRUE(result) << "Error is " << static_cast<int>(result.error());
 
     EXPECT_EQ(sizeof(reference) - 16U, result.value());
@@ -259,7 +259,7 @@ TEST(Serialization, StructReference)
     ASSERT_EQ(0U, obj.aligned_bitpacked_le3.size());
 
     // // Deserialize the above reference representation and compare the result against the original object.
-    result = obj.deserialize({{reference}, 0U});
+    result = obj.deserialize(reference);
     ASSERT_TRUE(result) << "Error was " << result.error();
     ASSERT_EQ(sizeof(reference) - 16U, result.value());   // 16 trailing bytes implicitly truncated away
 
@@ -296,7 +296,7 @@ TEST(Serialization, StructReference)
     // ASSERT_EQ(1, obj.aligned_bitpacked_le3.bitpacked[0]);       // unused MSB are zero-padded
 
     // Repeat the above, but apply implicit zero extension somewhere in the middle.
-    result = obj.deserialize({{reference, 25U}, 0U});
+    result = obj.deserialize({reference, 25U, 0U});
     ASSERT_TRUE(result) << "Error was " << result.error();
     ASSERT_EQ(25U, result.value());   // the returned size shall not exceed the buffer size
 
@@ -376,13 +376,13 @@ TEST(Serialization, Primitive)
 
         uint8_t buf[regulated::basics::Primitive_0_1::SERIALIZATION_BUFFER_SIZE_BYTES];
         std::memset(buf, 0, sizeof(buf));
-        auto result = ref.serialize({{buf, sizeof(buf)}});
+        auto result = ref.serialize(buf);
         ASSERT_TRUE(result) << "Error is " << result.error();
         ASSERT_EQ(
             static_cast<size_t>(regulated::basics::Primitive_0_1::SERIALIZATION_BUFFER_SIZE_BYTES), result.value());
 
         regulated::basics::Primitive_0_1 obj;
-        result = obj.deserialize({ {buf, sizeof(buf)} });
+        result = obj.deserialize(buf);
         ASSERT_TRUE(result);
         EXPECT_EQ(
             static_cast<size_t>(regulated::basics::Primitive_0_1::SERIALIZATION_BUFFER_SIZE_BYTES), result.value());
@@ -452,7 +452,7 @@ TEST(Serialization, CCppBackAndForth)
         std::memset(buf, 0, sizeof(buf));
 
         // We serialize structure from C++
-        auto result = cpp_part.serialize({{buf, sizeof(buf)}, 0});
+        auto result = cpp_part.serialize(buf);
         ASSERT_TRUE(result) << "Error is " << result.error();
         ASSERT_EQ(
             static_cast<size_t>(regulated::zubax::actuator::esc::Status_0_1::SERIALIZATION_BUFFER_SIZE_BYTES), result.value());
@@ -494,7 +494,7 @@ TEST(Serialization, CCppBackAndForth)
 
         // And deserialize again in C++
         regulated::zubax::actuator::esc::Status_0_1 cpp_parsed;
-        result = cpp_parsed.deserialize({ {buf, sizeof(buf)} });
+        result = cpp_parsed.deserialize(buf);
         ASSERT_TRUE(result);
         EXPECT_EQ(
             static_cast<size_t>(regulated::zubax::actuator::esc::Status_0_1::SERIALIZATION_BUFFER_SIZE_BYTES),

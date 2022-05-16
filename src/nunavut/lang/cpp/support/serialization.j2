@@ -76,12 +76,12 @@ namespace nunavut
 namespace support
 {
 
-
 template<typename T>
 class span{
     T* ptr_;
     {{ typename_unsigned_length }} size_;
 public:
+    using value_type = T;
     template<{{ typename_unsigned_length }} N>
     span(std::array<T, N>& data): ptr_(data.data()), size_(data.size()){}
     template<{{ typename_unsigned_length }} N>
@@ -154,7 +154,16 @@ public:
         else { new(error_ptr()) Error(*other.error_ptr()); }
     }
     expected& operator=(const expected& other){
-        this->~expected(); return *new(this) expected(other);
+        this->~expected();
+        return *new(this) expected(other);
+    }
+    expected(expected&& other): is_expected_(other.is_expected_){
+        if(is_expected_){ new(ret_ptr()) Ret(std::move(*other.ret_ptr())); }
+        else { new(error_ptr()) Error(std::move(*other.error_ptr())); }
+    }
+    expected& operator=(expected&& other){
+        this->~expected();
+        return *new(this) expected(std::move(other));
     }
     ~expected(){
         if(is_expected_){ ret_ptr()->~Ret(); }
@@ -217,9 +226,10 @@ protected:
         return self.data_.data() + offset_bytes;
     }
 public:
+
     derived_bitspan at_offset({{ typename_unsigned_bit_length }} bits) const noexcept {
         auto& self  = *static_cast<const derived_bitspan*>(this);
-        return derived_bitspan(self.data_, self.offset_bits_ + bits);
+        return derived_bitspan(self.data_.data(), self.data_.size(), self.offset_bits_ + bits);
     }
 
     /// Create a copy of current bitspan, converting current offset into  pointer
@@ -234,7 +244,7 @@ public:
         const {{ typename_unsigned_bit_length }} offset_bits_mod = (offset_bits) % 8U;
         const {{ typename_unsigned_length }} newSize = {# -#}
             (offset_bytes < self.data_.size())?(self.data_.size() - offset_bytes):(0U);
-        return derived_bitspan({self.data_.data() + offset_bytes, newSize}, offset_bits_mod);
+        return derived_bitspan(self.data_.data() + offset_bytes, newSize, offset_bits_mod);
     }
 
     void add_offset({{ typename_unsigned_bit_length }} bits) noexcept{
@@ -320,9 +330,22 @@ private:
     bytespan data_;
     {{ typename_unsigned_bit_length }} offset_bits_;
 public:
-    bitspan(bytespan data, {{ typename_unsigned_bit_length }} offset_bits=0)
-        :data_(std::move(data)), offset_bits_(offset_bits){
-    }
+    using value_type = typename bytespan::value_type;
+
+    template<{{ typename_unsigned_length }} N>
+    bitspan(std::array<value_type, N>& data, {{ typename_unsigned_bit_length }} offset_bits=0)
+        : data_(data.data(), data.size()), offset_bits_(offset_bits) {}
+
+    template<{{ typename_unsigned_length }} N>
+    bitspan(const std::array<value_type, N>& data, {{ typename_unsigned_bit_length }} offset_bits=0)
+        : data_(data.data(), data.size()), offset_bits_(offset_bits) {}
+
+    template<{{ typename_unsigned_length }} N>
+    bitspan(value_type (&data)[N], {{ typename_unsigned_bit_length }} offset_bits=0)
+        : data_(data, N), offset_bits_(offset_bits) {}
+
+    bitspan(value_type* ptr,  {{ typename_unsigned_length }} size, {{ typename_unsigned_bit_length }} offset_bits=0)
+        : data_(ptr, size), offset_bits_(offset_bits) {}
 
     Result<bitspan> subspan({# -#}
         {{ typename_unsigned_bit_length }} bits_at, {{ typename_unsigned_bit_length }} size_bits) const noexcept;
@@ -358,9 +381,22 @@ private:
     const_bytespan data_;
     {{ typename_unsigned_bit_length }} offset_bits_;
 public:
-    const_bitspan(const_bytespan data, {{ typename_unsigned_bit_length }} offset_bits=0)
-        :data_(std::move(data)), offset_bits_(offset_bits){
-    }
+    using value_type = typename const_bytespan::value_type;
+
+    template<{{ typename_unsigned_length }} N>
+    const_bitspan(std::array<value_type, N>& data, {{ typename_unsigned_bit_length }} offset_bits=0)
+        : data_(data.data(), data.size()), offset_bits_(offset_bits) {}
+
+    template<{{ typename_unsigned_length }} N>
+    const_bitspan(const std::array<value_type, N>& data, {{ typename_unsigned_bit_length }} offset_bits=0)
+        : data_(data.data(), data.size()), offset_bits_(offset_bits) {}
+
+    template<{{ typename_unsigned_length }} N>
+    const_bitspan(value_type (&data)[N], {{ typename_unsigned_bit_length }} offset_bits=0)
+        : data_(data, N), offset_bits_(offset_bits) {}
+
+    const_bitspan(value_type* ptr,  {{ typename_unsigned_length }} size, {{ typename_unsigned_bit_length }} offset_bits=0)
+        : data_(ptr, size), offset_bits_(offset_bits) {}
 
 
     /// Copy the specified number of bits from the source buffer into the destination buffer in accordance with the
@@ -486,7 +522,7 @@ public:
         // Apply implicit zero extension. Normally, this is a no-op unless (len_bits > sat_bits) or (len_bits % 8 != 0).
         // The former case ensures that if we're copying <8 bits, the MSB in the destination will be zeroed out.
         std::memset(output.data() + (sat_bits / 8U), 0, len_bytes - (sat_bits / 8U));
-        copyTo(bitspan{output, 0U}, sat_bits);
+        copyTo(bitspan{output.data(), output.size(), 0U}, sat_bits);
     }
 
 
@@ -582,7 +618,7 @@ inline Result<bitspan> bitspan::subspan({# -#}
         return -Error::SERIALIZATION_BUFFER_TOO_SMALL;
     }
     const {{ typename_unsigned_length }} new_size_bytes = new_size_bits / 8U;
-    return bitspan({ data_.data() + offset_bytes, new_size_bytes }, new_offset_bits);
+    return bitspan( data_.data() + offset_bytes, new_size_bytes, new_offset_bits);
 }
 
 
@@ -593,7 +629,7 @@ inline uint8_t const_bitspan::getU8(const uint8_t len_bits) const noexcept
     const {{ typename_unsigned_bit_length }} bits = saturateBufferFragmentBitLength(std::min<uint8_t>(len_bits, 8U));
     {{ assert('bits <= (sizeof(uint8_t) * 8U)') }}
     uint8_t val = 0;
-    copyTo(bitspan{ { &val, 1U } }, bits);
+    copyTo(bitspan{ &val, 1U }, bits);
     return val;
 }
 
@@ -604,11 +640,11 @@ inline uint16_t const_bitspan::getU16(const uint8_t len_bits) const noexcept
     {{ assert('bits <= (sizeof(uint16_t) * 8U)') }}
 {%- if options.target_endianness == 'little' %}
     uint16_t val = 0U;
-    copyTo(bitspan{ { reinterpret_cast<uint8_t*>(&val), sizeof(val) } }, bits);
+    copyTo(bitspan{ reinterpret_cast<uint8_t*>(&val), sizeof(val) }, bits);
     return val;
 {%- elif options.target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint16_t)] = {0};
-    copyTo(bitspan{ { &tmp[0], sizeof(tmp) } }, bits);
+    copyTo(tmp, bits);
     return static_cast<uint16_t>(static_cast<uint16_t>(tmp[0]) | ((static_cast<uint16_t>(tmp[1])) << 8U));
 {%- else %}{%- assert False %}
 {%- endif %}
@@ -621,11 +657,11 @@ inline uint32_t const_bitspan::getU32(const uint8_t len_bits) const noexcept
     {{ assert('bits <= (sizeof(uint32_t) * 8U)') }}
 {%- if options.target_endianness == 'little' %}
     uint32_t val = 0U;
-    copyTo(bitspan{ { reinterpret_cast<uint8_t*>(&val), sizeof(val) } }, bits);
+    copyTo(bitspan{ reinterpret_cast<uint8_t*>(&val), sizeof(val) }, bits);
     return val;
 {%- elif options.target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint32_t)] = {0};
-    copyTo(bitspan{ { tmp, sizeof(tmp) } }, bits);
+    copyTo(tmp, bits);
     return static_cast<uint32_t>(
         (static_cast<uint32_t>(tmp[0])) |
         (static_cast<uint32_t>(tmp[1]) << 8U) |
@@ -642,11 +678,11 @@ inline uint64_t const_bitspan::getU64(const uint8_t len_bits) const noexcept
     {{ assert('bits <= (sizeof(uint64_t) * 8U)') }}
 {%- if options.target_endianness == 'little' %}
     uint64_t val = 0U;
-    copyTo(bitspan{ { reinterpret_cast<uint8_t*>(&val), sizeof(val) } }, bits);
+    copyTo(bitspan{ reinterpret_cast<uint8_t*>(&val), sizeof(val) }, bits);
     return val;
 {%- elif options.target_endianness in ('any', 'big') %}
     uint8_t tmp[sizeof(uint64_t)] = {0};
-    copyTo(bitspan{ { tmp, sizeof(tmp) } }, bits);
+    copyTo(tmp, bits);
     return static_cast<uint64_t>(static_cast<uint64_t>(tmp[0]) |
                     (static_cast<uint64_t>(tmp[1]) << 8U) |
                     (static_cast<uint64_t>(tmp[2]) << 16U) |
@@ -702,7 +738,7 @@ inline VoidResult bitspan::setBit(const bool value)
         return -Error::SERIALIZATION_BUFFER_TOO_SMALL;
     }
     const uint8_t val = value ? 1U : 0U;
-    const_bitspan{ { &val, 1U } }.copyTo(*this, 1U);
+    const_bitspan{ &val, 1U }.copyTo(*this, 1U);
     return {};
 }
 
@@ -716,9 +752,9 @@ inline VoidResult bitspan::setUxx(const uint64_t value, const uint8_t len_bits)
     const {{ typename_unsigned_bit_length }} saturated_len_bits = std::min<{{ typename_unsigned_bit_length }}>({# -#}
         len_bits, 64U);
 {%- if options.target_endianness == 'little' %}
-        bitspan{ { reinterpret_cast<const uint8_t*>(&value), sizeof(uint64_t) } }.copyTo(*this, saturated_len_bits);
+        bitspan{ reinterpret_cast<const uint8_t*>(&value), sizeof(uint64_t) }.copyTo(*this, saturated_len_bits);
 {%- elif options.target_endianness in ('any', 'big') %}
-    std::array<uint8_t, 8> tmp{
+    const std::array<const uint8_t, 8> tmp{
         static_cast<uint8_t>((value >> 0U) & 0xFFU),
         static_cast<uint8_t>((value >> 8U) & 0xFFU),
         static_cast<uint8_t>((value >> 16U) & 0xFFU),
@@ -728,7 +764,7 @@ inline VoidResult bitspan::setUxx(const uint64_t value, const uint8_t len_bits)
         static_cast<uint8_t>((value >> 48U) & 0xFFU),
         static_cast<uint8_t>((value >> 56U) & 0xFFU),
     };
-    const_bitspan{ { &tmp[0], sizeof(uint64_t) } }.copyTo(*this, saturated_len_bits);
+    const_bitspan{ tmp }.copyTo(*this, saturated_len_bits);
 {%- else %}{%- assert False %}
 {%- endif %}
     return {};
