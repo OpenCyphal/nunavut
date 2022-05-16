@@ -77,7 +77,7 @@ namespace support
 {
 
 template<typename T>
-class span{
+class span final{
     T* ptr_;
     {{ typename_unsigned_length }} size_;
 public:
@@ -122,7 +122,7 @@ enum class Error{
 
 
 template<typename Err>
-struct unexpected{
+struct unexpected final{
     Err value;
     explicit unexpected(Err e):value(e){}
 };
@@ -132,7 +132,7 @@ struct unexpected{
 /// exceptional cases.
 /// All versions of Ret are expected to be non-throwing.
 template<typename Ret>
-class expected{
+class expected final{
     // We can use a maximum of all types.
     using storage_t = typename std::aligned_storage<
         (std::max(sizeof(Ret), sizeof(Error))),
@@ -184,7 +184,7 @@ public:
 };
 
 template<>
-class expected<void>{
+class expected<void> final{
     using underlying_type = typename std::underlying_type<Error>::type;
     underlying_type e;
 public:
@@ -323,7 +323,7 @@ public:
 
 } // namespace detail
 
-struct bitspan: public detail::any_bitspan<bitspan>{
+struct bitspan final: public detail::any_bitspan<bitspan>{
     friend struct detail::any_bitspan<bitspan>;
     friend struct const_bitspan;
 private:
@@ -375,7 +375,7 @@ public:
     VoidResult padAndMoveToAlignment({{ typename_unsigned_bit_length }} length);
 };
 
-struct const_bitspan: public detail::any_bitspan<const_bitspan>{
+struct const_bitspan final: public detail::any_bitspan<const_bitspan>{
     friend struct detail::any_bitspan<const_bitspan>;
 private:
     const_bytespan data_;

@@ -259,7 +259,7 @@ def test_filter_full_reference_name_via_template(gen_paths, language_name, names
 
     assert json_blob is not None
     assert json_blob['parent']['full_reference_name'] == 'uavcan.str.bar_svc_1_0'.replace('.', namespace_separator)
-    assert json_blob['parent']['short_reference_name'] == 'bar_svc_1_0'
+    assert json_blob['parent']['short_reference_name'] == 'bar_svc' if language_name == 'cpp' else 'bar_svc_1_0'
     assert json_blob['request']['full_reference_name'] == 'uavcan.str.bar_svc.Request_1_0'.replace(
         '.', namespace_separator)
     assert json_blob['request']['short_reference_name'] == 'Request_1_0'
