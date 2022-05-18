@@ -14,22 +14,45 @@ TEST(BitSpan, Constructor) {
     uint8_t srcVar = 0x8F;
     std::array<uint8_t,5> srcArray{ 1, 2, 3, 4, 5 };
     {
-        nunavut::support::bitspan sp{{&srcVar, 1}};
+        nunavut::support::bitspan sp{&srcVar, 1};
         ASSERT_EQ(sp.size(), 1U*8U);
+        ASSERT_EQ(sp.offset(), 0U);
+    }
+    {
+        nunavut::support::bitspan sp{&srcVar, 1, 4};
+        ASSERT_EQ(sp.size(), 4U);
+        ASSERT_EQ(sp.offset(), 4U);
     }
     {
         nunavut::support::bitspan sp{srcArray};
         ASSERT_EQ(sp.size(), 5U*8U);
+        ASSERT_EQ(sp.offset(), 0U);
+    }
+    {
+        nunavut::support::bitspan sp{srcArray, 4};
+        ASSERT_EQ(sp.size(), 4U*8U + 4U);
+        ASSERT_EQ(sp.offset(), 4U);
     }
     const uint8_t csrcVar = 0x8F;
     const std::array<const uint8_t,5> csrcArray{ 1, 2, 3, 4, 5 };
     {
-        nunavut::support::const_bitspan sp{{&csrcVar, 1}};
+        nunavut::support::const_bitspan sp{&csrcVar, 1};
         ASSERT_EQ(sp.size(), 1U*8U);
+    }
+    {
+        nunavut::support::const_bitspan sp{&csrcVar, 1, 4};
+        ASSERT_EQ(sp.size(), 4U);
+        ASSERT_EQ(sp.offset(), 4U);
     }
     {
         nunavut::support::const_bitspan sp{csrcArray};
         ASSERT_EQ(sp.size(), 5U*8U);
+        ASSERT_EQ(sp.offset(), 0U);
+    }
+    {
+        nunavut::support::const_bitspan sp{csrcArray, 4};
+        ASSERT_EQ(sp.size(), 4U*8U + 4U);
+        ASSERT_EQ(sp.offset(), 4U);
     }
 }
 
@@ -166,10 +189,10 @@ TEST(BitSpan, CopyBitsWithAlignedOffsetNonByteLen) {
     std::array<uint8_t,1> dst{};
     memset(dst.data(), 0, dst.size());
 
-    nunavut::support::const_bitspan({src}, 2U * 8U).copyTo(nunavut::support::bitspan{dst}, 4);
+    nunavut::support::const_bitspan(src, 2U * 8U).copyTo(nunavut::support::bitspan{dst}, 4);
     ASSERT_EQ(0x1U, dst[0]);
 
-    nunavut::support::const_bitspan({src}, 3U * 8U).copyTo(nunavut::support::bitspan{dst}, 4);
+    nunavut::support::const_bitspan(src, 3U * 8U).copyTo(nunavut::support::bitspan{dst}, 4);
     ASSERT_EQ(0x2U, dst[0]);
 }
 
@@ -207,7 +230,7 @@ TEST(BitSpan, SaturateBufferFragmentBitLength)
     ASSERT_EQ(31U, const_bitspan(data,  1U).saturateBufferFragmentBitLength(32));
     ASSERT_EQ(16U, const_bitspan(data,  0U).saturateBufferFragmentBitLength(16));
     ASSERT_EQ(15U, const_bitspan(data, 17U).saturateBufferFragmentBitLength(24));
-    ASSERT_EQ(0U,  const_bitspan({data.data(), 2}, 24U).saturateBufferFragmentBitLength(24));
+    ASSERT_EQ(0U,  const_bitspan(data.data(), 2, 24U).saturateBufferFragmentBitLength(24));
 }
 
 
@@ -216,7 +239,7 @@ TEST(BitSpan, GetBits)
     std::array<const uint8_t, 16> src{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF };
     std::array<uint8_t, 6> dst{};
     memset(dst.data(), 0xAA, dst.size());
-    nunavut::support::const_bitspan{{src.data(), 6U}, 0}.getBits(dst, 0);
+    nunavut::support::const_bitspan{src.data(), 6U}.getBits(dst, 0);
     ASSERT_EQ(0xAA, dst[0]);   // no bytes copied
     ASSERT_EQ(0xAA, dst[1]);
     ASSERT_EQ(0xAA, dst[2]);
@@ -224,7 +247,7 @@ TEST(BitSpan, GetBits)
     ASSERT_EQ(0xAA, dst[4]);
     ASSERT_EQ(0xAA, dst[5]);
 
-    nunavut::support::const_bitspan{{src.data(), 0U}, 0}.getBits(dst, 4U*8U);
+    nunavut::support::const_bitspan{src.data(), 0U}.getBits(dst, 4U*8U);
     ASSERT_EQ(0x00, dst[0]);   // all bytes zero-extended
     ASSERT_EQ(0x00, dst[1]);
     ASSERT_EQ(0x00, dst[2]);
@@ -233,7 +256,7 @@ TEST(BitSpan, GetBits)
     ASSERT_EQ(0xAA, dst[5]);
 
     memset(dst.data(), 0xAA, dst.size());
-    nunavut::support::const_bitspan{{src.data(), 6}, 6U*8U}.getBits(dst, 4U*8U);
+    nunavut::support::const_bitspan{src.data(), 6, 6U*8U}.getBits(dst, 4U*8U);
     ASSERT_EQ(0x00, dst[0]);   // all bytes zero-extended
     ASSERT_EQ(0x00, dst[1]);
     ASSERT_EQ(0x00, dst[2]);
@@ -242,7 +265,7 @@ TEST(BitSpan, GetBits)
     ASSERT_EQ(0xAA, dst[5]);
 
     memset(dst.data(), 0xAA, dst.size());
-    nunavut::support::const_bitspan{{src.data(), 6U}, 5U*8U}.getBits(dst, 4U*8U);
+    nunavut::support::const_bitspan{src.data(), 6U, 5U*8U}.getBits(dst, 4U*8U);
     ASSERT_EQ(0x66, dst[0]);   // one byte copied
     ASSERT_EQ(0x00, dst[1]);   // the rest are zero-extended
     ASSERT_EQ(0x00, dst[2]);
@@ -251,7 +274,7 @@ TEST(BitSpan, GetBits)
     ASSERT_EQ(0xAA, dst[5]);
 
     memset(dst.data(), 0xAA, dst.size());
-    nunavut::support::const_bitspan{{src.data(), 6}, 4U * 8U + 4U}.getBits(dst, 4U*8U);
+    nunavut::support::const_bitspan{src.data(), 6, 4U * 8U + 4U}.getBits(dst, 4U*8U);
     ASSERT_EQ(0x65, dst[0]);   // one-and-half bytes are copied
     ASSERT_EQ(0x06, dst[1]);   // the rest are zero-extended
     ASSERT_EQ(0x00, dst[2]);
@@ -260,7 +283,7 @@ TEST(BitSpan, GetBits)
     ASSERT_EQ(0xAA, dst[5]);
 
     memset(dst.data(), 0xAA, dst.size());
-    nunavut::support::const_bitspan{{src.data(), 7}, 4U}.getBits(dst, 4U*8U);
+    nunavut::support::const_bitspan{src.data(), 7, 4U}.getBits(dst, 4U*8U);
     ASSERT_EQ(0x21, dst[0]);   // all bytes are copied offset by half
     ASSERT_EQ(0x32, dst[1]);
     ASSERT_EQ(0x43, dst[2]);
@@ -269,7 +292,7 @@ TEST(BitSpan, GetBits)
     ASSERT_EQ(0xAA, dst[5]);
 
     memset(dst.data(), 0xAA, dst.size());
-    nunavut::support::const_bitspan{{src.data(), 7}, 4U}.getBits(dst, 3U*8U + 4U);
+    nunavut::support::const_bitspan{src.data(), 7, 4U}.getBits(dst, 3U*8U + 4U);
     ASSERT_EQ(0x21, dst[0]);   // 28 bits are copied
     ASSERT_EQ(0x32, dst[1]);
     ASSERT_EQ(0x43, dst[2]);
@@ -309,10 +332,10 @@ TEST(BitSpan, SetIxx_bufferOverflow)
 {
     uint8_t buffer[] = {0x00, 0x00, 0x00};
 
-    auto rc = nunavut::support::bitspan{{buffer, 3U}, 2U*8U}.setIxx(0xAA, 8);
+    auto rc = nunavut::support::bitspan{buffer, 3U, 2U*8U}.setIxx(0xAA, 8);
     ASSERT_TRUE(rc);
     ASSERT_EQ(0xAA, buffer[2]);
-    rc = nunavut::support::bitspan{{buffer, 2U}, 2U*8U}.setIxx(0xAA, 8);
+    rc = nunavut::support::bitspan{buffer, 2U, 2U*8U}.setIxx(0xAA, 8);
     ASSERT_FALSE(rc);
     ASSERT_EQ(nunavut::support::Error::SERIALIZATION_BUFFER_TOO_SMALL, rc.error());
     ASSERT_EQ(0xAA, buffer[2]);
@@ -325,7 +348,7 @@ TEST(BitSpan, SetIxx_bufferOverflow)
 TEST(BitSpan, SetBit)
 {
     uint8_t buffer[] = {0x00};
-    nunavut::support::bitspan sp{{buffer, sizeof(buffer)}};
+    nunavut::support::bitspan sp{buffer, sizeof(buffer)};
 
     auto res = sp.setBit(true);
     ASSERT_TRUE(res);
@@ -344,7 +367,7 @@ TEST(BitSpan, SetBit_bufferOverflow)
 {
     uint8_t buffer[] = {0x00, 0x00};
 
-    auto res = nunavut::support::bitspan{{buffer, 1U}, 8}.setBit(true);
+    auto res = nunavut::support::bitspan{buffer, 1U, 8}.setBit(true);
 
     ASSERT_FALSE(res.has_value());
     ASSERT_EQ(nunavut::support::Error::SERIALIZATION_BUFFER_TOO_SMALL, res.error());
@@ -354,7 +377,7 @@ TEST(BitSpan, SetBit_bufferOverflow)
 TEST(BitSpan, GetBit)
 {
     const uint8_t buffer[] = {0x01};
-    nunavut::support::const_bitspan sp{{buffer, 1U}, 0};
+    nunavut::support::const_bitspan sp{buffer, 1U, 0};
     ASSERT_EQ(true, sp.getBit());
     ASSERT_EQ(false, sp.at_offset(1).getBit());
 }
@@ -366,13 +389,13 @@ TEST(BitSpan, GetBit)
 TEST(BitSpan, GetU8)
 {
     const uint8_t data[] = {0xFE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    ASSERT_EQ(0xFE, nunavut::support::const_bitspan(data, 0).getU8(8U));
+    ASSERT_EQ(0xFE, nunavut::support::const_bitspan(data).getU8(8U));
 }
 
 TEST(BitSpan, GetU8_tooSmall)
 {
     const uint8_t data[] = {0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    ASSERT_EQ(0x7F, nunavut::support::const_bitspan(data, 0).getU8(7U));
+    ASSERT_EQ(0x7F, nunavut::support::const_bitspan(data).getU8(7U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -382,13 +405,13 @@ TEST(BitSpan, GetU8_tooSmall)
 TEST(BitSpan, GetU16)
 {
     const uint8_t data[] = {0xAA, 0xAA};
-    ASSERT_EQ(0xAAAAU, nunavut::support::const_bitspan(data, 0).getU16(16U));
+    ASSERT_EQ(0xAAAAU, nunavut::support::const_bitspan(data).getU16(16U));
 }
 
 TEST(BitSpan, GetU16_tooSmall)
 {
     const uint8_t data[] = {0xAA, 0xAA};
-    ASSERT_EQ(0x0055U, nunavut::support::const_bitspan(data, 9).getU16(16U));
+    ASSERT_EQ(0x0055U, nunavut::support::const_bitspan(data, sizeof(data), 9).getU16(16U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -399,18 +422,18 @@ TEST(BitSpan, GetU32)
 {
     {
         const uint8_t data[] = {0xAA, 0xAA, 0xAA, 0xAA};
-        ASSERT_EQ(0xAAAAAAAAU, nunavut::support::const_bitspan(data, 0).getU32(32U));
+        ASSERT_EQ(0xAAAAAAAAU, nunavut::support::const_bitspan(data).getU32(32U));
     }
     {
         const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF};
-        ASSERT_EQ(0xFFFFFFFFU, nunavut::support::const_bitspan(data, 0).getU32(32U));
+        ASSERT_EQ(0xFFFFFFFFU, nunavut::support::const_bitspan(data).getU32(32U));
     }
 }
 
 TEST(BitSpan, GetU32_tooSmall)
 {
     const uint8_t data[] = {0xAA, 0xAA, 0xAA, 0xAA};
-    ASSERT_EQ(0x00555555U, nunavut::support::const_bitspan(data, 9).getU32(32U));
+    ASSERT_EQ(0x00555555U, nunavut::support::const_bitspan(data, sizeof(data), 9).getU32(32U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -421,18 +444,18 @@ TEST(BitSpan, GetU64)
 {
     {
         const uint8_t data[] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-        ASSERT_EQ(0xAAAAAAAAAAAAAAAAU, nunavut::support::const_bitspan(data, 0).getU64(64U));
+        ASSERT_EQ(0xAAAAAAAAAAAAAAAAU, nunavut::support::const_bitspan(data).getU64(64U));
     }
     {
         const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        ASSERT_EQ(0xFFFFFFFFFFFFFFFFU, nunavut::support::const_bitspan(data, 0).getU64(64U));
+        ASSERT_EQ(0xFFFFFFFFFFFFFFFFU, nunavut::support::const_bitspan(data).getU64(64U));
     }
 }
 
 TEST(BitSpan, GetU64_tooSmall)
 {
     const uint8_t data[] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-    ASSERT_EQ(0x0055555555555555U, nunavut::support::const_bitspan(data, 9).getU64(64U));
+    ASSERT_EQ(0x0055555555555555U, nunavut::support::const_bitspan(data, sizeof(data), 9).getU64(64U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -442,25 +465,25 @@ TEST(BitSpan, GetU64_tooSmall)
 TEST(BitSpan, GetI8)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI8(8U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data).getI8(8U));
 }
 
 TEST(BitSpan, GetI8_tooSmall)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(127, nunavut::support::const_bitspan(data, 1).getI8(8U));
+    ASSERT_EQ(127, nunavut::support::const_bitspan(data, sizeof(data), 1).getI8(8U));
 }
 
 TEST(BitSpan, GetI8_tooSmallAndNegative)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI8(4U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, sizeof(data), 0).getI8(4U));
 }
 
 TEST(BitSpan, GetI8_zeroDataLen)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0, nunavut::support::const_bitspan(data, 0).getI8(0U));
+    ASSERT_EQ(0, nunavut::support::const_bitspan(data, sizeof(data), 0).getI8(0U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -470,25 +493,25 @@ TEST(BitSpan, GetI8_zeroDataLen)
 TEST(BitSpan, GetI16)
 {
     const uint8_t data[] = {0xFF, 0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI16(16U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data).getI16(16U));
 }
 
 TEST(BitSpan, GetI16_tooSmall)
 {
     const uint8_t data[] = {0xFF, 0xFF};
-    ASSERT_EQ(32767, nunavut::support::const_bitspan(data, 1).getI16(16U));
+    ASSERT_EQ(32767, nunavut::support::const_bitspan(data, sizeof(data), 1).getI16(16U));
 }
 
 TEST(BitSpan, GetI16_tooSmallAndNegative)
 {
     const uint8_t data[] = {0xFF, 0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI16(12U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data).getI16(12U));
 }
 
 TEST(BitSpan, GetI16_zeroDataLen)
 {
     const uint8_t data[] = {0xFF, 0xFF};
-    ASSERT_EQ(0, nunavut::support::const_bitspan(data, 0).getI16(0U));
+    ASSERT_EQ(0, nunavut::support::const_bitspan(data).getI16(0U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -498,25 +521,25 @@ TEST(BitSpan, GetI16_zeroDataLen)
 TEST(BitSpan, GetI32)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI32(32U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data).getI32(32U));
 }
 
 TEST(BitSpan, GetI32_tooSmall)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(2147483647, nunavut::support::const_bitspan(data, 1).getI32(32U));
+    ASSERT_EQ(2147483647, nunavut::support::const_bitspan(data, sizeof(data), 1).getI32(32U));
 }
 
 TEST(BitSpan, GetI32_tooSmallAndNegative)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI32(20U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data).getI32(20U));
 }
 
 TEST(BitSpan, GetI32_zeroDataLen)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(0, nunavut::support::const_bitspan(data, 0).getI32(0U));
+    ASSERT_EQ(0, nunavut::support::const_bitspan(data).getI32(0U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -526,25 +549,25 @@ TEST(BitSpan, GetI32_zeroDataLen)
 TEST(BitSpan, GetI64)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI64(64U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, sizeof(data), 0).getI64(64U));
 }
 
 TEST(BitSpan, GetI64_tooSmall)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(9223372036854775807, nunavut::support::const_bitspan(data, 1).getI64(64U));
+    ASSERT_EQ(9223372036854775807, nunavut::support::const_bitspan(data, sizeof(data), 1).getI64(64U));
 }
 
 TEST(BitSpan, GetI64_tooSmallAndNegative)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, 0).getI64(60U));
+    ASSERT_EQ(-1, nunavut::support::const_bitspan(data, sizeof(data), 0).getI64(60U));
 }
 
 TEST(BitSpan, GetI64_zeroDataLen)
 {
     const uint8_t data[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    ASSERT_EQ(0, nunavut::support::const_bitspan(data, 0).getI64(0U));
+    ASSERT_EQ(0, nunavut::support::const_bitspan(data, sizeof(data), 0).getI64(0U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -554,49 +577,49 @@ TEST(BitSpan, GetI64_zeroDataLen)
 TEST(BitSpan, GetU8_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, 1U * 8U+1).getU8(8U));
+    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, sizeof(data), 1U * 8U+1).getU8(8U));
 }
 
 TEST(BitSpan, GetU16_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, 2U * 8U+1).getU16(16U));
+    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, sizeof(data), 2U * 8U+1).getU16(16U));
 }
 
 TEST(BitSpan, GetU32_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, 4U * 8U+1).getU32(32U));
+    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, sizeof(data), 4U * 8U+1).getU32(32U));
 }
 
 TEST(BitSpan, GetU64_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, 4U * 8U+1).getU64(64U));
+    ASSERT_EQ(0x0U, nunavut::support::const_bitspan(data, sizeof(data), 4U * 8U+1).getU64(64U));
 }
 
 TEST(BitSpan, GetI8_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, 1U * 8U+1).getI8(8U));
+    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, sizeof(data), 1U * 8U+1).getI8(8U));
 }
 
 TEST(BitSpan, GetI16_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, 2U * 8U+1).getI16(16U));
+    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, sizeof(data), 2U * 8U+1).getI16(16U));
 }
 
 TEST(BitSpan, GetI32_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, 4U * 8U+1).getI32(32U));
+    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, sizeof(data), 4U * 8U+1).getI32(32U));
 }
 
 TEST(BitSpan, GetI64_outofrange)
 {
     const uint8_t data[] = {0xFF};
-    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, 4U * 8U+1).getI64(64U));
+    ASSERT_EQ(0x0, nunavut::support::const_bitspan(data, sizeof(data), 4U * 8U+1).getI64(64U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -614,9 +637,9 @@ TEST(BitSpan, SetGetU8)
     {
         auto ref = randU8();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setUxx(ref, 8U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setUxx(ref, 8U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getU8(8U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getU8(8U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -628,9 +651,9 @@ TEST(BitSpan, SetGetU16)
     {
         auto ref = randU16();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setUxx(ref, 16U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setUxx(ref, 16U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getU16(16U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getU16(16U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -642,9 +665,9 @@ TEST(BitSpan, SetGetU32)
     {
         auto ref = randU32();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setUxx(ref, 32U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setUxx(ref, 32U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getU32(32U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getU32(32U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -656,9 +679,9 @@ TEST(BitSpan, SetGetU64)
     {
         auto ref = randU64();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setUxx(ref, 64U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setUxx(ref, 64U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getU64(64U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getU64(64U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -670,9 +693,9 @@ TEST(BitSpan, SetGetI8)
     {
         auto ref = randI8();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setIxx(ref, 8U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setIxx(ref, 8U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getI8(8U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getI8(8U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -684,9 +707,9 @@ TEST(BitSpan, SetGetI16)
     {
         auto ref = randI16();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setIxx(ref, 16U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setIxx(ref, 16U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getI16(16U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getI16(16U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -698,9 +721,9 @@ TEST(BitSpan, SetGetI32)
     {
         auto ref = randI32();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setIxx(ref, 32U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setIxx(ref, 32U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getI32(32U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getI32(32U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -712,9 +735,9 @@ TEST(BitSpan, SetGetI64)
     {
         auto ref = randI64();
         const auto offset = i * sizeof(ref) * 8U;
-        auto rslt = nunavut::support::bitspan({data}, offset).setIxx(ref, 64U);
+        auto rslt = nunavut::support::bitspan(data, sizeof(data), offset).setIxx(ref, 64U);
         ASSERT_TRUE(rslt.has_value()) << "Error was " << rslt.error();
-        auto act = nunavut::support::const_bitspan(data, offset).getI64(64U);
+        auto act = nunavut::support::const_bitspan(data, sizeof(data), offset).getI64(64U);
         ASSERT_EQ(hex(ref), hex(act)) << i;
     }
 }
@@ -833,9 +856,10 @@ static bool helperPackUnpack(const float source_value, uint16_t compare_mask, si
     return true;
 }
 
-/**
- * Test pack/unpack stability.
- */
+
+///
+/// Test pack/unpack stability.
+///
 TEST(BitSpan, Float16PackUnpack)
 {
     const uint32_t signalling_nan_bits = 0x7F800000U | 0x200000U;
@@ -871,7 +895,7 @@ TEST(BitSpan, Set16)
     uint8_t buf[3];
     buf[2] = 0x00;
 
-    nunavut::support::bitspan{ {buf, sizeof(buf)} }.setF16(3.14f);
+    nunavut::support::bitspan{ buf, sizeof(buf) }.setF16(3.14f);
     ASSERT_EQ(0x48, buf[0]);
     ASSERT_EQ(0x42, buf[1]);
     ASSERT_EQ(0x00, buf[2]);
@@ -888,7 +912,7 @@ TEST(BitSpan, Get16)
     // >>> hex(int.from_bytes(np.array([np.float16('3.14')]).tobytes(), 'little'))
     // '0x4248'
     const uint8_t buf[3] = {0x48, 0x42, 0x00};
-    const float result = nunavut::support::const_bitspan{ { buf, sizeof(buf) } }.getF16( );
+    const float result = nunavut::support::const_bitspan{ buf }.getF16( );
     ASSERT_TRUE(CompareFloatsNear(3.14f, result, 0.001f));
 }
 
@@ -896,9 +920,9 @@ TEST(BitSpan, Get16)
 // +--------------------------------------------------------------------------+
 // | testNunavutSetF32
 // +--------------------------------------------------------------------------+
-/**
- * Compare the results of Nunavut serialization to the IEEE definition. These must match.
- */
+///
+/// Compare the results of Nunavut serialization to the IEEE definition. These must match.
+///
 static void helperAssertSerFloat32SameAsIEEE(const float original_value, const uint8_t* serialized_result)
 {
     union
@@ -924,27 +948,27 @@ static void helperAssertSerFloat32SameAsIEEE(const float original_value, const u
 TEST(BitSpan, SetF32)
 {
     uint8_t buffer[] = {0x00, 0x00, 0x00, 0x00};
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( 3.14f);
+    nunavut::support::bitspan{ buffer, sizeof(buffer) }.setF32( 3.14f);
     helperAssertSerFloat32SameAsIEEE(3.14f, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( -3.14f);
+    nunavut::support::bitspan{ buffer }.setF32( -3.14f);
     helperAssertSerFloat32SameAsIEEE(-3.14f, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( -NAN);
+    nunavut::support::bitspan{ buffer }.setF32( -NAN);
     helperAssertSerFloat32SameAsIEEE(-NAN, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( NAN);
+    nunavut::support::bitspan{ buffer }.setF32( NAN);
     helperAssertSerFloat32SameAsIEEE(NAN, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( INFINITY);
+    nunavut::support::bitspan{ buffer }.setF32( INFINITY);
     helperAssertSerFloat32SameAsIEEE(std::numeric_limits<float>::infinity(), buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF32( -INFINITY);
+    nunavut::support::bitspan{ buffer }.setF32( -INFINITY);
     helperAssertSerFloat32SameAsIEEE(-std::numeric_limits<float>::infinity(), buffer);
 }
 
@@ -957,25 +981,25 @@ TEST(BitSpan, GetF32)
     // >>> hex(int.from_bytes(np.array([-np.float32('infinity')]).tobytes(), 'little'))
     // '0xff800000'
     const uint8_t buffer_neg_inf[] = {0x00, 0x00, 0x80, 0xFF};
-    float result = nunavut::support::const_bitspan{ { buffer_neg_inf, sizeof(buffer_neg_inf) } }.getF32( );
+    float result = nunavut::support::const_bitspan{ buffer_neg_inf }.getF32( );
     ASSERT_FLOAT_EQ(-std::numeric_limits<float>::infinity(), result);
 
     // >>> hex(int.from_bytes(np.array([np.float32('infinity')]).tobytes(), 'little'))
     // '0x7f800000'
     const uint8_t buffer_inf[] = {0x00, 0x00, 0x80, 0x7F};
-    result = nunavut::support::const_bitspan{ { buffer_inf, sizeof(buffer_inf) } }.getF32( );
+    result = nunavut::support::const_bitspan{ buffer_inf }.getF32( );
     ASSERT_FLOAT_EQ(std::numeric_limits<float>::infinity(), result);
 
     // >>> hex(int.from_bytes(np.array([np.float32('nan')]).tobytes(), 'little'))
     // '0x7fc00000'
     const uint8_t buffer_nan[] = {0x00, 0x00, 0xC0, 0x7F};
-    result = nunavut::support::const_bitspan{ { buffer_nan, sizeof(buffer_nan) } }.getF32( );
+    result = nunavut::support::const_bitspan{ buffer_nan }.getF32( );
     ASSERT_TRUE(std::isnan(result));
 
     // >>> hex(int.from_bytes(np.array([np.float32('3.14')]).tobytes(), 'little'))
     // '0x4048f5c3'
     const uint8_t buffer_pi[] = {0xC3, 0xF5, 0x48, 0x40};
-    result = nunavut::support::const_bitspan{ { buffer_pi, sizeof(buffer_pi) } }.getF32( );
+    result = nunavut::support::const_bitspan{ buffer_pi }.getF32( );
     ASSERT_FLOAT_EQ(3.14f, result);
 }
 
@@ -989,34 +1013,34 @@ TEST(BitSpan, GetF64)
     // >>> hex(int.from_bytes(np.array([np.float64('3.141592653589793')]).tobytes(), 'little'))
     // '0x400921fb54442d18'
     const uint8_t buffer_pi[] = {0x18, 0x2D, 0x44, 0x54, 0xFB, 0x21, 0x09, 0x40};
-    double result = nunavut::support::const_bitspan{ { buffer_pi, sizeof(buffer_pi) } }.getF64( );
+    double result = nunavut::support::const_bitspan{ buffer_pi }.getF64( );
     ASSERT_DOUBLE_EQ(3.141592653589793, result);
 
     // >>> hex(int.from_bytes(np.array([np.float64('infinity')]).tobytes(), 'little'))
     // '0x7ff0000000000000'
     const uint8_t buffer_inf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x7F};
-    result = nunavut::support::const_bitspan{ { buffer_inf, sizeof(buffer_inf) } }.getF64( );
+    result = nunavut::support::const_bitspan{ buffer_inf }.getF64( );
     ASSERT_DOUBLE_EQ(std::numeric_limits<double>::infinity(), result);
 
     // >>> hex(int.from_bytes(np.array([-np.float64('infinity')]).tobytes(), 'little'))
     // '0xfff0000000000000'
     const uint8_t buffer_neg_inf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xFF};
-    result = nunavut::support::const_bitspan{ { buffer_neg_inf, sizeof(buffer_neg_inf) } }.getF64( );
+    result = nunavut::support::const_bitspan{ buffer_neg_inf }.getF64( );
     ASSERT_DOUBLE_EQ(-std::numeric_limits<double>::infinity(), result);
 
     // >>> hex(int.from_bytes(np.array([np.float64('nan')]).tobytes(), 'little'))
     // '0x7ff8000000000000'
     const uint8_t buffer_nan[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x7F};
-    result = nunavut::support::const_bitspan{ { buffer_nan, sizeof(buffer_nan) } }.getF64( );
+    result = nunavut::support::const_bitspan{ buffer_nan }.getF64( );
     ASSERT_TRUE(std::isnan(result));
 }
 
 // +--------------------------------------------------------------------------+
 // | testNunavutSetF64
 // +--------------------------------------------------------------------------+
-/**
- * Compare the results of Nunavut serialization to the IEEE definition. These must match.
- */
+///
+/// Compare the results of Nunavut serialization to the IEEE definition. These must match.
+///
 static bool helperAssertSerFloat64SameAsIEEE(const double original_value, const uint8_t* serialized_result)
 {
     union
@@ -1047,26 +1071,26 @@ static bool helperAssertSerFloat64SameAsIEEE(const double original_value, const 
 TEST(BitSpan, SetF64)
 {
     uint8_t buffer[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( 3.141592653589793);
+    nunavut::support::bitspan{ buffer }.setF64( 3.141592653589793);
     ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(3.141592653589793, buffer));
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( -3.141592653589793);
+    nunavut::support::bitspan{ buffer }.setF64( -3.141592653589793);
     ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(-3.141592653589793, buffer));
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( -std::numeric_limits<double>::quiet_NaN());
+    nunavut::support::bitspan{ buffer }.setF64( -std::numeric_limits<double>::quiet_NaN());
     ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(-std::numeric_limits<double>::quiet_NaN(), buffer));
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( std::numeric_limits<double>::quiet_NaN());
+    nunavut::support::bitspan{ buffer }.setF64( std::numeric_limits<double>::quiet_NaN());
     ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(std::numeric_limits<double>::quiet_NaN(), buffer));
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( std::numeric_limits<double>::infinity());
+    nunavut::support::bitspan{ buffer }.setF64( std::numeric_limits<double>::infinity());
     ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(std::numeric_limits<double>::infinity(), buffer));
 
     memset(buffer, 0, sizeof(buffer));
-    nunavut::support::bitspan{ { buffer, sizeof(buffer) } }.setF64( -std::numeric_limits<double>::infinity());
+    nunavut::support::bitspan{ buffer }.setF64( -std::numeric_limits<double>::infinity());
     ASSERT_TRUE(helperAssertSerFloat64SameAsIEEE(-std::numeric_limits<double>::infinity(), buffer));
 }

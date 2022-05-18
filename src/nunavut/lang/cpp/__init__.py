@@ -21,6 +21,7 @@ from ...templates import template_language_filter, template_language_list_filter
 from .. import Dependencies
 from .. import Language as BaseLanguage
 from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
+from ..._utilities import YesNoDefault
 from ..c import _CFit
 from ..c import filter_literal as c_filter_literal
 
@@ -587,6 +588,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
         my_type = MagicMock(spec=pydsdl.StructureType)
         my_type.version = MagicMock()
         my_type.parent_service = None
+        my_type.has_parent_service = False
 
     .. code-block:: python
 
@@ -608,10 +610,11 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
         my_type = MagicMock(spec=pydsdl.StructureType)
         my_type.version = MagicMock()
         my_type.parent_service = None
+        my_type.has_parent_service = False
 
     .. code-block:: python
 
-        # Given a type with illegal C++ characters
+        # Given a type with legal C++ characters
         my_type.short_name = 'Struct_'
         my_type.version.major = 0
         my_type.version.minor = 1
@@ -626,12 +629,53 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
         jinja_filter_tester(filter_short_reference_name, template, rendered, 'cpp', my_type=my_type)
 
-        my_type = MagicMock(spec=pydsdl.StructureType)
-        my_type.version = MagicMock()
-        my_type.parent_service = None
+    .. invisible-code-block: python
+        my_service_type = MagicMock(spec=pydsdl.ServiceType)
+        my_service_type.version = MagicMock()
+        my_service_type.parent_service = None
+        my_service_type.has_parent_service = False
+        my_service_type.request_type = MagicMock(spec=pydsdl.StructureType)
+        my_service_type.request_type.has_parent_service = True
+        my_service_type.request_type.short_name = "Request"
+        my_service_type.request_type.version = my_service_type.version
+        my_service_type.request_type.parent_service = my_service_type
+        my_service_type.response_type = MagicMock(spec=pydsdl.StructureType)
+        my_service_type.response_type.has_parent_service = True
+        my_service_type.response_type.short_name = "Response"
+        my_service_type.response_type.version = my_service_type.version
+        my_service_type.response_type.parent_service = my_service_type
+
+    .. code-block:: python
+
+        # Given a service type
+        my_service_type.short_name = 'Struct_'
+        my_service_type.version.major = 0
+        my_service_type.version.minor = 1
+
+        # and
+        template = '''
+        {{ my_service_type | short_reference_name }}
+        {{ my_service_type.request_type | short_reference_name }}
+        {{ my_service_type.response_type | short_reference_name }}
+        '''
+
+        # then, with stropping enabled
+        rendered = '''
+        Struct_
+        Request_0_1
+        Response_0_1
+        '''
+
+    .. invisible-code-block: python
+        jinja_filter_tester(filter_short_reference_name, template, rendered, 'cpp', my_service_type=my_service_type)
 
     :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
     """
+    if isinstance(t, pydsdl.ServiceType):
+        if YesNoDefault.test_truth(YesNoDefault.DEFAULT, language.enable_stropping):
+            return language.filter_id(t.short_name)
+        else:
+            return str(t.short_name)
     return language.filter_short_reference_name(t)
 
 
@@ -728,6 +772,7 @@ def filter_definition_begin(language: Language, instance: pydsdl.CompositeType) 
         my_type = MagicMock(spec=pydsdl.StructureType)
         my_type.version = MagicMock()
         my_type.parent_service = None
+        my_type.has_parent_service = False
 
         with pytest.raises(ValueError):
             jinja_filter_tester(filter_definition_begin,
@@ -756,6 +801,7 @@ def filter_definition_begin(language: Language, instance: pydsdl.CompositeType) 
         my_union_type = MagicMock(spec=pydsdl.UnionType)
         my_union_type.version = MagicMock()
         my_union_type.parent_service = None
+        my_union_type.has_parent_service = False
 
     .. code-block:: python
 
@@ -777,6 +823,17 @@ def filter_definition_begin(language: Language, instance: pydsdl.CompositeType) 
         my_service_type = MagicMock(spec=pydsdl.ServiceType)
         my_service_type.version = MagicMock()
         my_service_type.parent_service = None
+        my_service_type.has_parent_service = False
+        my_service_type.request_type = MagicMock(spec=pydsdl.StructureType)
+        my_service_type.request_type.short_name = "Request"
+        my_service_type.request_type.version = my_service_type.version
+        my_service_type.request_type.parent_service = my_service_type
+        my_service_type.request_type.has_parent_service = True
+        my_service_type.response_type = MagicMock(spec=pydsdl.StructureType)
+        my_service_type.response_type.short_name = "Response"
+        my_service_type.response_type.version = my_service_type.version
+        my_service_type.response_type.parent_service = my_service_type
+        my_service_type.response_type.has_parent_service = True
 
     .. code-block:: python
 
@@ -786,17 +843,25 @@ def filter_definition_begin(language: Language, instance: pydsdl.CompositeType) 
         my_service_type.version.minor = 0
 
         # and
-        template = '{{ my_service_type | definition_begin }}'
+        template = '''
+        {{ my_service_type | definition_begin }};
+        {{ my_service_type.request_type | definition_begin }};
+        {{ my_service_type.response_type | definition_begin }};
+        '''
 
         # then
-        rendered = 'namespace Foo_1_0'
+        rendered = '''
+        namespace Foo;
+        struct Request_1_0;
+        struct Response_1_0;
+        '''
 
     .. invisible-code-block: python
 
         jinja_filter_tester(filter_definition_begin, template, rendered, 'cpp', my_service_type=my_service_type)
 
     """
-    short_name = language.filter_short_reference_name(instance)
+    short_name = filter_short_reference_name(language, instance)
     if (
         isinstance(instance, pydsdl.DelimitedType)
         or isinstance(instance, pydsdl.StructureType)

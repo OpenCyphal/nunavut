@@ -3,6 +3,7 @@
  # Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
  # This software is distributed under the terms of the MIT License.
 -#}
+{%- from '_definitions.j2' import assert -%}
 {%- ifuses "std_variant" %}
 // +-------------------------------------------------------------------------------------------------------------------+
 // | This implementation uses the C++17 standard library variant type with wrappers for the emplace and
@@ -38,6 +39,14 @@
 {%- else %}
     /// This type does not have a fixed port-ID. See https://forum.opencyphal.org/t/choosing-message-and-service-ids/889
     static constexpr bool HasFixedPortID = false;
+{% endif -%}
+{%- if T is ServiceType %}
+    static constexpr bool IsServiceType = true;
+    static constexpr bool IsService = false;
+    static constexpr bool IsRequest = {{ (composite_type == T.request_type) | string | lower }};
+    static constexpr bool IsResponse = {{ (composite_type == T.response_type) | string | lower }};
+{%- else %}
+    static constexpr bool IsServiceType = false;
 {% endif -%}
     {%- assert composite_type.extent % 8 == 0 %}
     {%- assert composite_type.inner_type.extent % 8 == 0 %}
@@ -84,6 +93,16 @@
 
     typename std::add_pointer<const {{ field.data_type | declaration }}>::type get_{{ field.name | id }}_if() const{
         return VariantType::get_if<VariantType::IndexOf::{{ field.name | id }}>(&union_value);
+    }
+
+    typename std::add_lvalue_reference<{{ field.data_type | declaration }}>::type get_{{ field.name | id }}(){
+        {{ assert('is_%s()' | format(field.name | id)) }}
+        return *VariantType::get_if<VariantType::IndexOf::{{ field.name | id }}>(&union_value);
+    }
+
+    typename std::add_lvalue_reference<const {{ field.data_type | declaration }}>::type get_{{ field.name | id }}() const{
+        {{ assert('is_%s()' | format(field.name | id)) }}
+        return *VariantType::get_if<VariantType::IndexOf::{{ field.name | id }}>(&union_value);
     }
 
     template<class... Args> typename std::add_lvalue_reference<{{ field.data_type | declaration }}>::type
