@@ -282,30 +282,33 @@ def _make_parser() -> argparse.ArgumentParser:
 
 def _apply_overrides(args: argparse.Namespace) -> argparse.Namespace:
     if args.override is not None:
-        for override in args.override:
-            print(
-                textwrap.dedent(
-                    """
-            *****************************************************************
-            About to apply override file : {}
-            *****************************************************************
-            """
-                ).format(str(override))
-            )
+        for override_list in args.override:
+            for override in override_list:
+                if not pathlib.Path(override).exists():
+                    raise RuntimeError('ini file "{}" does not exist.'.format(override))
+                print(
+                    textwrap.dedent(
+                        """
+                *****************************************************************
+                About to apply override file : {}
+                *****************************************************************
+                """
+                    ).format(override)
+                )
 
-            overrides = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
-            overrides.read(override)
-            if "overrides" not in overrides:
-                raise RuntimeError('ini file "{}" did not contain an overrides section.'.format(str(override)))
-            for key, value in overrides["overrides"].items():
-                corrected_key = key.replace("-", "_")
-                if value.lower() == "true" or value.lower() == "false":
-                    setattr(args, corrected_key, bool(value))
-                else:
-                    try:
-                        setattr(args, corrected_key, int(value))
-                    except ValueError:
-                        setattr(args, corrected_key, value)
+                overrides = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
+                overrides.read(override)
+                if "overrides" not in overrides:
+                    raise RuntimeError('ini file "{}" did not contain an overrides section.'.format(override))
+                for key, value in overrides["overrides"].items():
+                    corrected_key = key.replace("-", "_")
+                    if value.lower() == "true" or value.lower() == "false":
+                        setattr(args, corrected_key, bool(value))
+                    else:
+                        try:
+                            setattr(args, corrected_key, int(value))
+                        except ValueError:
+                            setattr(args, corrected_key, value)
 
     return args
 
