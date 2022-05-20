@@ -392,10 +392,10 @@ public:
         : data_(data.data(), data.size()), offset_bits_(offset_bits) {}
 
     template<{{ typename_unsigned_length }} N>
-    const_bitspan(value_type (&data)[N], {{ typename_unsigned_bit_length }} offset_bits=0)
+    const_bitspan(const value_type (&data)[N], {{ typename_unsigned_bit_length }} offset_bits=0)
         : data_(data, N), offset_bits_(offset_bits) {}
 
-    const_bitspan(value_type* ptr,  {{ typename_unsigned_length }} size, {{ typename_unsigned_bit_length }} offset_bits=0)
+    const_bitspan(const value_type* ptr,  {{ typename_unsigned_length }} size, {{ typename_unsigned_bit_length }} offset_bits=0)
         : data_(ptr, size), offset_bits_(offset_bits) {}
 
 
@@ -440,7 +440,7 @@ public:
         else
         {
             // The algorithm was originally designed by Ben Dyer for Libuavcan v0:
-            // https://github.com/OpenCyphal/libuavcan/blob/legacy-v0/libuavcan/src/marshal/uc_bit_array_copy.cpp
+            // https://github.com/OpenCyphal-garage/libuavcan/blob/legacy-v0/libuavcan/src/marshal/uc_bit_array_copy.cpp
             // This version is modified for v1 where the bit order is the opposite.
             {{ typename_unsigned_bit_length }}       src_off  = offset_bits_;
             {{ typename_unsigned_bit_length }}       dst_off  = dst.offset_bits_;
@@ -752,7 +752,7 @@ inline VoidResult bitspan::setUxx(const uint64_t value, const uint8_t len_bits)
     const {{ typename_unsigned_bit_length }} saturated_len_bits = std::min<{{ typename_unsigned_bit_length }}>({# -#}
         len_bits, 64U);
 {%- if options.target_endianness == 'little' %}
-        bitspan{ reinterpret_cast<const uint8_t*>(&value), sizeof(uint64_t) }.copyTo(*this, saturated_len_bits);
+        const_bitspan{ reinterpret_cast<const uint8_t*>(&value), sizeof(uint64_t) }.copyTo(*this, saturated_len_bits);
 {%- elif options.target_endianness in ('any', 'big') %}
     const std::array<const uint8_t, 8> tmp{
         static_cast<uint8_t>((value >> 0U) & 0xFFU),

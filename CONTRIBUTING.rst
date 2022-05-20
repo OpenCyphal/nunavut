@@ -80,8 +80,8 @@ skip the docker invocations and use ``tox -s``.
 
 To run the language verification build you'll need to use a different docker container::
 
-    docker pull uavcan/c_cpp:ubuntu-18.04
-    docker run --rm -it -v $PWD:/repo uavcan/c_cpp:ubuntu-18.04
+    docker pull uavcan/c_cpp:ubuntu-20.04
+    docker run --rm -it -v $PWD:/repo uavcan/c_cpp:ubuntu-20.04
     ./.github/verify.py -l c
     ./.github/verify.py -l cpp
 
