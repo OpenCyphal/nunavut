@@ -53,7 +53,11 @@ static_assert(__cplusplus >= 201100L,
 #include <climits>
 #include <cfloat>
 {% endif -%}
-#include <cstdint>
+#include <cstdint> // for memset
+#include <array> // for std::array
+#include <algorithm> // for std::max, std::min
+#include <utility> // for std::move
+#include <type_traits> // std::underlying_type, std::aligned_storage
 
 {% if not options.omit_float_serialization_support -%}
 /// Detect whether the target platform is compatible with IEEE 754.
