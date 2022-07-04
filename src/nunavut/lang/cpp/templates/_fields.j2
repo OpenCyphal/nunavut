@@ -12,6 +12,6 @@
     {{ field.doc | block_comment('cpp-doxygen', 4, 120) }}
     {{ field.data_type | declaration }} {{ field | id }};
     {%- if field.data_type is VariableLengthArrayType %}
-    static constexpr {{ typename_unsigned_length }} {{ field | id }}_ArrayCapacity = {{ f.data_type.capacity }}U;
+    static constexpr {{ typename_unsigned_length }} {{ field | id }}_ArrayCapacity = {{ field.data_type.capacity }}U;
     {%- endif %}
 {%- endfor -%}
