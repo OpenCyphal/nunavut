@@ -173,7 +173,6 @@ def uses_std_variant(language: Language) -> bool:
     return language._has_variant()
 
 @template_language_test(__name__)
-    // test else
 def uses_cpp11(language: Language) -> bool:
     """
     Check if C++11 is being used.
