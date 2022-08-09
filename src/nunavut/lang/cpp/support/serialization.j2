@@ -77,6 +77,11 @@ static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_u
 
 namespace nunavut
 {
+    {%- ifuses "cpp11" %}
+    // std::max is not constexpr until C++14, this function will fix errors in a C++11 compiler.
+    template <typename T>
+    constexpr T max(T x, T y) {return (x < y) ? y : x;}
+    {%- endifuses %}
 namespace support
 {
 
@@ -138,10 +143,16 @@ struct unexpected final{
 template<typename Ret>
 class expected final{
     // We can use a maximum of all types.
+    {% ifuses "cpp11" %}
     using storage_t = typename std::aligned_storage<
-        (std::max(sizeof(Ret), sizeof(Error))),
-        (std::max(alignof(Ret), alignof(Error)))>::type;
+        (nunavut::max(sizeof(Ret), sizeof(Error))),
+        (nunavut::max(alignof(Ret), alignof(Error)))>::type;
     storage_t storage;
+    {% else %}
+    using storage_t = typename std::aligned_storage<
+         (std::max(sizeof(Ret), sizeof(Error))),
+         (std::max(alignof(Ret), alignof(Error)))>::type;
+    {% endifuses %}
     bool is_expected_;
 private:
     Ret* ret_ptr() { return reinterpret_cast<Ret*>(&storage); }

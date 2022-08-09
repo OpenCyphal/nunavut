@@ -75,7 +75,12 @@ public:
     /// memory (i.e. there may be up to this many elements but there shall never
     /// be more).
     ///
+    {% ifuses "cpp11" %}
+    static const std::size_t max_size = MaxSize;
+    {% else %}
     static constexpr const std::size_t max_size = MaxSize;
+    {% endifuses -%}
+
 
     // +----------------------------------------------------------------------+
     // | ELEMENT ACCESS
@@ -96,7 +101,12 @@ public:
     /// The returned reference is valid while this object is unless
     /// {@code reserve} or {@code shrink_to_fit} is called.
     ///
+    {% ifuses "cpp11" %}
+    const T& operator[](std::size_t pos) const noexcept
+    {% else %}
     constexpr const T& operator[](std::size_t pos) const noexcept
+    {% endifuses -%}
+
     {
         return data_[pos];
     }
@@ -108,7 +118,12 @@ public:
     /// The returned reference is valid while this object is unless
     /// {@code reserve} or {@code shrink_to_fit} is called.
     ///
+    {% ifuses "cpp11" %}
+    const T& operator[](std::size_t pos) noexcept
+    {% else %}
     constexpr T& operator[](std::size_t pos) noexcept
+    {% endifuses -%}
+
     {
         return data_[pos];
     }
@@ -120,7 +135,12 @@ public:
     /// The returned pointer is valid while this object is unless
     /// {@code reserve} or {@code shrink_to_fit} is called.
     ///
+    {% ifuses "cpp11" %}
+    const T* at_or_null(std::size_t pos) const noexcept
+    {% else %}
     constexpr const T* at_or_null(std::size_t pos) const noexcept
+    {% endifuses -%}
+
     {
         if (pos < size_)
         {
@@ -139,7 +159,12 @@ public:
     /// The returned pointer is valid while this object is unless
     /// {@code reserve} or {@code shrink_to_fit} is called.
     ///
+    {% ifuses "cpp11" %}
+    const T* at_or_null(std::size_t pos) noexcept
+    {% else %}
     constexpr T* at_or_null(std::size_t pos) noexcept
+    {% endifuses -%}
+
     {
         if (pos < size_)
         {
@@ -312,7 +337,12 @@ public:
     /// @return A pointer to the stored value or nullptr if there was not enough capacity (use reserve to
     ///         grow the available capacity).
     ///
+    {% ifuses "cpp11" %}
+    T* push_back_no_alloc(T&& value) noexcept(std::is_nothrow_move_constructible<T>::value)
+    {% else %}
     constexpr T* push_back_no_alloc(T&& value) noexcept(std::is_nothrow_move_constructible<T>::value)
+    {% endifuses -%}
+
     {
         if (size_ < capacity_)
         {
@@ -330,7 +360,12 @@ public:
     /// @return A pointer to the stored value or nullptr if there was not enough capacity (use reserve to
     ///         grow the available capacity).
     ///
+    {% ifuses "cpp11" %}
+    T* push_back_no_alloc(const T& value) noexcept(std::is_nothrow_copy_constructible<T>::value)
+    {% else %}
     constexpr T* push_back_no_alloc(const T& value) noexcept(std::is_nothrow_copy_constructible<T>::value)
+    {% endifuses -%}
+
     {
         if (size_ < capacity_)
         {
@@ -346,7 +381,12 @@ public:
     /// Remove and destroy the last item in the array. This reduces the array size by 1 unless
     /// the array is already empty.
     ///
+    {% ifuses "cpp11" %}
+    void pop_back() noexcept(std::is_nothrow_destructible<T>::value)
+    {% else %}
     constexpr void pop_back() noexcept(std::is_nothrow_destructible<T>::value)
+    {% endifuses -%}
+
     {
         if (size_ > 0)
         {
