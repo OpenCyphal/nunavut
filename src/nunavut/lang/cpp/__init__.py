@@ -113,7 +113,6 @@ class Language(BaseLanguage):
            assert language._has_variant()
         """
         return self._standard_version() >= 17
-
  
     def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
         std_includes = []  # type: typing.List[str]
@@ -174,6 +173,7 @@ def uses_std_variant(language: Language) -> bool:
     return language._has_variant()
 
 @template_language_test(__name__)
+    // test else
 def uses_cpp11(language: Language) -> bool:
     """
     Check if C++11 is being used.
