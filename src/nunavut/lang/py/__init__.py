@@ -21,7 +21,7 @@ from ...templates import (
     template_language_int_filter,
     template_language_list_filter,
 )
-from .. import Dependencies
+from ...dependencies import Dependencies
 from .. import Language as BaseLanguage
 from .._common import TokenEncoder, UniqueNameGenerator
 

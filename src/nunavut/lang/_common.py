@@ -16,13 +16,14 @@ import typing
 import pydsdl
 from nunavut._utilities import ResourceType
 
-from . import Language
+from ._language import Language
 
 
 class IncludeGenerator:
-    def __init__(self, language: Language, t: pydsdl.CompositeType):
+    def __init__(self, language: Language, t: pydsdl.CompositeType, omit_serialization_support: bool):
         self._type = t
         self._language = language
+        self._omit_serialization_support = omit_serialization_support
 
     def generate_include_filepart_list(self, output_extension: str, sort: bool) -> typing.List[str]:
         dep_types = self._language.get_dependency_builder(self._type).direct()
@@ -34,7 +35,7 @@ class IncludeGenerator:
         namespace_path = pathlib.Path("")
         for namespace_part in self._language.support_namespace:
             namespace_path = namespace_path / pathlib.Path(namespace_part)
-        if not self._language.omit_serialization_support:
+        if not self._omit_serialization_support:
             path_list += [
                 (namespace_path / pathlib.Path(p.name).with_suffix(output_extension)).as_posix()
                 for p in self._language.get_support_files(ResourceType.SERIALIZATION_SUPPORT)
@@ -65,17 +66,15 @@ class IncludeGenerator:
 
             import pydsdl
             from nunavut.lang._common import IncludeGenerator
-            from nunavut.lang import Language
+            from nunavut.lang import Language, LanguageContextBuilder
             from unittest.mock import MagicMock
 
-            config = {
-                        'nunavut.lang.c':
-                        {
-                            'enable_stropping': True
-                        }
-                    }
-
-            lctx = configurable_language_context_factory(config, 'c')
+            lctx = (
+                LanguageContextBuilder()
+                    .set_target_language("c")
+                    .set_target_language_configuration_override(Language.WKCV_ENABLE_STROPPING, True)
+                    .create()
+            )
             lang_c = lctx.get_target_language()
 
             test_type = MagicMock(spec=pydsdl.CompositeType)
@@ -199,23 +198,23 @@ class TokenEncoder:
     .. invisible-code-block: python
 
         from nunavut.lang._common import TokenEncoder
-        from nunavut.lang import Language
+        from nunavut.lang import Language, LanguageContextBuilder
 
-        config = {
-                    'nunavut.lang.c':
-                    {
-                        'stropping_prefix': stropping_prefix,
-                        'stropping_suffix': stropping_suffix,
-                        'encoding_prefix': encoding_prefix,
-                        'reserved_token_patterns_by_type': reserved_token_patterns_by_type,
-                        'reserved_identifiers': reserved_identifiers,
-                        'token_encoding_rules_by_identifier_type': token_encoding_rules_by_identifier_type,
-                        'whitespace_encoding_char': whitespace_encoding_char
-                     }
-                }
-
-        lctx = configurable_language_context_factory(config, 'c')
-        lang_c = lctx.get_target_language()
+        lctx_builder = LanguageContextBuilder().set_target_language("c")
+        lang_c = (
+                lctx_builder
+                .set_target_language_configuration_override("stropping_prefix", stropping_prefix)
+                .set_target_language_configuration_override("stropping_suffix", stropping_suffix)
+                .set_target_language_configuration_override("encoding_prefix", encoding_prefix)
+                .set_target_language_configuration_override("reserved_token_patterns_by_type",
+                    reserved_token_patterns_by_type)
+                .set_target_language_configuration_override("reserved_identifiers", reserved_identifiers)
+                .set_target_language_configuration_override("token_encoding_rules_by_identifier_type",
+                    token_encoding_rules_by_identifier_type)
+                .set_target_language_configuration_override("whitespace_encoding_char", whitespace_encoding_char)
+                .create()
+                .get_target_language()
+        )
 
     .. code-block:: python
 
@@ -255,12 +254,15 @@ class TokenEncoder:
                     '^(__)|(^(_)[A-Z])'
                 ]
         }
-        config['nunavut.lang.c']['stropping_prefix'] = stropping_prefix
-        config['nunavut.lang.c']['encoding_prefix'] = encoding_prefix
-        config['nunavut.lang.c']['token_encoding_rules_by_identifier_type'] = token_encoding_rules_by_identifier_type
-
-        lctx = configurable_language_context_factory(config, 'c')
-        lang_c = lctx.get_target_language()
+        lang_c = (
+            lctx_builder
+                .set_target_language_configuration_override("stropping_prefix", stropping_prefix)
+                .set_target_language_configuration_override("encoding_prefix", encoding_prefix)
+                .set_target_language_configuration_override("token_encoding_rules_by_identifier_type",
+                    token_encoding_rules_by_identifier_type)
+                .create()
+                .get_target_language()
+        )
 
         encoder = TokenEncoder(lang_c)
 
@@ -515,7 +517,7 @@ class TokenEncoder:
 
         .. invisible-code-block: python
 
-            from nunavut.lang import Language
+            from nunavut.lang import Language, LanguageContextBuilder
             from nunavut.lang._common import TokenEncoder
 
             config = {
@@ -525,8 +527,14 @@ class TokenEncoder:
                         }
                     }
 
-            lctx = configurable_language_context_factory(config, 'cpp')
-            lang_cpp = lctx.get_target_language()
+            lang_cpp = (
+                LanguageContextBuilder(include_experimental_languages=True)
+                    .set_target_language("cpp")
+                    .set_target_language_configuration_override("reserved_token_patterns_by_type",
+                        reserved_token_patterns_by_type)
+                    .create()
+                    .get_target_language()
+            )
 
         .. code-block:: python
 
@@ -555,15 +563,14 @@ class TokenEncoder:
 
         .. invisible-code-block: python
 
-            config = {
-                        'nunavut.lang.cpp':
-                        {
-                            'reserved_token_patterns_by_type': reserved_token_patterns_by_type
-                        }
-                    }
-
-            lctx = configurable_language_context_factory(config, 'cpp')
-            lang_cpp = lctx.get_target_language()
+            lang_cpp = (
+                LanguageContextBuilder(include_experimental_languages=True)
+                    .set_target_language("cpp")
+                    .set_target_language_configuration_override("reserved_token_patterns_by_type",
+                        reserved_token_patterns_by_type)
+                    .create()
+                    .get_target_language()
+            )
 
         .. code-block:: python
 
@@ -605,8 +612,14 @@ class TokenEncoder:
                         }
                     }
 
-            lctx = configurable_language_context_factory(config, 'cpp')
-            lang_cpp = lctx.get_target_language()
+            lang_cpp = (
+                LanguageContextBuilder(include_experimental_languages=True)
+                    .set_target_language("cpp")
+                    .set_target_language_configuration_override("reserved_token_patterns_by_type",
+                        reserved_token_patterns_by_type)
+                    .create()
+                    .get_target_language()
+            )
 
         .. code-block:: python
 
@@ -633,9 +646,14 @@ class TokenEncoder:
                             'three'
                         ]
                 }
-            config['nunavut.lang.cpp']['reserved_token_patterns_by_type'] = reserved_token_patterns_by_type
-            lctx = configurable_language_context_factory(config, 'cpp')
-            lang_cpp = lctx.get_target_language()
+            lang_cpp = (
+                LanguageContextBuilder(include_experimental_languages=True)
+                    .set_target_language("cpp")
+                    .set_target_language_configuration_override("reserved_token_patterns_by_type",
+                        reserved_token_patterns_by_type)
+                    .create()
+                    .get_target_language()
+            )
 
             try:
                 TokenEncoder._get_map_of_type_to_lists_of_patterns(lang_cpp,

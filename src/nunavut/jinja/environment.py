@@ -192,8 +192,6 @@ class CodeGenEnvironment(Environment):
 
     RESERVED_GLOBAL_NAMES = {"now_utc"}
 
-    NUNAVUT_NAMESPACE_PREFIX = "nunavut.lang."
-
     def __init__(
         self,
         loader: BaseLoader,
@@ -247,7 +245,7 @@ class CodeGenEnvironment(Environment):
         else:
             supported_languages = None
 
-        self._update_nunavut_globals(lctx)
+        self.update_nunavut_globals()
 
         self.add_conventional_methods_to_environment(self)
 
@@ -264,6 +262,33 @@ class CodeGenEnvironment(Environment):
                 self._add_conventional_method_to_environment(method, name, supported_languages=self.supported_languages)
             except TypeError:
                 pass
+
+    def update_nunavut_globals(
+        self,
+        support_namespace: str = "",
+        support_version: typing.Tuple[int, int, int] = (0, 0, 0),
+        support_module: typing.Optional["types.ModuleType"] = None,
+        is_dryrun: bool = False,
+        omit_serialization_support: bool = False,
+    ) -> None:
+
+        nunavut_namespace = self.nunavut_global
+
+        setattr(
+            nunavut_namespace,
+            "support",
+            {"omit": omit_serialization_support, "namespace": support_namespace, "version": support_version},
+        )
+
+        if "version" not in nunavut_namespace:
+            import nunavut.version
+            from nunavut.jinja.loaders import DSDLTemplateLoader
+
+            setattr(nunavut_namespace, "version", nunavut.version.__version__)
+            setattr(nunavut_namespace, "platform_version", self._create_platform_version())
+
+            if isinstance(self.loader, DSDLTemplateLoader):
+                setattr(nunavut_namespace, "template_sets", self.loader.get_template_sets())
 
     @property
     def supported_languages(self) -> typing.ValuesView[nunavut.lang.Language]:
@@ -375,7 +400,7 @@ class CodeGenEnvironment(Environment):
                 poop_lang = MagicMock(spec=Language)
                 poop_lang.name = 'poop'
                 poop_lang.get_templates_package_name = MagicMock(return_value='nunavut.lang.poop')
-                lctx.get_target_language = MagicMock(return_value=None)
+                lctx.get_target_language = poop_lang
                 lctx.get_supported_languages = MagicMock(return_value = {'poop': poop_lang})
 
                 @template_language_test('nunavut.lang.poop')
@@ -474,10 +499,9 @@ class CodeGenEnvironment(Environment):
         supported_languages = lctx.get_supported_languages()
         target_language = lctx.get_target_language()
         ln_globals = self.globals["ln"]
-        if target_language is not None:
-            self.globals.update(target_language.get_globals())
-            globals_options_ns = self.globals["options"]
-            globals_options_ns.update(target_language.get_options())
+        self.globals.update(target_language.get_globals())
+        globals_options_ns = self.globals["options"]
+        globals_options_ns.update(target_language.get_options())
         for supported_language in supported_languages.values():
             if supported_language.name not in ln_globals:
                 setattr(
@@ -491,46 +515,12 @@ class CodeGenEnvironment(Environment):
         # then load everything into the environment from this list.
         # note that we don't unload anything here so this method is not idempotent
         for supported_language in supported_languages.values():
-            is_target = target_language is not None and supported_language == target_language
             try:
                 self._add_support_from_language_module_to_environment(
                     lctx,
                     supported_language,
-                    nunavut.lang.LanguageLoader.load_language_module(supported_language.name),
-                    is_target,
+                    nunavut.lang.LanguageClassLoader.load_language_module(supported_language.name),
+                    (supported_language == target_language),
                 )
             except ModuleNotFoundError:
                 pass
-
-    def _update_nunavut_globals(self, lctx: typing.Optional[nunavut.lang.LanguageContext] = None) -> None:
-
-        # Helper global so we don't have to futz around with the "omit_serialization_support"
-        # logic in the templates. The omit_serialization_support property of the Language
-        # object is read-only so this boolean will remain consistent for the Environment.
-        target_language = None if lctx is None else lctx.get_target_language()
-        if target_language is not None:
-            omit_serialization_support = target_language.omit_serialization_support
-            support_namespace, support_version, _ = target_language.get_support_module()
-        else:
-            logger.debug("There is no target language so we cannot generate serialization support")
-            omit_serialization_support = True
-            support_namespace = ""
-            support_version = (0, 0, 0)
-
-        nunavut_namespace = self.nunavut_global
-
-        setattr(
-            nunavut_namespace,
-            "support",
-            {"omit": omit_serialization_support, "namespace": support_namespace, "version": support_version},
-        )
-
-        if "version" not in nunavut_namespace:
-            import nunavut.version
-            from nunavut.jinja.loaders import DSDLTemplateLoader
-
-            setattr(nunavut_namespace, "version", nunavut.version.__version__)
-            setattr(nunavut_namespace, "platform_version", self._create_platform_version())
-
-            if isinstance(self.loader, DSDLTemplateLoader):
-                setattr(nunavut_namespace, "template_sets", self.loader.get_template_sets())

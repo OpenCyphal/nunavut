@@ -12,7 +12,7 @@ from pydsdl import FrontendError, read_namespace
 
 from nunavut import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
-from nunavut.lang import LanguageContext
+from nunavut.lang import LanguageContextBuilder
 
 
 def test_two_root_error(gen_paths):  # type: ignore
@@ -31,7 +31,7 @@ def test_three_roots(gen_paths):  # type: ignore
     includes = [str(gen_paths.dsdl_dir / Path("huckco")),
                 str(gen_paths.dsdl_dir / Path("esmeinc"))]
     compound_types = read_namespace(root_namespace, includes, allow_unregulated_fixed_port_id=True)
-    language_context = LanguageContext(extension='.json')
+    language_context = LanguageContextBuilder(include_experimental_languages=True).set_target_language("js").create()
     namespace = build_namespace_tree(compound_types,
                                      root_namespace,
                                      gen_paths.out_dir,

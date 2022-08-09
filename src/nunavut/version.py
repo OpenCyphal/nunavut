@@ -7,7 +7,7 @@
 .. autodata:: __version__
 """
 
-__version__ = "1.9.0"  #: The version number used in the release of nunavut to pypi.
+__version__ = "2.0.0"  #: The version number used in the release of nunavut to pypi.
 
 
 __license__ = "MIT"

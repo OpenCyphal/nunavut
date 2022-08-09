@@ -164,6 +164,25 @@ jobs:
                           --endianness ${{ matrix.endianness }} \
                           ${{ matrix.flag }}
 
+  language-verification-cpp-11:
+    runs-on: ubuntu-latest
+    needs: test
+    container: uavcan/c_cpp:ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: verify
+      run: |
+        .github/verify.py --override .github/verify_global.ini \
+                          --build-type Debug \
+                          --language-standard c++11 \
+                          --language cpp \
+                          --platform native32 \
+                          --toolchain-family gcc \
+                          --endianness any \
+                          --none
+
   language-verification-cpp-14:
     runs-on: ubuntu-latest
     needs: test

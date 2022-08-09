@@ -13,20 +13,20 @@ from nunavut import generate_types
 @pytest.mark.parametrize(
     "lang_key,generate_support,language_options",
     [
-        ("cpp", False, None),
-        ("cpp", True, None),
+        ("cpp", False, {}),
+        ("cpp", True, {}),
         ("cpp", True, {"std": "c++17"}),
-        ("c", False, None),
-        ("c", True, None),
-        ("py", False, None),
-        ("html", False, None),
+        ("c", False, {}),
+        ("c", True, {}),
+        ("py", False, {}),
+        ("html", False, {}),
     ],
 )
 def test_realgen(
     gen_paths: typing.Any,
     lang_key: str,
     generate_support: bool,
-    language_options: typing.Optional[typing.Mapping[str, typing.Any]],
+    language_options: typing.Mapping[str, typing.Any],
 ) -> None:
     """
     Sanity test that runs through the entire public, regulated set of
@@ -39,4 +39,5 @@ def test_realgen(
         gen_paths.out_dir,
         omit_serialization_support=not generate_support,
         language_options=language_options,
+        include_experimental_languages=True
     )

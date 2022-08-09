@@ -13,6 +13,7 @@ import pytest
 
 import nunavut.version
 
+
 @pytest.mark.parametrize('env_var_name', ["UAVCAN_DSDL_INCLUDE_PATH", "DSDL_INCLUDE_PATH"])
 def test_UAVCAN_DSDL_INCLUDE_PATH(gen_paths: typing.Any, run_nnvg: typing.Callable, env_var_name: str) -> None:
     """
@@ -24,8 +25,8 @@ def test_UAVCAN_DSDL_INCLUDE_PATH(gen_paths: typing.Any, run_nnvg: typing.Callab
         gen_paths.templates_dir.as_posix(),
         "-O",
         gen_paths.out_dir.as_posix(),
-        "-e",
-        ".json",
+        "-l",
+        "js",
         "-Xlang",
         (gen_paths.dsdl_dir / pathlib.Path("uavcan")).as_posix(),
     ]
@@ -49,8 +50,8 @@ def test_nnvg_heals_missing_dot_in_extension(gen_paths: typing.Any, run_nnvg: ty
         gen_paths.templates_dir.as_posix(),
         "-O",
         gen_paths.out_dir.as_posix(),
-        "-e",
-        "json",
+        "-l",
+        "js",
         "-Xlang",
         "-I",
         (gen_paths.dsdl_dir / pathlib.Path("scotec")).as_posix(),
@@ -79,8 +80,9 @@ def test_list_inputs(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
         gen_paths.templates_dir.as_posix(),
         "-O",
         gen_paths.out_dir.as_posix(),
-        "-e",
-        ".json",
+        "--target-language",
+        "c",
+        "--omit-serialization-support",
         "-I",
         (gen_paths.dsdl_dir / pathlib.Path("scotec")).as_posix(),
         "--list-inputs",
@@ -112,8 +114,10 @@ def test_list_inputs_w_namespaces(gen_paths: typing.Any, run_nnvg: typing.Callab
         gen_paths.templates_dir.as_posix(),
         "-O",
         gen_paths.out_dir.as_posix(),
-        "-e",
-        ".json",
+        "-l",
+        "js",
+        "-Xlang",
+        "--omit-serialization-support",
         "-I",
         (gen_paths.dsdl_dir / pathlib.Path("scotec")).as_posix(),
         "--list-inputs",
@@ -141,7 +145,10 @@ def test_list_outputs(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
         gen_paths.out_dir.as_posix(),
         "-e",
         ".json",
+        "-l",
+        "js",
         "-Xlang",
+        "--omit-serialization-support",
         "-I",
         (gen_paths.dsdl_dir / pathlib.Path("scotec")).as_posix(),
         "--list-outputs",
@@ -529,8 +536,8 @@ def test_issue_116(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     nnvg_args = [
         "-O",
         gen_paths.out_dir.as_posix(),
-        "-e",
-        ".blarg",
+        "-l",
+        "blarg",
         "-I",
         (gen_paths.dsdl_dir / pathlib.Path("scotec")).as_posix(),
         "--list-outputs",
@@ -543,7 +550,7 @@ def test_issue_116(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
         pytest.fail("nnvg completed normally when it should have failed to find a template.")
     except subprocess.CalledProcessError as e:
         error_output = e.stderr.decode("UTF-8")
-        assert "No target language was given" in error_output
+        assert "language blarg is not a supported language" in error_output
 
 
 def test_language_allow_unregulated_fixed_portid(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:

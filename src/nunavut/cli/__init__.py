@@ -52,11 +52,6 @@ class _NunavutArgumentParser(argparse.ArgumentParser):
         """
         Applies rules between different arguments and handles other special cases.
         """
-        if args.list_inputs is not None and args.target_language is None and args.output_extension is None:
-            # This is a special case where we know we'll never actually use the output extension since
-            # we are only listing the input files. All other cases require either an output extension or
-            # a valid target language.
-            setattr(args, "output_extension", ".tmp")
 
         if args.omit_serialization_support and args.generate_support == "always":
             self.error(
@@ -135,8 +130,7 @@ def _make_parser() -> argparse.ArgumentParser:
         Paths to a directory containing templates to use when generating code.
 
         Templates found under these paths will override the built-in templates for a
-        given language. If no target language was provided and no template paths were
-        provided then no source will be generated.
+        given language.
 
     """
         ).lstrip(),
@@ -181,12 +175,10 @@ def _make_parser() -> argparse.ArgumentParser:
         ).lstrip(),
     )
 
-    ext_required = "--list-inputs" not in sys.argv and "--target-language" not in sys.argv and "-l" not in sys.argv
     parser.add_argument(
         "--output-extension",
         "-e",
         type=extension_type,
-        required=ext_required,
         help="The extension to use for generated files.",
     )
 
@@ -421,7 +413,7 @@ def _make_parser() -> argparse.ArgumentParser:
         description=textwrap.dedent(
             """
 
-        Options passed through to templates as `language_options` on the target language.
+        Options passed through to templates as `options` on the target language.
 
         Note that these arguments are passed though without validation, have no effect on the Nunavut
         library, and may or may not be appropriate based on the target language and generator templates
@@ -500,6 +492,35 @@ def _make_parser() -> argparse.ArgumentParser:
         code for the the c99 standard then for c11. For available support in Nunavut see the
         documentation for built-in templates
         (https://nunavut.readthedocs.io/en/latest/docs/templates.html#built-in-template-guide).
+
+    """
+        ).lstrip(),
+    )
+
+    ln_opt_group.add_argument(
+        "--configuration",
+        "-c",
+        nargs="*",
+        type=pathlib.Path,
+        help=textwrap.dedent(
+            """
+
+        There is a set of built-in configuration for Nunvut that provides default falues for known
+        languages as documented `in the template guide
+        <https://nunavut.readthedocs.io/en/latest/docs/templates.html#language-options>`_. This argument lets you
+        specify override configuration yamls.
+    """
+        ).lstrip(),
+    )
+
+    ln_opt_group.add_argument(
+        "--list-configuration",
+        "-lc",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+
+        Lists all configuration values resolved for the given arguments.
 
     """
         ).lstrip(),
