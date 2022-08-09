@@ -113,7 +113,7 @@ class Language(BaseLanguage):
            assert language._has_variant()
         """
         return self._standard_version() >= 17
- 
+
     def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
         std_includes = []  # type: typing.List[str]
         if self.get_config_value_as_bool("use_standard_types"):
