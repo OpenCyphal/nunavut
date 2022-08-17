@@ -172,12 +172,14 @@ def uses_std_variant(language: Language) -> bool:
     """
     return language._has_variant()
 
+
 @template_language_test(__name__)
 def uses_cpp11(language: Language) -> bool:
     """
     Check if C++11 is being used.
     """
     return language._standard_version() == 11
+
 
 @template_language_filter(__name__)
 def filter_constant_value(language: Language, constant: pydsdl.Constant) -> str:
