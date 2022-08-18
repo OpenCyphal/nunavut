@@ -18,8 +18,8 @@ import typing
 
 import pydsdl
 
+from .._utilities import ResourceType, YesNoDefault, iter_package_resources, empty_list_support_files
 from ..dependencies import Dependencies, DependencyBuilder
-from .._utilities import YesNoDefault, iter_package_resources
 from ._config import LanguageConfig, VersionReader
 
 logger = logging.getLogger(__name__)
@@ -467,10 +467,13 @@ class Language(metaclass=abc.ABCMeta):
         """
         return self._omit_serialization_support
 
-    @property
-    def support_files(self) -> typing.Generator[pathlib.Path, None, None]:
+    def get_support_files(
+        self, resource_type: ResourceType = ResourceType.ANY
+    ) -> typing.Generator[pathlib.Path, None, None]:
         """
-        Iterates over non-templated supporting files embedded within the Nunavut distribution.
+        Iterates over supporting files embedded within the Nunavut distribution.
+
+        :param resource_type: The type of support resources to enumerate.
 
         .. invisible-code-block: python
 
@@ -483,7 +486,7 @@ class Language(metaclass=abc.ABCMeta):
 
             my_lang = _GenericLanguage(mock_module, mock_config, True)
             my_lang._section = "nunavut.lang.not_a_language_really_not_a_language"
-            for support_file in my_lang.support_files:
+            for support_file in my_lang.get_support_files():
                 # if the module doesn't exist it shouldn't have any support files.
                 assert False
 
@@ -495,15 +498,10 @@ class Language(metaclass=abc.ABCMeta):
             # to allow the copy generator access to the packaged support files.
             list_support_files = getattr(
                 module, "list_support_files"
-            )  # type: typing.Callable[[], typing.Generator[pathlib.Path, None, None]]
-            return list_support_files()
+            )  # type: typing.Callable[[ResourceType], typing.Generator[pathlib.Path, None, None]]
+            return list_support_files(resource_type)
         else:
-            # No serialization support for this language
-            def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
-                # This makes both MyPy and sonarqube happy.
-                return typing.cast(typing.Generator[pathlib.Path, None, None], iter(()))
-
-            return list_support_files()
+            return empty_list_support_files()
 
     def get_option(
         self, option_key: str, default_value: typing.Union[typing.Mapping[str, typing.Any], str, None] = None

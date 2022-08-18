@@ -82,6 +82,7 @@ To run the language verification build you'll need to use a different docker con
 
     docker pull uavcan/c_cpp:ubuntu-20.04
     docker run --rm -it -v $PWD:/repo uavcan/c_cpp:ubuntu-20.04
+    cd /repo
     ./.github/verify.py -l c
     ./.github/verify.py -l cpp
 

@@ -234,6 +234,16 @@ def test_python_filter_includes(gen_paths, stropping, sort):  # type: ignore
                                      '<cstdint>'))
 
 
+def test_filter_includes_cpp_vla(gen_paths):  # type: ignore
+    lctx = LanguageContext(target_language='cpp', extension='.h')
+    type_map = read_namespace((gen_paths.dsdl_dir / pathlib.Path('vla')).as_posix())
+    from nunavut.lang.cpp import filter_includes
+
+    test_subject = next(filter(lambda type: (type.short_name == 'uses_vla'), type_map))
+    imports = filter_includes(lctx.get_language('nunavut.lang.cpp'), test_subject)
+    assert '"nunavut/support/variable_length_array.h"' in imports
+
+
 @typing.no_type_check
 @pytest.mark.parametrize('language_name,namespace_separator', [('c', '_'), ('cpp', '::')])
 def test_filter_full_reference_name_via_template(gen_paths, language_name, namespace_separator):

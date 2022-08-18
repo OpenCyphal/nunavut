@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": ".tox/local/bin/python",
+    "python.defaultInterpreterPath": "${workspaceFolder}/.tox/local",
     "python.linting.flake8Enabled": true,
     "python.linting.pylintEnabled": false,
     "python.linting.mypyEnabled": true,
@@ -11,7 +11,6 @@
     ],
     "python.testing.cwd": "${workspaceFolder}",
     "python.testing.unittestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.formatting.provider": "black",
     "python.formatting.blackArgs": [

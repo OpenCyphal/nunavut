@@ -187,7 +187,7 @@
         {
             return -nunavut::support::Error::REPRESENTATION_BAD_ARRAY_LENGTH;
         }
-        {{ reference }}.resize({{ ref_size }});
+        {{ reference }}.reserve({{ ref_size }});
 
 {# COMPUTE THE ARRAY ELEMENT OFFSETS #}
 {# NOTICE: The offset is no longer valid at this point because we just emitted the array length prefix. #}

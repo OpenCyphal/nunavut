@@ -312,7 +312,9 @@ nunavut.lang.cpp:
         enable_serialization_asserts: false
         enable_override_variable_array_capacity: false
         std: c++14
-        variable_array_type: "std::vector<{TYPE},std::allocator<{TYPE}>>"
+        # Provide non-empty values to override the type used for variable-length arrays in C++ types.
+        variable_array_type_template: ""
+        variable_array_type_include: ""
         cast_format: "static_cast<{type}>({value})"
         enable_allocator_support: false
 

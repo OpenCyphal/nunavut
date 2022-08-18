@@ -8,24 +8,23 @@
     module will be available in the template's global namespace as ``cpp``.
 """
 
-import functools
 import fractions
+import functools
 import io
+import pathlib
 import re
 import textwrap
 import typing
 
 import pydsdl
 
+from ..._utilities import YesNoDefault, ResourceType
 from ...templates import template_language_filter, template_language_list_filter, template_language_test
 from .. import Dependencies
 from .. import Language as BaseLanguage
 from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
-from ..._utilities import YesNoDefault
 from ..c import _CFit
 from ..c import filter_literal as c_filter_literal
-
-DEFAULT_ARRAY_TYPE = "std::array<{TYPE},{MAX_SIZE}>"
 
 
 class Language(BaseLanguage):
@@ -114,23 +113,145 @@ class Language(BaseLanguage):
         """
         return self._standard_version() >= 17
 
+    @functools.lru_cache()
+    def _get_variable_length_array_path(self) -> typing.Optional[pathlib.Path]:
+        """
+        Returns a releative path, suitable for include statements, to the built-in default Variable Length Array (VLA)
+        support type.
+        """
+        for support_file in self.get_support_files(ResourceType.TYPE_SUPPORT):
+            if support_file.stem == "variable_length_array":
+                return (pathlib.Path("/".join(self.support_namespace)) / support_file.name).with_suffix(self.extension)
+
+        return None
+
+    @functools.lru_cache()
+    def _get_default_vla_template(self) -> str:
+        """
+        Returns a template to the built-in Variable Length Array (VLA) implementation. This is used when no override
+        was provided.
+
+        config_no_namespace = {
+                    'nunavut.lang.cpp':
+                    {
+                        'support_namesapce': ''
+                    }
+                }
+
+        lctx = configurable_language_context_factory(config_no_namespace, 'cpp')
+        template_w_no_namespace = lctx.get_target_language()._get_default_vla_template()
+        assert template_w_no_namespace.startswith("variable_length_array")
+
+        config_w_namespace = {
+                    'nunavut.lang.cpp':
+                    {
+                        'support_namesapce': 'foo.bar'
+                    }
+                }
+
+        lctx = configurable_language_context_factory(config_w_namespace, 'cpp')
+        template_w_namespace = lctx.get_target_language()._get_default_vla_template()
+        assert template_w_namespace.startswith("foo::bar::variable_length_array")
+
+        """
+        base_template = "variable_length_array<{TYPE}, {MAX_SIZE}>"
+        if len(self.support_namespace) > 0:
+            return "::".join(self.support_namespace) + "::" + base_template
+        else:
+            return base_template
+
     def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
+        """
+        Get includes for c++ source.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import Language
+            from nunavut.dependencies import Dependencies
+
+            def do_includes_test(use_foobar, extension):
+
+                vla_header_name = "nunavut/support/variable_length_array{}".format(extension)
+                foobar_header_name = "foobar.h"
+                include_value = '' if not use_foobar else foobar_header_name
+
+                config = {
+                    'nunavut.lang.cpp':
+                    {
+                        'variable_array_type_include': include_value,
+                        'extension': extension
+                    }
+                }
+
+                lctx = configurable_language_context_factory(config, 'cpp')
+                lang_cpp = lctx.get_target_language()
+                assert extension == lang_cpp.extension
+
+                test_dependencies = Dependencies()
+                test_dependencies.uses_variable_length_array = True
+
+                # If we override the include we should not provide the built-in default
+                # variable array implementation.
+
+                found_foobar = False
+                found_vla_header_name = False
+                for include in lang_cpp.get_includes(test_dependencies):
+                    if vla_header_name in include:
+                        found_vla_header_name = True
+                    if foobar_header_name in include:
+                        found_foobar = True
+
+                if use_foobar:
+                    assert found_foobar
+                    assert not found_vla_header_name
+                else:
+                    assert not found_foobar
+                    assert found_vla_header_name
+
+            do_includes_test(True, ".hpp")
+            do_includes_test(False, ".hpp")
+            do_includes_test(True, ".h")
+            do_includes_test(False, ".h")
+        """
         std_includes = []  # type: typing.List[str]
         if self.get_config_value_as_bool("use_standard_types"):
             if dep_types.uses_integer:
                 std_includes.append("cstdint")
             if dep_types.uses_array:
                 std_includes.append("array")
-            if dep_types.uses_variable_length_array:
-                std_includes.append("vector")
-            if dep_types.uses_union and self._has_variant():
-                std_includes.append("variant")
-        return ["<{}>".format(include) for include in sorted(std_includes)]
+        if dep_types.uses_union and self._has_variant():
+            std_includes.append("variant")
+        includes_formatted = ["<{}>".format(include) for include in sorted(std_includes)]
+
+        if dep_types.uses_variable_length_array:
+            vla_include = None  # type: typing.Optional[str]
+            variable_array_include = self.get_config_value("variable_array_type_include", "")
+            if variable_array_include != "":
+                vla_include = variable_array_include
+            else:
+                vla_path = self._get_variable_length_array_path()
+                if vla_path is not None:
+                    vla_include = vla_path.as_posix()
+            if vla_include is not None:
+                includes_formatted.append('"{}"'.format(vla_include))
+
+        return includes_formatted
 
     def filter_id(self, instance: typing.Any, id_type: str = "any") -> str:
         raw_name = self.default_filter_id_for_target(instance)
 
         return self._get_token_encoder().strop(raw_name, id_type)
+
+    def create_array_decl(self, type: str, max_size: int) -> str:
+        return "std::array<{TYPE},{MAX_SIZE}>".format(TYPE=type, MAX_SIZE=max_size)
+
+    def create_vla_decl(self, type: str, max_size: int) -> str:
+        variable_array_type_template = self.get_option("variable_array_type_template")
+
+        if not isinstance(variable_array_type_template, str) or len(variable_array_type_template) == 0:
+            variable_array_type_template = self._get_default_vla_template()
+
+        return variable_array_type_template.format(TYPE=type, MAX_SIZE=max_size)
 
 
 @template_language_test(__name__)
@@ -742,17 +863,16 @@ def filter_declaration(language: Language, instance: pydsdl.Any) -> str:
     if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.VoidType):
         return filter_type_from_primitive(language, instance)
     elif isinstance(instance, pydsdl.VariableLengthArrayType):
-        variable_array_type = language.get_option("variable_array_type")
+        variable_array_type_template = language.get_option("variable_array_type_template")
 
-        if not isinstance(variable_array_type, str):
-            raise RuntimeError("variable_array_type language option was missing or invalid.")
-        return variable_array_type.format(
-            TYPE=filter_declaration(language, instance.element_type), MAX_SIZE=instance.capacity
-        )
+        if not isinstance(variable_array_type_template, str) or len(variable_array_type_template) == 0:
+            return language.create_vla_decl(filter_declaration(language, instance.element_type), instance.capacity)
+        else:
+            return variable_array_type_template.format(
+                TYPE=filter_declaration(language, instance.element_type), MAX_SIZE=instance.capacity
+            )
     elif isinstance(instance, pydsdl.ArrayType):
-        return DEFAULT_ARRAY_TYPE.format(
-            TYPE=filter_declaration(language, instance.element_type), MAX_SIZE=instance.capacity
-        )
+        return language.create_array_decl(filter_declaration(language, instance.element_type), instance.capacity)
     else:
         return filter_full_reference_name(language, instance)
 
