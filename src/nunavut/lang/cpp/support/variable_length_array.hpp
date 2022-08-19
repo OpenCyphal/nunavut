@@ -13,21 +13,48 @@
 #include <type_traits>
 #include <memory>
 #include <utility>
+#include <initializer_list>
 
 namespace nunavut
 {
 namespace support
 {
+
+/**
+ * Default allocator using malloc and free.
+ */
+template <typename T>
+class MallocAllocator
+{
+public:
+    using value_type = T;
+
+    MallocAllocator() noexcept
+    {}
+
+    T* allocate(std::size_t n) noexcept
+    {
+        return reinterpret_cast<T*>(malloc(n * sizeof(T)));
+    }
+
+    constexpr void deallocate(T* p, std::size_t n) noexcept
+    {
+        (void) n;
+        free(p);
+    }
+};
+
+
 ///
 /// Minimal, generic container for storing UAVCAN variable-length arrays. One property that is unique
 /// for variable-length arrays is that they have a maximum bound which this implementation enforces.
 /// This allows use of an allocator that is backed by statically allocated memory.
 ///
 /// @tparam  T           The type of elements in the array.
-/// @tparam  Allocator   The type of allocator.
 /// @tparam  MaxSize     The maximum allowable size and capacity of the array.
+/// @tparam  Allocator   The type of allocator.
 ///
-template <typename T, typename Allocator, std::size_t MaxSize>
+template <typename T, std::size_t MaxSize, typename Allocator = MallocAllocator<T> >
 class VariableLengthArray
 {
 public:
@@ -39,24 +66,53 @@ public:
         , alloc_()
     {}
 
-    explicit VariableLengthArray(const Allocator& alloc) noexcept(std::is_nothrow_copy_constructible<Allocator>::value)
+    VariableLengthArray(std::initializer_list<T> l) noexcept(std::is_nothrow_constructible<Allocator>::value)
         : data_(nullptr)
         , capacity_(0)
         , size_(0)
-        , alloc_(alloc)
-    {}
+        , alloc_()
+    {
+        reserve(l.size());
+        for (const_iterator list_item = l.begin(), end = l.end(); list_item != end; ++list_item)
+        {
+            push_back_no_alloc(*list_item);
+        }
+    }
 
     //
     // Rule of Five.
     //
-    VariableLengthArray(const VariableLengthArray&) = delete;
+    VariableLengthArray(const VariableLengthArray& rhs)
+        : data_(nullptr)
+        , capacity_(0)
+        , size_(0)
+        , alloc_(rhs.alloc_)
+    {
+        reserve(rhs.size());
+        for (const_iterator list_item = rhs.cbegin(), end = rhs.cend(); list_item != end; ++list_item)
+        {
+            push_back_no_alloc(*list_item);
+        }
+    }
+
     VariableLengthArray& operator=(const VariableLengthArray&) = delete;
-    VariableLengthArray(VariableLengthArray&&) = delete;
+
+    VariableLengthArray(VariableLengthArray&& rhs)
+        : data_(rhs.data_)
+        , capacity_(rhs.capacity_)
+        , size_(rhs.size_)
+        , alloc_(std::move(rhs.alloc_))
+    {
+        rhs.data_ = nullptr;
+        rhs.capacity_ = 0;
+        rhs.size_ = 0;
+    }
+
     VariableLengthArray& operator=(VariableLengthArray&&) = delete;
 
     ~VariableLengthArray() noexcept(
             noexcept(
-                        VariableLengthArray<T, Allocator, MaxSize>::template fast_deallocate<T>(nullptr, 0, 0, std::declval<Allocator&>())
+                        VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(nullptr, 0, 0, std::declval<Allocator&>())
                     )
         )
     {
@@ -67,6 +123,21 @@ public:
     /// STL-like declaration of the allocator type.
     ///
     using allocator_type = Allocator;
+
+    ///
+    /// STL-like declaration of the iterator type.
+    ///
+    using iterator = typename std::add_pointer<T>::type;
+
+    ///
+    /// STL-like declaration of the const iterator type.
+    ///
+    using const_iterator = typename std::add_pointer<typename std::add_const<T>::type>::type;
+
+    ///
+    /// STL-like declaration of the container's storage type.
+    ///
+    using value_type = T;
 
     ///
     /// The maximum size (and capacity) of this array. This size is derived
@@ -80,6 +151,56 @@ public:
     // +----------------------------------------------------------------------+
     // | ELEMENT ACCESS
     // +----------------------------------------------------------------------+
+    ///
+    /// Provides direct, unsafe access to the internal data buffer. This pointer
+    /// is invalidated by calls to {@code shrink_to_fit} and {@code reserve}.
+    ///
+    constexpr const_iterator cbegin() const noexcept
+    {
+        return data_;
+    }
+
+    ///
+    /// Pointer to memory location after the last, valid element. This pointer
+    /// is invalidated by calls to {@code shrink_to_fit} and {@code reserve}.
+    ///
+    constexpr const_iterator cend() const noexcept
+    {
+        if (nullptr == data_)
+        {
+            return nullptr;
+        }
+        else
+        {
+            return &data_[size_];
+        }
+    }
+
+    ///
+    /// Provides direct, unsafe access to the internal data buffer. This pointer
+    /// is invalidated by calls to {@code shrink_to_fit} and {@code reserve}.
+    ///
+    constexpr iterator begin() noexcept
+    {
+        return data_;
+    }
+
+    ///
+    /// Pointer to memory location after the last, valid element. This pointer
+    /// is invalidated by calls to {@code shrink_to_fit} and {@code reserve}.
+    ///
+    constexpr iterator end() noexcept
+    {
+        if (nullptr == data_)
+        {
+            return nullptr;
+        }
+        else
+        {
+            return &data_[size_];
+        }
+    }
+
     ///
     /// Provides direct, unsafe access to the internal data buffer. This pointer
     /// is invalidated by calls to {@code shrink_to_fit} and {@code reserve}.
@@ -206,7 +327,7 @@ public:
         )
         &&
         noexcept(
-            VariableLengthArray<T, Allocator, MaxSize>::template move_and_free<T>(nullptr, nullptr, 0, 0, std::declval<Allocator&>())
+            VariableLengthArray<T, MaxSize, Allocator>::template move_and_free<T>(nullptr, nullptr, 0, 0, std::declval<Allocator&>())
         )
     )
     {
@@ -254,7 +375,7 @@ public:
         )
         &&
         noexcept(
-            VariableLengthArray<T, Allocator, MaxSize>::template move_and_free<T>(nullptr, nullptr, 0, 0, std::declval<Allocator&>())
+            VariableLengthArray<T, MaxSize, Allocator>::template move_and_free<T>(nullptr, nullptr, 0, 0, std::declval<Allocator&>())
         )
     )
     {
@@ -306,6 +427,24 @@ public:
     // +----------------------------------------------------------------------+
     // | MODIFIERS
     // +----------------------------------------------------------------------+
+    ///
+    /// Construct a new element on to the back of the array and grow the array size by 1.
+    ///
+    /// @return A pointer to the stored value or nullptr if there was not enough capacity (use reserve to
+    ///         grow the available capacity).
+    ///
+    constexpr T* push_back_no_alloc() noexcept(std::is_nothrow_default_constructible<T>::value)
+    {
+        if (size_ < capacity_)
+        {
+            return new (&data_[size_++]) T();
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
     ///
     /// Push a new element on to the back of the array and grow the array size by 1.
     ///
@@ -463,8 +602,8 @@ private:
 };
 
 // required till C++ 17. Redundant but allowed after that.
-template <typename T, typename Allocator, std::size_t MaxSize>
-const std::size_t VariableLengthArray<T, Allocator, MaxSize>::max_size;
+template <typename T, std::size_t MaxSize, typename Allocator>
+const std::size_t VariableLengthArray<T, MaxSize, Allocator>::max_size;
 
 }  // namespace support
 }  // namespace nunavut

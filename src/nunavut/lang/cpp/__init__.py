@@ -140,7 +140,7 @@ class Language(BaseLanguage):
 
         lctx = configurable_language_context_factory(config_no_namespace, 'cpp')
         template_w_no_namespace = lctx.get_target_language()._get_default_vla_template()
-        assert template_w_no_namespace.startswith("variable_length_array")
+        assert template_w_no_namespace.startswith("VariableLengthArray")
 
         config_w_namespace = {
                     'nunavut.lang.cpp':
@@ -151,10 +151,10 @@ class Language(BaseLanguage):
 
         lctx = configurable_language_context_factory(config_w_namespace, 'cpp')
         template_w_namespace = lctx.get_target_language()._get_default_vla_template()
-        assert template_w_namespace.startswith("foo::bar::variable_length_array")
+        assert template_w_namespace.startswith("foo::bar::VariableLengthArray")
 
         """
-        base_template = "variable_length_array<{TYPE}, {MAX_SIZE}>"
+        base_template = "VariableLengthArray<{TYPE}, {MAX_SIZE}>"
         if len(self.support_namespace) > 0:
             return "::".join(self.support_namespace) + "::" + base_template
         else:

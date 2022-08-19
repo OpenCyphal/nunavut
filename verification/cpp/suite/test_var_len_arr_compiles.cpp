@@ -86,16 +86,38 @@ private:
     T data_[SizeCount];
 };
 
+TEST(VLATestsStatic, TestDefaultAllocator)
+{
+    nunavut::support::VariableLengthArray<int, 10> subject;
+
+    static_assert(std::is_nothrow_default_constructible<decltype(subject)>::value,
+        "VariableLengthArray's default allocator must be no-throw default constructible");
+
+    static_assert(std::is_nothrow_constructible<decltype(subject)>::value,
+        "VariableLengthArray's default allocator must be no-throw constructible.");
+
+    static_assert(std::is_nothrow_destructible<decltype(subject)>::value,
+        "VariableLengthArray's default allocator must be no-throw destructible.'.");
+
+    static_assert(noexcept(subject.reserve(0)),
+        "VariableLengthArray.reserve must not throw when using the default allocator.");
+
+    static_assert(noexcept(subject.shrink_to_fit()),
+        "VariableLengthArray.shrink_to_fit must not throw exceptions if using the default allocator");
+
+    // Use the subject to ensure it isn't elided.
+    ASSERT_EQ(0U, subject.size());
+}
 
 TEST(VLATestsStatic, TestNoThrowAllocator)
 {
-    nunavut::support::VariableLengthArray<int, JunkyNoThrowAllocator<int, 10>, 10> subject;
+    nunavut::support::VariableLengthArray<int, 10, JunkyNoThrowAllocator<int, 10>> subject;
 
     static_assert(std::is_nothrow_default_constructible<decltype(subject)>::value,
         "VariableLengthArray must be no-throw default constructible if the allocator is.");
 
     static_assert(std::is_nothrow_constructible<decltype(subject)>::value,
-        "VariableLengthArray must be no-throw default constructible if the allocator is.");
+        "VariableLengthArray must be no-throw constructible if the allocator is.");
 
     static_assert(std::is_nothrow_destructible<decltype(subject)>::value,
         "VariableLengthArray must be no-throw destructible if the allocator is.");
@@ -113,7 +135,7 @@ TEST(VLATestsStatic, TestNoThrowAllocator)
 
 TEST(VLATestsStatic, TestThrowingAllocator)
 {
-    nunavut::support::VariableLengthArray<int, JunkyThrowingAllocator<int, 10>, 10> subject;
+    nunavut::support::VariableLengthArray<int, 10, JunkyThrowingAllocator<int, 10>> subject;
 
     static_assert(std::is_default_constructible<decltype(subject)>::value
                     &&
