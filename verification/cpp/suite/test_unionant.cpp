@@ -110,31 +110,39 @@ TEST(UnionantTests, union_value_copy_ctor)
     ASSERT_EQ(24U, b_value->value);
 }
 
-// /**
-//  * Verify the move constructor of the VariantType
-//  */
-// TEST(UnionantTests, union_value_move_ctor)
-// {
-//     using ValueType = uavcan::_register::Value_1_0;
-//     const std::string hello_world{"Hello World"};
-//     ValueType         a{};
-//     // verify that empty is the default such that our emplace of string (next line) is actually changing the
-//     // variant's value type.
-//     ASSERT_NE(nullptr, ValueType::VariantType::get_if<ValueType::VariantType::IndexOf::empty>(&a.union_value));
-//     uavcan::primitive::String_1_0& a_result = a.union_value.emplace<ValueType::VariantType::IndexOf::string>(
-//         uavcan::primitive::String_1_0{std::vector<std::uint8_t>(hello_world.begin(), hello_world.end())});
-//     ASSERT_EQ(11UL, a_result.value.size());
-//     ASSERT_EQ('W', a_result.value[6]);
+/**
+ * Verify the move constructor of the VariantType
+ */
+TEST(UnionantTests, union_value_move_ctor)
+{
+    using ValueType = uavcan::_register::Value_1_0;
+    const char* hello_world{"Hello World"};
+    ValueType         a{};
+    // verify that empty is the default such that our emplace of string (next line) is actually changing the
+    // variant's value type.
+    ASSERT_NE(nullptr, ValueType::VariantType::get_if<ValueType::VariantType::IndexOf::empty>(&a.union_value));
+    uavcan::primitive::String_1_0& a_result = a.union_value.emplace<ValueType::VariantType::IndexOf::string>(
+        uavcan::primitive::String_1_0
+        {
+            {
+                reinterpret_cast<const unsigned char*>(hello_world),
+                reinterpret_cast<const unsigned char*>(&hello_world[11]),
+                11
+            }
+        }
+                                                                                                            );
+    ASSERT_EQ(11UL, a_result.value.size());
+    ASSERT_EQ('W', a_result.value[6]);
 
-//     ValueType::VariantType b(std::move(a.union_value));
-//     ASSERT_NE(nullptr, ValueType::VariantType::get_if<ValueType::VariantType::IndexOf::string>(&a.union_value));
-//     ASSERT_EQ(0UL, a_result.value.size());
-//     uavcan::primitive::String_1_0* b_value =
-//         ValueType::VariantType::get_if<ValueType::VariantType::IndexOf::string>(&b);
-//     ASSERT_NE(nullptr, b_value);
-//     ASSERT_EQ(11UL, b_value->value.size());
-//     ASSERT_EQ('W', b_value->value[6]);
-// }
+    ValueType::VariantType b(std::move(a.union_value));
+    ASSERT_NE(nullptr, ValueType::VariantType::get_if<ValueType::VariantType::IndexOf::string>(&a.union_value));
+    ASSERT_EQ(0UL, a_result.value.size());
+    uavcan::primitive::String_1_0* b_value =
+        ValueType::VariantType::get_if<ValueType::VariantType::IndexOf::string>(&b);
+    ASSERT_NE(nullptr, b_value);
+    ASSERT_EQ(11UL, b_value->value.size());
+    ASSERT_EQ('W', b_value->value[6]);
+}
 
 /**
  * Verify the move assignment operator of the VariantType
@@ -142,11 +150,17 @@ TEST(UnionantTests, union_value_copy_ctor)
 TEST(UnionantTests, union_value_move_assignment)
 {
     using ValueType = uavcan::_register::Value_1_0;
-    const decltype(uavcan::primitive::String_1_0::value) hello_world_arr{{'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '\0'}};
+    const char* hello_world{"Hello World"};
+    const decltype(uavcan::primitive::String_1_0::value) hello_world_vla
+            {
+                reinterpret_cast<const unsigned char*>(hello_world),
+                reinterpret_cast<const unsigned char*>(&hello_world[11]),
+                11
+            };
     ValueType                      a{};
     uavcan::primitive::String_1_0& a_result = a.union_value.emplace<ValueType::VariantType::IndexOf::string>(
-        uavcan::primitive::String_1_0{hello_world_arr});
-    ASSERT_EQ(12UL, a_result.value.size());
+        uavcan::primitive::String_1_0{{hello_world_vla}});
+    ASSERT_EQ(11UL, a_result.value.size());
     ASSERT_EQ('W', a_result.value[6]);
 
     ValueType::VariantType b;
@@ -154,6 +168,5 @@ TEST(UnionantTests, union_value_move_assignment)
     const uavcan::primitive::String_1_0* b_string_value =
         ValueType::VariantType::get_if<ValueType::VariantType::IndexOf::string>(&b);
     ASSERT_NE(nullptr, b_string_value);
-    ASSERT_STREQ(reinterpret_cast<const char*>(hello_world_arr.cbegin()),
-                 reinterpret_cast<const char*>(b_string_value->value.cbegin()));
+    ASSERT_EQ(hello_world_vla, b_string_value->value);
 }

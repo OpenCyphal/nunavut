@@ -79,6 +79,24 @@ public:
         }
     }
 
+    template <class InputIt>
+    constexpr VariableLengthArray(InputIt first,
+                                  InputIt last,
+                                  const std::size_t length,
+                                  const Allocator& alloc = Allocator())
+                                    noexcept(std::is_nothrow_constructible<Allocator>::value)
+        : data_(nullptr)
+        , capacity_(0)
+        , size_(0)
+        , alloc_(alloc)
+    {
+        reserve(length);
+        for (size_t inserted = 0; first != last && inserted < length; ++first)
+        {
+            push_back_no_alloc(*first);
+        }
+    }
+
     //
     // Rule of Five.
     //
@@ -117,6 +135,48 @@ public:
         )
     {
         fast_deallocate(data_, size_, capacity_, alloc_);
+    }
+
+    template <class RHSType>
+    constexpr bool operator==(const RHSType& rhs) const  noexcept(
+        noexcept(RHSType().size()) && noexcept(RHSType().cbegin()) && noexcept(RHSType().cend())
+        &&
+        noexcept(size()) && noexcept(cbegin()) && noexcept(cend())
+    )
+    {
+        if (size() != rhs.size())
+        {
+            return false;
+        }
+        if (data() != rhs.data())
+        {
+            typename RHSType::const_iterator rnext = rhs.cbegin();
+            typename RHSType::const_iterator rend = rhs.cend();
+            const_iterator lnext = cbegin();
+            const_iterator lend = cend();
+            for(;rnext != rend && lnext != lend; ++rnext, ++lnext)
+            {
+                if (*rnext != *lnext)
+                {
+                    return false;
+                }
+            }
+            if (rnext != rend || lnext != lend)
+            {
+                // One of the two iterators returned less then the size value? This is probably a bug but we can only
+                // say they are not equal here.
+                return false;
+            }
+        }
+        return true;
+    }
+
+    template <class RHSType>
+    constexpr bool operator!=(const RHSType& rhs) const noexcept(
+        noexcept(operator==<RHSType>(rhs))
+    )
+    {
+        return !(operator==(rhs));
     }
 
     ///
@@ -206,6 +266,15 @@ public:
     /// is invalidated by calls to {@code shrink_to_fit} and {@code reserve}.
     ///
     constexpr T* data() noexcept
+    {
+        return data_;
+    }
+
+    ///
+    /// Provides direct, unsafe access to the internal data buffer. This pointer
+    /// is invalidated by calls to {@code shrink_to_fit} and {@code reserve}.
+    ///
+    constexpr const T* data() const noexcept
     {
         return data_;
     }

@@ -436,3 +436,12 @@ TEST(VLATestsNonTrivial, TestMoveContructor)
     ASSERT_EQ(0U, fixture.size());
     ASSERT_EQ(0U, fixture.capacity());
 }
+
+TEST(VLATestsNonTrivial, TestCompare)
+{
+    nunavut::support::VariableLengthArray<std::size_t, 10> one{{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
+    std::vector<std::size_t> two{{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
+    std::vector<std::size_t> three{{9, 8, 7, 6, 5, 4, 3, 2, 1}};
+    ASSERT_EQ(one, two);
+    ASSERT_NE(one, three);
+}
