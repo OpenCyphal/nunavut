@@ -75,7 +75,7 @@ public:
         reserve(l.size());
         for (const_iterator list_item = l.begin(), end = l.end(); list_item != end; ++list_item)
         {
-            push_back_no_alloc(*list_item);
+            push_back(*list_item);
         }
     }
 
@@ -93,7 +93,7 @@ public:
         reserve(length);
         for (size_t inserted = 0; first != last && inserted < length; ++first)
         {
-            push_back_no_alloc(*first);
+            push_back(*first);
         }
     }
 
@@ -109,7 +109,7 @@ public:
         reserve(rhs.size());
         for (const_iterator list_item = rhs.cbegin(), end = rhs.cend(); list_item != end; ++list_item)
         {
-            push_back_no_alloc(*list_item);
+            push_back(*list_item);
         }
     }
 
@@ -200,13 +200,22 @@ public:
     using value_type = T;
 
     ///
-    /// The maximum size (and capacity) of this array. This size is derived
+    /// The maximum size (and capacity) of this array type. This size is derived
     /// from the DSDL definition for a field and represents the maximum number of
     /// elements allowed if the specified allocator is able to provide adequate
     /// memory (i.e. there may be up to this many elements but there shall never
     /// be more).
     ///
-    static constexpr const std::size_t max_size = MaxSize;
+    static constexpr const std::size_t type_max_size = MaxSize;
+
+    ///
+    /// The maximum size (and capacity) of this array. This method is compatible
+    /// with {@code stl::vector::max_size} and always returns {@code type_max_size}.
+    ///
+    constexpr std::size_t max_size() const noexcept
+    {
+        return type_max_size;
+    }
 
     // +----------------------------------------------------------------------+
     // | ELEMENT ACCESS
@@ -374,7 +383,7 @@ public:
 
     ///
     /// The current number of elements in the array. This number increases with each
-    /// successful call to {@code push_back_no_alloc} and decreases with each call to
+    /// successful call to {@code push_back} and decreases with each call to
     /// {@code pop_back} (when size is > 0).
     ///
     constexpr std::size_t size() const noexcept
@@ -502,16 +511,17 @@ public:
     /// @return A pointer to the stored value or nullptr if there was not enough capacity (use reserve to
     ///         grow the available capacity).
     ///
-    constexpr T* push_back_no_alloc() noexcept(std::is_nothrow_default_constructible<T>::value)
+    constexpr void push_back() noexcept(std::is_nothrow_default_constructible<T>::value)
     {
         if (size_ < capacity_)
         {
-            return new (&data_[size_++]) T();
+            new (&data_[size_++]) T();
         }
         else
         {
-            return nullptr;
+            // TODO: if exceptions are enabled then throw std::length_error
         }
+        return;
     }
 
     ///
@@ -520,16 +530,17 @@ public:
     /// @return A pointer to the stored value or nullptr if there was not enough capacity (use reserve to
     ///         grow the available capacity).
     ///
-    constexpr T* push_back_no_alloc(T&& value) noexcept(std::is_nothrow_move_constructible<T>::value)
+    constexpr void push_back(T&& value) noexcept(std::is_nothrow_move_constructible<T>::value)
     {
         if (size_ < capacity_)
         {
-            return new (&data_[size_++]) T(std::move(value));
+            new (&data_[size_++]) T(std::move(value));
         }
         else
         {
-            return nullptr;
+            // TODO: if exceptions are enabled then throw std::length_error
         }
+        return;
     }
 
     ///
@@ -538,16 +549,17 @@ public:
     /// @return A pointer to the stored value or nullptr if there was not enough capacity (use reserve to
     ///         grow the available capacity).
     ///
-    constexpr T* push_back_no_alloc(const T& value) noexcept(std::is_nothrow_copy_constructible<T>::value)
+    constexpr void push_back(const T& value) noexcept(std::is_nothrow_copy_constructible<T>::value)
     {
         if (size_ < capacity_)
         {
-            return new (&data_[size_++]) T(value);
+            new (&data_[size_++]) T(value);
         }
         else
         {
-            return nullptr;
+            // TODO: if exceptions are enabled then throw std::length_error
         }
+        return;
     }
 
     ///
@@ -672,7 +684,7 @@ private:
 
 // required till C++ 17. Redundant but allowed after that.
 template <typename T, std::size_t MaxSize, typename Allocator>
-const std::size_t VariableLengthArray<T, MaxSize, Allocator>::max_size;
+const std::size_t VariableLengthArray<T, MaxSize, Allocator>::type_max_size;
 
 }  // namespace support
 }  // namespace nunavut

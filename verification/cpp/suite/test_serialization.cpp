@@ -138,42 +138,47 @@ TEST(Serialization, StructReference)
     obj.i10_4[2] = +0x0055;                             // original value retained
     obj.i10_4[3] = -0x00AA;                             // original value retained
     obj.f16_le2.reserve(2);
-    ASSERT_TRUE(nullptr != obj.f16_le2.push_back_no_alloc(-1e9F));     // saturated to -65504
-    ASSERT_TRUE(nullptr != obj.f16_le2.push_back_no_alloc(+INFINITY)); // infinity retained
+    obj.f16_le2.push_back(-1e9F);                       // saturated to -65504
+    ASSERT_EQ(1U, obj.f16_le2.size());
+    obj.f16_le2.push_back(+INFINITY);                   // infinity retained
     ASSERT_EQ(2U, obj.f16_le2.size());
-    //obj.unaligned_bitpacked_3[0] = 0xF5;     // 0b101, rest truncated away and ignored TODO:Fix
+    //obj.unaligned_bitpacked_3[0] = 0xF5;              // 0b101, rest truncated away and ignored TODO:Fix
     obj.unaligned_bitpacked_3[0] = 1;
     obj.unaligned_bitpacked_3[1] = 0;
     obj.unaligned_bitpacked_3[2] = 1;
-    //obj.sealed = 123;                           // ignored
+    //obj.sealed = 123;                                 // ignored
     obj.bytes_lt3.reserve(2);
-    ASSERT_TRUE(nullptr != obj.bytes_lt3.push_back_no_alloc(111));
-    ASSERT_TRUE(nullptr != obj.bytes_lt3.push_back_no_alloc(222));
+    obj.bytes_lt3.push_back(111);
+    ASSERT_EQ(1U, obj.bytes_lt3.size());
+    obj.bytes_lt3.push_back(222);
     ASSERT_EQ(2U, obj.bytes_lt3.size());
     obj.bytes_3[0] = -0x77;
     obj.bytes_3[1] = -0x11;
     obj.bytes_3[2] = +0x77;
     obj.u2_le4.reserve(3);
-    ASSERT_TRUE(nullptr != obj.u2_le4.push_back_no_alloc(0x02));       // retained
-    ASSERT_TRUE(nullptr != obj.u2_le4.push_back_no_alloc(0x11));       // truncated => 1
-    ASSERT_TRUE(nullptr != obj.u2_le4.push_back_no_alloc(0xFF));       // truncated => 3
-    //obj.u2_le4.push_back_no_alloc(0xFF);                      // ignored because the length is 3
+    obj.u2_le4.push_back(0x02);                         // retained
+    ASSERT_EQ(1U, obj.u2_le4.size());
+    obj.u2_le4.push_back(0x11);                         // truncated => 1
+    ASSERT_EQ(2U, obj.u2_le4.size());
+    obj.u2_le4.push_back(0xFF);                         // truncated => 3
     ASSERT_EQ(3U, obj.u2_le4.size());
+    //obj.u2_le4.push_back(0xFF);                       // ignored because the length is 3
     obj.delimited_fix_le2.reserve(1);
-    ASSERT_TRUE(nullptr != obj.delimited_fix_le2.push_back_no_alloc()); // ignored
+    obj.delimited_fix_le2.push_back();                  // ignored
     ASSERT_EQ(1U, obj.delimited_fix_le2.size());
     obj.u16_2[0] = 0x1234;
     obj.u16_2[1] = 0x5678;
     obj.aligned_bitpacked_3[0] = 0xF1U;
     // obj.unaligned_bitpacked_lt3.bitpacked[0] = 0xF1U;
     obj.unaligned_bitpacked_lt3.reserve(2);
-    ASSERT_TRUE(nullptr != obj.unaligned_bitpacked_lt3.push_back_no_alloc(1));
-    ASSERT_TRUE(nullptr != obj.unaligned_bitpacked_lt3.push_back_no_alloc(0));
-    ASSERT_EQ(2U, obj.unaligned_bitpacked_lt3.size());              // 0b01, rest truncated
-    obj.delimited_var_2[0].set_f16(+1e9F);    // truncated to infinity
-    obj.delimited_var_2[1].set_f64(-1e40);    // retained
+    obj.unaligned_bitpacked_lt3.push_back(1);
+    ASSERT_EQ(1U, obj.unaligned_bitpacked_lt3.size());
+    obj.unaligned_bitpacked_lt3.push_back(0);
+    ASSERT_EQ(2U, obj.unaligned_bitpacked_lt3.size()); // 0b01, rest truncated
+    obj.delimited_var_2[0].set_f16(+1e9F);             // truncated to infinity
+    obj.delimited_var_2[1].set_f64(-1e40);             // retained
     obj.aligned_bitpacked_le3.reserve(1);
-    ASSERT_TRUE(nullptr != obj.aligned_bitpacked_le3.push_back_no_alloc(1));
+    obj.aligned_bitpacked_le3.push_back(1);
     ASSERT_EQ(1U, obj.aligned_bitpacked_le3.size());                // only lsb is set, other truncated
 
     const uint8_t reference[] = {
@@ -312,6 +317,8 @@ TEST(Serialization, StructReference)
     ASSERT_EQ(0U, obj.aligned_bitpacked_le3.size());
 
     // // Deserialize the above reference representation and compare the result against the original object.
+    obj.regulated::basics::Struct__0_1::~Struct__0_1();
+    new (&obj)regulated::basics::Struct__0_1();
     result = obj.deserialize(reference);
     ASSERT_TRUE(result) << "Error was " << result.error();
     ASSERT_EQ(sizeof(reference) - 16U, result.value());   // 16 trailing bytes implicitly truncated away
@@ -349,6 +356,8 @@ TEST(Serialization, StructReference)
     // ASSERT_EQ(1, obj.aligned_bitpacked_le3.bitpacked[0]);       // unused MSB are zero-padded
 
     // Repeat the above, but apply implicit zero extension somewhere in the middle.
+    obj.regulated::basics::Struct__0_1::~Struct__0_1();
+    new (&obj)regulated::basics::Struct__0_1();
     result = obj.deserialize({reference, 25U, 0U});
     ASSERT_TRUE(result) << "Error was " << result.error();
     ASSERT_EQ(25U, result.value());   // the returned size shall not exceed the buffer size

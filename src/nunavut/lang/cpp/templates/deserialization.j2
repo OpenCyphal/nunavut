@@ -183,7 +183,7 @@
         {% set ref_size = 'size'|to_template_unique_name %}
         // Array length prefix: {{ t.length_field_type }}
         {{ _deserialize_integer(t.length_field_type, ('const %s %s'|format((t.length_field_type | declaration), ref_size)) , offset) }}
-        if ( {{ ref_size}} > {{ t.capacity }}U)
+        if ( {{ ref_size }} > {{ t.capacity }}U)
         {
             return -nunavut::support::Error::REPRESENTATION_BAD_ARRAY_LENGTH;
         }
@@ -199,8 +199,11 @@
 {% endif %}
     {# GENERAL CASE #}
     {% set ref_index = 'index'|to_template_unique_name %}
-        for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ reference }}.size(); ++{{ ref_index }})
+        for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ ref_size }}; ++{{ ref_index }})
         {
+            // TODO This is terribly inefficient. We need to completely refactor this template to use C++ emplace and
+            // move semantics instead of assuming C-style containers
+            {{ reference }}.push_back();
             {{
                 _deserialize_any(t.element_type, reference + ('[%s]'|format(ref_index)), element_offset)
             |trim|indent

@@ -178,27 +178,32 @@ TYPED_TEST(VLATestsGeneric, TestReserve)
     nunavut::support::VariableLengthArray<typename TypeParam::value_type, 10, TypeParam> subject;
     ASSERT_EQ(0U, subject.capacity());
     ASSERT_EQ(0U, subject.size());
-    ASSERT_EQ(10U, subject.max_size);
+    ASSERT_EQ(10U, subject.max_size());
 
     ASSERT_EQ(1U, subject.reserve(1));
 
     ASSERT_EQ(1U, subject.capacity());
     ASSERT_EQ(0U, subject.size());
-    ASSERT_EQ(10U, subject.max_size);
+    ASSERT_EQ(10U, subject.max_size());
 }
 
 TYPED_TEST(VLATestsGeneric, TestPush)
 {
     nunavut::support::VariableLengthArray<typename TypeParam::value_type, 20, TypeParam> subject;
     ASSERT_EQ(nullptr, subject.data());
-    ASSERT_EQ(nullptr, subject.push_back_no_alloc(1));
+    ASSERT_EQ(0U, subject.size());
+    subject.push_back(1);
+    ASSERT_EQ(0U, subject.size());
 
     ASSERT_EQ(10U, subject.reserve(10));
 
     ASSERT_EQ(10U, subject.capacity());
     ASSERT_EQ(0U, subject.size());
-    ASSERT_EQ(20U, subject.max_size);
-    const typename TypeParam::value_type* const pushed = subject.push_back_no_alloc(1);
+    ASSERT_EQ(20U, subject.max_size());
+    subject.push_back(1);
+    ASSERT_EQ(1U, subject.size());
+    const typename TypeParam::value_type* const pushed = &subject[0];
+
     ASSERT_NE(nullptr, pushed);
     ASSERT_EQ(*pushed, 1);
     ASSERT_EQ(1U, subject.size());
@@ -208,7 +213,9 @@ TYPED_TEST(VLATestsGeneric, TestPop)
 {
     nunavut::support::VariableLengthArray<typename TypeParam::value_type, 20, TypeParam> subject;
     ASSERT_EQ(10U, subject.reserve(10));
-    const typename TypeParam::value_type* const pushed = subject.push_back_no_alloc(1);
+    subject.push_back(1);
+    ASSERT_EQ(1U, subject.size());
+    const typename TypeParam::value_type* const pushed = &subject[0];
     ASSERT_NE(nullptr, pushed);
     ASSERT_EQ(*pushed, 1);
     ASSERT_EQ(1U, subject.size());
@@ -221,7 +228,9 @@ TYPED_TEST(VLATestsGeneric, TestShrink)
 {
     nunavut::support::VariableLengthArray<typename TypeParam::value_type, 20, TypeParam> subject;
     ASSERT_EQ(10U, subject.reserve(10));
-    const typename TypeParam::value_type* const pushed = subject.push_back_no_alloc(1);
+    subject.push_back(1);
+    ASSERT_EQ(1U, subject.size());
+    const typename TypeParam::value_type* const pushed = &subject[0];
     ASSERT_NE(nullptr, pushed);
     ASSERT_EQ(*pushed, 1);
     ASSERT_EQ(1U, subject.size());
@@ -261,13 +270,16 @@ TYPED_TEST(VLATestsStatic, TestOutOfMemory)
             break;
         }
         ASSERT_EQ(i, subject.capacity());
-        typename TypeParam::value_type* pushed =
-            subject.push_back_no_alloc(static_cast<typename TypeParam::value_type>(i));
+        subject.push_back(static_cast<typename TypeParam::value_type>(i));
+        ASSERT_EQ(i, subject.size());
+        typename TypeParam::value_type* pushed = &subject[i-1];
         ASSERT_NE(nullptr, pushed);
         ASSERT_EQ(static_cast<typename TypeParam::value_type>(i), *pushed);
     }
     ASSERT_TRUE(did_run_out_of_memory);
-    ASSERT_EQ(nullptr, subject.push_back_no_alloc(0));
+    const std::size_t size_before = subject.size();
+    subject.push_back(0);
+    ASSERT_EQ(size_before, subject.size());
     for (std::size_t i = 1; i < ran_out_of_memory_at; ++i)
     {
         ASSERT_EQ(static_cast<typename TypeParam::value_type>(i), subject[i - 1]);
@@ -284,13 +296,17 @@ TYPED_TEST(VLATestsStatic, TestOverMaxSize)
     for (std::size_t i = 1; i <= MaxSize; ++i)
     {
         ASSERT_EQ(i, subject.reserve(i));
-        typename TypeParam::value_type* pushed =
-            subject.push_back_no_alloc(static_cast<typename TypeParam::value_type>(i));
+        subject.push_back(static_cast<typename TypeParam::value_type>(i));
+        typename TypeParam::value_type* pushed = &subject[i - 1];
+        ASSERT_EQ(i, subject.size());
         ASSERT_NE(nullptr, pushed);
         ASSERT_EQ(static_cast<typename TypeParam::value_type>(i), *pushed);
     }
     ASSERT_EQ(MaxSize, subject.reserve(MaxSize + 1));
-    ASSERT_EQ(nullptr, subject.push_back_no_alloc(0));
+
+    ASSERT_EQ(MaxSize, subject.size());
+    subject.push_back(0);
+    ASSERT_EQ(MaxSize, subject.size());
     for (std::size_t i = 0; i < MaxSize; ++i)
     {
         ASSERT_EQ(static_cast<typename TypeParam::value_type>(i + 1), subject[i]);
@@ -322,8 +338,10 @@ TEST(VLATestsNonTrivial, TestDestroy)
     auto subject = std::make_shared<nunavut::support::VariableLengthArray<Doomed, 10, std::allocator<Doomed>>>();
 
     ASSERT_EQ(10U, subject->reserve(10));
-    ASSERT_NE(nullptr, subject->push_back_no_alloc(Doomed(&dtor_called)));
-    ASSERT_NE(nullptr, subject->push_back_no_alloc(Doomed(&dtor_called)));
+    subject->push_back(Doomed(&dtor_called));
+    ASSERT_EQ(1U, subject->size());
+    subject->push_back(Doomed(&dtor_called));
+    ASSERT_EQ(2U, subject->size());
     ASSERT_EQ(0, dtor_called);
     subject.reset();
     ASSERT_EQ(2, dtor_called);
@@ -335,7 +353,8 @@ TEST(VLATestsNonTrivial, TestNonFunamental)
 
     nunavut::support::VariableLengthArray<Doomed, 10, std::allocator<Doomed>> subject;
     ASSERT_EQ(10U, subject.reserve(10));
-    ASSERT_NE(nullptr, subject.push_back_no_alloc(Doomed(&dtor_called)));
+    subject.push_back(Doomed(&dtor_called));
+    ASSERT_EQ(1U, subject.size());
     subject.pop_back();
     ASSERT_EQ(1, dtor_called);
 }
@@ -355,7 +374,8 @@ TEST(VLATestsNonTrivial, TestNotMovable)
     nunavut::support::VariableLengthArray<NotMovable, 10, std::allocator<NotMovable>> subject;
     ASSERT_EQ(10U, subject.reserve(10));
     NotMovable source;
-    ASSERT_NE(nullptr, subject.push_back_no_alloc(source));
+    subject.push_back(source);
+    ASSERT_EQ(1U, subject.size());
 }
 
 TEST(VLATestsNonTrivial, TestMovable)
@@ -382,7 +402,9 @@ TEST(VLATestsNonTrivial, TestMovable)
     };
     nunavut::support::VariableLengthArray<Movable, 10, std::allocator<Movable>> subject;
     ASSERT_EQ(10U, subject.reserve(10));
-    Movable* pushed = subject.push_back_no_alloc(Movable(1));
+    subject.push_back(Movable(1));
+    ASSERT_EQ(1U, subject.size());
+    Movable* pushed = &subject[0];
     ASSERT_NE(nullptr, pushed);
     ASSERT_EQ(1, pushed->get_data());
 }
@@ -390,13 +412,14 @@ TEST(VLATestsNonTrivial, TestMovable)
 TEST(VLATestsNonTrivial, TestMoveToVector)
 {
     nunavut::support::VariableLengthArray<std::size_t, 10, std::allocator<std::size_t>> subject;
-    ASSERT_EQ(decltype(subject)::max_size, subject.reserve(decltype(subject)::max_size));
-    for (std::size_t i = 0; i < decltype(subject)::max_size; ++i)
+    ASSERT_EQ(decltype(subject)::type_max_size, subject.reserve(decltype(subject)::type_max_size));
+    for (std::size_t i = 0; i < decltype(subject)::type_max_size; ++i)
     {
-        ASSERT_NE(nullptr, subject.push_back_no_alloc(i));
+        subject.push_back(i);
+        ASSERT_EQ(i+1, subject.size());
     }
     std::vector<std::size_t> a(subject.cbegin(), subject.cend());
-    for (std::size_t i = 0; i < decltype(subject)::max_size; ++i)
+    for (std::size_t i = 0; i < decltype(subject)::type_max_size; ++i)
     {
         ASSERT_EQ(i, a[i]);
     }

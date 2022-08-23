@@ -40,8 +40,8 @@
     "C_Cpp.configurationWarnings": "Disabled",
     "files.associations": {
         "*.py.template": "python",
-        "*.cc": "c++",
-        "*.hpp": "c++",
+        "*.cc": "cpp",
+        "*.hpp": "cpp",
         "__bit_reference": "cpp",
         "__config": "cpp",
         "__debug": "cpp",
