@@ -248,7 +248,7 @@ def test_filter_includes_cpp_vla(gen_paths):  # type: ignore
 @pytest.mark.parametrize('language_name,namespace_separator', [('c', '_'), ('cpp', '::')])
 def test_filter_full_reference_name_via_template(gen_paths, language_name, namespace_separator):
     root_path = (gen_paths.dsdl_dir / Path("uavcan")).as_posix()
-    output_path = gen_paths.out_dir / 'filter_and_test'
+    output_path = (gen_paths.out_dir / Path("filter_and_test")).as_posix()
     compound_types = read_namespace(root_path, [])
     language_context = LanguageContext(target_language=language_name)
     namespace = build_namespace_tree(compound_types,
