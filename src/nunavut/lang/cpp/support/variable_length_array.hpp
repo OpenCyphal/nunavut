@@ -567,7 +567,7 @@ public:
     ///
     constexpr void push_back(T&& value)
     {
-        if (nullptr == push_back_impl(value))
+        if (nullptr == push_back_impl(std::move(value)))
         {
             #if __cpp_exceptions
             throw std::length_error("size is at capacity. Use reserve to grow the capacity.");
@@ -580,7 +580,7 @@ public:
     ///
     /// Push a new element on to the back of the array and grow the array size by 1.
     ///
-    constexpr void push_back(const T& value) noexcept(std::is_nothrow_copy_constructible<T>::value)
+    constexpr void push_back(const T& value)
     {
         if (nullptr == push_back_impl(value))
         {

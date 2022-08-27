@@ -12,6 +12,7 @@
 #include "o1heap/o1heap.h"
 #include <string>
 #include <array>
+#include <stdexcept>
 
 /**
  * Used to test that destructors were called.
@@ -192,7 +193,15 @@ TYPED_TEST(VLATestsGeneric, TestPush)
     nunavut::support::VariableLengthArray<typename TypeParam::value_type, 20, TypeParam> subject;
     ASSERT_EQ(nullptr, subject.data());
     ASSERT_EQ(0U, subject.size());
-    subject.push_back(1);
+    try
+    {
+        subject.push_back(1);
+    }
+    catch(const std::length_error& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+
     ASSERT_EQ(0U, subject.size());
 
     ASSERT_EQ(10U, subject.reserve(10));
@@ -278,7 +287,15 @@ TYPED_TEST(VLATestsStatic, TestOutOfMemory)
     }
     ASSERT_TRUE(did_run_out_of_memory);
     const std::size_t size_before = subject.size();
-    subject.push_back(0);
+    try
+    {
+        subject.push_back(0);
+    }
+    catch(const std::length_error& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+
     ASSERT_EQ(size_before, subject.size());
     for (std::size_t i = 1; i < ran_out_of_memory_at; ++i)
     {
@@ -305,7 +322,15 @@ TYPED_TEST(VLATestsStatic, TestOverMaxSize)
     ASSERT_EQ(MaxSize, subject.reserve(MaxSize + 1));
 
     ASSERT_EQ(MaxSize, subject.size());
-    subject.push_back(0);
+    try
+    {
+        subject.push_back(0);
+    }
+    catch(const std::length_error& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+
     ASSERT_EQ(MaxSize, subject.size());
     for (std::size_t i = 0; i < MaxSize; ++i)
     {
