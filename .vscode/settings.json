@@ -136,7 +136,11 @@
         "any": "cpp",
         "span": "cpp",
         "variant": "cpp",
-        "__bits": "cpp"
+        "__bits": "cpp",
+        "filesystem": "cpp",
+        "__memory": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp"
     },
     "python.linting.mypyArgs": [
         "--config-file=${workspaceFolder}/tox.ini"

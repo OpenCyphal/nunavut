@@ -14,6 +14,9 @@
 #include <memory>
 #include <utility>
 #include <initializer_list>
+#if __cpp_exceptions
+#include <stdexcept>
+#endif
 
 namespace nunavut
 {
@@ -66,7 +69,14 @@ public:
         , alloc_()
     {}
 
-    VariableLengthArray(std::initializer_list<T> l) noexcept(std::is_nothrow_constructible<Allocator>::value)
+    VariableLengthArray(std::initializer_list<T> l) noexcept
+            (
+                noexcept(reserve(1))
+                &&
+                std::is_nothrow_constructible<Allocator>::value
+                &&
+                std::is_nothrow_copy_constructible<T>::value
+            )
         : data_(nullptr)
         , capacity_(0)
         , size_(0)
@@ -75,7 +85,7 @@ public:
         reserve(l.size());
         for (const_iterator list_item = l.begin(), end = l.end(); list_item != end; ++list_item)
         {
-            push_back(*list_item);
+            push_back_impl(*list_item);
         }
     }
 
@@ -84,7 +94,14 @@ public:
                                   InputIt last,
                                   const std::size_t length,
                                   const Allocator& alloc = Allocator())
-                                    noexcept(std::is_nothrow_constructible<Allocator>::value)
+                                    noexcept
+            (
+                noexcept(reserve(1))
+                &&
+                std::is_nothrow_copy_constructible<Allocator>::value
+                &&
+                std::is_nothrow_copy_constructible<T>::value
+            )
         : data_(nullptr)
         , capacity_(0)
         , size_(0)
@@ -93,14 +110,21 @@ public:
         reserve(length);
         for (size_t inserted = 0; first != last && inserted < length; ++first)
         {
-            push_back(*first);
+            push_back_impl(*first);
         }
     }
 
     //
     // Rule of Five.
     //
-    VariableLengthArray(const VariableLengthArray& rhs)
+    VariableLengthArray(const VariableLengthArray& rhs) noexcept
+            (
+                noexcept(reserve(1))
+                &&
+                std::is_nothrow_copy_constructible<Allocator>::value
+                &&
+                std::is_nothrow_copy_constructible<T>::value
+            )
         : data_(nullptr)
         , capacity_(0)
         , size_(0)
@@ -109,13 +133,13 @@ public:
         reserve(rhs.size());
         for (const_iterator list_item = rhs.cbegin(), end = rhs.cend(); list_item != end; ++list_item)
         {
-            push_back(*list_item);
+            push_back_impl(*list_item);
         }
     }
 
     VariableLengthArray& operator=(const VariableLengthArray&) = delete;
 
-    VariableLengthArray(VariableLengthArray&& rhs)
+    VariableLengthArray(VariableLengthArray&& rhs) noexcept(std::is_nothrow_move_constructible<Allocator>::value)
         : data_(rhs.data_)
         , capacity_(rhs.capacity_)
         , size_(rhs.size_)
@@ -129,20 +153,24 @@ public:
     VariableLengthArray& operator=(VariableLengthArray&&) = delete;
 
     ~VariableLengthArray() noexcept(
-            noexcept(
-                        VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(nullptr, 0, 0, std::declval<Allocator&>())
-                    )
+            noexcept
+            (
+                VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(nullptr, 0, 0, std::declval<Allocator&>())
+            )
         )
     {
         fast_deallocate(data_, size_, capacity_, alloc_);
     }
 
     template <class RHSType>
-    constexpr bool operator==(const RHSType& rhs) const  noexcept(
-        noexcept(RHSType().size()) && noexcept(RHSType().cbegin()) && noexcept(RHSType().cend())
-        &&
-        noexcept(size()) && noexcept(cbegin()) && noexcept(cend())
-    )
+    constexpr bool operator==(const RHSType& rhs) const  noexcept
+        (
+            noexcept(RHSType().size())
+            &&
+            noexcept(RHSType().cbegin())
+            &&
+            noexcept(RHSType().cend())
+        )
     {
         if (size() != rhs.size())
         {
@@ -178,6 +206,11 @@ public:
     {
         return !(operator==(rhs));
     }
+
+    ///
+    /// STL-like declaration of pointer type.
+    ///
+    using pointer = typename std::add_pointer<T>::type;
 
     ///
     /// STL-like declaration of the allocator type.
@@ -506,22 +539,24 @@ public:
     // | MODIFIERS
     // +----------------------------------------------------------------------+
     ///
-    /// Construct a new element on to the back of the array and grow the array size by 1.
+    /// Construct a new element on to the back of the array and grow the array size by 1. If exceptions are disabled
+    /// the caller must check before and after this call to see if the size grew to determine success. If using
+    /// exceptions this method throws {@code std::length_error} if the size of this collection is at capacity.
     ///
     /// @return A pointer to the stored value or nullptr if there was not enough capacity (use reserve to
     ///         grow the available capacity).
+    /// @throw std::length_error if the size of this collection is at capacity.
     ///
-    constexpr void push_back() noexcept(std::is_nothrow_default_constructible<T>::value)
+    constexpr void push_back()
     {
-        if (size_ < capacity_)
+        if (nullptr == push_back_impl())
         {
-            new (&data_[size_++]) T();
+            #if __cpp_exceptions
+            throw std::length_error("size is at capacity. Use reserve to grow the capacity.");
+            #endif
         }
-        else
-        {
-            // TODO: if exceptions are enabled then throw std::length_error
-        }
-        return;
+        // else, without exceptions the caller has to check the size property to see if this
+        // method succeeded.
     }
 
     ///
@@ -530,36 +565,31 @@ public:
     /// @return A pointer to the stored value or nullptr if there was not enough capacity (use reserve to
     ///         grow the available capacity).
     ///
-    constexpr void push_back(T&& value) noexcept(std::is_nothrow_move_constructible<T>::value)
+    constexpr void push_back(T&& value)
     {
-        if (size_ < capacity_)
+        if (nullptr == push_back_impl(value))
         {
-            new (&data_[size_++]) T(std::move(value));
+            #if __cpp_exceptions
+            throw std::length_error("size is at capacity. Use reserve to grow the capacity.");
+            #endif
         }
-        else
-        {
-            // TODO: if exceptions are enabled then throw std::length_error
-        }
-        return;
+        // else, without exceptions the caller has to check the size property to see if this
+        // method succeeded.
     }
 
     ///
     /// Push a new element on to the back of the array and grow the array size by 1.
-    ///
-    /// @return A pointer to the stored value or nullptr if there was not enough capacity (use reserve to
-    ///         grow the available capacity).
     ///
     constexpr void push_back(const T& value) noexcept(std::is_nothrow_copy_constructible<T>::value)
     {
-        if (size_ < capacity_)
+        if (nullptr == push_back_impl(value))
         {
-            new (&data_[size_++]) T(value);
+            #if __cpp_exceptions
+            throw std::length_error("size is at capacity. Use reserve to grow the capacity.");
+            #endif
         }
-        else
-        {
-            // TODO: if exceptions are enabled then throw std::length_error
-        }
-        return;
+        // else, without exceptions the caller has to check the size property to see if this
+        // method succeeded.
     }
 
     ///
@@ -575,6 +605,42 @@ public:
     }
 
 private:
+    constexpr pointer push_back_impl() noexcept(std::is_nothrow_default_constructible<T>::value)
+    {
+        if (size_ < capacity_)
+        {
+            return new (&data_[size_++]) T();
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    constexpr pointer push_back_impl(T&& value) noexcept(std::is_nothrow_move_constructible<T>::value)
+    {
+        if (size_ < capacity_)
+        {
+            return new (&data_[size_++]) T(std::move(value));
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    constexpr pointer push_back_impl(const T& value) noexcept(std::is_nothrow_copy_constructible<T>::value)
+    {
+        if (size_ < capacity_)
+        {
+            return new (&data_[size_++]) T(value);
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
     ///
     /// If trivially destructible then we don't have to call the destructors.
     ///
