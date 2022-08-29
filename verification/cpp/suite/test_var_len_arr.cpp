@@ -497,11 +497,10 @@ TEST(VLATestsNonTrivial, TestCompare)
 
 TEST(VLATestsNonTrivial, TestFPCompare)
 {
-    nunavut::support::VariableLengthArray<double, 10> one{{1.0, 2.0}};
-    nunavut::support::VariableLengthArray<double, 10> two{{1.0, 2.0}};
-    const double nexttwo = std::nextafter(2.00, INFINITY);
-    const double epsilon = nexttwo - 2.00;
-    nunavut::support::VariableLengthArray<double, 10> three{{1.0, std::nextafter(nexttwo + epsilon, INFINITY)}};
+    nunavut::support::VariableLengthArray<double, 10> one{{1.00, 2.00}};
+    nunavut::support::VariableLengthArray<double, 10> two{{1.00, 2.00}};
+    const double epsilon_for_two_comparison = std::nextafter(4.00, INFINITY) - 4.00;
+    nunavut::support::VariableLengthArray<double, 10> three{{1.00, std::nextafter(2.00 + epsilon_for_two_comparison, INFINITY)}};
     ASSERT_EQ(one, one);
     ASSERT_EQ(one, two);
     ASSERT_NE(one, three);
