@@ -488,8 +488,52 @@ TEST(VLATestsNonTrivial, TestMoveContructor)
 TEST(VLATestsNonTrivial, TestCompare)
 {
     nunavut::support::VariableLengthArray<std::size_t, 10> one{{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
-    std::vector<std::size_t> two{{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
-    std::vector<std::size_t> three{{9, 8, 7, 6, 5, 4, 3, 2, 1}};
+    nunavut::support::VariableLengthArray<std::size_t, 10> two{{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
+    nunavut::support::VariableLengthArray<std::size_t, 10> three{{9, 8, 7, 6, 5, 4, 3, 2, 1}};
+    ASSERT_EQ(one, one);
     ASSERT_EQ(one, two);
     ASSERT_NE(one, three);
+}
+
+TEST(VLATestsNonTrivial, TestFPCompare)
+{
+    nunavut::support::VariableLengthArray<double, 10> one{{1.0, 2.0}};
+    nunavut::support::VariableLengthArray<double, 10> two{{1.0, 2.0}};
+    const double nexttwo = std::nextafter(2.00, INFINITY);
+    const double epsilon = nexttwo - 2.00;
+    nunavut::support::VariableLengthArray<double, 10> three{{1.0, std::nextafter(nexttwo + epsilon, INFINITY)}};
+    ASSERT_EQ(one, one);
+    ASSERT_EQ(one, two);
+    ASSERT_NE(one, three);
+}
+
+TEST(VLATestsNonTrivial, TestCopyAssignment)
+{
+    nunavut::support::VariableLengthArray<double, 2> lhs{1.00};
+    nunavut::support::VariableLengthArray<double, 2> rhs{{2.00, 3.00}};
+    ASSERT_EQ(1U, lhs.size());
+    ASSERT_EQ(2U, rhs.size());
+    ASSERT_NE(lhs, rhs);
+    lhs = rhs;
+    ASSERT_EQ(2U, lhs.size());
+    ASSERT_EQ(2U, rhs.size());
+    ASSERT_EQ(lhs, rhs);
+}
+
+TEST(VLATestsNonTrivial, TestMoveAssignment)
+{
+    nunavut::support::VariableLengthArray<std::string, 3> lhs{{std::string("one"),
+                                                               std::string("two")}};
+    nunavut::support::VariableLengthArray<std::string, 3> rhs{{std::string("three"),
+                                                               std::string("four"),
+                                                               std::string("five")}};
+    ASSERT_EQ(2U, lhs.size());
+    ASSERT_EQ(3U, rhs.size());
+    ASSERT_NE(lhs, rhs);
+    lhs = std::move(rhs);
+    ASSERT_EQ(3U, lhs.size());
+    ASSERT_EQ(0U, rhs.size());
+    ASSERT_EQ(0U, rhs.capacity());
+    ASSERT_NE(lhs, rhs);
+    ASSERT_EQ(std::string("three"), lhs[0]);
 }

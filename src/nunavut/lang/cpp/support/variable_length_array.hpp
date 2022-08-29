@@ -9,6 +9,7 @@
 #define NUNAVUT_SUPPORT_VARIABLE_LENGTH_ARRAY_HPP_INCLUDED
 
 #include <cstddef>
+#include <cstdlib>
 #include <cstring>
 #include <type_traits>
 #include <memory>
@@ -57,7 +58,7 @@ public:
 /// @tparam  MaxSize     The maximum allowable size and capacity of the array.
 /// @tparam  Allocator   The type of allocator.
 ///
-template <typename T, std::size_t MaxSize, typename Allocator = MallocAllocator<T> >
+template <typename T, std::size_t MaxSize, typename Allocator = MallocAllocator<T>>
 class VariableLengthArray
 {
 public:
@@ -71,7 +72,7 @@ public:
 
     VariableLengthArray(std::initializer_list<T> l) noexcept
             (
-                noexcept(reserve(1))
+                noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1))
                 &&
                 std::is_nothrow_constructible<Allocator>::value
                 &&
@@ -96,7 +97,7 @@ public:
                                   const Allocator& alloc = Allocator())
                                     noexcept
             (
-                noexcept(reserve(1))
+                noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1))
                 &&
                 std::is_nothrow_copy_constructible<Allocator>::value
                 &&
@@ -119,7 +120,7 @@ public:
     //
     VariableLengthArray(const VariableLengthArray& rhs) noexcept
             (
-                noexcept(reserve(1))
+                noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1))
                 &&
                 std::is_nothrow_copy_constructible<Allocator>::value
                 &&
@@ -137,7 +138,29 @@ public:
         }
     }
 
-    VariableLengthArray& operator=(const VariableLengthArray&) = delete;
+    VariableLengthArray& operator=(const VariableLengthArray& rhs) noexcept
+            (
+                noexcept(VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(nullptr, 0, 0, std::declval<Allocator&>()))
+                &&
+                noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1))
+                &&
+                std::is_nothrow_copy_constructible<Allocator>::value
+                &&
+                std::is_nothrow_copy_constructible<T>::value
+            )
+    {
+        fast_deallocate(data_, size_, capacity_, alloc_);
+        data_ = nullptr;
+        capacity_ = 0;
+        size_ = 0;
+        alloc_ = rhs.alloc_;
+        reserve(rhs.size());
+        for (const_iterator list_item = rhs.cbegin(), end = rhs.cend(); list_item != end; ++list_item)
+        {
+            push_back_impl(*list_item);
+        }
+        return *this;
+    }
 
     VariableLengthArray(VariableLengthArray&& rhs) noexcept(std::is_nothrow_move_constructible<Allocator>::value)
         : data_(rhs.data_)
@@ -150,7 +173,28 @@ public:
         rhs.size_ = 0;
     }
 
-    VariableLengthArray& operator=(VariableLengthArray&&) = delete;
+    VariableLengthArray& operator=(VariableLengthArray&& rhs) noexcept
+            (
+                noexcept(VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(nullptr, 0, 0, std::declval<Allocator&>()))
+                &&
+                std::is_nothrow_move_assignable<Allocator>::value
+            )
+    {
+        fast_deallocate(data_, size_, capacity_, alloc_);
+
+        alloc_ = std::move(rhs.alloc_);
+
+        data_ = rhs.data_;
+        rhs.data_ = nullptr;
+
+        capacity_ = rhs.capacity_;
+        rhs.capacity_ = 0;
+
+        size_ = rhs.size_;
+        rhs.size_ = 0;
+
+        return *this;
+    }
 
     ~VariableLengthArray() noexcept(
             noexcept
@@ -162,15 +206,7 @@ public:
         fast_deallocate(data_, size_, capacity_, alloc_);
     }
 
-    template <class RHSType>
-    constexpr bool operator==(const RHSType& rhs) const  noexcept
-        (
-            noexcept(RHSType().size())
-            &&
-            noexcept(RHSType().cbegin())
-            &&
-            noexcept(RHSType().cend())
-        )
+    constexpr bool operator==(const VariableLengthArray& rhs) const noexcept
     {
         if (size() != rhs.size())
         {
@@ -178,13 +214,13 @@ public:
         }
         if (data() != rhs.data())
         {
-            typename RHSType::const_iterator rnext = rhs.cbegin();
-            typename RHSType::const_iterator rend = rhs.cend();
+            const_iterator rnext = rhs.cbegin();
+            const_iterator rend = rhs.cend();
             const_iterator lnext = cbegin();
             const_iterator lend = cend();
-            for(;rnext != rend && lnext != lend; ++rnext, ++lnext)
+            for(;rnext != rend && lnext != lend; ++lnext, ++rnext)
             {
-                if (*rnext != *lnext)
+                if (!internal_compare_element(*lnext, *rnext))
                 {
                     return false;
                 }
@@ -199,9 +235,8 @@ public:
         return true;
     }
 
-    template <class RHSType>
-    constexpr bool operator!=(const RHSType& rhs) const noexcept(
-        noexcept(operator==<RHSType>(rhs))
+    constexpr bool operator!=(const VariableLengthArray& rhs) const noexcept(
+        noexcept(operator==(rhs))
     )
     {
         return !(operator==(rhs));
@@ -605,6 +640,29 @@ public:
     }
 
 private:
+    template <typename U>
+    static constexpr bool
+        internal_compare_element(const U& lhs, const U& rhs, typename std::enable_if<!std::is_floating_point<U>::value>::type* = 0) noexcept
+    {
+        return (lhs == rhs);
+    }
+
+    template <typename U>
+    static constexpr bool
+        internal_compare_element(const U& lhs, const U& rhs, typename std::enable_if<std::is_floating_point<U>::value>::type* = 0) noexcept
+    {
+        // From the C++ documentation for std::numeric_limits<T>::epsilon()
+        // https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
+
+        const auto diff = std::fabs(lhs - rhs);
+        const auto sum = std::fabs(lhs + rhs);
+        // Scale the relative machine epsilon up.
+        const auto epsilon = std::numeric_limits<U>::epsilon() * sum;
+
+        return (diff <= epsilon) || diff < std::numeric_limits<U>::min();
+    }
+
+
     constexpr pointer push_back_impl() noexcept(std::is_nothrow_default_constructible<T>::value)
     {
         if (size_ < capacity_)

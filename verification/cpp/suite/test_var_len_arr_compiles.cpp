@@ -185,46 +185,6 @@ TEST(VLATestsStatic, TestThrowingAllocator)
     ASSERT_EQ(0U, subject.size());
 }
 
-/**
- * Used to verify noexcept status for VariableLengthArray comparison with other container types.
- */
-template <typename T>
-struct ThrowyContainer
-{
-    constexpr std::size_t size() const
-    {
-        return 0;
-    }
-
-    constexpr const T* cbegin() const
-    {
-        return nullptr;
-    }
-
-    constexpr const T* cend() const
-    {
-        return nullptr;
-    }
-};
-
-TEST(VLATestsStatic, TestThrowingComparitor)
-{
-    nunavut::support::VariableLengthArray<int, 10> subject;
-    ThrowyContainer<int>                           throwy;
-    std::vector<int>                               no_throwy;
-    static_assert(!noexcept(subject == throwy),
-                  "VariableLengthArray comparison should throw when used with the ThrowyContainer type.");
-
-    static_assert(!noexcept(subject != throwy),
-                  "VariableLengthArray comparison should throw when used with the ThrowyContainer type.");
-
-    static_assert(noexcept(subject == no_throwy),
-                  "VariableLengthArray comparison should not throw when used the std::vector type.");
-
-    static_assert(noexcept(subject != no_throwy),
-                  "VariableLengthArray comparison should not throw when used the std::vector type.");
-}
-
 TEST(VLATestsStatic, TestNotThrowingCopyCtor)
 {
     using nothrowy_type =

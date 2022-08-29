@@ -70,6 +70,8 @@ else()
     message(FATAL_ERROR "Unknown or no verification language (${NUNAVUT_VERIFICATION_LANG}). Try cmake -DNUNAVUT_VERIFICATION_LANG:string=[cpp|c]")
 endif()
 
+string(TOLOWER ${NUNAVUT_VERIFICATION_LANG} LOCAL_VERIFICATION_LANG)
+
 if(DEFINED ENV{NUNAVUT_FLAGSET})
     set(NUNAVUT_FLAGSET "$ENV{NUNAVUT_FLAGSET}")
     message(STATUS "Using ${NUNAVUT_FLAGSET} from environment for NUNAVUT_FLAGSET")
@@ -214,16 +216,11 @@ create_dsdl_target(dsdl-test
 
 add_dependencies(dsdl-test nunavut-support)
 
-# +---------------------------------------------------------------------------+
-# | FLAG SETS
-# +---------------------------------------------------------------------------+
-string(TOLOWER ${NUNAVUT_VERIFICATION_LANG} LOCAL_VERIFICATION_LANG)
-
-if (LOCAL_VERIFICATION_LANG STREQUAL "c")
-     set(LOCAL_VERIFICATION_LANG_STANDARD_C "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
-     set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "")
-     list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS "")
-elseif(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
+if(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
+     # C++ tests including going back and forth between c and c++. We include
+     # c serialization support when verifying c++ for this reason. Future versions of this
+     # verification build might make this more generic allowing any language to test interoperability
+     # with any other language.
      set(LOCAL_VERIFICATION_LANG_STANDARD_C "")
      set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
      list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS dsdl-regulated-c dsdl-test-c)
@@ -279,10 +276,20 @@ elseif(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
                         ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
 
      add_dependencies(dsdl-test-c nunavut-support-c)
-elseif(NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "")
-     message(FATAL_ERROR "NUNAVUT_VERIFICATION_LANG_STANDARD was set to ${NUNAVUT_VERIFICATION_LANG_STANDARD} but "
-                         "NUNAVUT_VERIFICATION_LANG language was ${NUNAVUT_VERIFICATION_LANG} which does not "
-                         "support this option")
+endif()
+
+# +---------------------------------------------------------------------------+
+# | FLAG SETS
+# +---------------------------------------------------------------------------+
+
+if (LOCAL_VERIFICATION_LANG STREQUAL "c")
+     set(LOCAL_VERIFICATION_LANG_STANDARD_C "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
+     set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "")
+     list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS "")
+elseif(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
+     set(LOCAL_VERIFICATION_LANG_STANDARD_C "")
+     set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
+     list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS "")
 else()
     set(LOCAL_VERIFICATION_LANG_STANDARD_C "")
     set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "")
