@@ -174,14 +174,17 @@ class VLATestsGeneric : public ::testing::Test
 
 namespace
 {
-static constexpr std::size_t VLATestsGeneric_MinMaxSize = O1HEAP_ALIGNMENT;
+static constexpr std::size_t VLATestsGeneric_MinMaxSize = 32;
+static constexpr std::size_t VLATestsGeneric_O1HeapSize = O1HEAP_ALIGNMENT << 5;
+
+static_assert(VLATestsGeneric_O1HeapSize > VLATestsGeneric_MinMaxSize, "Unexpected test environment encountered.");
 
 }  // end anonymous namespace
 
 using VLATestsGenericAllocators = ::testing::Types<nunavut::support::MallocAllocator<int>,
                                                    std::allocator<int>,
                                                    std::allocator<long long>,
-                                                   O1HeapAllocator<int, O1HEAP_ALIGNMENT << 5>,
+                                                   O1HeapAllocator<int, VLATestsGeneric_O1HeapSize>,
                                                    JunkyStaticAllocator<int, VLATestsGeneric_MinMaxSize>>;
 TYPED_TEST_SUITE(VLATestsGeneric, VLATestsGenericAllocators, );
 
