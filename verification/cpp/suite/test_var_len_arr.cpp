@@ -174,14 +174,14 @@ class VLATestsGeneric : public ::testing::Test
 
 namespace
 {
-static constexpr std::size_t VLATestsGeneric_MinMaxSize = O1HEAP_ALIGNMENT * 8;
+static constexpr std::size_t VLATestsGeneric_MinMaxSize = O1HEAP_ALIGNMENT;
 
 }  // end anonymous namespace
 
 using VLATestsGenericAllocators = ::testing::Types<nunavut::support::MallocAllocator<int>,
                                                    std::allocator<int>,
                                                    std::allocator<long long>,
-                                                   O1HeapAllocator<int, VLATestsGeneric_MinMaxSize>,
+                                                   O1HeapAllocator<int, O1HEAP_ALIGNMENT << 5>,
                                                    JunkyStaticAllocator<int, VLATestsGeneric_MinMaxSize>>;
 TYPED_TEST_SUITE(VLATestsGeneric, VLATestsGenericAllocators, );
 
@@ -209,17 +209,8 @@ TYPED_TEST(VLATestsGeneric, TestPush)
     ASSERT_EQ(0U, subject.size());
 
     typename TypeParam::value_type x = 0;
-    const std::size_t max_items_expected_to_work = VLATestsGeneric_MinMaxSize / 4;
-    for (std::size_t i = 0; i < max_items_expected_to_work; ++i)
+    for (std::size_t i = 0; i < VLATestsGeneric_MinMaxSize; ++i)
     {
-        std::cerr << i << ": " << subject.capacity() << std::endl;
-        //
-        // O1HeapAllocator fails when the subject requests 42 items with 28 items
-        // already allocated and after allocating then freeing 2, 4, 6, 9, 13, and 19 items (53 items over 6
-        // allocations). Since 6 + 2 < NUM_BINS_MAX, 53 items were released, and
-        // 42 * 8 is < FRAGMENT_SIZE_MAX there doesn't seem to be a valid reason why 01Heap runs out of memory at
-        // this point?
-        //
         subject.push_back(x);
 
         ASSERT_EQ(i + 1, subject.size());
