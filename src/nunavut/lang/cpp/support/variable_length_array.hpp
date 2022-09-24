@@ -16,7 +16,7 @@
 #include <utility>
 #include <initializer_list>
 #if __cpp_exceptions
-#include <stdexcept>
+#    include <stdexcept>
 #endif
 
 namespace nunavut
@@ -33,8 +33,7 @@ class MallocAllocator
 public:
     using value_type = T;
 
-    MallocAllocator() noexcept
-    {}
+    MallocAllocator() noexcept {}
 
     T* allocate(std::size_t n) noexcept
     {
@@ -47,7 +46,6 @@ public:
         free(p);
     }
 };
-
 
 ///
 /// Minimal, generic container for storing UAVCAN variable-length arrays. One property that is unique
@@ -62,22 +60,17 @@ template <typename T, std::size_t MaxSize, typename Allocator = MallocAllocator<
 class VariableLengthArray
 {
 public:
-
     VariableLengthArray() noexcept(std::is_nothrow_constructible<Allocator>::value)
         : data_(nullptr)
         , capacity_(0)
         , size_(0)
         , alloc_()
-    {}
+    {
+    }
 
-    VariableLengthArray(std::initializer_list<T> l) noexcept
-            (
-                noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1))
-                &&
-                std::is_nothrow_constructible<Allocator>::value
-                &&
-                std::is_nothrow_copy_constructible<T>::value
-            )
+    VariableLengthArray(std::initializer_list<T> l) noexcept(
+        noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1)) &&
+        std::is_nothrow_constructible<Allocator>::value && std::is_nothrow_copy_constructible<T>::value)
         : data_(nullptr)
         , capacity_(0)
         , size_(0)
@@ -91,18 +84,14 @@ public:
     }
 
     template <class InputIt>
-    constexpr VariableLengthArray(InputIt first,
-                                  InputIt last,
-                                  const std::size_t length,
-                                  const Allocator& alloc = Allocator())
-                                    noexcept
-            (
-                noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1))
-                &&
-                std::is_nothrow_copy_constructible<Allocator>::value
-                &&
-                std::is_nothrow_copy_constructible<T>::value
-            )
+    constexpr VariableLengthArray(
+        InputIt           first,
+        InputIt           last,
+        const std::size_t length,
+        const Allocator&  alloc =
+            Allocator()) noexcept(noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1)) &&
+                                  std::is_nothrow_copy_constructible<Allocator>::value &&
+                                  std::is_nothrow_copy_constructible<T>::value)
         : data_(nullptr)
         , capacity_(0)
         , size_(0)
@@ -118,14 +107,9 @@ public:
     //
     // Rule of Five.
     //
-    VariableLengthArray(const VariableLengthArray& rhs) noexcept
-            (
-                noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1))
-                &&
-                std::is_nothrow_copy_constructible<Allocator>::value
-                &&
-                std::is_nothrow_copy_constructible<T>::value
-            )
+    VariableLengthArray(const VariableLengthArray& rhs) noexcept(
+        noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1)) &&
+        std::is_nothrow_copy_constructible<Allocator>::value && std::is_nothrow_copy_constructible<T>::value)
         : data_(nullptr)
         , capacity_(0)
         , size_(0)
@@ -138,22 +122,19 @@ public:
         }
     }
 
-    VariableLengthArray& operator=(const VariableLengthArray& rhs) noexcept
-            (
-                noexcept(VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(nullptr, 0, 0, std::declval<Allocator&>()))
-                &&
-                noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1))
-                &&
-                std::is_nothrow_copy_constructible<Allocator>::value
-                &&
-                std::is_nothrow_copy_constructible<T>::value
-            )
+    VariableLengthArray& operator=(const VariableLengthArray& rhs) noexcept(
+        noexcept(VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(
+            nullptr,
+            0,
+            0,
+            std::declval<Allocator&>())) && noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1)) &&
+        std::is_nothrow_copy_constructible<Allocator>::value && std::is_nothrow_copy_constructible<T>::value)
     {
         fast_deallocate(data_, size_, capacity_, alloc_);
-        data_ = nullptr;
+        data_     = nullptr;
         capacity_ = 0;
-        size_ = 0;
-        alloc_ = rhs.alloc_;
+        size_     = 0;
+        alloc_    = rhs.alloc_;
         reserve(rhs.size());
         for (const_iterator list_item = rhs.cbegin(), end = rhs.cend(); list_item != end; ++list_item)
         {
@@ -168,40 +149,39 @@ public:
         , size_(rhs.size_)
         , alloc_(std::move(rhs.alloc_))
     {
-        rhs.data_ = nullptr;
+        rhs.data_     = nullptr;
         rhs.capacity_ = 0;
-        rhs.size_ = 0;
+        rhs.size_     = 0;
     }
 
-    VariableLengthArray& operator=(VariableLengthArray&& rhs) noexcept
-            (
-                noexcept(VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(nullptr, 0, 0, std::declval<Allocator&>()))
-                &&
-                std::is_nothrow_move_assignable<Allocator>::value
-            )
+    VariableLengthArray& operator=(VariableLengthArray&& rhs) noexcept(
+        noexcept(VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(nullptr,
+                                                                                         0,
+                                                                                         0,
+                                                                                         std::declval<Allocator&>())) &&
+        std::is_nothrow_move_assignable<Allocator>::value)
     {
         fast_deallocate(data_, size_, capacity_, alloc_);
 
         alloc_ = std::move(rhs.alloc_);
 
-        data_ = rhs.data_;
+        data_     = rhs.data_;
         rhs.data_ = nullptr;
 
-        capacity_ = rhs.capacity_;
+        capacity_     = rhs.capacity_;
         rhs.capacity_ = 0;
 
-        size_ = rhs.size_;
+        size_     = rhs.size_;
         rhs.size_ = 0;
 
         return *this;
     }
 
     ~VariableLengthArray() noexcept(
-            noexcept
-            (
-                VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(nullptr, 0, 0, std::declval<Allocator&>())
-            )
-        )
+        noexcept(VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(nullptr,
+                                                                                         0,
+                                                                                         0,
+                                                                                         std::declval<Allocator&>())))
     {
         fast_deallocate(data_, size_, capacity_, alloc_);
     }
@@ -215,10 +195,10 @@ public:
         if (data() != rhs.data())
         {
             const_iterator rnext = rhs.cbegin();
-            const_iterator rend = rhs.cend();
+            const_iterator rend  = rhs.cend();
             const_iterator lnext = cbegin();
-            const_iterator lend = cend();
-            for(;rnext != rend && lnext != lend; ++lnext, ++rnext)
+            const_iterator lend  = cend();
+            for (; rnext != rend && lnext != lend; ++lnext, ++rnext)
             {
                 if (!internal_compare_element(*lnext, *rnext))
                 {
@@ -235,9 +215,7 @@ public:
         return true;
     }
 
-    constexpr bool operator!=(const VariableLengthArray& rhs) const noexcept(
-        noexcept(operator==(rhs))
-    )
+    constexpr bool operator!=(const VariableLengthArray& rhs) const noexcept(noexcept(operator==(rhs)))
     {
         return !(operator==(rhs));
     }
@@ -467,15 +445,12 @@ public:
     /// @param  desired_capacity The number of elements to allocate, but not initialize, memory for.
     /// @return The new (or unchanged) capacity of this object.
     ///
-    std::size_t reserve(const std::size_t desired_capacity) noexcept(
-        noexcept(
-            allocator_type().allocate(0)
-        )
-        &&
-        noexcept(
-            VariableLengthArray<T, MaxSize, Allocator>::template move_and_free<T>(nullptr, nullptr, 0, 0, std::declval<Allocator&>())
-        )
-    )
+    std::size_t reserve(const std::size_t desired_capacity) noexcept(noexcept(allocator_type().allocate(0)) && noexcept(
+        VariableLengthArray<T, MaxSize, Allocator>::template move_and_free<T>(nullptr,
+                                                                              nullptr,
+                                                                              0,
+                                                                              0,
+                                                                              std::declval<Allocator&>())))
     {
         const std::size_t clamped_capacity   = (desired_capacity > MaxSize) ? MaxSize : desired_capacity;
         const std::size_t no_shrink_capacity = (clamped_capacity > size_) ? clamped_capacity : size_;
@@ -484,8 +459,7 @@ public:
         try
         {
             new_data = alloc_.allocate(no_shrink_capacity);
-        }
-        catch (const std::bad_alloc& e)
+        } catch (const std::bad_alloc& e)
         {
             // we ignore the exception since all allocation failures are modeled using
             // null by this class.
@@ -512,18 +486,12 @@ public:
     ///         could not provide enough memory to move the existing objects to a smaller allocation.
     ///
     bool shrink_to_fit() noexcept(
-        noexcept(
-            allocator_type().deallocate(nullptr, 0)
-        )
-        &&
-        noexcept(
-            allocator_type().allocate(0)
-        )
-        &&
-        noexcept(
-            VariableLengthArray<T, MaxSize, Allocator>::template move_and_free<T>(nullptr, nullptr, 0, 0, std::declval<Allocator&>())
-        )
-    )
+        noexcept(allocator_type().deallocate(nullptr, 0)) && noexcept(allocator_type().allocate(0)) && noexcept(
+            VariableLengthArray<T, MaxSize, Allocator>::template move_and_free<T>(nullptr,
+                                                                                  nullptr,
+                                                                                  0,
+                                                                                  0,
+                                                                                  std::declval<Allocator&>())))
     {
         if (size_ == capacity_)
         {
@@ -546,8 +514,7 @@ public:
         try
         {
             minimized_data = alloc_.allocate(size_ * sizeof(T));
-        }
-        catch (const std::bad_alloc& e)
+        } catch (const std::bad_alloc& e)
         {
             // we ignore the exception since all allocation failures are modeled using
             // null by this class.
@@ -574,57 +541,93 @@ public:
     // | MODIFIERS
     // +----------------------------------------------------------------------+
     ///
-    /// Construct a new element on to the back of the array and grow the array size by 1. If exceptions are disabled
-    /// the caller must check before and after this call to see if the size grew to determine success. If using
-    /// exceptions this method throws {@code std::length_error} if the size of this collection is at capacity.
+    /// Construct a new element on to the back of the array. Grows size by 1 and may grow capacity.
     ///
-    /// @return A pointer to the stored value or nullptr if there was not enough capacity (use reserve to
-    ///         grow the available capacity).
+    /// If exceptions are disabled the caller must check before and after to see if the size grew to determine success.
+    /// If using exceptions this method throws {@code std::length_error} if the size of this collection is at capacity
+    /// or {@code std::bad_alloc} if the allocator failed to provide enough memory.
+    ///
+    /// If exceptions are disabled use the following logic:
+    ///
+    ///     const size_t size_before = my_array.size();
+    ///     my_array.push_back();
+    ///     if (size_before == my_array.size())
+    ///     {
+    ///         // failure
+    ///         if (size_before == my_array.max_size())
+    ///         {
+    ///             // length_error: you probably should have checked this first.
+    ///         }
+    ///         else
+    ///         {
+    ///             // bad_alloc: out of memory
+    ///         }
+    //      } // else, success.
+    ///
     /// @throw std::length_error if the size of this collection is at capacity.
+    /// @throw std::bad_alloc if memory was needed and none could be allocated.
     ///
     constexpr void push_back()
     {
+        if (!ensure_size_plus_one())
+        {
+            return;
+        }
+
         if (nullptr == push_back_impl())
         {
-            #if __cpp_exceptions
+#if __cpp_exceptions
             throw std::length_error("size is at capacity. Use reserve to grow the capacity.");
-            #endif
+#endif
         }
-        // else, without exceptions the caller has to check the size property to see if this
-        // method succeeded.
     }
 
     ///
-    /// Push a new element on to the back of the array and grow the array size by 1.
+    /// Allocate a new element on to the back of the array and move value into it. Grows size by 1 and
+    /// may grow capacity.
     ///
-    /// @return A pointer to the stored value or nullptr if there was not enough capacity (use reserve to
-    ///         grow the available capacity).
+    /// See VariableLengthArray::push_back() for full documentation.
+    ///
+    /// @throw std::length_error if the size of this collection is at capacity.
+    /// @throw std::bad_alloc if memory was needed and none could be allocated.
     ///
     constexpr void push_back(T&& value)
     {
+        if (!ensure_size_plus_one())
+        {
+            return;
+        }
+
         if (nullptr == push_back_impl(std::move(value)))
         {
-            #if __cpp_exceptions
+#if __cpp_exceptions
             throw std::length_error("size is at capacity. Use reserve to grow the capacity.");
-            #endif
+#endif
         }
-        // else, without exceptions the caller has to check the size property to see if this
-        // method succeeded.
     }
 
     ///
-    /// Push a new element on to the back of the array and grow the array size by 1.
+    /// Allocate a new element on to the back of the array and copy value into it. Grows size by 1 and
+    /// may grow capacity.
+    ///
+    /// See VariableLengthArray::push_back() for full documentation.
+    ///
+    /// @throw std::length_error if the size of this collection is at capacity.
+    /// @throw std::bad_alloc if memory was needed and none could be allocated.
     ///
     constexpr void push_back(const T& value)
     {
+        if (!ensure_size_plus_one())
+        {
+            return;
+        }
+
         if (nullptr == push_back_impl(value))
         {
-            #if __cpp_exceptions
+#if __cpp_exceptions
             throw std::length_error("size is at capacity. Use reserve to grow the capacity.");
-            #endif
+#endif
         }
-        // else, without exceptions the caller has to check the size property to see if this
-        // method succeeded.
     }
 
     ///
@@ -640,28 +643,82 @@ public:
     }
 
 private:
+    /**
+     * Ensure amortized, constant-time expansion of capacity as single items are added.
+     */
+    constexpr bool ensure_size_plus_one()
+    {
+        if (size_ < capacity_)
+        {
+            return true;
+        }
+
+        if (capacity_ == MaxSize)
+        {
+#if __cpp_exceptions
+            throw std::length_error("Already at max size. Cannot increase capacity.");
+#endif
+            return false;
+        }
+
+        // https://stackoverflow.com/questions/1100311/what-is-the-ideal-growth-rate-for-a-dynamically-allocated-array/20481237#20481237
+        const std::size_t capacity_before = capacity_;
+
+        const std::size_t half_capacity = capacity_before / 2U;
+
+        // That is, instead of a capacity sequence of 1, 2, 3, 4, 6, 9 we start from zero as 2, 4, 6, 9. The first
+        // opportunity for reusing previously freed memory comes when increasing to 19 from 13 since E(n-1) == 21.
+        const std::size_t new_capacity = capacity_before + ((half_capacity <= 1) ? 2 : half_capacity);
+
+
+        if (new_capacity > MaxSize)
+        {
+            reserve(MaxSize);
+        }
+        else
+        {
+            reserve(new_capacity);
+        }
+
+        if (capacity_before == capacity_)
+        {
+#if __cpp_exceptions
+            throw std::bad_alloc();
+#endif
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+
+    }
+
     template <typename U>
-    static constexpr bool
-        internal_compare_element(const U& lhs, const U& rhs, typename std::enable_if<!std::is_floating_point<U>::value>::type* = 0) noexcept
+    static constexpr bool internal_compare_element(
+        const U& lhs,
+        const U& rhs,
+        typename std::enable_if<!std::is_floating_point<U>::value>::type* = 0) noexcept
     {
         return (lhs == rhs);
     }
 
     template <typename U>
-    static constexpr bool
-        internal_compare_element(const U& lhs, const U& rhs, typename std::enable_if<std::is_floating_point<U>::value>::type* = 0) noexcept
+    static constexpr bool internal_compare_element(
+        const U& lhs,
+        const U& rhs,
+        typename std::enable_if<std::is_floating_point<U>::value>::type* = 0) noexcept
     {
         // From the C++ documentation for std::numeric_limits<T>::epsilon()
         // https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
 
         const auto diff = std::fabs(lhs - rhs);
-        const auto sum = std::fabs(lhs + rhs);
+        const auto sum  = std::fabs(lhs + rhs);
         // Scale the relative machine epsilon up.
         const auto epsilon = std::numeric_limits<U>::epsilon() * sum;
 
         return (diff <= epsilon) || diff < std::numeric_limits<U>::min();
     }
-
 
     constexpr pointer push_back_impl() noexcept(std::is_nothrow_default_constructible<T>::value)
     {
@@ -707,10 +764,8 @@ private:
                                           const std::size_t src_size_count,
                                           const std::size_t src_capacity_count,
                                           Allocator&        alloc,
-                                          typename std::enable_if<std::is_trivially_destructible<U>::value>::type* = 0)
-                                            noexcept(
-                                                        noexcept(allocator_type().deallocate(nullptr, 0))
-                                                    )
+                                          typename std::enable_if<std::is_trivially_destructible<U>::value>::type* =
+                                              0) noexcept(noexcept(allocator_type().deallocate(nullptr, 0)))
     {
         (void) src_size_count;
         alloc.deallocate(src, src_capacity_count);
@@ -725,12 +780,8 @@ private:
         const std::size_t src_size_count,
         const std::size_t src_capacity_count,
         Allocator&        alloc,
-        typename std::enable_if<!std::is_trivially_destructible<U>::value>::type* = 0)
-            noexcept(
-                        std::is_nothrow_destructible<U>::value
-                        &&
-                        noexcept(allocator_type().deallocate(nullptr,0))
-                    )
+        typename std::enable_if<!std::is_trivially_destructible<U>::value>::type* =
+            0) noexcept(std::is_nothrow_destructible<U>::value&& noexcept(allocator_type().deallocate(nullptr, 0)))
     {
         std::size_t dtor_iterator = src_size_count;
         while (dtor_iterator > 0)
@@ -744,15 +795,14 @@ private:
     /// Move stuff in src to dst and then free all the memory allocated for src.
     ///
     template <typename U>
-    static constexpr void move_and_free(U* const    dst,
-                                        U* const    src,
-                                        std::size_t src_len_count,
-                                        std::size_t src_capacity_count,
-                                        Allocator&  alloc,
-                                        typename std::enable_if<std::is_fundamental<U>::value>::type* = 0)
-                                            noexcept(
-                                                        noexcept(fast_deallocate<U>(nullptr, 0, 0, std::declval<Allocator&>()))
-                                                    )
+    static constexpr void move_and_free(
+        U* const    dst,
+        U* const    src,
+        std::size_t src_len_count,
+        std::size_t src_capacity_count,
+        Allocator&  alloc,
+        typename std::enable_if<std::is_fundamental<U>::value>::type* =
+            0) noexcept(noexcept(fast_deallocate<U>(nullptr, 0, 0, std::declval<Allocator&>())))
     {
         if (src_len_count > 0)
         {
@@ -766,25 +816,17 @@ private:
     /// Same as above but for non-fundamental types. We can't just memcpy for these.
     ///
     template <typename U>
-    static constexpr void move_and_free(U* const    dst,
-                                        U* const    src,
-                                        std::size_t src_len_count,
-                                        std::size_t src_capacity_count,
-                                        Allocator&  alloc,
-                                        typename std::enable_if<!std::is_fundamental<U>::value>::type* = 0,
-                                        typename std::enable_if<
-                                            std::is_move_constructible<U>::value
-                                            ||
-                                            std::is_copy_constructible<U>::value>::type* = 0)
-                                            noexcept(
-                                                    (
-                                                        std::is_nothrow_move_constructible<U>::value
-                                                        ||
-                                                        std::is_nothrow_copy_constructible<U>::value
-                                                    )
-                                                    &&
-                                                    noexcept(fast_deallocate<U>(nullptr, 0, 0, std::declval<Allocator&>()))
-                                                )
+    static constexpr void move_and_free(
+        U* const    dst,
+        U* const    src,
+        std::size_t src_len_count,
+        std::size_t src_capacity_count,
+        Allocator&  alloc,
+        typename std::enable_if<!std::is_fundamental<U>::value>::type* = 0,
+        typename std::enable_if<std::is_move_constructible<U>::value || std::is_copy_constructible<U>::value>::type* =
+            0) noexcept((std::is_nothrow_move_constructible<U>::value ||
+                         std::is_nothrow_copy_constructible<
+                             U>::value) && noexcept(fast_deallocate<U>(nullptr, 0, 0, std::declval<Allocator&>())))
     {
         if (src_len_count > 0)
         {

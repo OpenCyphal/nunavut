@@ -23,16 +23,17 @@ public:
     Doomed(int* out_signal_dtor)
         : out_signal_dtor_(out_signal_dtor)
         , moved_(false)
-    {}
+    {
+    }
     Doomed(Doomed&& from) noexcept
         : out_signal_dtor_(from.out_signal_dtor_)
         , moved_(false)
     {
         from.moved_ = true;
     }
-    Doomed(const Doomed&) = delete;
+    Doomed(const Doomed&)            = delete;
     Doomed& operator=(const Doomed&) = delete;
-    Doomed& operator=(Doomed&&) = delete;
+    Doomed& operator=(Doomed&&)      = delete;
 
     ~Doomed()
     {
@@ -62,12 +63,13 @@ public:
     O1HeapAllocator()
         : heap_()
         , heap_alloc_(o1heapInit(&heap_[0], SizeCount * sizeof(T), nullptr, nullptr))
-    {}
+    {
+    }
 
-    O1HeapAllocator(const O1HeapAllocator&) = delete;
+    O1HeapAllocator(const O1HeapAllocator&)            = delete;
     O1HeapAllocator& operator=(const O1HeapAllocator&) = delete;
-    O1HeapAllocator(O1HeapAllocator&&) = delete;
-    O1HeapAllocator& operator=(O1HeapAllocator&&) = delete;
+    O1HeapAllocator(O1HeapAllocator&&)                 = delete;
+    O1HeapAllocator& operator=(O1HeapAllocator&&)      = delete;
 
     T* allocate(std::size_t n)
     {
@@ -92,15 +94,16 @@ template <typename T, std::size_t SizeCount>
 class JunkyStaticAllocator
 {
 public:
-    using value_type = T;
-    using array_constref_type = const T(&)[SizeCount];
+    using value_type          = T;
+    using array_constref_type = const T (&)[SizeCount];
 
     JunkyStaticAllocator()
         : data_()
         , alloc_count_(0)
         , last_alloc_size_(0)
         , last_dealloc_size_(0)
-    {}
+    {
+    }
 
     JunkyStaticAllocator(const JunkyStaticAllocator& rhs)
         : data_()
@@ -152,8 +155,9 @@ public:
     {
         return data_;
     }
+
 private:
-    T data_[SizeCount];
+    T           data_[SizeCount];
     std::size_t alloc_count_;
     std::size_t last_alloc_size_;
     std::size_t last_dealloc_size_;
@@ -165,17 +169,26 @@ private:
  */
 template <typename T>
 class VLATestsGeneric : public ::testing::Test
-{};
+{
+};
+
+namespace
+{
+static constexpr std::size_t VLATestsGeneric_MinMaxSize = O1HEAP_ALIGNMENT * 8;
+
+}  // end anonymous namespace
 
 using VLATestsGenericAllocators = ::testing::Types<nunavut::support::MallocAllocator<int>,
                                                    std::allocator<int>,
                                                    std::allocator<long long>,
-                                                   O1HeapAllocator<int, O1HEAP_ALIGNMENT * 8>,
-                                                   JunkyStaticAllocator<int, 30>>;
+                                                   O1HeapAllocator<int, VLATestsGeneric_MinMaxSize>,
+                                                   JunkyStaticAllocator<int, VLATestsGeneric_MinMaxSize>>;
 TYPED_TEST_SUITE(VLATestsGeneric, VLATestsGenericAllocators, );
 
 TYPED_TEST(VLATestsGeneric, TestReserve)
 {
+    static_assert(10 < VLATestsGeneric_MinMaxSize,
+                  "Test requires max size of array is less than max size of the smallest allocator");
     nunavut::support::VariableLengthArray<typename TypeParam::value_type, 10, TypeParam> subject;
     ASSERT_EQ(0U, subject.capacity());
     ASSERT_EQ(0U, subject.size());
@@ -190,36 +203,39 @@ TYPED_TEST(VLATestsGeneric, TestReserve)
 
 TYPED_TEST(VLATestsGeneric, TestPush)
 {
-    nunavut::support::VariableLengthArray<typename TypeParam::value_type, 20, TypeParam> subject;
+    nunavut::support::VariableLengthArray<typename TypeParam::value_type, VLATestsGeneric_MinMaxSize, TypeParam>
+        subject;
     ASSERT_EQ(nullptr, subject.data());
     ASSERT_EQ(0U, subject.size());
-    try
+
+    typename TypeParam::value_type x = 0;
+    const std::size_t max_items_expected_to_work = VLATestsGeneric_MinMaxSize / 4;
+    for (std::size_t i = 0; i < max_items_expected_to_work; ++i)
     {
-        subject.push_back(1);
+        std::cerr << i << ": " << subject.capacity() << std::endl;
+        //
+        // O1HeapAllocator fails when the subject requests 42 items with 28 items
+        // already allocated and after allocating then freeing 2, 4, 6, 9, 13, and 19 items (53 items over 6
+        // allocations). Since 6 + 2 < NUM_BINS_MAX, 53 items were released, and
+        // 42 * 8 is < FRAGMENT_SIZE_MAX there doesn't seem to be a valid reason why 01Heap runs out of memory at
+        // this point?
+        //
+        subject.push_back(x);
+
+        ASSERT_EQ(i + 1, subject.size());
+        ASSERT_LE(subject.size(), subject.capacity());
+
+        const typename TypeParam::value_type* const pushed = &subject[i];
+
+        ASSERT_EQ(*pushed, x);
+        ++x;
     }
-    catch(const std::length_error& e)
-    {
-        std::cerr << e.what() << '\n';
-    }
-
-    ASSERT_EQ(0U, subject.size());
-
-    ASSERT_EQ(10U, subject.reserve(10));
-
-    ASSERT_EQ(10U, subject.capacity());
-    ASSERT_EQ(0U, subject.size());
-    ASSERT_EQ(20U, subject.max_size());
-    subject.push_back(1);
-    ASSERT_EQ(1U, subject.size());
-    const typename TypeParam::value_type* const pushed = &subject[0];
-
-    ASSERT_NE(nullptr, pushed);
-    ASSERT_EQ(*pushed, 1);
-    ASSERT_EQ(1U, subject.size());
 }
 
 TYPED_TEST(VLATestsGeneric, TestPop)
 {
+    static_assert(20 < VLATestsGeneric_MinMaxSize,
+                  "Test requires max size of array is less than max size of the smallest allocator");
     nunavut::support::VariableLengthArray<typename TypeParam::value_type, 20, TypeParam> subject;
     ASSERT_EQ(10U, subject.reserve(10));
     subject.push_back(1);
@@ -235,6 +251,8 @@ TYPED_TEST(VLATestsGeneric, TestPop)
 
 TYPED_TEST(VLATestsGeneric, TestShrink)
 {
+    static_assert(20 < VLATestsGeneric_MinMaxSize,
+                  "Test requires max size of array is less than max size of the smallest allocator");
     nunavut::support::VariableLengthArray<typename TypeParam::value_type, 20, TypeParam> subject;
     ASSERT_EQ(10U, subject.reserve(10));
     subject.push_back(1);
@@ -254,7 +272,8 @@ TYPED_TEST(VLATestsGeneric, TestShrink)
  */
 template <typename T>
 class VLATestsStatic : public ::testing::Test
-{};
+{
+};
 
 using VLATestsStaticAllocators =
     ::testing::Types<O1HeapAllocator<int, O1HEAP_ALIGNMENT * 8>, JunkyStaticAllocator<int, 10>>;
@@ -281,7 +300,7 @@ TYPED_TEST(VLATestsStatic, TestOutOfMemory)
         ASSERT_EQ(i, subject.capacity());
         subject.push_back(static_cast<typename TypeParam::value_type>(i));
         ASSERT_EQ(i, subject.size());
-        typename TypeParam::value_type* pushed = &subject[i-1];
+        typename TypeParam::value_type* pushed = &subject[i - 1];
         ASSERT_NE(nullptr, pushed);
         ASSERT_EQ(static_cast<typename TypeParam::value_type>(i), *pushed);
     }
@@ -290,8 +309,10 @@ TYPED_TEST(VLATestsStatic, TestOutOfMemory)
     try
     {
         subject.push_back(0);
-    }
-    catch(const std::length_error& e)
+    } catch (const std::length_error& e)
+    {
+        std::cerr << e.what() << '\n';
+    } catch (const std::bad_alloc& e)
     {
         std::cerr << e.what() << '\n';
     }
@@ -325,8 +346,10 @@ TYPED_TEST(VLATestsStatic, TestOverMaxSize)
     try
     {
         subject.push_back(0);
-    }
-    catch(const std::length_error& e)
+    } catch (const std::length_error& e)
+    {
+        std::cerr << e.what() << '\n';
+    } catch (const std::bad_alloc& e)
     {
         std::cerr << e.what() << '\n';
     }
@@ -410,7 +433,8 @@ TEST(VLATestsNonTrivial, TestMovable)
     public:
         Movable(int data)
             : data_(data)
-        {}
+        {
+        }
         Movable(const Movable&) = delete;
         Movable(Movable&& move_from) noexcept
             : data_(move_from.data_)
@@ -441,7 +465,7 @@ TEST(VLATestsNonTrivial, TestMoveToVector)
     for (std::size_t i = 0; i < decltype(subject)::type_max_size; ++i)
     {
         subject.push_back(i);
-        ASSERT_EQ(i+1, subject.size());
+        ASSERT_EQ(i + 1, subject.size());
     }
     std::vector<std::size_t> a(subject.cbegin(), subject.cend());
     for (std::size_t i = 0; i < decltype(subject)::type_max_size; ++i)
@@ -471,7 +495,6 @@ TEST(VLATestsNonTrivial, TestCopyContructor)
     }
 }
 
-
 TEST(VLATestsNonTrivial, TestMoveContructor)
 {
     nunavut::support::VariableLengthArray<std::size_t, 10> fixture{{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
@@ -500,7 +523,8 @@ TEST(VLATestsNonTrivial, TestFPCompare)
     nunavut::support::VariableLengthArray<double, 10> one{{1.00, 2.00}};
     nunavut::support::VariableLengthArray<double, 10> two{{1.00, 2.00}};
     const double epsilon_for_two_comparison = std::nextafter(4.00, INFINITY) - 4.00;
-    nunavut::support::VariableLengthArray<double, 10> three{{1.00, std::nextafter(2.00 + epsilon_for_two_comparison, INFINITY)}};
+    nunavut::support::VariableLengthArray<double, 10> three{
+        {1.00, std::nextafter(2.00 + epsilon_for_two_comparison, INFINITY)}};
     ASSERT_EQ(one, one);
     ASSERT_EQ(one, two);
     ASSERT_NE(one, three);
@@ -521,11 +545,9 @@ TEST(VLATestsNonTrivial, TestCopyAssignment)
 
 TEST(VLATestsNonTrivial, TestMoveAssignment)
 {
-    nunavut::support::VariableLengthArray<std::string, 3> lhs{{std::string("one"),
-                                                               std::string("two")}};
-    nunavut::support::VariableLengthArray<std::string, 3> rhs{{std::string("three"),
-                                                               std::string("four"),
-                                                               std::string("five")}};
+    nunavut::support::VariableLengthArray<std::string, 3> lhs{{std::string("one"), std::string("two")}};
+    nunavut::support::VariableLengthArray<std::string, 3> rhs{
+        {std::string("three"), std::string("four"), std::string("five")}};
     ASSERT_EQ(2U, lhs.size());
     ASSERT_EQ(3U, rhs.size());
     ASSERT_NE(lhs, rhs);
@@ -535,4 +557,13 @@ TEST(VLATestsNonTrivial, TestMoveAssignment)
     ASSERT_EQ(0U, rhs.capacity());
     ASSERT_NE(lhs, rhs);
     ASSERT_EQ(std::string("three"), lhs[0]);
+}
+
+TEST(VLATestsNonTrivial, TestPushBackGrowsCapacity)
+{
+    static constexpr std::size_t                        MaxSize = 5;
+    nunavut::support::VariableLengthArray<int, MaxSize> subject;
+    ASSERT_EQ(0U, subject.capacity());
+    subject.push_back();
+    ASSERT_LE(1U, subject.capacity());
 }
