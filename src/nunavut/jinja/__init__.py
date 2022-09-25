@@ -780,7 +780,7 @@ class SupportGenerator(CodeGenerator):
 
         self._sub_folders = None  # type: typing.Optional[pathlib.Path]
         self._serialization_support_enabled = (
-            False  # If not enabled then we remove any serialization support files found
+            False
         )
         if target_language is not None:
             self._serialization_support_enabled = not target_language.omit_serialization_support
