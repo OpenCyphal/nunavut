@@ -779,9 +779,7 @@ class SupportGenerator(CodeGenerator):
         target_language = self.language_context.get_target_language()
 
         self._sub_folders = None  # type: typing.Optional[pathlib.Path]
-        self._serialization_support_enabled = (
-            False
-        )
+        self._serialization_support_enabled = False
         if target_language is not None:
             self._serialization_support_enabled = not target_language.omit_serialization_support
 
