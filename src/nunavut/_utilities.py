@@ -93,6 +93,18 @@ class YesNoDefault(enum.Enum):
     DEFAULT = 2
 
 
+@enum.unique
+class ResourceType(enum.Enum):
+    """
+    Common Nunavut classifications for Python package resources.
+    """
+
+    ANY = 0
+    CONFIGURATION = 1
+    SERIALIZATION_SUPPORT = 2
+    TYPE_SUPPORT = 3
+
+
 def iter_package_resources(pkg_name: str, *suffix_filters: str) -> Generator[pathlib.Path, None, None]:
     """
     >>> from nunavut._utilities import iter_package_resources
@@ -104,5 +116,22 @@ def iter_package_resources(pkg_name: str, *suffix_filters: str) -> Generator[pat
 
     """
     for resource in importlib_resources.files(pkg_name).iterdir():
-        if any(suffix == resource.suffix for suffix in suffix_filters):  # type: ignore
-            yield cast(pathlib.Path, resource)
+        if resource.is_file() and isinstance(resource, pathlib.Path):
+            # Not sure why this works but it's seemed to so far. importlib_resources.as_file(resource)
+            # may be more correct but this can create temporary files which would disappear after the iterator
+            # had copied their paths. If you are reading this because this method isn't working for some packaging
+            # scheme then we may need to use importlib_resources.as_file(resource) to create a runtime cache of
+            # temporary objects that live for a given nunavut session. This, of course, wouldn't help across sessions
+            # which is a common use case when integrating Nunavut with build systems. So...here be dragons.
+            file_resource = cast(pathlib.Path, resource)
+            if any(suffix == file_resource.suffix for suffix in suffix_filters):
+                yield file_resource
+
+
+def empty_list_support_files() -> Generator[pathlib.Path, None, None]:
+    """
+    Helper for implementing the list_support_files method in language support packages. This provides an empty
+    iterator with the correct type annotations.
+    """
+    # works in Python 3.3 and newer. Thanks https://stackoverflow.com/a/13243870
+    yield from ()

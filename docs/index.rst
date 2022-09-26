@@ -4,6 +4,7 @@
    :hidden:
 
    api/library
+   languages
    templates
    CLI (nnvg) <cli>
    dev

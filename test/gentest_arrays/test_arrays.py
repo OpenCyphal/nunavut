@@ -61,7 +61,7 @@ def test_var_array_override_cpp(gen_paths):  # type: ignore
     Make sure we can override the type generated for variable-length
     arrays.
     """
-    language_option_overrides = {'variable_array_type': 'scotec::TerribleArray<{TYPE},{MAX_SIZE}>'}
+    language_option_overrides = {'variable_array_type_template': 'scotec::TerribleArray<{TYPE},{MAX_SIZE}>'}
     root_namespace = str(gen_paths.dsdl_dir / Path("radar"))
     compound_types = pydsdl.read_namespace(root_namespace, [], allow_unregulated_fixed_port_id=True)
     language_context = LanguageContext('cpp',

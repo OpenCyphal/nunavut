@@ -19,7 +19,7 @@ import nunavut.generators
 import nunavut.lang
 import nunavut.postprocessors
 import pydsdl
-from nunavut._utilities import YesNoDefault
+from nunavut._utilities import ResourceType, YesNoDefault
 from yaml import Dumper as YamlDumper
 from yaml import dump as yaml_dump
 
@@ -779,9 +779,9 @@ class SupportGenerator(CodeGenerator):
         target_language = self.language_context.get_target_language()
 
         self._sub_folders = None  # type: typing.Optional[pathlib.Path]
-        self._support_enabled = False  # If not enabled then we remove any support files found
+        self._serialization_support_enabled = False
         if target_language is not None:
-            self._support_enabled = not target_language.omit_serialization_support
+            self._serialization_support_enabled = not target_language.omit_serialization_support
 
             #  Create the sub-folder to copy-to based on the support namespace.
             self._sub_folders = pathlib.Path("")
@@ -794,11 +794,11 @@ class SupportGenerator(CodeGenerator):
     # +-----------------------------------------------------------------------+
     def get_templates(self) -> typing.Iterable[pathlib.Path]:
         files = []
-        target_language = self.language_context.get_target_language()
-
-        if target_language is not None:
-            for resource in target_language.support_files:
+        if self._serialization_support_enabled:
+            for resource in self._get_templates_by_support_type(ResourceType.SERIALIZATION_SUPPORT):
                 files.append(resource)
+        for resource in self._get_templates_by_support_type(ResourceType.TYPE_SUPPORT):
+            files.append(resource)
         return files
 
     def generate_all(self, is_dryrun: bool = False, allow_overwrite: bool = True) -> typing.Iterable[pathlib.Path]:
@@ -812,6 +812,14 @@ class SupportGenerator(CodeGenerator):
     # +-----------------------------------------------------------------------+
     # | Private
     # +-----------------------------------------------------------------------+
+    def _get_templates_by_support_type(self, resource_type: ResourceType) -> typing.Iterable[pathlib.Path]:
+        files = []
+        target_language = self.language_context.get_target_language()
+
+        if target_language is not None:
+            for resource in target_language.get_support_files(resource_type):
+                files.append(resource)
+        return files
 
     def _generate_all(
         self, target_language: nunavut.lang.Language, sub_folders: pathlib.Path, is_dryrun: bool, allow_overwrite: bool
@@ -833,26 +841,13 @@ class SupportGenerator(CodeGenerator):
         for resource in self.get_templates():
             target = (target_path / resource.name).with_suffix(target_language.extension)
             logger.info("Generating support file: %s", target)
-            if not self._support_enabled:
-                self._remove_header(target, is_dryrun, allow_overwrite)
-            elif resource.suffix == TEMPLATE_SUFFIX:
+            if resource.suffix == TEMPLATE_SUFFIX:
                 self._generate_header(resource, target, is_dryrun, allow_overwrite)
                 generated.append(target)
             else:
                 self._copy_header(resource, target, is_dryrun, allow_overwrite, line_pps, file_pps)
                 generated.append(target)
         return generated
-
-    def _remove_header(self, target: pathlib.Path, is_dryrun: bool, allow_overwrite: bool) -> None:
-        if not is_dryrun:
-            if not allow_overwrite and target.exists():
-                raise PermissionError("{} exists. Refusing to remove.".format(str(target)))
-            try:
-                target.unlink()
-            except FileNotFoundError:
-                # missing_ok was added in python 3.8 so this try/except statement will
-                # go away someday when python 3.7 support is dropped.
-                pass
 
     def _generate_header(
         self, template_path: pathlib.Path, output_path: pathlib.Path, is_dryrun: bool, allow_overwrite: bool

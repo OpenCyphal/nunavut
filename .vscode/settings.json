@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": ".tox/local/bin/python",
+    "python.defaultInterpreterPath": "${workspaceFolder}/.tox/local",
     "python.linting.flake8Enabled": true,
     "python.linting.pylintEnabled": false,
     "python.linting.mypyEnabled": true,
@@ -11,7 +11,6 @@
     ],
     "python.testing.cwd": "${workspaceFolder}",
     "python.testing.unittestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.formatting.provider": "black",
     "python.formatting.blackArgs": [
@@ -41,8 +40,8 @@
     "C_Cpp.configurationWarnings": "Disabled",
     "files.associations": {
         "*.py.template": "python",
-        "*.cc": "c++",
-        "*.hpp": "c++",
+        "*.cc": "cpp",
+        "*.hpp": "cpp",
         "__bit_reference": "cpp",
         "__config": "cpp",
         "__debug": "cpp",
@@ -137,7 +136,11 @@
         "any": "cpp",
         "span": "cpp",
         "variant": "cpp",
-        "__bits": "cpp"
+        "__bits": "cpp",
+        "filesystem": "cpp",
+        "__memory": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp"
     },
     "python.linting.mypyArgs": [
         "--config-file=${workspaceFolder}/tox.ini"

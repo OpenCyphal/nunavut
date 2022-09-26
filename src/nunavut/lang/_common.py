@@ -14,6 +14,7 @@ import re
 import typing
 
 import pydsdl
+from nunavut._utilities import ResourceType
 
 from . import Language
 
@@ -30,13 +31,13 @@ class IncludeGenerator:
             self.make_path(dt, self._language, output_extension).as_posix() for dt in dep_types.composite_types
         ]
 
+        namespace_path = pathlib.Path("")
+        for namespace_part in self._language.support_namespace:
+            namespace_path = namespace_path / pathlib.Path(namespace_part)
         if not self._language.omit_serialization_support:
-            namespace_path = pathlib.Path("")
-            for namespace_part in self._language.support_namespace:
-                namespace_path = namespace_path / pathlib.Path(namespace_part)
             path_list += [
                 (namespace_path / pathlib.Path(p.name).with_suffix(output_extension)).as_posix()
-                for p in self._language.support_files
+                for p in self._language.get_support_files(ResourceType.SERIALIZATION_SUPPORT)
             ]
 
         prefer_system_includes = self._language.get_config_value_as_bool("prefer_system_includes", False)
@@ -46,7 +47,7 @@ class IncludeGenerator:
             path_list_with_punctuation = ['"{}"'.format(p) for p in path_list]
 
         if sort:
-            return sorted(path_list_with_punctuation) + self._language.get_includes(dep_types)
+            return sorted(path_list_with_punctuation + self._language.get_includes(dep_types))
         else:
             return path_list_with_punctuation + self._language.get_includes(dep_types)
 

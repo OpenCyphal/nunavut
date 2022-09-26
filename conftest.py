@@ -14,6 +14,7 @@ import subprocess
 import tempfile
 import textwrap
 import typing
+import urllib
 from doctest import ELLIPSIS
 
 import pydsdl
@@ -187,7 +188,7 @@ class GenTestPaths:
         The directory to place test output under for this test case.
         """
         if self._out_dir is None:
-            self._out_dir = self.create_new_temp_dir(self.test_name)
+            self._out_dir = self.create_new_temp_dir(urllib.parse.quote_plus(self.test_name))
         return self._out_dir
 
     @property

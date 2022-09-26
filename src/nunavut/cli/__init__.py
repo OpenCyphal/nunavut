@@ -511,7 +511,7 @@ def _make_parser() -> argparse.ArgumentParser:
 def _extra_includes_from_env(env_var_name: str) -> typing.List[str]:
     try:
         extra_includes_from_env = os.environ[env_var_name].split(os.pathsep)
-        logging.info("Additional include directories from {}: %s", env_var_name, str(extra_includes_from_env))
+        logging.info("Additional include directories from {}: {}".format(env_var_name, str(extra_includes_from_env)))
         return extra_includes_from_env
     except KeyError:
         return []

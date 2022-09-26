@@ -10,13 +10,13 @@ Contains supporting C++ headers to distribute with generated types.
 import pathlib
 import typing
 
-from nunavut._utilities import iter_package_resources
+from nunavut._utilities import ResourceType, empty_list_support_files, iter_package_resources
 
 __version__ = "1.0.0"
 """Version of the c++ support headers."""
 
 
-def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
+def list_support_files(resource_type: ResourceType = ResourceType.ANY) -> typing.Generator[pathlib.Path, None, None]:
     """
     Get a list of C++ support headers embedded in this package.
 
@@ -37,6 +37,31 @@ def list_support_files() -> typing.Generator[pathlib.Path, None, None]:
 
         assert support_file_count > 0
 
+        support_file_count = 0
+        for path in list_support_files(ResourceType.CONFIGURATION):
+            support_file_count +=1
+        assert support_file_count == 0
+
+        support_file_count = 0
+        for path in list_support_files(ResourceType.SERIALIZATION_SUPPORT):
+            support_file_count +=1
+        assert support_file_count > 0
+
+        support_file_count = 0
+        for path in list_support_files(ResourceType.TYPE_SUPPORT):
+            support_file_count +=1
+        assert support_file_count > 0
+
     :return: A list of C++ support header resources.
     """
-    return iter_package_resources(__name__, ".hpp", ".j2")
+
+    # for now we say all .hpp resources are type support and all .j2 are serialization support.
+    # We are allowed to change this logic anyway we want without breaking changes.
+    if resource_type is ResourceType.SERIALIZATION_SUPPORT:
+        return iter_package_resources(__name__, ".j2")
+    if resource_type is ResourceType.TYPE_SUPPORT:
+        return iter_package_resources(__name__, ".hpp")
+    if resource_type is ResourceType.ANY:
+        return iter_package_resources(__name__, ".hpp", ".j2")
+    else:
+        return empty_list_support_files()
