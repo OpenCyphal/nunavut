@@ -115,11 +115,11 @@ class UseQuery(Extension):
             from nunavut.jinja import CodeGenEnvironment
             from nunavut.jinja.jinja2 import DictLoader
             from nunavut.jinja.extensions import UseQuery
-            from nunavut.lang import LanguageLoader
+            from nunavut.lang import LanguageClassLoader
             from nunavut.jinja.jinja2 import UndefinedError
             from unittest.mock import MagicMock
 
-            ln_c = LanguageLoader().load_language('c', True)
+            ln_c = LanguageClassLoader().new_language('c')
 
             lctx = MagicMock()
             lctx.get_supported_languages = MagicMock(return_value = {'c': ln_c})

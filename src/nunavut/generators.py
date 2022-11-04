@@ -42,7 +42,7 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
             self._generate_namespace_types = False
         else:
             target_language = self._namespace.get_language_context().get_target_language()
-            if target_language is not None and target_language.has_standard_namespace_files:
+            if target_language.has_standard_namespace_files:
                 self._generate_namespace_types = True
             else:
                 self._generate_namespace_types = False
@@ -64,15 +64,18 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
         return self._generate_namespace_types
 
     @abc.abstractmethod
-    def get_templates(self) -> typing.Iterable[pathlib.Path]:
+    def get_templates(self, omit_serialization_support: bool = False) -> typing.Iterable[pathlib.Path]:
         """
         Enumerate all templates found in the templates path.
+        :param bool omit_serialization_support: If True then templates needed only for serialization will be omitted.
         :return: A list of paths to all templates found by this Generator object.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def generate_all(self, is_dryrun: bool = False, allow_overwrite: bool = True) -> typing.Iterable[pathlib.Path]:
+    def generate_all(
+        self, is_dryrun: bool = False, allow_overwrite: bool = True, omit_serialization_support: bool = False
+    ) -> typing.Iterable[pathlib.Path]:
         """
         Generates all output for a given :class:`nunavut.Namespace` and using
         the templates found by this object.
@@ -82,6 +85,8 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
         :param bool allow_overwrite: If True then the generator will attempt to overwrite any existing files
                                 it encounters. If False then the generator will raise an error if the
                                 output file exists and the generation is not a dry-run.
+        :param bool omit_serialization_support: If True then the generator will emit only types without additional
+                                serialization and deserialization support and logic.
         :return: 0 for success. Non-zero for errors.
         :raises: PermissionError if :attr:`allow_overwrite` is False and the file exists.
         """

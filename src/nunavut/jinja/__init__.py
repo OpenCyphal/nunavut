@@ -19,7 +19,7 @@ import nunavut.generators
 import nunavut.lang
 import nunavut.postprocessors
 import pydsdl
-from nunavut._utilities import ResourceType, YesNoDefault
+from nunavut._utilities import ResourceType, YesNoDefault, ResourceSearchPolicy
 from yaml import Dumper as YamlDumper
 from yaml import dump as yaml_dump
 
@@ -71,6 +71,9 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
                                             specified). For example, if the target language is ``c`` and this parameter
                                             was set to ``foo`` then built-in templates would be loaded from
                                             ``nunavut.lang.c.foo``.
+    :param package_name_for_templates: If provided then the generator will look for templates within the given package
+                                       name if a template is not found under a given filesystem path first (see
+                                       templates_dir parameter).
     :raises RuntimeError: If any additional filter or test attempts to replace a built-in
                           or otherwise already defined filter or test.
     """
@@ -120,25 +123,23 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
     @classmethod
     def _handle_post_processors(
         cls,
+        target_language: "nunavut.lang.Language",
         post_processors: typing.Optional[typing.List["nunavut.postprocessors.PostProcessor"]],
-        target_language: typing.Optional["nunavut.lang.Language"],
     ) -> typing.Optional[typing.List["nunavut.postprocessors.PostProcessor"]]:
         """
         Used by constructor to process an optional list of post-processors and to augment or create this list
         if needed to support language options.
         """
-        if target_language is not None:
+        try:
+            limit_empty_lines = target_language.get_config_value("limit_empty_lines")
+            post_processors = cls.__augment_post_processors_with_ln_limit_empty_lines(
+                post_processors, int(limit_empty_lines)
+            )
+        except KeyError:
+            pass
 
-            try:
-                limit_empty_lines = target_language.get_config_value("limit_empty_lines")
-                post_processors = cls.__augment_post_processors_with_ln_limit_empty_lines(
-                    post_processors, int(limit_empty_lines)
-                )
-            except KeyError:
-                pass
-
-            if target_language.get_config_value_as_bool("trim_trailing_whitespace"):
-                post_processors = cls.__augment_post_processors_with_ln_trim_trailing_whitespace(post_processors)
+        if target_language.get_config_value_as_bool("trim_trailing_whitespace"):
+            post_processors = cls.__augment_post_processors_with_ln_trim_trailing_whitespace(post_processors)
 
         return post_processors
 
@@ -155,6 +156,8 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
         additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
         post_processors: typing.Optional[typing.List["nunavut.postprocessors.PostProcessor"]] = None,
         builtin_template_path: str = DEFAULT_TEMPLATE_PATH,
+        package_name_for_templates: typing.Optional[str] = None,
+        search_policy: ResourceSearchPolicy = ResourceSearchPolicy.FIND_ALL,
     ):
 
         super().__init__(namespace, generate_namespace_types)
@@ -165,16 +168,18 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
         language_context = self._namespace.get_language_context()
         target_language = language_context.get_target_language()
 
+        if package_name_for_templates is None:
+            package_name_for_templates = target_language.get_templates_package_name()
+
         self._dsdl_template_loader = DSDLTemplateLoader(
             templates_dirs=templates_dir,
-            package_name_for_templates=(
-                None if target_language is None else target_language.get_templates_package_name()
-            ),
+            package_name_for_templates=package_name_for_templates,
             followlinks=followlinks,
             builtin_template_path=builtin_template_path,
+            search_policy=search_policy,
         )
 
-        self._post_processors = self._handle_post_processors(post_processors, target_language)
+        self._post_processors = self._handle_post_processors(target_language, post_processors)
 
         self._env = CodeGenEnvironment(
             lctx=language_context,
@@ -208,7 +213,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
     # | AbstractGenerator
     # +-----------------------------------------------------------------------+
 
-    def get_templates(self) -> typing.Iterable[pathlib.Path]:
+    def get_templates(self, omit_serialization_support: bool = False) -> typing.Iterable[pathlib.Path]:
         """
         Enumerate all templates found in the templates path.
         :data:`~TEMPLATE_SUFFIX` as the suffix for the filename.
@@ -664,7 +669,9 @@ class DSDLCodeGenerator(CodeGenerator):
 
     def __init__(self, namespace: nunavut.Namespace, **kwargs: typing.Any):
 
-        super().__init__(namespace, **kwargs)
+        # set the search policy so we ignore the internal templates iff a filesystem
+        # path is provided to the generator.
+        super().__init__(namespace, search_policy=ResourceSearchPolicy.FIND_FIRST, **kwargs)
         for test_name, test in self._create_all_dsdl_tests().items():
             self._env.add_test(test_name, test)
         self._env.add_conventional_methods_to_environment(self)
@@ -673,8 +680,13 @@ class DSDLCodeGenerator(CodeGenerator):
     # | AbstractGenerator
     # +-----------------------------------------------------------------------+
 
-    def generate_all(self, is_dryrun: bool = False, allow_overwrite: bool = True) -> typing.Iterable[pathlib.Path]:
+    def generate_all(
+        self, is_dryrun: bool = False, allow_overwrite: bool = True, omit_serialization_support: bool = False
+    ) -> typing.Iterable[pathlib.Path]:
         generated = []  # type: typing.List[pathlib.Path]
+        self._env.update_nunavut_globals(
+            *self.language_context.get_target_language().get_support_module(), is_dryrun, omit_serialization_support
+        )
         provider = self.namespace.get_all_types if self.generate_namespace_types else self.namespace.get_all_datatypes
         for (parsed_type, output_path) in provider():
             logger.info("Generating: %s", parsed_type)
@@ -778,53 +790,30 @@ class SupportGenerator(CodeGenerator):
 
         target_language = self.language_context.get_target_language()
 
-        self._sub_folders = None  # type: typing.Optional[pathlib.Path]
-        self._serialization_support_enabled = False
-        if target_language is not None:
-            self._serialization_support_enabled = not target_language.omit_serialization_support
+        #  Create the sub-folder to copy-to based on the support namespace.
+        self._sub_folders = pathlib.Path("")
 
-            #  Create the sub-folder to copy-to based on the support namespace.
-            self._sub_folders = pathlib.Path("")
-
-            for namespace_part in target_language.support_namespace:
-                self._sub_folders = self._sub_folders / pathlib.Path(namespace_part)
+        for namespace_part in target_language.support_namespace:
+            self._sub_folders = self._sub_folders / pathlib.Path(namespace_part)
 
     # +-----------------------------------------------------------------------+
     # | AbstractGenerator
     # +-----------------------------------------------------------------------+
-    def get_templates(self) -> typing.Iterable[pathlib.Path]:
+    def get_templates(self, omit_serialization_support: bool = False) -> typing.Iterable[pathlib.Path]:
         files = []
-        if self._serialization_support_enabled:
+        if not omit_serialization_support:
             for resource in self._get_templates_by_support_type(ResourceType.SERIALIZATION_SUPPORT):
                 files.append(resource)
         for resource in self._get_templates_by_support_type(ResourceType.TYPE_SUPPORT):
             files.append(resource)
         return files
 
-    def generate_all(self, is_dryrun: bool = False, allow_overwrite: bool = True) -> typing.Iterable[pathlib.Path]:
-        target_language = self.language_context.get_target_language()
-        if self._sub_folders is None or target_language is None:
-            logger.info("No target language, therefore, no support headers")
-            return []
-        else:
-            return self._generate_all(target_language, self._sub_folders, is_dryrun, allow_overwrite)
-
-    # +-----------------------------------------------------------------------+
-    # | Private
-    # +-----------------------------------------------------------------------+
-    def _get_templates_by_support_type(self, resource_type: ResourceType) -> typing.Iterable[pathlib.Path]:
-        files = []
-        target_language = self.language_context.get_target_language()
-
-        if target_language is not None:
-            for resource in target_language.get_support_files(resource_type):
-                files.append(resource)
-        return files
-
-    def _generate_all(
-        self, target_language: nunavut.lang.Language, sub_folders: pathlib.Path, is_dryrun: bool, allow_overwrite: bool
+    def generate_all(
+        self, is_dryrun: bool = False, allow_overwrite: bool = True, omit_serialization_support: bool = False
     ) -> typing.Iterable[pathlib.Path]:
-        target_path = pathlib.Path(self.namespace.get_support_output_folder()) / sub_folders
+        target_language = self.language_context.get_target_language()
+        self._env.update_nunavut_globals(*target_language.get_support_module(), is_dryrun, omit_serialization_support)
+        target_path = pathlib.Path(self.namespace.get_support_output_folder()) / self._sub_folders
 
         line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']
         file_pps = []  # type: typing.List['nunavut.postprocessors.FilePostProcessor']
@@ -838,7 +827,7 @@ class SupportGenerator(CodeGenerator):
                     raise ValueError("PostProcessor type {} is unknown.".format(type(pp)))
 
         generated = []  # type: typing.List[pathlib.Path]
-        for resource in self.get_templates():
+        for resource in self.get_templates(omit_serialization_support):
             target = (target_path / resource.name).with_suffix(target_language.extension)
             logger.info("Generating support file: %s", target)
             if resource.suffix == TEMPLATE_SUFFIX:
@@ -848,6 +837,17 @@ class SupportGenerator(CodeGenerator):
                 self._copy_header(resource, target, is_dryrun, allow_overwrite, line_pps, file_pps)
                 generated.append(target)
         return generated
+
+    # +-----------------------------------------------------------------------+
+    # | Private
+    # +-----------------------------------------------------------------------+
+    def _get_templates_by_support_type(self, resource_type: ResourceType) -> typing.Iterable[pathlib.Path]:
+        files = []
+        target_language = self.language_context.get_target_language()
+
+        for resource in target_language.get_support_files(resource_type):
+            files.append(resource)
+        return files
 
     def _generate_header(
         self, template_path: pathlib.Path, output_path: pathlib.Path, is_dryrun: bool, allow_overwrite: bool

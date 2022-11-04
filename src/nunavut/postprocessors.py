@@ -101,7 +101,7 @@ class LinePostProcessor(PostProcessor):
         ...
 
         c_style = CommentItAllOut('/*', '*/')
-        my_generator.generate_all(False, True, [c_style])
+        my_generator.generate_all(False, True, True, [c_style])
     """
 
     @abc.abstractmethod

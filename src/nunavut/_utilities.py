@@ -12,10 +12,12 @@ A small collection of common utilities.
     full-featured language, there should be very few truly generic utilities in Nunavut.
 
 """
+import collections.abc
+import copy
 import enum
 import logging
 import pathlib
-from typing import Generator, cast
+from typing import Generator, MutableMapping, cast, TypeVar
 
 import importlib_resources
 
@@ -105,6 +107,16 @@ class ResourceType(enum.Enum):
     TYPE_SUPPORT = 3
 
 
+@enum.unique
+class ResourceSearchPolicy(enum.Enum):
+    """
+    Generic policy type for controlling the behaviour of things that seach for resources.
+    """
+
+    FIND_ALL = 0
+    FIND_FIRST = 1
+
+
 def iter_package_resources(pkg_name: str, *suffix_filters: str) -> Generator[pathlib.Path, None, None]:
     """
     >>> from nunavut._utilities import iter_package_resources
@@ -123,7 +135,7 @@ def iter_package_resources(pkg_name: str, *suffix_filters: str) -> Generator[pat
             # scheme then we may need to use importlib_resources.as_file(resource) to create a runtime cache of
             # temporary objects that live for a given nunavut session. This, of course, wouldn't help across sessions
             # which is a common use case when integrating Nunavut with build systems. So...here be dragons.
-            file_resource = cast(pathlib.Path, resource)
+            file_resource = resource
             if any(suffix == file_resource.suffix for suffix in suffix_filters):
                 yield file_resource
 
@@ -135,3 +147,49 @@ def empty_list_support_files() -> Generator[pathlib.Path, None, None]:
     """
     # works in Python 3.3 and newer. Thanks https://stackoverflow.com/a/13243870
     yield from ()
+
+
+DeepUpdateType = TypeVar("DeepUpdateType", bound=MutableMapping)
+
+
+def deep_update(target: DeepUpdateType, source: DeepUpdateType) -> DeepUpdateType:
+    """
+    Helper method to do a recursive update of a map that may contain maps as values.
+
+    .. invisible-code-block: python
+
+        from nunavut._utilities import deep_update
+        import collections.abc
+
+    .. code-block:: python
+
+        target_map   =  {
+                            "a": { "one": 1, "two": 2 },
+                            "b": "not a map"
+                        }
+        update_from  =  {
+                            "a": { "two": { "i": "this value" }, "three": "that value"},
+                            "c": "see"
+                        }
+
+        target_map   = deep_update(target_map, update_from)
+        update_from["a"]["two"]["i"] = "whoops, this was supposed to be a copy"
+
+        assert target_map["a"]["one"] == 1
+        assert isinstance(target_map["a"]["two"], collections.abc.Mapping)
+        assert target_map["a"]["two"]["i"] == "this value"
+        assert target_map["a"]["three"] == "that value"
+        assert target_map["b"] == "not a map"
+        assert "c" in target_map
+        assert target_map["c"] == "see"
+
+    """
+    if isinstance(target, collections.abc.Mapping):
+        for key, value in source.items():
+            if isinstance(value, collections.abc.Mapping):
+                target[key] = deep_update(target.get(key, {}), cast(DeepUpdateType, value))
+            else:
+                target[key] = value
+    else:
+        target = copy.copy(source)
+    return target

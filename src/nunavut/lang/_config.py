@@ -12,6 +12,7 @@ import typing
 
 from yaml import Loader as YamlLoader
 from yaml import load as yaml_loader
+from .._utilities import deep_update
 
 
 class LanguageConfig:
@@ -39,7 +40,7 @@ class LanguageConfig:
         from nunavut.lang import LanguageConfig
 
         config = LanguageConfig()
-        config.read_string(example_yaml)
+        config.update_from_string(example_yaml)
 
         data = config.sections()
         assert len(data) == 3
@@ -67,7 +68,7 @@ class LanguageConfig:
 
     .. invisible-code-block: python
 
-        config.read_string(example_yaml)
+        config.update_from_string(example_yaml)
         assert 'a_dictionary' == config.sections()['nunavut.lang.d']['key_one'][2]['list']['is']
 
     """
@@ -208,21 +209,19 @@ class LanguageConfig:
                 raise ValueError(
                     'Section name "{}" is invalid. See LanguageConfig documentation for rules.'.format(section_name)
                 )
-            try:
-                section = self._sections[section_name]
-            except KeyError:
-                self._sections[section_name] = dict()
-                section = self._sections[section_name]
-            section.update(section_data)
+            self.update_section(section_name, section_data)
+
+    def update_section(self, section_name: str, configuration: typing.Any) -> None:
+        self._sections[section_name] = deep_update(self._sections.get(section_name, {}), configuration)
 
     def sections(self) -> typing.Dict[str, typing.Dict[str, typing.Any]]:
         return self._sections
 
-    def read_string(self, string: str, context: typing.Optional[str] = None) -> None:
+    def update_from_string(self, string: str, context: typing.Optional[str] = None) -> None:
         configuration = yaml_loader(string, Loader=YamlLoader)
         self.update(configuration)
 
-    def read_file(self, f: typing.TextIO, context: typing.Optional[str] = None) -> None:
+    def update_from_file(self, f: typing.TextIO, context: typing.Optional[str] = None) -> None:
         configuration = yaml_loader(f, Loader=YamlLoader)
         self.update(configuration)
 

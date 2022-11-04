@@ -19,6 +19,10 @@
 #    include <stdexcept>
 #endif
 
+static_assert(
+    __cplusplus >= 201402L,
+    "Unsupported language: ISO C14, C++14, or a newer version of either is required to use the built-in VLA type");
+
 namespace nunavut
 {
 namespace support
@@ -670,7 +674,6 @@ private:
         // opportunity for reusing previously freed memory comes when increasing to 19 from 13 since E(n-1) == 21.
         const std::size_t new_capacity = capacity_before + ((half_capacity <= 1) ? 2 : half_capacity);
 
-
         if (new_capacity > MaxSize)
         {
             reserve(MaxSize);
@@ -691,7 +694,6 @@ private:
         {
             return true;
         }
-
     }
 
     template <typename U>

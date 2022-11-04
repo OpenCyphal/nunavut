@@ -6,8 +6,6 @@
 import pathlib
 import typing
 
-import pytest
-
 
 def get_path_to_TestType_0_2(gen_paths: typing.Any) -> pathlib.Path:
     uavcan_dir = pathlib.Path(gen_paths.out_dir / pathlib.Path('uavcan'))
@@ -22,6 +20,8 @@ def test_no_trim_blocks(gen_paths: typing.Any, run_nnvg: typing.Callable) -> Non
     nnvg_args0 = ['--templates', str(gen_paths.templates_dir),
                   '-O', str(gen_paths.out_dir),
                   '-e', '.json',
+                  '-l', 'js',
+                  '-Xlang',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     run_nnvg(gen_paths, nnvg_args0)
@@ -40,6 +40,8 @@ def test_trim_blocks(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     nnvg_args0 = ['--templates', str(gen_paths.templates_dir),
                   '-O', str(gen_paths.out_dir),
                   '-e', '.json',
+                  '-l', 'js',
+                  '-Xlang',
                   '--trim-blocks',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
@@ -59,6 +61,8 @@ def test_no_lstrip_blocks(gen_paths: typing.Any, run_nnvg: typing.Callable) -> N
     nnvg_args0 = ['--templates', str(gen_paths.templates_dir),
                   '-O', str(gen_paths.out_dir),
                   '-e', '.json',
+                  '-l', 'js',
+                  '-Xlang',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 
     run_nnvg(gen_paths, nnvg_args0)
@@ -77,6 +81,8 @@ def test_lstrip_blocks(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None
     nnvg_args0 = ['--templates', str(gen_paths.templates_dir),
                   '-O', str(gen_paths.out_dir),
                   '-e', '.json',
+                  '-l', 'js',
+                  '-Xlang',
                   '--lstrip-blocks',
                   str(gen_paths.dsdl_dir / pathlib.Path("uavcan"))]
 

@@ -18,12 +18,14 @@ by calling pydsdl::
     compound_types = read_namespace(root_namespace, include_paths)
 
 Next a :class:`nunavut.LanguageContext` is needed which is used to
-configure all Nunavut objects for a specific target language ::
+configure all Nunavut objects for a specific target language
 
-    from nunavut.lang import LanguageContext
+    .. code-block:: python
 
-    # Here we are going to generate C headers.
-    language_context = LanguageContext('c')
+        from nunavut.lang import LanguageContextBuilder
+
+        # Here we are going to generate C headers.
+        language_context = LanguageContextBuilder().set_target_language("c").create()
 
 :class:`nunavut.generators.AbstractGenerator` objects require
 a :class:`nunavut.Namespace` tree which can be built from the
@@ -40,14 +42,15 @@ Putting this all together, the typical use of this library looks something like 
 
     from pydsdl import read_namespace
     from nunavut import build_namespace_tree
-    from nunavut.lang import LanguageContext
+    from nunavut.lang import LanguageContextBuilder
     from nunavut.jinja import DSDLCodeGenerator
 
     # parse the dsdl
     compound_types = read_namespace(root_namespace, include_paths)
 
     # select a target language
-    language_context = LanguageContext('c')
+    language_context = LanguageContextBuilder().set_target_language("c").create()
+
 
     # build the namespace tree
     root_namespace = build_namespace_tree(compound_types,
@@ -70,8 +73,7 @@ import typing
 
 import pydsdl
 
-from .lang import LanguageContext
-from .lang._common import IncludeGenerator
+from .lang import LanguageContextBuilder, LanguageContext, Language, IncludeGenerator
 
 # library users can access the utility types directly from the nunvut namespace. Internally
 # we us the _utilities package to break circular imports.
@@ -112,6 +114,7 @@ class Namespace(pydsdl.Any):
         base_output_path: pathlib.PurePath,
         language_context: LanguageContext,
     ):
+        target_language = language_context.get_target_language()
         self._parent = None  # type: typing.Optional[Namespace]
         self._namespace_components = []  # type: typing.List[str]
         self._namespace_components_stropped = []  # type: typing.List[str]
@@ -120,12 +123,12 @@ class Namespace(pydsdl.Any):
             self._namespace_components.append(component)
         self._full_namespace = ".".join(self._namespace_components_stropped)
         self._output_folder = pathlib.Path(base_output_path / pathlib.PurePath(*self._namespace_components_stropped))
-        output_stem = language_context.get_default_namespace_output_stem()
-        if output_stem is None:
-            output_stem = self.DefaultOutputStem
+        output_stem = target_language.get_config_value(Language.WKCV_NAMESPACE_FILE_STEM, self.DefaultOutputStem)
         output_path = self._output_folder / pathlib.PurePath(output_stem)
         self._base_output_path = base_output_path
-        self._output_path = output_path.with_suffix(language_context.get_output_extension())
+        self._output_path = output_path.with_suffix(
+            target_language.get_config_value(Language.WKCV_DEFINITION_FILE_EXTENSION)
+        )
         self._source_folder = pathlib.Path(
             root_namespace_dir / pathlib.PurePath(*self._namespace_components[1:])
         ).resolve()
@@ -408,7 +411,9 @@ def build_namespace_tree(
                     break
                 namespace_index.add(ancestor_ns)
 
-        namespace._add_data_type(dsdl_type, language_context.get_output_extension())
+        namespace._add_data_type(
+            dsdl_type, language_context.get_target_language().get_config_value(Language.WKCV_DEFINITION_FILE_EXTENSION)
+        )
 
     # We now have an index of all namespace names and we have Namespace
     # objects for non-empty namespaces. This final loop will build any
@@ -443,7 +448,8 @@ def generate_types(
     allow_overwrite: bool = True,
     lookup_directories: typing.Optional[typing.Iterable[str]] = None,
     allow_unregulated_fixed_port_id: bool = False,
-    language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+    language_options: typing.Mapping[str, typing.Any] = {},
+    include_experimental_languages: bool = False,
 ) -> None:
     """
     Helper method that uses default settings and built-in templates to generate types for a given
@@ -467,13 +473,15 @@ def generate_types(
     :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
                 language objects. The supported arguments and valid values are different depending on the language
                 specified by the `language_key` parameter.
+    :param bool include_experimental_languages: If true then experimental languages will also be available.
     """
     from nunavut.generators import create_generators
 
-    language_context = LanguageContext(
-        language_key,
-        omit_serialization_support_for_target=omit_serialization_support,
-        language_options=language_options,
+    language_context = (
+        LanguageContextBuilder(include_experimental_languages=include_experimental_languages)
+        .set_target_language(language_key)
+        .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, language_options)
+        .create()
     )
 
     if lookup_directories is None:
@@ -486,5 +494,5 @@ def generate_types(
     namespace = build_namespace_tree(type_map, str(root_namespace_dir), str(out_dir), language_context)
 
     generator, support_generator = create_generators(namespace)
-    support_generator.generate_all(is_dryrun, allow_overwrite)
-    generator.generate_all(is_dryrun, allow_overwrite)
+    support_generator.generate_all(is_dryrun, allow_overwrite, omit_serialization_support)
+    generator.generate_all(is_dryrun, allow_overwrite, omit_serialization_support)

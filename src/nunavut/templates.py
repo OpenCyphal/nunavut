@@ -42,7 +42,7 @@ class SupportsTemplateContext:
     """
 
 
-def template_environment_filter(filter_func: typing.Callable) -> typing.Callable[..., str]:
+def template_environment_list_filter(filter_func: typing.Callable) -> typing.Callable[..., typing.List[str]]:
     """
     Decorator for marking environment dependent filters.
     An object supporting the :class:`SupportsTemplateEnv` protocol
@@ -140,7 +140,7 @@ class template_language_test(GenericTemplateLanguageFilter[bool]):
 
 class LanguageEnvironment:
     """
-    Data structure defining stuff contributed to a template environment for a given :class:`Language`.
+    Data structure defining stuff contributed to a template environment for a given :class:`nunavut.lang.Language`.
     """
 
     TEST_NAME_PREFIX = "is_"
@@ -249,6 +249,18 @@ class LanguageEnvironment:
                 for language in supported_languages:
                     if language.get_templates_package_name() == callable_language_name:
                         resolved_callable = functools.partial(callable, language)
+                        if hasattr(callable, ENVIRONMENT_FILTER_ATTRIBUTE_NAME):
+                            setattr(
+                                resolved_callable,
+                                ENVIRONMENT_FILTER_ATTRIBUTE_NAME,
+                                getattr(callable, ENVIRONMENT_FILTER_ATTRIBUTE_NAME),
+                            )
+                        if hasattr(callable, CONTEXT_FILTER_ATTRIBUTE_NAME):
+                            setattr(
+                                resolved_callable,
+                                CONTEXT_FILTER_ATTRIBUTE_NAME,
+                                getattr(callable, CONTEXT_FILTER_ATTRIBUTE_NAME),
+                            )
                         break
             if resolved_callable is None:
                 raise RuntimeWarning(
