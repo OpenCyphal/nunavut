@@ -13,7 +13,6 @@ import logging
 import pathlib
 import typing
 
-from ._common import IncludeGenerator as IncludeGenerator  # noqa: F401
 from ._config import LanguageConfig as LanguageConfig
 from ._language import Language as Language
 from ._language import LanguageClassLoader as LanguageClassLoader
@@ -65,7 +64,7 @@ class LanguageContextBuilder:
 
     """
 
-    DEFAULT_TARGET_LANGUAGE = "c"
+    DEFAULT_TARGET_LANGUAGE = "c"  #: The target language used for new contexts if none is specified.
 
     def __init__(self, include_experimental_languages: bool = False):
         self._target_language_name: typing.Optional[str] = None

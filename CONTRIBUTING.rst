@@ -16,7 +16,7 @@ your dev environment setup.
 
 .. warning::
 
-    When committing to main you **must** bump at least the patch number in ``src/nunavut/version.py``
+    When committing to main you **must** bump at least the patch number in ``src/nunavut/_version.py``
     or the build will fail on the upload step.
 
 

@@ -9,9 +9,9 @@ import logging
 import types
 import typing
 
-import nunavut.lang
+from nunavut._templates import LanguageEnvironment
+from nunavut.lang import Language, LanguageClassLoader, LanguageContext
 
-from ..templates import LanguageEnvironment
 from .extensions import JinjaAssert, UseQuery
 from .jinja2 import BaseLoader, Environment, StrictUndefined, select_autoescape
 from .jinja2.ext import Extension
@@ -195,7 +195,7 @@ class CodeGenEnvironment(Environment):
     def __init__(
         self,
         loader: BaseLoader,
-        lctx: typing.Optional[nunavut.lang.LanguageContext] = None,
+        lctx: typing.Optional[LanguageContext] = None,
         trim_blocks: bool = False,
         lstrip_blocks: bool = False,
         additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
@@ -229,7 +229,7 @@ class CodeGenEnvironment(Environment):
             self.globals[global_namespace] = LanguageTemplateNamespace()
 
         self.globals["now_utc"] = datetime.datetime(datetime.MINYEAR, 1, 1)
-        self._target_language = None  # type: typing.Optional[nunavut.lang.Language]
+        self._target_language = None  # type: typing.Optional[Language]
 
         # --------------------------------------------------
         # After this point we do that most heinous act so common in dynamic languages;
@@ -241,7 +241,7 @@ class CodeGenEnvironment(Environment):
 
             supported_languages = (
                 lctx.get_supported_languages().values()
-            )  # type: typing.Optional[typing.ValuesView[nunavut.lang.Language]]
+            )  # type: typing.Optional[typing.ValuesView[Language]]
         else:
             supported_languages = None
 
@@ -281,17 +281,17 @@ class CodeGenEnvironment(Environment):
         )
 
         if "version" not in nunavut_namespace:
-            import nunavut.version
+            from nunavut import __version__ as nunavut_version
             from nunavut.jinja.loaders import DSDLTemplateLoader
 
-            setattr(nunavut_namespace, "version", nunavut.version.__version__)
+            setattr(nunavut_namespace, "version", nunavut_version)
             setattr(nunavut_namespace, "platform_version", self._create_platform_version())
 
             if isinstance(self.loader, DSDLTemplateLoader):
                 setattr(nunavut_namespace, "template_sets", self.loader.get_template_sets())
 
     @property
-    def supported_languages(self) -> typing.ValuesView[nunavut.lang.Language]:
+    def supported_languages(self) -> typing.ValuesView[Language]:
         ln_globals = self.globals["ln"]  # type: LanguageTemplateNamespace
         return ln_globals.values()
 
@@ -312,7 +312,7 @@ class CodeGenEnvironment(Environment):
         return typing.cast(LanguageTemplateNamespace, self.globals["ln"])
 
     @property
-    def target_language(self) -> typing.Optional[nunavut.lang.Language]:
+    def target_language(self) -> typing.Optional[Language]:
         return self._target_language
 
     @property
@@ -377,8 +377,8 @@ class CodeGenEnvironment(Environment):
         method: typing.Callable[..., bool],
         method_name: str,
         collection_maybe: typing.Optional[typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]] = None,
-        supported_languages: typing.Optional[typing.ValuesView[nunavut.lang.Language]] = None,
-        method_language: typing.Optional[nunavut.lang.Language] = None,
+        supported_languages: typing.Optional[typing.ValuesView[Language]] = None,
+        method_language: typing.Optional[Language] = None,
         is_target: bool = False,
     ) -> None:
         """
@@ -393,7 +393,7 @@ class CodeGenEnvironment(Environment):
 
                 from nunavut.jinja import CodeGenEnvironment
                 from nunavut.jinja.jinja2 import DictLoader
-                from nunavut.templates import template_language_test
+                from nunavut._templates import template_language_test
                 from unittest.mock import MagicMock
 
                 lctx = MagicMock(spec=LanguageContext)
@@ -435,8 +435,8 @@ class CodeGenEnvironment(Environment):
                 typing.Dict[str, typing.Any],
             ]
         ] = None,
-        supported_languages: typing.Optional[typing.ValuesView[nunavut.lang.Language]] = None,
-        language: typing.Optional[nunavut.lang.Language] = None,
+        supported_languages: typing.Optional[typing.ValuesView[Language]] = None,
+        language: typing.Optional[Language] = None,
         is_target: bool = False,
     ) -> None:
         for method_name, method in items:
@@ -469,8 +469,8 @@ class CodeGenEnvironment(Environment):
 
     def _add_support_from_language_module_to_environment(
         self,
-        lctx: nunavut.lang.LanguageContext,
-        language: nunavut.lang.Language,
+        lctx: LanguageContext,
+        language: Language,
         ln_module: "types.ModuleType",
         is_target: bool = False,
     ) -> None:
@@ -494,7 +494,7 @@ class CodeGenEnvironment(Environment):
                 is_target=is_target,
             )
 
-    def _update_language_support(self, lctx: nunavut.lang.LanguageContext) -> None:
+    def _update_language_support(self, lctx: LanguageContext) -> None:
 
         supported_languages = lctx.get_supported_languages()
         target_language = lctx.get_target_language()
@@ -519,7 +519,7 @@ class CodeGenEnvironment(Environment):
                 self._add_support_from_language_module_to_environment(
                     lctx,
                     supported_language,
-                    nunavut.lang.LanguageClassLoader.load_language_module(supported_language.name),
+                    LanguageClassLoader.load_language_module(supported_language.name),
                     (supported_language == target_language),
                 )
             except ModuleNotFoundError:

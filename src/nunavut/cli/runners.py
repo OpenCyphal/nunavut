@@ -12,12 +12,20 @@ import pathlib
 import sys
 import typing
 
-import nunavut
-import nunavut.jinja
-import nunavut.lang
-import pydsdl
-from nunavut.generators import AbstractGenerator, create_generators
+from pydsdl import read_namespace as read_dsdl_namespace
+
+from nunavut._generators import AbstractGenerator, create_default_generators
+from nunavut._namespace import Namespace, build_namespace_tree
+from nunavut._postprocessors import (
+    ExternalProgramEditInPlace,
+    FilePostProcessor,
+    LimitEmptyLines,
+    PostProcessor,
+    SetFileMode,
+    TrimTrailingWhitespace,
+)
 from nunavut._utilities import YesNoDefault
+from nunavut.lang import Language, LanguageContext, LanguageContextBuilder
 
 
 class ArgparseRunner:
@@ -31,9 +39,9 @@ class ArgparseRunner:
 
     def __init__(self, args: argparse.Namespace, extra_includes: typing.Optional[typing.Union[str, typing.List[str]]]):
         self._args = args
-        self._language_context = None  # type: typing.Optional[nunavut.lang.LanguageContext]
-        self._generators = None  # type: typing.Optional[typing.Tuple[AbstractGenerator, AbstractGenerator]]
-        self._root_namespace = None  # type: typing.Optional[nunavut.Namespace]
+        self._language_context: typing.Optional[LanguageContext] = None
+        self._generators: typing.Optional[typing.Tuple[AbstractGenerator, AbstractGenerator]] = None
+        self._root_namespace: typing.Optional[Namespace] = None
 
         if extra_includes is None:
             extra_includes = []
@@ -59,7 +67,7 @@ class ArgparseRunner:
         return self._generators[1]
 
     @property
-    def root_namespace(self) -> nunavut.Namespace:
+    def root_namespace(self) -> Namespace:
         if self._root_namespace is None:
             raise RuntimeError("root_namespace property accessed before setup")
         return self._root_namespace
@@ -78,7 +86,7 @@ class ArgparseRunner:
         self._language_context = self._create_language_context()
 
         if self._args.generate_support != "only" and not self._args.list_configuration:
-            type_map = pydsdl.read_namespace(
+            type_map = read_dsdl_namespace(
                 self._args.root_namespace,
                 self._extra_includes,
                 allow_unregulated_fixed_port_id=self._args.allow_unregulated_fixed_port_id,
@@ -86,7 +94,7 @@ class ArgparseRunner:
         else:
             type_map = []
 
-        self._root_namespace = nunavut.build_namespace_tree(
+        self._root_namespace = build_namespace_tree(
             type_map, self._args.root_namespace, self._args.outdir, self._language_context
         )
 
@@ -104,7 +112,7 @@ class ArgparseRunner:
             "post_processors": self._build_post_processor_list_from_args(),
         }
 
-        self._generators = create_generators(self._root_namespace, **generator_args)
+        self._generators = create_default_generators(self._root_namespace, **generator_args)
 
     def run(self) -> None:
         """
@@ -138,31 +146,31 @@ class ArgparseRunner:
         else:
             return bool(self._args.generate_support == "always" or self._args.generate_support == "only")
 
-    def _build_ext_program_postprocessor(self, program: str) -> nunavut.postprocessors.FilePostProcessor:
+    def _build_ext_program_postprocessor(self, program: str) -> FilePostProcessor:
         subprocess_args = [program]
         if hasattr(self._args, "pp_run_program_arg") and self._args.pp_run_program_arg is not None:
             for program_arg in self._args.pp_run_program_arg:
                 subprocess_args.append(program_arg)
-        return nunavut.postprocessors.ExternalProgramEditInPlace(subprocess_args)
+        return ExternalProgramEditInPlace(subprocess_args)
 
-    def _build_post_processor_list_from_args(self) -> typing.List[nunavut.postprocessors.PostProcessor]:
+    def _build_post_processor_list_from_args(self) -> typing.List[PostProcessor]:
         """
         Return a list of post processors setup based on the provided command-line arguments. This
         list may be empty but the function will not return None.
         """
-        post_processors = []  # type: typing.List[nunavut.postprocessors.PostProcessor]
+        post_processors: typing.List[PostProcessor] = []
         if self._args.pp_trim_trailing_whitespace:
-            post_processors.append(nunavut.postprocessors.TrimTrailingWhitespace())
+            post_processors.append(TrimTrailingWhitespace())
         if hasattr(self._args, "pp_max_emptylines") and self._args.pp_max_emptylines is not None:
-            post_processors.append(nunavut.postprocessors.LimitEmptyLines(self._args.pp_max_emptylines))
+            post_processors.append(LimitEmptyLines(self._args.pp_max_emptylines))
         if hasattr(self._args, "pp_run_program") and self._args.pp_run_program is not None:
             post_processors.append(self._build_ext_program_postprocessor(self._args.pp_run_program))
 
-        post_processors.append(nunavut.postprocessors.SetFileMode(self._args.file_mode))
+        post_processors.append(SetFileMode(self._args.file_mode))
 
         return post_processors
 
-    def _create_language_context(self) -> nunavut.lang.LanguageContext:
+    def _create_language_context(self) -> LanguageContext:
         language_options = dict()
         if self._args.target_endianness is not None:
             language_options["target_endianness"] = self._args.target_endianness
@@ -182,14 +190,14 @@ class ArgparseRunner:
         target_language_name = self._args.target_language
 
         return (
-            nunavut.lang.LanguageContextBuilder(include_experimental_languages=self._args.experimental_languages)
+            LanguageContextBuilder(include_experimental_languages=self._args.experimental_languages)
             .set_target_language(target_language_name)
             .set_additional_config_files(additional_config_files)
             .set_target_language_extension(self._args.output_extension)
             .set_target_language_configuration_override(
-                nunavut.lang.Language.WKCV_NAMESPACE_FILE_STEM, self._args.namespace_output_stem
+                Language.WKCV_NAMESPACE_FILE_STEM, self._args.namespace_output_stem
             )
-            .set_target_language_configuration_override(nunavut.lang.Language.WKCV_LANGUAGE_OPTIONS, language_options)
+            .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, language_options)
             .create()
         )
 

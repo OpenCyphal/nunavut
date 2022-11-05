@@ -16,19 +16,18 @@ import typing
 
 import pydsdl
 
-from nunavut._utilities import YesNoDefault
-
-from ...templates import (
+from nunavut._dependencies import Dependencies
+from nunavut._templates import (
+    template_environment_list_filter,
     template_language_filter,
     template_language_list_filter,
     template_language_test,
     template_volatile_filter,
-    template_environment_list_filter,
 )
-from ...dependencies import Dependencies
-from .. import Language as BaseLanguage
-from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
-from ...jinja.environment import Environment
+from nunavut._utilities import YesNoDefault
+from nunavut.jinja.environment import Environment
+from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
+from nunavut.lang._language import Language as BaseLanguage
 
 
 class Language(BaseLanguage):

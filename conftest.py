@@ -277,7 +277,7 @@ def jinja_filter_tester(request):  # type: ignore
 
         .. code-block: python
 
-            from nunavut.templates import template_environment_filter
+            from nunavut._templates import template_environment_filter
 
             @template_environment_filter
             def filter_dummy(env, input):

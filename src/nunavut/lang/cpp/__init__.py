@@ -18,19 +18,19 @@ import typing
 
 import pydsdl
 
-from ..._utilities import YesNoDefault, ResourceType
-from ...templates import (
+from nunavut._dependencies import Dependencies
+from nunavut._templates import (
+    template_environment_list_filter,
     template_language_filter,
     template_language_list_filter,
     template_language_test,
-    template_environment_list_filter,
 )
-from ...dependencies import Dependencies
-from .. import Language as BaseLanguage
-from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
-from ..c import _CFit
-from ..c import filter_literal as c_filter_literal
-from ...jinja.environment import Environment
+from nunavut._utilities import ResourceType, YesNoDefault
+from nunavut.jinja.environment import Environment
+from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
+from nunavut.lang._language import Language as BaseLanguage
+from nunavut.lang.c import _CFit
+from nunavut.lang.c import filter_literal as c_filter_literal
 
 
 class Language(BaseLanguage):
@@ -201,7 +201,7 @@ class Language(BaseLanguage):
         .. invisible-code-block: python
 
             from nunavut.lang import Language
-            from nunavut.dependencies import Dependencies
+            from nunavut._dependencies import Dependencies
 
             def do_includes_test(use_foobar, extension):
 

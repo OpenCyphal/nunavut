@@ -12,7 +12,7 @@ from pydsdl import read_namespace
 from nunavut import build_namespace_tree, Namespace
 from nunavut.lang import LanguageContextBuilder
 from nunavut.jinja import DSDLCodeGenerator
-from nunavut.jinja.loaders import TEMPLATE_SUFFIX
+from nunavut._utilities import TEMPLATE_SUFFIX
 
 
 class a:

@@ -12,7 +12,7 @@ import typing
 
 from yaml import Loader as YamlLoader
 from yaml import load as yaml_loader
-from .._utilities import deep_update
+from nunavut._utilities import deep_update
 
 
 class LanguageConfig:
@@ -37,6 +37,7 @@ class LanguageConfig:
         '''
 
     .. invisible-code-block: python
+
         from nunavut.lang import LanguageConfig
 
         config = LanguageConfig()
@@ -244,6 +245,7 @@ class LanguageConfig:
     def _get_config_value_raw(self, section_name: str, key: str, default_value: typing.Any) -> typing.Any:
         """
         .. invisible-code-block: python
+
             from nunavut.lang import LanguageConfig
 
         .. code-block: python
@@ -302,14 +304,15 @@ class LanguageConfig:
 
         :param section_name : The name of the section to get the value from.
         :param str key      : The config value to retrieve.
-        :param default_value: The value to return if the key was not in the configuration. If provided
-            this method will not raise.
+        :param default_value: The value to return if the key was not in the configuration. If provided this method will\
+                              not raise.
         :type default_value : typing.Optional[str]
         :return: Either the value from the config or the default_value if provided.
         :rtype: str
         :raises: KeyError if the section or the key in the section does not exist and a default_value was not provided.
 
-         .. invisible-code-block: python
+        .. invisible-code-block: python
+
             from nunavut.lang import LanguageConfig
 
         .. code-block: python
@@ -464,8 +467,8 @@ class LanguageConfig:
 
         :param str section_name : The name of the section to get the key from.
         :param str key          : The config value to retrieve.
-        :param default_value    : The value to return if the key was not in the configuration. If provided this method
-            will not raise a KeyError nor a TypeError.
+        :param default_value    : The value to return if the key was not in the configuration. If provided this method\
+                                  will not raise a KeyError nor a TypeError.
         :type default_value     : typing.Optional[typing.Mapping[str, typing.Any]]
         :return                 : Either the value from the config or the default_value if provided.
         :rtype                  : typing.Mapping[str, typing.Any]
@@ -487,8 +490,7 @@ class LanguageConfig:
     def get_config_value_as_list(
         self, section_name: str, key: str, default_value: typing.Optional[typing.List] = None
     ) -> typing.List[typing.Any]:
-        """
-        Get a language property parsing it as a map with string keys.
+        """Get a language property parsing it as a map with string keys.
 
         Example:
 
@@ -535,8 +537,8 @@ class LanguageConfig:
 
         :param str section_name : The name of the section to get the key from.
         :param str key          : The config value to retrieve.
-        :param default_value    : The value to return if the key was not in the configuration. If provided this method
-            will not raise a KeyError nor a TypeError.
+        :param default_value    : The value to return if the key was not in the configuration. If provided this method\
+                                  will not raise a KeyError nor a TypeError.
         :type default_value     : typing.Optional[typing.List[typing.Any]]
         :return                 : Either the value from the config or the default_value if provided.
         :rtype                  : typing.List[typing.Any]

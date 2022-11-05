@@ -15,7 +15,7 @@ if int(setuptools.__version__.split('.')[0]) < 30:
     sys.exit(1)
 
 version = {}  # type: Dict
-with open('src/nunavut/version.py') as fp:
+with open('src/nunavut/_version.py') as fp:
     exec(fp.read(), version)
 
 setuptools.setup(version=version['__version__'],

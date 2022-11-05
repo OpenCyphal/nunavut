@@ -13,8 +13,12 @@ import abc
 import pathlib
 import typing
 
-import nunavut
+from pydsdl import read_namespace as read_dsdl_namespace
+
+from nunavut._namespace import Namespace, build_namespace_tree
 from nunavut._utilities import YesNoDefault
+from nunavut.lang import LanguageContextBuilder
+from nunavut.lang._language import Language
 
 
 class AbstractGenerator(metaclass=abc.ABCMeta):
@@ -32,7 +36,7 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
 
     def __init__(
         self,
-        namespace: nunavut.Namespace,
+        namespace: Namespace,
         generate_namespace_types: YesNoDefault = YesNoDefault.DEFAULT,
     ):
         self._namespace = namespace
@@ -48,7 +52,7 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
                 self._generate_namespace_types = False
 
     @property
-    def namespace(self) -> nunavut.Namespace:
+    def namespace(self) -> Namespace:
         """
         The root :class:`nunavut.Namespace` for this generator.
         """
@@ -93,8 +97,8 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
 
-def create_generators(
-    namespace: nunavut.Namespace, **kwargs: typing.Any
+def create_default_generators(
+    namespace: Namespace, **kwargs: typing.Any
 ) -> typing.Tuple["AbstractGenerator", "AbstractGenerator"]:
     """
     Create the two generators used by Nunavut; a code-generator and a support-library generator.
@@ -107,3 +111,66 @@ def create_generators(
     from nunavut.jinja import DSDLCodeGenerator, SupportGenerator
 
     return (DSDLCodeGenerator(namespace, **kwargs), SupportGenerator(namespace, **kwargs))
+
+
+# +---------------------------------------------------------------------------+
+# | GENERATION HELPERS
+# +---------------------------------------------------------------------------+
+
+
+def generate_types(
+    language_key: str,
+    root_namespace_dir: pathlib.Path,
+    out_dir: pathlib.Path,
+    omit_serialization_support: bool = True,
+    is_dryrun: bool = False,
+    allow_overwrite: bool = True,
+    lookup_directories: typing.Optional[typing.Iterable[str]] = None,
+    allow_unregulated_fixed_port_id: bool = False,
+    language_options: typing.Mapping[str, typing.Any] = {},
+    include_experimental_languages: bool = False,
+) -> None:
+    """
+    Helper method that uses default settings and built-in templates to generate types for a given
+    language. This method is the most direct way to generate code using Nunavut.
+
+    :param str language_key: The name of the language to generate source for.
+                See the :doc:`../../docs/templates` for details on available language support.
+    :param pathlib.Path root_namespace_dir: The path to the root of the DSDL types to generate
+                code for.
+    :param pathlib.Path out_dir: The path to generate code at and under.
+    :param bool omit_serialization_support: If True then logic used to serialize and deserialize data is omitted.
+    :param bool is_dryrun: If True then nothing is generated but all other activity is performed and any errors
+                that would have occurred are reported.
+    :param bool allow_overwrite: If True then generated files are allowed to overwrite existing files under the
+                `out_dir` path.
+    :param typing.Optional[typing.Iterable[str]] lookup_directories: Additional directories to search for dependent
+                types referenced by the types provided under the `root_namespace_dir`. Types will not be generated
+                for these unless they are used by a type in the root namespace.
+    :param bool allow_unregulated_fixed_port_id: If True then errors will become warning when using fixed port
+                identifiers for unregulated datatypes.
+    :param typing.Optional[typing.Mapping[str, typing.Any]] language_options: Opaque arguments passed through to the
+                language objects. The supported arguments and valid values are different depending on the language
+                specified by the `language_key` parameter.
+    :param bool include_experimental_languages: If true then experimental languages will also be available.
+    """
+
+    language_context = (
+        LanguageContextBuilder(include_experimental_languages=include_experimental_languages)
+        .set_target_language(language_key)
+        .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, language_options)
+        .create()
+    )
+
+    if lookup_directories is None:
+        lookup_directories = []
+
+    type_map = read_dsdl_namespace(
+        str(root_namespace_dir), lookup_directories, allow_unregulated_fixed_port_id=allow_unregulated_fixed_port_id
+    )
+
+    namespace = build_namespace_tree(type_map, str(root_namespace_dir), str(out_dir), language_context)
+
+    generator, support_generator = create_default_generators(namespace)
+    support_generator.generate_all(is_dryrun, allow_overwrite, omit_serialization_support)
+    generator.generate_all(is_dryrun, allow_overwrite, omit_serialization_support)

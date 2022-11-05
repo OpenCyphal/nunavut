@@ -11,7 +11,7 @@ import typing
 
 import pytest
 
-import nunavut.version
+import nunavut._version
 
 
 @pytest.mark.parametrize('env_var_name', ["UAVCAN_DSDL_INCLUDE_PATH", "DSDL_INCLUDE_PATH"])
@@ -246,7 +246,7 @@ def test_version(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     nnvg_args = ["--version"]
 
     completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8")
-    assert nunavut.version.__version__ == completed
+    assert nunavut._version.__version__ == completed
 
 
 def test_target_language(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:

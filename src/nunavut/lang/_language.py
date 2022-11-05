@@ -18,8 +18,9 @@ import typing
 
 import pydsdl
 
-from .._utilities import ResourceType, YesNoDefault, empty_list_support_files, iter_package_resources
-from ..dependencies import Dependencies, DependencyBuilder
+from nunavut._dependencies import Dependencies, DependencyBuilder
+from nunavut._utilities import ResourceType, YesNoDefault, empty_list_support_files, iter_package_resources
+
 from ._config import LanguageConfig, VersionReader
 
 logger = logging.getLogger(__name__)

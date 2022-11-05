@@ -9,7 +9,7 @@ from pathlib import Path
 from pydsdl import read_namespace
 from nunavut import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
-from nunavut.lang import LanguageContextBuilder
+from nunavut import LanguageContextBuilder
 
 import pytest
 
