@@ -87,11 +87,11 @@ def _make_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=textwrap.dedent(
             """
-        Print out the version number (stored in src/nunavut/version.py) only and exit. This number
+        Print out the version number (stored in src/nunavut/_version.py) only and exit. This number
         will be the only output to stdout allowing build scripts to extract this string value for
         use in the build environment. For example:
 
-            export NUNAVUT_FULL_VERSION=$(./verify.py --version-only)
+            export NUNAVUT_FULL_VERSION=$(./_verify.py --version-only)
 
     """[
                 1:
@@ -104,11 +104,11 @@ def _make_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=textwrap.dedent(
             """
-        Print out the major and minor version number (stored in src/nunavut/version.py) only and exit.
+        Print out the major and minor version number (stored in src/nunavut/_version.py) only and exit.
         This number will be the only output to stdout allowing build scripts to extract this string
         value for use in the build environment. For example:
 
-            export NUNAVUT_MAJOR_MINOR_VERSION=$(./verify.py --major-minor-version-only)
+            export NUNAVUT_MAJOR_MINOR_VERSION=$(./_verify.py --major-minor-version-only)
 
     """[
                 1:
@@ -541,7 +541,7 @@ def _create_build_dir_name(args: argparse.Namespace) -> str:
 
 @functools.lru_cache(maxsize=None)
 def _get_version_string() -> typing.Tuple[str, str, str]:
-    with open("src/nunavut/version.py", "r") as version_py:
+    with open("src/nunavut/_version.py", "r") as version_py:
         exec(version_py.read())
 
     version_string = typing.cast(str, eval("__version__"))

@@ -13,12 +13,12 @@ import logging
 import re
 import typing
 
-import nunavut
 import pydsdl
 
-from ...jinja.jinja2 import TemplateAssertionError
-from ...templates import template_volatile_filter
-from .._common import UniqueNameGenerator
+import nunavut
+from nunavut._templates import template_volatile_filter
+from nunavut.jinja.jinja2 import TemplateAssertionError
+from nunavut.lang._common import UniqueNameGenerator
 
 logger = logging.getLogger(__name__)
 

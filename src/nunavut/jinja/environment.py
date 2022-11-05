@@ -9,9 +9,9 @@ import logging
 import types
 import typing
 
-import nunavut.lang
+from nunavut._templates import LanguageEnvironment
+from nunavut.lang import Language, LanguageClassLoader, LanguageContext
 
-from ..templates import LanguageEnvironment
 from .extensions import JinjaAssert, UseQuery
 from .jinja2 import BaseLoader, Environment, StrictUndefined, select_autoescape
 from .jinja2.ext import Extension
@@ -120,15 +120,18 @@ class CodeGenEnvironment(Environment):
 
     .. invisible-code-block: python
 
-        from nunavut.lang import LanguageContext, Language
+        from nunavut.lang import LanguageContext, LanguageContextBuilder
+        from nunavut.lang._language import Language
         from nunavut.jinja import CodeGenEnvironment
         from nunavut.jinja.jinja2 import DictLoader
+
+        lctx = LanguageContextBuilder().create()
 
     .. code-block:: python
 
         template = 'Hello World'
 
-        e = CodeGenEnvironment(loader=DictLoader({'test': template}))
+        e = CodeGenEnvironment(loader=DictLoader({'test': template}), lctx=lctx)
         assert 'Hello World' ==  e.get_template('test').render()
 
     .. warning::
@@ -139,7 +142,7 @@ class CodeGenEnvironment(Environment):
     .. code-block:: python
 
         try:
-            CodeGenEnvironment(loader=DictLoader({'test': template}), additional_globals={'ln': 'bad_ln'})
+            CodeGenEnvironment(loader=DictLoader({'test': template}), lctx=lctx, additional_globals={'ln': 'bad_ln'})
             assert False
         except RuntimeError:
             pass
@@ -150,6 +153,7 @@ class CodeGenEnvironment(Environment):
 
         try:
             CodeGenEnvironment(loader=DictLoader({'test': template}),
+                                                 lctx=lctx,
                                                  additional_filters={'indent': lambda x: x})
             assert False
         except RuntimeError:
@@ -158,6 +162,7 @@ class CodeGenEnvironment(Environment):
         # You can allow overwrite of built-ins using the ``allow_filter_test_or_use_query_overwrite``
         # argument.
         e = CodeGenEnvironment(loader=DictLoader({'test': template}),
+                                                 lctx=lctx,
                                                  additional_filters={'indent': lambda x: x},
                                                  allow_filter_test_or_use_query_overwrite=True)
         assert 'foo' == e.filters['indent']('foo')
@@ -173,6 +178,7 @@ class CodeGenEnvironment(Environment):
                 return name
 
         e = CodeGenEnvironment(loader=DictLoader({'test': template}),
+                               lctx=lctx,
                                additional_filters={'filter_misnamed': lambda x: x})
 
         try:
@@ -195,7 +201,7 @@ class CodeGenEnvironment(Environment):
     def __init__(
         self,
         loader: BaseLoader,
-        lctx: typing.Optional[nunavut.lang.LanguageContext] = None,
+        lctx: LanguageContext,
         trim_blocks: bool = False,
         lstrip_blocks: bool = False,
         additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
@@ -229,21 +235,18 @@ class CodeGenEnvironment(Environment):
             self.globals[global_namespace] = LanguageTemplateNamespace()
 
         self.globals["now_utc"] = datetime.datetime(datetime.MINYEAR, 1, 1)
-        self._target_language = None  # type: typing.Optional[nunavut.lang.Language]
+        self._target_language = lctx.get_target_language()
 
         # --------------------------------------------------
         # After this point we do that most heinous act so common in dynamic languages;
         # we expose the state of this partially constructed object so we can complete
         # configuring it.
 
-        if lctx is not None:
-            self._update_language_support(lctx)
+        self._update_language_support(lctx)
 
-            supported_languages = (
-                lctx.get_supported_languages().values()
-            )  # type: typing.Optional[typing.ValuesView[nunavut.lang.Language]]
-        else:
-            supported_languages = None
+        supported_languages = (
+            lctx.get_supported_languages().values()
+        )  # type: typing.Optional[typing.ValuesView[Language]]
 
         self.update_nunavut_globals()
 
@@ -281,17 +284,17 @@ class CodeGenEnvironment(Environment):
         )
 
         if "version" not in nunavut_namespace:
-            import nunavut.version
+            from nunavut import __version__ as nunavut_version
             from nunavut.jinja.loaders import DSDLTemplateLoader
 
-            setattr(nunavut_namespace, "version", nunavut.version.__version__)
+            setattr(nunavut_namespace, "version", nunavut_version)
             setattr(nunavut_namespace, "platform_version", self._create_platform_version())
 
             if isinstance(self.loader, DSDLTemplateLoader):
                 setattr(nunavut_namespace, "template_sets", self.loader.get_template_sets())
 
     @property
-    def supported_languages(self) -> typing.ValuesView[nunavut.lang.Language]:
+    def supported_languages(self) -> typing.ValuesView[Language]:
         ln_globals = self.globals["ln"]  # type: LanguageTemplateNamespace
         return ln_globals.values()
 
@@ -312,7 +315,7 @@ class CodeGenEnvironment(Environment):
         return typing.cast(LanguageTemplateNamespace, self.globals["ln"])
 
     @property
-    def target_language(self) -> typing.Optional[nunavut.lang.Language]:
+    def target_language(self) -> Language:
         return self._target_language
 
     @property
@@ -377,8 +380,8 @@ class CodeGenEnvironment(Environment):
         method: typing.Callable[..., bool],
         method_name: str,
         collection_maybe: typing.Optional[typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]] = None,
-        supported_languages: typing.Optional[typing.ValuesView[nunavut.lang.Language]] = None,
-        method_language: typing.Optional[nunavut.lang.Language] = None,
+        supported_languages: typing.Optional[typing.ValuesView[Language]] = None,
+        method_language: typing.Optional[Language] = None,
         is_target: bool = False,
     ) -> None:
         """
@@ -393,7 +396,7 @@ class CodeGenEnvironment(Environment):
 
                 from nunavut.jinja import CodeGenEnvironment
                 from nunavut.jinja.jinja2 import DictLoader
-                from nunavut.templates import template_language_test
+                from nunavut._templates import template_language_test
                 from unittest.mock import MagicMock
 
                 lctx = MagicMock(spec=LanguageContext)
@@ -435,8 +438,8 @@ class CodeGenEnvironment(Environment):
                 typing.Dict[str, typing.Any],
             ]
         ] = None,
-        supported_languages: typing.Optional[typing.ValuesView[nunavut.lang.Language]] = None,
-        language: typing.Optional[nunavut.lang.Language] = None,
+        supported_languages: typing.Optional[typing.ValuesView[Language]] = None,
+        language: typing.Optional[Language] = None,
         is_target: bool = False,
     ) -> None:
         for method_name, method in items:
@@ -469,8 +472,8 @@ class CodeGenEnvironment(Environment):
 
     def _add_support_from_language_module_to_environment(
         self,
-        lctx: nunavut.lang.LanguageContext,
-        language: nunavut.lang.Language,
+        lctx: LanguageContext,
+        language: Language,
         ln_module: "types.ModuleType",
         is_target: bool = False,
     ) -> None:
@@ -494,7 +497,7 @@ class CodeGenEnvironment(Environment):
                 is_target=is_target,
             )
 
-    def _update_language_support(self, lctx: nunavut.lang.LanguageContext) -> None:
+    def _update_language_support(self, lctx: LanguageContext) -> None:
 
         supported_languages = lctx.get_supported_languages()
         target_language = lctx.get_target_language()
@@ -519,7 +522,7 @@ class CodeGenEnvironment(Environment):
                 self._add_support_from_language_module_to_environment(
                     lctx,
                     supported_language,
-                    nunavut.lang.LanguageClassLoader.load_language_module(supported_language.name),
+                    LanguageClassLoader.load_language_module(supported_language.name),
                     (supported_language == target_language),
                 )
             except ModuleNotFoundError:

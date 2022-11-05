@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 import pytest
 from nunavut import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
-from nunavut.dependencies import Dependencies
+from nunavut._dependencies import Dependencies
 from nunavut.lang import Language, LanguageContext, LanguageClassLoader, LanguageContextBuilder
 from nunavut.lang.c import filter_id as c_filter_id
 from nunavut.lang.cpp import filter_id as cpp_filter_id

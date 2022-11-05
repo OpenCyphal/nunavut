@@ -11,14 +11,13 @@ import typing
 
 import pydsdl
 
-from ..lang._config import VersionReader
-from .._utilities import ResourceSearchPolicy
+from nunavut._utilities import ResourceSearchPolicy, TEMPLATE_SUFFIX
+from nunavut.lang._config import VersionReader
+
 from .jinja2 import BaseLoader, Environment, FileSystemLoader, PackageLoader, TemplateNotFound
 
 logger = logging.getLogger(__name__)
 
-
-TEMPLATE_SUFFIX = ".j2"  #: The suffix expected for Jinja templates.
 
 DEFAULT_TEMPLATE_PATH = "templates"
 
@@ -108,7 +107,8 @@ class DSDLTemplateLoader(BaseLoader):
 
         .. invisible-code-block: python
 
-            from nunavut.jinja.loaders import DSDLTemplateLoader, TEMPLATE_SUFFIX
+            from nunavut.jinja.loaders import DSDLTemplateLoader
+            from nunavut._utilities import TEMPLATE_SUFFIX
 
             template_loaders = DSDLTemplateLoader(package_name_for_templates='nunavut.lang.c')
 
@@ -148,7 +148,8 @@ class DSDLTemplateLoader(BaseLoader):
 
         .. invisible-code-block: python
 
-            from nunavut.jinja.loaders import DSDLTemplateLoader, TEMPLATE_SUFFIX
+            from nunavut.jinja.loaders import DSDLTemplateLoader
+            from nunavut._utilities import TEMPLATE_SUFFIX
 
             template_loaders = DSDLTemplateLoader(package_name_for_templates='nunavut.lang.c')
 

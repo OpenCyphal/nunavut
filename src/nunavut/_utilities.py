@@ -24,6 +24,9 @@ import importlib_resources
 _logger = logging.getLogger(__name__)
 
 
+TEMPLATE_SUFFIX = ".j2"  #: The suffix expected for nunavut templates.
+
+
 @enum.unique
 class YesNoDefault(enum.Enum):
     """

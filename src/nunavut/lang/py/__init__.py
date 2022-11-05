@@ -14,16 +14,16 @@ import typing
 
 import pydsdl
 
-from ...templates import (
+from nunavut._dependencies import Dependencies
+from nunavut._templates import (
     SupportsTemplateContext,
     template_context_filter,
     template_language_filter,
     template_language_int_filter,
     template_language_list_filter,
 )
-from ...dependencies import Dependencies
-from .. import Language as BaseLanguage
-from .._common import TokenEncoder, UniqueNameGenerator
+from nunavut.lang import Language as BaseLanguage
+from nunavut.lang._common import TokenEncoder, UniqueNameGenerator
 
 
 class Language(BaseLanguage):

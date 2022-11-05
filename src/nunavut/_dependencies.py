@@ -37,7 +37,7 @@ class DependencyBuilder:
 
         import pydsdl
         from unittest.mock import MagicMock
-        from nunavut.dependencies import DependencyBuilder
+        from nunavut._dependencies import DependencyBuilder
 
         my_dependant_type_l2 = MagicMock(spec=pydsdl.CompositeType)
         my_dependant_type_l2.parent_service = False

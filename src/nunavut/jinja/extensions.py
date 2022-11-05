@@ -26,8 +26,10 @@ class JinjaAssert(Extension):
             from nunavut.jinja import CodeGenEnvironment
             from nunavut.jinja.jinja2 import DictLoader
             from nunavut.jinja.extensions import JinjaAssert
+            from nunavut.lang import LanguageContextBuilder
 
-            e = CodeGenEnvironment(loader=DictLoader({'test': template}),
+            e = CodeGenEnvironment(lctx=LanguageContextBuilder().create(),
+                                   loader=DictLoader({'test': template}),
                                    extensions=[JinjaAssert])
             try:
                 e.get_template('test').render()
@@ -44,7 +46,8 @@ class JinjaAssert(Extension):
 
         .. invisible-code-block: python
 
-            e = CodeGenEnvironment(loader=DictLoader({'test': template}),
+            e = CodeGenEnvironment(lctx=LanguageContextBuilder().create(),
+                                   loader=DictLoader({'test': template}),
                                    extensions=[JinjaAssert])
             try:
                 e.get_template('test').render()
@@ -212,10 +215,6 @@ class UseQuery(Extension):
 
         target_language = self.environment.target_language
 
-        if target_language is None:
-            raise TemplateAssertionError(
-                "ifuses directive cannot be used in a language without a target language.", lineno, name, filename
-            )
         if uses_query_name is None:
             raise TemplateAssertionError("Unknown uses_query_name found.", lineno, name, filename)
 

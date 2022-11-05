@@ -15,17 +15,17 @@ import re
 import shutil
 import typing
 
-import nunavut.generators
+import nunavut._generators
 import nunavut.lang
-import nunavut.postprocessors
+import nunavut._postprocessors
 import pydsdl
-from nunavut._utilities import ResourceType, YesNoDefault, ResourceSearchPolicy
+from nunavut._utilities import ResourceType, YesNoDefault, ResourceSearchPolicy, TEMPLATE_SUFFIX
 from yaml import Dumper as YamlDumper
 from yaml import dump as yaml_dump
 
 from .environment import CodeGenEnvironment
 from .jinja2 import Template
-from .loaders import DEFAULT_TEMPLATE_PATH, TEMPLATE_SUFFIX, DSDLTemplateLoader
+from .loaders import DEFAULT_TEMPLATE_PATH, DSDLTemplateLoader
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 # +---------------------------------------------------------------------------+
 
 
-class CodeGenerator(nunavut.generators.AbstractGenerator):
+class CodeGenerator(nunavut._generators.AbstractGenerator):
     """
     Abstract base class for all Generators that build source code using Jinja templates.
 
@@ -80,12 +80,12 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
 
     @staticmethod
     def __augment_post_processors_with_ln_limit_empty_lines(
-        post_processors: typing.Optional[typing.List["nunavut.postprocessors.PostProcessor"]], limit_empty_lines: int
-    ) -> typing.List["nunavut.postprocessors.PostProcessor"]:
+        post_processors: typing.Optional[typing.List["nunavut._postprocessors.PostProcessor"]], limit_empty_lines: int
+    ) -> typing.List["nunavut._postprocessors.PostProcessor"]:
         """
         Subroutine of _handle_post_processors method.
         """
-        from nunavut.postprocessors import LimitEmptyLines
+        from nunavut._postprocessors import LimitEmptyLines
 
         if post_processors is None:
             post_processors = [LimitEmptyLines(limit_empty_lines)]
@@ -101,12 +101,12 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
 
     @staticmethod
     def __augment_post_processors_with_ln_trim_trailing_whitespace(
-        post_processors: typing.Optional[typing.List["nunavut.postprocessors.PostProcessor"]],
-    ) -> typing.List["nunavut.postprocessors.PostProcessor"]:
+        post_processors: typing.Optional[typing.List["nunavut._postprocessors.PostProcessor"]],
+    ) -> typing.List["nunavut._postprocessors.PostProcessor"]:
         """
         Subroutine of _handle_post_processors method.
         """
-        from nunavut.postprocessors import TrimTrailingWhitespace
+        from nunavut._postprocessors import TrimTrailingWhitespace
 
         if post_processors is None:
             post_processors = [TrimTrailingWhitespace()]
@@ -124,8 +124,8 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
     def _handle_post_processors(
         cls,
         target_language: "nunavut.lang.Language",
-        post_processors: typing.Optional[typing.List["nunavut.postprocessors.PostProcessor"]],
-    ) -> typing.Optional[typing.List["nunavut.postprocessors.PostProcessor"]]:
+        post_processors: typing.Optional[typing.List["nunavut._postprocessors.PostProcessor"]],
+    ) -> typing.Optional[typing.List["nunavut._postprocessors.PostProcessor"]]:
         """
         Used by constructor to process an optional list of post-processors and to augment or create this list
         if needed to support language options.
@@ -154,7 +154,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
         additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
         additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None,
         additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None,
-        post_processors: typing.Optional[typing.List["nunavut.postprocessors.PostProcessor"]] = None,
+        post_processors: typing.Optional[typing.List["nunavut._postprocessors.PostProcessor"]] = None,
         builtin_template_path: str = DEFAULT_TEMPLATE_PATH,
         package_name_for_templates: typing.Optional[str] = None,
         search_policy: ResourceSearchPolicy = ResourceSearchPolicy.FIND_ALL,
@@ -230,7 +230,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
     def _filter_and_write_line(
         line_and_lineend: typing.Tuple[str, str],
         output_file: typing.TextIO,
-        line_pps: typing.List["nunavut.postprocessors.LinePostProcessor"],
+        line_pps: typing.List["nunavut._postprocessors.LinePostProcessor"],
     ) -> None:
         for line_pp in line_pps:
             line_and_lineend = line_pp(line_and_lineend)
@@ -248,7 +248,7 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
         cls,
         output_file: typing.TextIO,
         template_gen: typing.Generator[str, None, None],
-        line_pps: typing.List["nunavut.postprocessors.LinePostProcessor"],
+        line_pps: typing.List["nunavut._postprocessors.LinePostProcessor"],
     ) -> None:
         newline_pattern = re.compile(r"\n|\r\n", flags=re.MULTILINE)
         line_buffer = io.StringIO()
@@ -293,13 +293,13 @@ class CodeGenerator(nunavut.generators.AbstractGenerator):
         UniqueNameGenerator.reset()
 
         # Predetermine the post processor types.
-        line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']
-        file_pps = []  # type: typing.List['nunavut.postprocessors.FilePostProcessor']
+        line_pps = []  # type: typing.List['nunavut._postprocessors.LinePostProcessor']
+        file_pps = []  # type: typing.List['nunavut._postprocessors.FilePostProcessor']
         if self._post_processors is not None:
             for pp in self._post_processors:
-                if isinstance(pp, nunavut.postprocessors.LinePostProcessor):
+                if isinstance(pp, nunavut._postprocessors.LinePostProcessor):
                     line_pps.append(pp)
-                elif isinstance(pp, nunavut.postprocessors.FilePostProcessor):
+                elif isinstance(pp, nunavut._postprocessors.FilePostProcessor):
                     file_pps.append(pp)
                 else:
                     raise ValueError("PostProcessor type {} is unknown.".format(type(pp)))
@@ -379,7 +379,7 @@ class DSDLCodeGenerator(CodeGenerator):
 
         :param value: The input value to change into a template include path.
 
-        :return: A path to a template named for the type with :any:`TEMPLATE_SUFFIX`
+        :return: A path to a template named for the type with :data:`TEMPLATE_SUFFIX`
         """
         result = self.dsdl_loader.type_to_template(type(value))
         if result is None:
@@ -815,13 +815,13 @@ class SupportGenerator(CodeGenerator):
         self._env.update_nunavut_globals(*target_language.get_support_module(), is_dryrun, omit_serialization_support)
         target_path = pathlib.Path(self.namespace.get_support_output_folder()) / self._sub_folders
 
-        line_pps = []  # type: typing.List['nunavut.postprocessors.LinePostProcessor']
-        file_pps = []  # type: typing.List['nunavut.postprocessors.FilePostProcessor']
+        line_pps = []  # type: typing.List['nunavut._postprocessors.LinePostProcessor']
+        file_pps = []  # type: typing.List['nunavut._postprocessors.FilePostProcessor']
         if self._post_processors is not None:
             for pp in self._post_processors:
-                if isinstance(pp, nunavut.postprocessors.LinePostProcessor):
+                if isinstance(pp, nunavut._postprocessors.LinePostProcessor):
                     line_pps.append(pp)
-                elif isinstance(pp, nunavut.postprocessors.FilePostProcessor):
+                elif isinstance(pp, nunavut._postprocessors.FilePostProcessor):
                     file_pps.append(pp)
                 else:
                     raise ValueError("PostProcessor type {} is unknown.".format(type(pp)))
@@ -864,8 +864,8 @@ class SupportGenerator(CodeGenerator):
         target: pathlib.Path,
         is_dryrun: bool,
         allow_overwrite: bool,
-        line_pps: typing.List["nunavut.postprocessors.LinePostProcessor"],
-        file_pps: typing.List["nunavut.postprocessors.FilePostProcessor"],
+        line_pps: typing.List["nunavut._postprocessors.LinePostProcessor"],
+        file_pps: typing.List["nunavut._postprocessors.FilePostProcessor"],
     ) -> pathlib.Path:
 
         if not is_dryrun:
@@ -883,7 +883,7 @@ class SupportGenerator(CodeGenerator):
         self,
         resource: pathlib.Path,
         target: pathlib.Path,
-        line_pps: typing.List["nunavut.postprocessors.LinePostProcessor"],
+        line_pps: typing.List["nunavut._postprocessors.LinePostProcessor"],
     ) -> None:
         with open(str(target), "w") as target_file:
             with open(str(resource), "r") as resource_file:

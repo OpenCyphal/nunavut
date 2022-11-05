@@ -16,7 +16,7 @@ import pytest
 
 import nunavut
 import nunavut.jinja
-import nunavut.postprocessors
+import nunavut._postprocessors
 from nunavut.lang import LanguageContextBuilder, Language
 
 
@@ -76,11 +76,11 @@ def _test_common_post_condition(gen_paths, namespace):  # type: ignore
 def test_abs():  # type: ignore
     """Require that PostProcessor and intermediate types are abstract."""
     with pytest.raises(TypeError):
-        nunavut.postprocessors.PostProcessor()  # type: ignore
+        nunavut._postprocessors.PostProcessor()  # type: ignore
     with pytest.raises(TypeError):
-        nunavut.postprocessors.FilePostProcessor()  # type: ignore
+        nunavut._postprocessors.FilePostProcessor()  # type: ignore
     with pytest.raises(TypeError):
-        nunavut.postprocessors.LinePostProcessor()  # type: ignore
+        nunavut._postprocessors.LinePostProcessor()  # type: ignore
 
 
 def test_unknown_intermediate(gen_paths):  # type: ignore
@@ -88,7 +88,7 @@ def test_unknown_intermediate(gen_paths):  # type: ignore
     LinePostProcessor or FilePostProcessor is provided to the jinja2 generator.
     """
 
-    class InvalidType(nunavut.postprocessors.PostProcessor):
+    class InvalidType(nunavut._postprocessors.PostProcessor):
         def __init__(self):  # type: ignore
             pass
 
@@ -116,7 +116,7 @@ def test_chmod(gen_paths):  # type: ignore
     """Generates a file using a SetFileMode post-processor."""
     namespace = _test_common_namespace(gen_paths)
     generator = nunavut.jinja.DSDLCodeGenerator(
-        namespace, templates_dir=gen_paths.templates_dir, post_processors=[nunavut.postprocessors.SetFileMode(0o444)]
+        namespace, templates_dir=gen_paths.templates_dir, post_processors=[nunavut._postprocessors.SetFileMode(0o444)]
     )
     generator.generate_all(False, True)
 
@@ -129,7 +129,7 @@ def test_overwrite(gen_paths):  # type: ignore
     """Verifies the allow_overwrite flag contracts."""
     namespace = _test_common_namespace(gen_paths)
     generator = nunavut.jinja.DSDLCodeGenerator(
-        namespace, templates_dir=gen_paths.templates_dir, post_processors=[nunavut.postprocessors.SetFileMode(0o444)]
+        namespace, templates_dir=gen_paths.templates_dir, post_processors=[nunavut._postprocessors.SetFileMode(0o444)]
     )
     generator.generate_all(False, True)
 
@@ -145,7 +145,7 @@ def test_overwrite_dryrun(gen_paths):  # type: ignore
     """Verifies the allow_overwrite flag contracts."""
     namespace = _test_common_namespace(gen_paths)
     generator = nunavut.jinja.DSDLCodeGenerator(
-        namespace, templates_dir=gen_paths.templates_dir, post_processors=[nunavut.postprocessors.SetFileMode(0o444)]
+        namespace, templates_dir=gen_paths.templates_dir, post_processors=[nunavut._postprocessors.SetFileMode(0o444)]
     )
     generator.generate_all(False, True)
 
@@ -213,7 +213,7 @@ def test_move_file(gen_paths):  # type: ignore
     next will find the new path.
     """
 
-    class Mover(nunavut.postprocessors.FilePostProcessor):
+    class Mover(nunavut._postprocessors.FilePostProcessor):
         def __init__(self, move_to: pathlib.Path):
             self.target_path = move_to
             self.generated_path = pathlib.Path()
@@ -224,7 +224,7 @@ def test_move_file(gen_paths):  # type: ignore
             self.generated_path = generated
             return self.target_path
 
-    class Verifier(nunavut.postprocessors.FilePostProcessor):
+    class Verifier(nunavut._postprocessors.FilePostProcessor):
         def __init__(self):  # type: ignore
             self.generated_path = pathlib.Path()
 
@@ -251,14 +251,14 @@ def test_line_pp(gen_paths):  # type: ignore
     Exercises the LinePostProcessor type.
     """
 
-    class TestLinePostProcessor0(nunavut.postprocessors.LinePostProcessor):
+    class TestLinePostProcessor0(nunavut._postprocessors.LinePostProcessor):
         def __call__(self, line_and_lineend: typing.Tuple[str, str]) -> typing.Tuple[str, str]:
             if len(line_and_lineend[0]) == 0:
                 return ("", "")
             else:
                 return line_and_lineend
 
-    class TestLinePostProcessor1(nunavut.postprocessors.LinePostProcessor):
+    class TestLinePostProcessor1(nunavut._postprocessors.LinePostProcessor):
         def __init__(self):  # type: ignore
             self._lines = []  # type: typing.List[str]
 
@@ -278,7 +278,7 @@ def test_line_pp(gen_paths):  # type: ignore
 
 
 def test_line_pp_returns_none(gen_paths):  # type: ignore
-    class TestBadLinePostProcessor(nunavut.postprocessors.LinePostProcessor):
+    class TestBadLinePostProcessor(nunavut._postprocessors.LinePostProcessor):
         def __call__(self, line_and_lineend: typing.Tuple[str, str]) -> typing.Tuple[str, str]:
             return None  # type: ignore
 
@@ -295,7 +295,7 @@ def test_trim_trailing_ws(gen_paths):  # type: ignore
     generator = nunavut.jinja.DSDLCodeGenerator(
         namespace,
         templates_dir=gen_paths.templates_dir,
-        post_processors=[nunavut.postprocessors.TrimTrailingWhitespace()],
+        post_processors=[nunavut._postprocessors.TrimTrailingWhitespace()],
     )
     generator.generate_all(False, True)
     outfile = _test_common_post_condition(gen_paths, namespace)
@@ -315,7 +315,7 @@ def test_trim_trailing_ws_ln_config(gen_paths):  # type: ignore
 def test_limit_empty_lines(gen_paths):  # type: ignore
     namespace = _test_common_namespace(gen_paths)
     generator = nunavut.jinja.DSDLCodeGenerator(
-        namespace, templates_dir=gen_paths.templates_dir, post_processors=[nunavut.postprocessors.LimitEmptyLines(0)]
+        namespace, templates_dir=gen_paths.templates_dir, post_processors=[nunavut._postprocessors.LimitEmptyLines(0)]
     )
     generator.generate_all(False, True)
     _assert_no_empty_lines(_test_common_post_condition(gen_paths, namespace))
@@ -332,7 +332,7 @@ def test_limit_empty_lines_by_ln_config_cmd_line_none(gen_paths):  # type: ignor
 def test_limit_empty_lines_by_ln_config_cmd_line_less(gen_paths):  # type: ignore
     namespace = _test_common_namespace(gen_paths, additional_config={"limit_empty_lines": "1"})
     generator = nunavut.jinja.DSDLCodeGenerator(
-        namespace, templates_dir=gen_paths.templates_dir, post_processors=[nunavut.postprocessors.LimitEmptyLines(0)]
+        namespace, templates_dir=gen_paths.templates_dir, post_processors=[nunavut._postprocessors.LimitEmptyLines(0)]
     )
     generator.generate_all(False, True)
 
@@ -459,7 +459,7 @@ def test_external_edit_in_place(gen_paths):  # type: ignore
     """
     namespace = _test_common_namespace(gen_paths)
     ext_program = gen_paths.test_dir / pathlib.Path("ext_program.py")
-    edit_in_place = nunavut.postprocessors.ExternalProgramEditInPlace([str(ext_program)])
+    edit_in_place = nunavut._postprocessors.ExternalProgramEditInPlace([str(ext_program)])
     generator = nunavut.jinja.DSDLCodeGenerator(
         namespace, templates_dir=gen_paths.templates_dir, post_processors=[edit_in_place]
     )
@@ -482,13 +482,13 @@ def test_external_edit_in_place_fail(gen_paths):  # type: ignore
     namespace = _test_common_namespace(gen_paths)
     ext_program = gen_paths.test_dir / pathlib.Path("ext_program.py")
     simulated_error_args = [str(ext_program), "--simulate-error"]
-    edit_in_place_checking = nunavut.postprocessors.ExternalProgramEditInPlace(simulated_error_args)
+    edit_in_place_checking = nunavut._postprocessors.ExternalProgramEditInPlace(simulated_error_args)
     generator = nunavut.jinja.DSDLCodeGenerator(
         namespace, templates_dir=gen_paths.templates_dir, post_processors=[edit_in_place_checking]
     )
     with pytest.raises(subprocess.CalledProcessError):
         generator.generate_all(False, True)
-    edit_in_place_not_checking = nunavut.postprocessors.ExternalProgramEditInPlace(simulated_error_args, check=False)
+    edit_in_place_not_checking = nunavut._postprocessors.ExternalProgramEditInPlace(simulated_error_args, check=False)
     generator = nunavut.jinja.DSDLCodeGenerator(
         namespace, templates_dir=gen_paths.templates_dir, post_processors=[edit_in_place_not_checking]
     )

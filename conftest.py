@@ -121,6 +121,7 @@ class GenTestPaths:
         self.root_dir = search_dir
         self.templates_dir = self.test_dir / pathlib.Path("templates")
         self.dsdl_dir = self.test_dir / pathlib.Path("dsdl")
+        self.lang_src_dir = self.root_dir / pathlib.Path("src") / pathlib.Path("nunavut") / pathlib.Path("lang")
 
         self._keep_temp = keep_temporaries
         self._out_dir = None  # type: typing.Optional[pathlib.Path]
@@ -277,7 +278,7 @@ def jinja_filter_tester(request):  # type: ignore
 
         .. code-block: python
 
-            from nunavut.templates import template_environment_filter
+            from nunavut._templates import template_environment_filter
 
             @template_environment_filter
             def filter_dummy(env, input):

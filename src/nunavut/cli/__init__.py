@@ -30,7 +30,7 @@ class _LazyVersionAction(argparse._VersionAction):
         values: typing.Any,
         option_string: typing.Optional[str] = None,
     ) -> None:
-        from nunavut.version import __version__
+        from nunavut._version import __version__
 
         parser._print_message(__version__, sys.stdout)
         parser.exit()
@@ -570,6 +570,5 @@ def main() -> int:
     from nunavut.cli.runners import ArgparseRunner
 
     runner = ArgparseRunner(args, extra_includes)
-    runner.setup()
     runner.run()
     return 0

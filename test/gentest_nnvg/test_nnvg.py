@@ -11,10 +11,12 @@ import typing
 
 import pytest
 
-import nunavut.version
+import nunavut._version
+from nunavut.lang import LanguageContextBuilder
+from nunavut.lang._language import LanguageClassLoader
 
 
-@pytest.mark.parametrize('env_var_name', ["UAVCAN_DSDL_INCLUDE_PATH", "DSDL_INCLUDE_PATH"])
+@pytest.mark.parametrize("env_var_name", ["UAVCAN_DSDL_INCLUDE_PATH", "DSDL_INCLUDE_PATH"])
 def test_UAVCAN_DSDL_INCLUDE_PATH(gen_paths: typing.Any, run_nnvg: typing.Callable, env_var_name: str) -> None:
     """
     Verify that supported environment variables are used by nnvg.
@@ -62,16 +64,22 @@ def test_nnvg_heals_missing_dot_in_extension(gen_paths: typing.Any, run_nnvg: ty
     run_nnvg(gen_paths, nnvg_args)
 
 
-def test_list_inputs(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+@pytest.mark.parametrize("generate_support", ["as-needed", "never", "always", "only"])
+def test_list_inputs(gen_paths: typing.Any, run_nnvg: typing.Callable, generate_support: str) -> None:
     """
     Verifies nnvg's --list-input mode.
     """
-    expected_output = sorted(
-        [
-            gen_paths.templates_dir / pathlib.Path("Any.j2"),
-            gen_paths.dsdl_dir / pathlib.Path("uavcan") / pathlib.Path("test") / pathlib.Path("TestType.0.8.uavcan"),
-        ]
-    )
+    expected_output = [
+        gen_paths.templates_dir / pathlib.Path("Any.j2"),
+        gen_paths.dsdl_dir / pathlib.Path("uavcan") / pathlib.Path("test") / pathlib.Path("TestType.0.8.uavcan"),
+    ]
+
+    expected_serialization_support_outputs = [
+        gen_paths.lang_src_dir
+        / pathlib.Path("c")
+        / pathlib.Path("support")
+        / pathlib.Path("serialization").with_suffix(".j2")
+    ]
 
     # when #58 is fixed `(gen_paths.dsdl_dir / pathlib.Path('scotec') / pathlib.Path('Timer.1.0.uavcan')).as_posix()`
     # should be added to this list.
@@ -82,16 +90,21 @@ def test_list_inputs(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
         gen_paths.out_dir.as_posix(),
         "--target-language",
         "c",
-        "--omit-serialization-support",
         "-I",
         (gen_paths.dsdl_dir / pathlib.Path("scotec")).as_posix(),
         "--list-inputs",
         (gen_paths.dsdl_dir / pathlib.Path("uavcan")).as_posix(),
+        "--generate-support={}".format(generate_support),
     ]
+
+    if generate_support == "only":
+        expected_output = expected_serialization_support_outputs
+    elif generate_support != "never":
+        expected_output = expected_output + expected_serialization_support_outputs
 
     completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(";")
     completed_wo_empty = sorted([pathlib.Path(i) for i in completed if len(i) > 0])
-    assert expected_output == sorted(completed_wo_empty)
+    assert sorted(expected_output) == sorted(completed_wo_empty)
 
 
 def test_list_inputs_w_namespaces(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
@@ -246,7 +259,7 @@ def test_version(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
     nnvg_args = ["--version"]
 
     completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8")
-    assert nunavut.version.__version__ == completed
+    assert nunavut._version.__version__ == completed
 
 
 def test_target_language(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
@@ -580,3 +593,20 @@ def test_language_allow_unregulated_fixed_portid(gen_paths: typing.Any, run_nnvg
     completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(";")
     completed_wo_empty = sorted([pathlib.Path(i) for i in completed if len(i) > 0])
     assert expected_output == sorted(completed_wo_empty)
+
+
+def test_list_configuration(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+    Verifies nnvg's --list-configuration option
+    """
+    import yaml
+
+    nnvg_args = ["--list-configuration"]
+
+    completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(";")
+    parsed_config = yaml.load("\n".join(completed), yaml.Loader)
+    default_target_section_name = LanguageClassLoader.to_language_module_name(
+        LanguageContextBuilder.DEFAULT_TARGET_LANGUAGE
+    )
+    assert len(parsed_config[default_target_section_name]) > 0
+    print(yaml.dump(parsed_config))
