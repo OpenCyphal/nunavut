@@ -120,15 +120,18 @@ class CodeGenEnvironment(Environment):
 
     .. invisible-code-block: python
 
-        from nunavut.lang import LanguageContext, Language
+        from nunavut.lang import LanguageContext, LanguageContextBuilder
+        from nunavut.lang._language import Language
         from nunavut.jinja import CodeGenEnvironment
         from nunavut.jinja.jinja2 import DictLoader
+
+        lctx = LanguageContextBuilder().create()
 
     .. code-block:: python
 
         template = 'Hello World'
 
-        e = CodeGenEnvironment(loader=DictLoader({'test': template}))
+        e = CodeGenEnvironment(loader=DictLoader({'test': template}), lctx=lctx)
         assert 'Hello World' ==  e.get_template('test').render()
 
     .. warning::
@@ -139,7 +142,7 @@ class CodeGenEnvironment(Environment):
     .. code-block:: python
 
         try:
-            CodeGenEnvironment(loader=DictLoader({'test': template}), additional_globals={'ln': 'bad_ln'})
+            CodeGenEnvironment(loader=DictLoader({'test': template}), lctx=lctx, additional_globals={'ln': 'bad_ln'})
             assert False
         except RuntimeError:
             pass
@@ -150,6 +153,7 @@ class CodeGenEnvironment(Environment):
 
         try:
             CodeGenEnvironment(loader=DictLoader({'test': template}),
+                                                 lctx=lctx,
                                                  additional_filters={'indent': lambda x: x})
             assert False
         except RuntimeError:
@@ -158,6 +162,7 @@ class CodeGenEnvironment(Environment):
         # You can allow overwrite of built-ins using the ``allow_filter_test_or_use_query_overwrite``
         # argument.
         e = CodeGenEnvironment(loader=DictLoader({'test': template}),
+                                                 lctx=lctx,
                                                  additional_filters={'indent': lambda x: x},
                                                  allow_filter_test_or_use_query_overwrite=True)
         assert 'foo' == e.filters['indent']('foo')
@@ -173,6 +178,7 @@ class CodeGenEnvironment(Environment):
                 return name
 
         e = CodeGenEnvironment(loader=DictLoader({'test': template}),
+                               lctx=lctx,
                                additional_filters={'filter_misnamed': lambda x: x})
 
         try:
@@ -195,7 +201,7 @@ class CodeGenEnvironment(Environment):
     def __init__(
         self,
         loader: BaseLoader,
-        lctx: typing.Optional[LanguageContext] = None,
+        lctx: LanguageContext,
         trim_blocks: bool = False,
         lstrip_blocks: bool = False,
         additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
@@ -229,21 +235,18 @@ class CodeGenEnvironment(Environment):
             self.globals[global_namespace] = LanguageTemplateNamespace()
 
         self.globals["now_utc"] = datetime.datetime(datetime.MINYEAR, 1, 1)
-        self._target_language = None  # type: typing.Optional[Language]
+        self._target_language = lctx.get_target_language()
 
         # --------------------------------------------------
         # After this point we do that most heinous act so common in dynamic languages;
         # we expose the state of this partially constructed object so we can complete
         # configuring it.
 
-        if lctx is not None:
-            self._update_language_support(lctx)
+        self._update_language_support(lctx)
 
-            supported_languages = (
-                lctx.get_supported_languages().values()
-            )  # type: typing.Optional[typing.ValuesView[Language]]
-        else:
-            supported_languages = None
+        supported_languages = (
+            lctx.get_supported_languages().values()
+        )  # type: typing.Optional[typing.ValuesView[Language]]
 
         self.update_nunavut_globals()
 
@@ -312,7 +315,7 @@ class CodeGenEnvironment(Environment):
         return typing.cast(LanguageTemplateNamespace, self.globals["ln"])
 
     @property
-    def target_language(self) -> typing.Optional[Language]:
+    def target_language(self) -> Language:
         return self._target_language
 
     @property

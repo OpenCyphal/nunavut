@@ -74,8 +74,11 @@ class LanguageConfig:
 
     """
 
+    SECTION_NAME_PATTERN = re.compile(
+        r"^nunavut\.lang\.([a-zA-Z]{1}\w*)$"
+    )  #: Required pattern for section name identifers.
+
     def __init__(self):  # type: ignore
-        self._section_name_pattern = re.compile(r"^nunavut\.lang\.([a-zA-Z]{1}\w*)$")
         self._sections = dict()  # type: typing.Dict[str, typing.Dict[str, typing.Any]]
 
     def update(self, configuration: typing.Any) -> None:
@@ -206,7 +209,7 @@ class LanguageConfig:
         for section_name, section_data in configuration.items():
             if not isinstance(section_name, str):
                 raise TypeError("section names must be strings")
-            if not self._section_name_pattern.match(section_name):
+            if not self.SECTION_NAME_PATTERN.match(section_name):
                 raise ValueError(
                     'Section name "{}" is invalid. See LanguageConfig documentation for rules.'.format(section_name)
                 )
@@ -230,9 +233,44 @@ class LanguageConfig:
         self._sections[section][option] = value
 
     def add_section(self, section_name: str) -> None:
+        """Add a section to the configuration.
+
+        Sections are top-level containers that contain key/value pairs of configuration of a single
+        language type.
+
+        :param section_name: The name of the language section. This must adhere to the :data:`SECTION_NAME_PATTERN`
+            pattern.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import LanguageConfig
+
+            config = LanguageConfig()
+
+            try:
+                config.add_section(53)
+                assert "add_section must throw TypeError if given non-string key."
+            except TypeError:
+                pass
+
+            try:
+                config.add_section("foo")
+                assert "add_section must throw ValueError if given an invalid string name."
+            except ValueError:
+                pass
+
+            config.add_section("nunavut.lang.c")
+
+            try:
+                config.add_section("nunavut.lang.c")
+                assert "add_section must throw ValueError if section redefinition is attempted."
+            except ValueError:
+                pass
+
+        """
         if not isinstance(section_name, str):
             raise TypeError("section names must be strings")
-        if not self._section_name_pattern.match(section_name):
+        if not self.SECTION_NAME_PATTERN.match(section_name):
             raise ValueError(
                 'Section name "{}" is invalid. See LanguageConfig documentation for rules.'.format(section_name)
             )

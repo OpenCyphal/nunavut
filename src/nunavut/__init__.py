@@ -68,6 +68,7 @@ Putting this all together, the typical use of this library looks something like 
 """
 import sys as _sys
 
+from ._generators import AbstractGenerator as AbstractGenerator
 from ._generators import generate_types as generate_types
 from ._namespace import Namespace as Namespace
 from ._namespace import build_namespace_tree as build_namespace_tree
@@ -78,6 +79,7 @@ from ._version import __copyright__ as __copyright__
 from ._version import __email__ as __email__
 from ._version import __license__ as __license__
 from ._version import __version__ as __version__
+from .jinja import CodeGenerator as CodeGenerator
 from .jinja import DSDLCodeGenerator as DSDLCodeGenerator
 from .jinja import SupportGenerator as SupportGenerator
 from .lang import Language as Language
@@ -93,7 +95,9 @@ if _sys.version_info[:2] < (3, 5):  # pragma: no cover
 __version_info__ = tuple(map(int, __version__.split(".")[:3]))
 
 __all__ = [
+    "AbstractGenerator",
     "build_namespace_tree",
+    "CodeGenerator",
     "DSDLCodeGenerator",
     "generate_types",
     "LanguageConfig",

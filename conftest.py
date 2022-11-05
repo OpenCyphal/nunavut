@@ -121,6 +121,7 @@ class GenTestPaths:
         self.root_dir = search_dir
         self.templates_dir = self.test_dir / pathlib.Path("templates")
         self.dsdl_dir = self.test_dir / pathlib.Path("dsdl")
+        self.lang_src_dir = self.root_dir / pathlib.Path("src") / pathlib.Path("nunavut") / pathlib.Path("lang")
 
         self._keep_temp = keep_temporaries
         self._out_dir = None  # type: typing.Optional[pathlib.Path]

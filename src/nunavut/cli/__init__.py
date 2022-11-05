@@ -570,6 +570,5 @@ def main() -> int:
     from nunavut.cli.runners import ArgparseRunner
 
     runner = ArgparseRunner(args, extra_includes)
-    runner.setup()
     runner.run()
     return 0

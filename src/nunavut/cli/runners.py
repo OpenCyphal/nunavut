@@ -7,15 +7,14 @@
     Objects that utilize command-line inputs to run a program using Nunavut.
 """
 import argparse
-import logging
 import pathlib
 import sys
 import typing
 
 from pydsdl import read_namespace as read_dsdl_namespace
 
-from nunavut._generators import AbstractGenerator, create_default_generators
-from nunavut._namespace import Namespace, build_namespace_tree
+from nunavut._generators import create_default_generators
+from nunavut._namespace import build_namespace_tree
 from nunavut._postprocessors import (
     ExternalProgramEditInPlace,
     FilePostProcessor,
@@ -39,9 +38,6 @@ class ArgparseRunner:
 
     def __init__(self, args: argparse.Namespace, extra_includes: typing.Optional[typing.Union[str, typing.List[str]]]):
         self._args = args
-        self._language_context: typing.Optional[LanguageContext] = None
-        self._generators: typing.Optional[typing.Tuple[AbstractGenerator, AbstractGenerator]] = None
-        self._root_namespace: typing.Optional[Namespace] = None
 
         if extra_includes is None:
             extra_includes = []
@@ -49,36 +45,6 @@ class ArgparseRunner:
             extra_includes = [extra_includes]
 
         self._extra_includes = extra_includes
-
-    @property
-    def extra_includes(self) -> typing.List[str]:
-        return self._extra_includes
-
-    @property
-    def generator(self) -> AbstractGenerator:
-        if self._generators is None:
-            raise RuntimeError("generator property accessed before setup")
-        return self._generators[0]
-
-    @property
-    def support_generator(self) -> AbstractGenerator:
-        if self._generators is None:
-            raise RuntimeError("support_generator property accessed before setup")
-        return self._generators[1]
-
-    @property
-    def root_namespace(self) -> Namespace:
-        if self._root_namespace is None:
-            raise RuntimeError("root_namespace property accessed before setup")
-        return self._root_namespace
-
-    def setup(self) -> None:
-        """
-        Required to prepare this object to run (run method will raise exceptions if called before this method).
-        While this may seem a bit clunky it helps isolate errors to two distinct stages; setup and run.
-
-        Setup never generates anything. It only parses the inputs and creates the generator arguments.
-        """
 
         #
         # nunavut : parse inputs
@@ -112,7 +78,7 @@ class ArgparseRunner:
             "post_processors": self._build_post_processor_list_from_args(),
         }
 
-        self._generators = create_default_generators(self._root_namespace, **generator_args)
+        self._generator, self._support_generator = create_default_generators(self._root_namespace, **generator_args)
 
     def run(self) -> None:
         """
@@ -213,69 +179,57 @@ class ArgparseRunner:
 
     def _list_outputs_only(self) -> None:
         if self._args.generate_support != "only":
-            self._stdout_lister(self.generator.generate_all(is_dryrun=True), lambda p: str(p))
+            self._stdout_lister(self._generator.generate_all(is_dryrun=True), lambda p: str(p))
 
         if self._should_generate_support():
-            self._stdout_lister(self.support_generator.generate_all(is_dryrun=True), lambda p: str(p))
+            self._stdout_lister(self._support_generator.generate_all(is_dryrun=True), lambda p: str(p))
 
     def _list_inputs_only(self) -> None:
         if self._args.generate_support != "only":
             self._stdout_lister(
-                self.generator.get_templates(omit_serialization_support=self._args.omit_serialization_support),
+                self._generator.get_templates(omit_serialization_support=self._args.omit_serialization_support),
                 lambda p: str(p.resolve()),
             )
 
         if self._should_generate_support():
             self._stdout_lister(
-                self.support_generator.get_templates(omit_serialization_support=self._args.omit_serialization_support),
+                self._support_generator.get_templates(omit_serialization_support=self._args.omit_serialization_support),
                 lambda p: str(p.resolve()),
             )
 
         if self._args.generate_support != "only":
-            if self.generator.generate_namespace_types:
+            if self._generator.generate_namespace_types:
                 self._stdout_lister(
-                    [x for x, _ in self.root_namespace.get_all_types()], lambda p: str(p.source_file_path.as_posix())
+                    [x for x, _ in self._root_namespace.get_all_types()], lambda p: str(p.source_file_path.as_posix())
                 )
             else:
                 self._stdout_lister(
-                    [x for x, _ in self.root_namespace.get_all_datatypes()],
+                    [x for x, _ in self._root_namespace.get_all_datatypes()],
                     lambda p: str(p.source_file_path.as_posix()),
                 )
 
     def _list_configuration_only(self) -> None:
         lctx = self._language_context
-        if lctx is None:
-            raise RuntimeError("Internal Error: no Language Context available when listing language options?")
 
         import yaml
 
         sys.stdout.write("target_language: '")
-
         sys.stdout.write(lctx.get_target_language().name)
-
         sys.stdout.write("'\n")
 
         yaml.dump(lctx.config.sections(), sys.stdout, allow_unicode=True)
 
     def _generate(self) -> None:
         if self._should_generate_support():
-            self.support_generator.generate_all(
+            self._support_generator.generate_all(
                 is_dryrun=self._args.dry_run,
                 allow_overwrite=not self._args.no_overwrite,
                 omit_serialization_support=self._args.omit_serialization_support,
             )
 
         if self._args.generate_support != "only":
-            self.generator.generate_all(
+            self._generator.generate_all(
                 is_dryrun=self._args.dry_run,
                 allow_overwrite=not self._args.no_overwrite,
                 omit_serialization_support=self._args.omit_serialization_support,
-            )
-
-        # TODO: move this somewhere html-specific.
-        if self._args.target_language == "html" and len(self.extra_includes) > 0:
-            logging.warning(
-                "Other lookup namespaces are linked in these generated docs. "
-                "If you do not generate docs for these other namespaces as well, "
-                "links to external data types could be broken (expansion will still work)."
             )
