@@ -15,17 +15,17 @@ jobs:
         submodules: true
     - uses: actions/setup-python@v2
       with:
-        python-version: '3.9'
+        python-version: '3.10'
     - name: install-tox
       run: pip3 install tox
     - name: lint
       run: tox -e lint
     - name: test-nnvg
-      run: tox -e py39-nnvg
+      run: tox -e py310-nnvg
     - name: test-doctest
-      run: tox -e py39-doctest,py39-rstdoctest
+      run: tox -e py310-doctest,py310-rstdoctest
     - name: test-pytest
-      run: tox -e py39-test
+      run: tox -e py310-test
     - name: test-report
       run: tox -e report
     - name: package
@@ -39,7 +39,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: xunit-results
-        path: .tox/py39-test/tmp/xunit-result.xml
+        path: .tox/py310-test/tmp/xunit-result.xml
     - name: upload-package
       uses: actions/upload-artifact@v2
       with:
@@ -66,7 +66,7 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: xunit-results
-        path: .tox/py39-test/tmp/
+        path: .tox/py310-test/tmp/
     - name: set-environment
       run: |
         echo NUNAVUT_MAJOR_MINOR_VERSION=$(./.github/verify.py --major-minor-version-only) >> $GITHUB_ENV
