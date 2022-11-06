@@ -1,6 +1,6 @@
 #
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2019  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 import typing
@@ -30,7 +30,7 @@ def test_realgen(
 ) -> None:
     """
     Sanity test that runs through the entire public, regulated set of
-    UAVCAN types and generates code for each internally supported language.
+    Cyphal types and generates code for each internally supported language.
     """
     root_namespace_dir = gen_paths.root_dir / Path("submodules") / Path("public_regulated_data_types") / Path("uavcan")
     generate_types(

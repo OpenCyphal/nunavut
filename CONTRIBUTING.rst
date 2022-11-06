@@ -2,7 +2,7 @@
 Contributor Notes
 #####################
 
-Hi! Thanks for contributing. This page contains all the details about getting
+|:wave:| Thanks for contributing. This page contains all the details about getting
 your dev environment setup.
 
 .. note::

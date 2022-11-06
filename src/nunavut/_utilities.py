@@ -1,6 +1,6 @@
 #
 # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2021  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 """

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 UAVCAN Development Team.
+ * Copyright (c) 2022 OpenCyphal Development Team.
  * Authors: Pavel Pletenev <cpp.create@gmail.com>
  * This software is distributed under the terms of the MIT License.
  *

@@ -1,6 +1,6 @@
 #
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2019  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 
@@ -255,8 +255,8 @@ def test_lang_c(gen_paths: Any, unique_name_evaluator: Any, implicit: bool, use_
         assert lang_any["id_3"] == "_register"
         assert lang_any["id_4"] == "False"
         assert lang_any["id_5"] == "_return"
-        assert lang_any["id_7"] == "I_zX2764_UAVCAN"
-        assert lang_any["id_8"] == "zX0031_zX2764_UAVCAN"
+        assert lang_any["id_7"] == "I_zX2764_Cyphal"
+        assert lang_any["id_8"] == "zX0031_zX2764_Cyphal"
 
         assert lang_any["id_9"] == "str"
         assert lang_any["id_A"] == "_strr"
@@ -284,8 +284,8 @@ def test_lang_cpp(gen_paths):  # type: ignore
     assert lang_any["id_3"] == "_register"
     assert lang_any["id_4"] == "False"
     assert lang_any["id_5"] == "_return"
-    assert lang_any["id_7"] == "I_zX2764_UAVCAN"
-    assert lang_any["id_8"] == "_1_zX2764_UAVCAN"
+    assert lang_any["id_7"] == "I_zX2764_Cyphal"
+    assert lang_any["id_8"] == "_1_zX2764_Cyphal"
     assert lang_any["id_9"] == "str"
     assert lang_any["id_A"] == "strr"
     assert lang_any["id_B"] == "_uINT_FOO_MIN"
@@ -325,8 +325,8 @@ def test_lang_py_implicit(gen_paths, unique_name_evaluator):  # type: ignore
     assert lang_any["id_3"] == "register"
     assert lang_any["id_4"] == "False_"
     assert lang_any["id_5"] == "return_"
-    assert lang_any["id_7"] == "I_zX2764_UAVCAN"
-    assert lang_any["id_8"] == "zX0031_zX2764_UAVCAN"
+    assert lang_any["id_7"] == "I_zX2764_Cyphal"
+    assert lang_any["id_8"] == "zX0031_zX2764_Cyphal"
     assert lang_any["id_9"] == "str_"
     assert lang_any["id_A"] == "strr"
     assert lang_any["id_B"] == "UINT_FOO_MIN"

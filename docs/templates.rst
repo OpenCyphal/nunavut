@@ -393,7 +393,7 @@ To share common formatting for these templates use `Jinja template inheritance`_
 given a template ``common_header.j2``::
 
    /*
-    * UAVCAN data structure definition for nunavut.
+    * Cyphal data structure definition for nunavut.
     *
     * Auto-generated, do not edit.
     *

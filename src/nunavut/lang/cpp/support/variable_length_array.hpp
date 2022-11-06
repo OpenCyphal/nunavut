@@ -1,7 +1,7 @@
 //
 // Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // Copyright (C) 2014 Pavel Kirienko <pavel.kirienko@gmail.com>
-// Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
+// Copyright (C) 2021  OpenCyphal Development Team  <opencyphal.org>
 // This software is distributed under the terms of the MIT License.
 //
 
@@ -52,7 +52,7 @@ public:
 };
 
 ///
-/// Minimal, generic container for storing UAVCAN variable-length arrays. One property that is unique
+/// Minimal, generic container for storing Cyphal variable-length arrays. One property that is unique
 /// for variable-length arrays is that they have a maximum bound which this implementation enforces.
 /// This allows use of an allocator that is backed by statically allocated memory.
 ///

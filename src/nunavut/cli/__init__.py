@@ -1,6 +1,6 @@
 #
 # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2021  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 """
@@ -86,7 +86,7 @@ def _make_parser() -> argparse.ArgumentParser:
     )
 
     parser = _NunavutArgumentParser(
-        description="Generate code from UAVCAN DSDL using pydsdl and jinja2",
+        description="Generate code from Cyphal DSDL using pydsdl and jinja2",
         epilog=epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
@@ -334,7 +334,7 @@ def _make_parser() -> argparse.ArgumentParser:
 
         Do not reject unregulated fixed port identifiers.
         This is a dangerous feature that must not be used unless you understand the
-        risks. The background information is provided in the UAVCAN specification.
+        risks. The background information is provided in the Cyphal specification.
 
     """
         ).lstrip(),

@@ -97,7 +97,7 @@ Partial example: generating a C struct
 .. code-block:: jinja
 
        /*
-        * UAVCAN data structure definition
+        * Cyphal data structure definition
         *
         * Auto-generated, do not edit.
         *
@@ -163,7 +163,7 @@ The documentation for Nunavut is hosted on readthedocs.io:
 - `nunavut contributors guide`_ – Documentation for contributors to the Nunavut project.
 - `nunavut licenses`_ – Licenses and copyrights
 
-Nunavut is part of the UAVCAN project:
+Nunavut is part of the OpenCyphal project:
 
 - `OpenCyphal website`_
 - `OpenCyphal forum`_
