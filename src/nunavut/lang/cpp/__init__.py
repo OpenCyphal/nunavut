@@ -956,6 +956,16 @@ def filter_destructor_name(language: Language, instance: pydsdl.Any) -> str:
 
 
 @template_language_filter(__name__)
+def filter_default_value_initializer(language: Language, instance: pydsdl.Any) -> str:
+    """
+    Emit a default initialization statement for the given instance if primitive or array.
+    """
+    if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.ArrayType):
+        return "{}"
+    return ""
+
+
+@template_language_filter(__name__)
 def filter_declaration(language: Language, instance: pydsdl.Any) -> str:
     """
     Emit a declaration statement for the given instance.
