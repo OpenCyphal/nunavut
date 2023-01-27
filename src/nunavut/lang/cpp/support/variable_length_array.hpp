@@ -460,6 +460,8 @@ public:
         const std::size_t no_shrink_capacity = (clamped_capacity > size_) ? clamped_capacity : size_;
 
         T* new_data = nullptr;
+
+#if __cpp_exceptions
         try
         {
             new_data = alloc_.allocate(no_shrink_capacity);
@@ -469,6 +471,9 @@ public:
             // null by this class.
             (void) e;
         }
+#else
+        new_data = alloc_.allocate(no_shrink_capacity);
+#endif
 
         if (new_data != nullptr)
         {

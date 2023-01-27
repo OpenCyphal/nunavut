@@ -47,7 +47,7 @@ def test_default_array_type_cpp(gen_paths):  # type: ignore
 
     assert_pattern_match_in_file(
         gen_paths.find_outfile_in_namespace("radar.Phased", namespace),
-        re.compile(r"\s*std::array<float,3>\s+bank_normal_rads;\s*"),
+        re.compile(r"\s*std::array<float,3>\s+bank_normal_rads{};\s*"),
     )
 
 
@@ -72,6 +72,6 @@ def test_var_array_override_cpp(gen_paths):  # type: ignore
 
     assert_pattern_match_in_file(
         gen_paths.find_outfile_in_namespace("radar.Phased", namespace),
-        re.compile(r"\s*scotec::TerribleArray<float,2677>\s+antennae_per_bank;\s*"),
-        re.compile(r"\s*std::array<float,3>\s+bank_normal_rads;\s*"),
+        re.compile(r"\s*scotec::TerribleArray<float,2677>\s+antennae_per_bank{};\s*"),
+        re.compile(r"\s*std::array<float,3>\s+bank_normal_rads{};\s*"),
     )

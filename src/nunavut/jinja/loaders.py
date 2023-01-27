@@ -58,12 +58,12 @@ class DSDLTemplateLoader(BaseLoader):
         **kwargs: typing.Any
     ):
         super().__init__(**kwargs)
-        self._type_to_template_lookup_cache = dict()  # type: typing.Dict[pydsdl.Any, pathlib.Path]
+        self._type_to_template_lookup_cache: typing.Dict[pydsdl.Any, pathlib.Path] = dict()
 
         if templates_dirs is not None:
             for templates_dir_item in templates_dirs:
-                if not pathlib.Path(templates_dir_item).exists:
-                    raise ValueError("Templates directory {} did not exist?".format(templates_dir_item))
+                if not templates_dir_item.exists():
+                    raise ValueError("Templates directory {} did not exist?".format(str(templates_dir_item)))
             logger.info("Loading templates from file system at {}".format(templates_dirs))
             self._fsloader = FileSystemLoader((str(d) for d in templates_dirs), followlinks=followlinks)
         else:
@@ -170,7 +170,7 @@ class DSDLTemplateLoader(BaseLoader):
         files = set()
         if self._fsloader is not None:
             for template_dir in self._fsloader.searchpath:
-                for template in pathlib.Path(template_dir).glob("**/*{}".format(TEMPLATE_SUFFIX)):
+                for template in pathlib.Path(str(template_dir)).glob("**/*{}".format(TEMPLATE_SUFFIX)):
                     files.add(template)
         if self._package_loader is not None:
             templates_module = importlib.import_module(self._templates_package_name)

@@ -288,11 +288,12 @@ def test_lang_cpp(gen_paths):  # type: ignore
     assert lang_any["id_8"] == "_1_zX2764_Cyphal"
     assert lang_any["id_9"] == "str"
     assert lang_any["id_A"] == "strr"
-    assert lang_any["id_B"] == "_uINT_FOO_MIN"
-    assert lang_any["id_C"] == "_iNT_C"
+    assert lang_any["id_B"] == "UINT_FOO_MIN"
+    assert lang_any["id_C"] == "INT_C"
     assert lang_any["id_D"] == "LC_Is_reserved"
     assert lang_any["id_E"] == "NOT_ATOMIC_YO"
-    assert lang_any["id_F"] == "_aTOMIC_YO"
+    assert lang_any["id_F"] == "ATOMIC_YO"
+    assert lang_any["id_G"] == "memory_order_yo"
 
     lang_cpp = (
         LanguageContextBuilder(include_experimental_languages=True)
