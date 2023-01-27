@@ -2,7 +2,7 @@
 Contributor Notes
 #####################
 
-Hi! Thanks for contributing. This page contains all the details about getting
+|:wave:| Thanks for contributing. This page contains all the details about getting
 your dev environment setup.
 
 .. note::
@@ -16,7 +16,7 @@ your dev environment setup.
 
 .. warning::
 
-    When committing to main you **must** bump at least the patch number in ``src/nunavut/version.py``
+    When committing to main you **must** bump at least the patch number in ``src/nunavut/_version.py``
     or the build will fail on the upload step.
 
 

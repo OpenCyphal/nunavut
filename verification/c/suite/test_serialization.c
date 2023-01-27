@@ -1,4 +1,4 @@
-// Copyright (c) 2020 UAVCAN Development Team.
+// Copyright (c) 2020 OpenCyphal Development Team.
 // This software is distributed under the terms of the MIT License.
 
 #include <regulated/basics/Struct__0_1.h>

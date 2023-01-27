@@ -31,48 +31,6 @@ from sybil.parsers.doctest import DocTestParser
 from nunavut import Namespace
 
 
-class NamedTempFileWindowsSafe:
-    """
-    Replacement for Python's NamedTemporaryFile which doesn't really work properly on Windows.
-    """
-
-    def __init__(
-        self,
-        mode: str = "r",
-        encoding: str = "utf-8",
-        suffix: typing.Optional[str] = None,
-        newline: typing.Optional[str] = None,
-    ):
-        self._mode = mode
-        self._encoding = encoding
-        self._suffix = suffix
-        self._newline = newline
-        self._tempfile: typing.Optional[typing.IO] = None
-
-    def _generate_temporary_filename(self) -> str:
-        return os.urandom(32).hex()
-
-    def _new_temporary_filename(self) -> pathlib.Path:
-        filename = pathlib.Path(tempfile.gettempdir(), self._generate_temporary_filename())
-        if self._suffix is not None:
-            filename = filename.with_suffix(self._suffix)
-        if filename.exists():
-            raise RuntimeError("Temporary file {} already exists!?".format(str(filename)))
-        return filename
-
-    def __enter__(self) -> typing.IO:
-        filename = self._new_temporary_filename()
-        filename.touch()
-        self._tempfile = filename.open(mode=self._mode, encoding=self._encoding, newline=self._newline)
-        return self._tempfile
-
-    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
-        if self._tempfile is not None:
-            self._tempfile.close()
-            os.remove(self._tempfile.name)
-            self._tempfile = None
-
-
 # +-------------------------------------------------------------------------------------------------------------------+
 # | PYTEST HOOKS
 # +-------------------------------------------------------------------------------------------------------------------+
@@ -119,6 +77,10 @@ def pytest_addoption(parser):  # type: ignore
 
 @pytest.fixture
 def run_nnvg(request):  # type: ignore
+    """
+    Test helper for invoking the nnvg commandline script as part of a unit test.
+    """
+
     def _run_nnvg(
         gen_paths: typing.Any,
         args: typing.List[str],
@@ -159,6 +121,7 @@ class GenTestPaths:
         self.root_dir = search_dir
         self.templates_dir = self.test_dir / pathlib.Path("templates")
         self.dsdl_dir = self.test_dir / pathlib.Path("dsdl")
+        self.lang_src_dir = self.root_dir / pathlib.Path("src") / pathlib.Path("nunavut") / pathlib.Path("lang")
 
         self._keep_temp = keep_temporaries
         self._out_dir = None  # type: typing.Optional[pathlib.Path]
@@ -233,6 +196,10 @@ class GenTestPaths:
 
 @pytest.fixture(scope="function")
 def gen_paths(request):  # type: ignore
+    """
+    Used by the "gentest" unittests in Nunavut to standardize output paths for generated code created as part of
+    the tests. Use the --keep-generated argument to disable the auto-clean behaviour this fixture provides by default.
+    """
     g = GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
     request.addfinalizer(g.test_path_finalizer)
     return g
@@ -276,10 +243,10 @@ def assert_language_config_value(request):  # type: ignore
     """
     Assert that a given configuration value is set for the target language.
     """
-    from nunavut.lang import LanguageContext
+    from nunavut.lang import LanguageContext, LanguageContextBuilder
 
     def _assert_language_config_value(
-        target_language: typing.Union[typing.Optional[str], LanguageContext],
+        target_language: typing.Union[str, LanguageContext],
         key: str,
         expected_value: typing.Any,
         message: typing.Optional[str],
@@ -287,7 +254,11 @@ def assert_language_config_value(request):  # type: ignore
         if isinstance(target_language, LanguageContext):
             lctx = target_language
         else:
-            lctx = LanguageContext(target_language)
+            lctx = (
+                LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language(target_language)
+                .create()
+            )
 
         language = lctx.get_target_language()
         if language is None:
@@ -299,48 +270,6 @@ def assert_language_config_value(request):  # type: ignore
 
 
 @pytest.fixture
-def configurable_language_context_factory(request):  # type: ignore
-    """
-    Use to create a LanguageContext that the test can write configuration overrides for.
-
-    Example:
-
-        .. code-block:: python
-
-            def test_my_test(configurable_language_context_factory):
-                lctx = configurable_language_context_factory({'nunavut.lang.c': {'foo': 'bar'}},
-                                                             'c')
-                assert lctx.get_target_language().get_config_value('foo') == 'bar'
-
-        .. invisible-code-block: python
-
-            test_my_test(configurable_language_context_factory)
-
-    """
-    from nunavut.lang import LanguageContext
-
-    def _make_configurable_language_context(
-        config_overrides: typing.Mapping[str, typing.Mapping[str, typing.Any]],
-        target_language: typing.Optional[str] = None,
-        extension: typing.Optional[str] = None,
-        namespace_output_stem: typing.Optional[str] = None,
-        omit_serialization_support_for_target: bool = True,
-    ) -> LanguageContext:
-
-        from yaml import Dumper as YamlDumper
-        from yaml import dump as yaml_dump
-
-        with NamedTempFileWindowsSafe(mode="w", encoding="utf-8", suffix=".yaml", newline="\n") as config_override_file:
-            yaml_dump(config_overrides, config_override_file, Dumper=YamlDumper)
-            config_override_file.flush()
-            return LanguageContext(
-                target_language, extension, additional_config_files=[pathlib.Path(config_override_file.name)]
-            )
-
-    return _make_configurable_language_context
-
-
-@pytest.fixture
 def jinja_filter_tester(request):  # type: ignore
     """
     Use to create fluent but testable documentation for Jinja filters and tests
@@ -349,7 +278,7 @@ def jinja_filter_tester(request):  # type: ignore
 
         .. code-block: python
 
-            from nunavut.templates import template_environment_filter
+            from nunavut._templates import template_environment_filter
 
             @template_environment_filter
             def filter_dummy(env, input):
@@ -370,18 +299,25 @@ def jinja_filter_tester(request):  # type: ignore
     You can also control the language context:
 
         .. code-block: python
-            lctx = configurable_language_context_factory({'nunavut.lang.c': {'enable_stropping': False}}, 'c')
+
+            from nunavut.lang import LanguageContextBuilder, Language
+            lctx = (
+                LanguageContextBuilder()
+                    .set_target_language("c")
+                    .set_target_language_configuration_override(Language.WKCV_ENABLE_STROPPING, False)
+                    .create()
+            )
 
             jinja_filter_tester(filter_dummy, template, rendered, lctx, I=I)
     """
     from nunavut.jinja.jinja2 import DictLoader
-    from nunavut.lang import LanguageContext
+    from nunavut.lang import LanguageContext, LanguageContextBuilder
 
     def _make_filter_test_template(
         filter_or_list_of_filters: typing.Union[None, typing.Callable, typing.List[typing.Callable]],
         body: str,
         expected: str,
-        target_language_or_language_context: typing.Union[typing.Optional[str], LanguageContext],
+        target_language_or_language_context: typing.Union[str, LanguageContext],
         **globals: typing.Optional[typing.Dict[str, typing.Any]]
     ) -> str:
         from nunavut.jinja import CodeGenEnvironment
@@ -389,7 +325,11 @@ def jinja_filter_tester(request):  # type: ignore
         if isinstance(target_language_or_language_context, LanguageContext):
             lctx = target_language_or_language_context
         else:
-            lctx = LanguageContext(target_language_or_language_context)
+            lctx = (
+                LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language(target_language_or_language_context)
+                .create()
+            )
 
         if filter_or_list_of_filters is None:
             additional_filters = dict()  # type: typing.Optional[typing.Dict[str, typing.Callable]]
@@ -407,6 +347,9 @@ def jinja_filter_tester(request):  # type: ignore
             additional_filters=additional_filters,
             additional_globals=globals,
         )
+        e.update_nunavut_globals(
+            *lctx.get_target_language().get_support_module(), is_dryrun=True, omit_serialization_support=True
+        )
 
         rendered = str(e.get_template("test").render())
         if expected != rendered:
@@ -417,6 +360,21 @@ def jinja_filter_tester(request):  # type: ignore
         return rendered
 
     return _make_filter_test_template
+
+
+@pytest.fixture
+def mock_environment(request):  # type: ignore
+    """
+    A MagicMock that can be used where a jinja environment is needed.
+    """
+    from unittest.mock import MagicMock
+
+    mock_environment = MagicMock()
+    support_mock = MagicMock()
+    mock_environment.globals = {"nunavut": support_mock}
+    support_mock.support = {"omit": True}
+
+    return mock_environment
 
 
 # +-------------------------------------------------------------------------------------------------------------------+
@@ -445,7 +403,6 @@ _sy = Sybil(
         "jinja_filter_tester",
         "gen_paths",
         "assert_language_config_value",
-        "configurable_language_context_factory",
     ],
 )
 

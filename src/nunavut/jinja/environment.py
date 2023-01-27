@@ -1,6 +1,6 @@
 #
 # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2021  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 import datetime
@@ -9,9 +9,9 @@ import logging
 import types
 import typing
 
-import nunavut.lang
+from nunavut._templates import LanguageEnvironment
+from nunavut.lang import Language, LanguageClassLoader, LanguageContext
 
-from ..templates import LanguageEnvironment
 from .extensions import JinjaAssert, UseQuery
 from .jinja2 import BaseLoader, Environment, StrictUndefined, select_autoescape
 from .jinja2.ext import Extension
@@ -120,15 +120,18 @@ class CodeGenEnvironment(Environment):
 
     .. invisible-code-block: python
 
-        from nunavut.lang import LanguageContext, Language
+        from nunavut.lang import LanguageContext, LanguageContextBuilder
+        from nunavut.lang._language import Language
         from nunavut.jinja import CodeGenEnvironment
         from nunavut.jinja.jinja2 import DictLoader
+
+        lctx = LanguageContextBuilder().create()
 
     .. code-block:: python
 
         template = 'Hello World'
 
-        e = CodeGenEnvironment(loader=DictLoader({'test': template}))
+        e = CodeGenEnvironment(loader=DictLoader({'test': template}), lctx=lctx)
         assert 'Hello World' ==  e.get_template('test').render()
 
     .. warning::
@@ -139,7 +142,7 @@ class CodeGenEnvironment(Environment):
     .. code-block:: python
 
         try:
-            CodeGenEnvironment(loader=DictLoader({'test': template}), additional_globals={'ln': 'bad_ln'})
+            CodeGenEnvironment(loader=DictLoader({'test': template}), lctx=lctx, additional_globals={'ln': 'bad_ln'})
             assert False
         except RuntimeError:
             pass
@@ -150,6 +153,7 @@ class CodeGenEnvironment(Environment):
 
         try:
             CodeGenEnvironment(loader=DictLoader({'test': template}),
+                                                 lctx=lctx,
                                                  additional_filters={'indent': lambda x: x})
             assert False
         except RuntimeError:
@@ -158,6 +162,7 @@ class CodeGenEnvironment(Environment):
         # You can allow overwrite of built-ins using the ``allow_filter_test_or_use_query_overwrite``
         # argument.
         e = CodeGenEnvironment(loader=DictLoader({'test': template}),
+                                                 lctx=lctx,
                                                  additional_filters={'indent': lambda x: x},
                                                  allow_filter_test_or_use_query_overwrite=True)
         assert 'foo' == e.filters['indent']('foo')
@@ -173,6 +178,7 @@ class CodeGenEnvironment(Environment):
                 return name
 
         e = CodeGenEnvironment(loader=DictLoader({'test': template}),
+                               lctx=lctx,
                                additional_filters={'filter_misnamed': lambda x: x})
 
         try:
@@ -192,12 +198,10 @@ class CodeGenEnvironment(Environment):
 
     RESERVED_GLOBAL_NAMES = {"now_utc"}
 
-    NUNAVUT_NAMESPACE_PREFIX = "nunavut.lang."
-
     def __init__(
         self,
         loader: BaseLoader,
-        lctx: typing.Optional[nunavut.lang.LanguageContext] = None,
+        lctx: LanguageContext,
         trim_blocks: bool = False,
         lstrip_blocks: bool = False,
         additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None,
@@ -231,23 +235,20 @@ class CodeGenEnvironment(Environment):
             self.globals[global_namespace] = LanguageTemplateNamespace()
 
         self.globals["now_utc"] = datetime.datetime(datetime.MINYEAR, 1, 1)
-        self._target_language = None  # type: typing.Optional[nunavut.lang.Language]
+        self._target_language = lctx.get_target_language()
 
         # --------------------------------------------------
         # After this point we do that most heinous act so common in dynamic languages;
         # we expose the state of this partially constructed object so we can complete
         # configuring it.
 
-        if lctx is not None:
-            self._update_language_support(lctx)
+        self._update_language_support(lctx)
 
-            supported_languages = (
-                lctx.get_supported_languages().values()
-            )  # type: typing.Optional[typing.ValuesView[nunavut.lang.Language]]
-        else:
-            supported_languages = None
+        supported_languages = (
+            lctx.get_supported_languages().values()
+        )  # type: typing.Optional[typing.ValuesView[Language]]
 
-        self._update_nunavut_globals(lctx)
+        self.update_nunavut_globals()
 
         self.add_conventional_methods_to_environment(self)
 
@@ -265,8 +266,35 @@ class CodeGenEnvironment(Environment):
             except TypeError:
                 pass
 
+    def update_nunavut_globals(
+        self,
+        support_namespace: str = "",
+        support_version: typing.Tuple[int, int, int] = (0, 0, 0),
+        support_module: typing.Optional["types.ModuleType"] = None,
+        is_dryrun: bool = False,
+        omit_serialization_support: bool = False,
+    ) -> None:
+
+        nunavut_namespace = self.nunavut_global
+
+        setattr(
+            nunavut_namespace,
+            "support",
+            {"omit": omit_serialization_support, "namespace": support_namespace, "version": support_version},
+        )
+
+        if "version" not in nunavut_namespace:
+            from nunavut import __version__ as nunavut_version
+            from nunavut.jinja.loaders import DSDLTemplateLoader
+
+            setattr(nunavut_namespace, "version", nunavut_version)
+            setattr(nunavut_namespace, "platform_version", self._create_platform_version())
+
+            if isinstance(self.loader, DSDLTemplateLoader):
+                setattr(nunavut_namespace, "template_sets", self.loader.get_template_sets())
+
     @property
-    def supported_languages(self) -> typing.ValuesView[nunavut.lang.Language]:
+    def supported_languages(self) -> typing.ValuesView[Language]:
         ln_globals = self.globals["ln"]  # type: LanguageTemplateNamespace
         return ln_globals.values()
 
@@ -287,7 +315,7 @@ class CodeGenEnvironment(Environment):
         return typing.cast(LanguageTemplateNamespace, self.globals["ln"])
 
     @property
-    def target_language(self) -> typing.Optional[nunavut.lang.Language]:
+    def target_language(self) -> Language:
         return self._target_language
 
     @property
@@ -352,8 +380,8 @@ class CodeGenEnvironment(Environment):
         method: typing.Callable[..., bool],
         method_name: str,
         collection_maybe: typing.Optional[typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]] = None,
-        supported_languages: typing.Optional[typing.ValuesView[nunavut.lang.Language]] = None,
-        method_language: typing.Optional[nunavut.lang.Language] = None,
+        supported_languages: typing.Optional[typing.ValuesView[Language]] = None,
+        method_language: typing.Optional[Language] = None,
         is_target: bool = False,
     ) -> None:
         """
@@ -368,14 +396,14 @@ class CodeGenEnvironment(Environment):
 
                 from nunavut.jinja import CodeGenEnvironment
                 from nunavut.jinja.jinja2 import DictLoader
-                from nunavut.templates import template_language_test
+                from nunavut._templates import template_language_test
                 from unittest.mock import MagicMock
 
                 lctx = MagicMock(spec=LanguageContext)
                 poop_lang = MagicMock(spec=Language)
                 poop_lang.name = 'poop'
                 poop_lang.get_templates_package_name = MagicMock(return_value='nunavut.lang.poop')
-                lctx.get_target_language = MagicMock(return_value=None)
+                lctx.get_target_language = poop_lang
                 lctx.get_supported_languages = MagicMock(return_value = {'poop': poop_lang})
 
                 @template_language_test('nunavut.lang.poop')
@@ -410,8 +438,8 @@ class CodeGenEnvironment(Environment):
                 typing.Dict[str, typing.Any],
             ]
         ] = None,
-        supported_languages: typing.Optional[typing.ValuesView[nunavut.lang.Language]] = None,
-        language: typing.Optional[nunavut.lang.Language] = None,
+        supported_languages: typing.Optional[typing.ValuesView[Language]] = None,
+        language: typing.Optional[Language] = None,
         is_target: bool = False,
     ) -> None:
         for method_name, method in items:
@@ -444,8 +472,8 @@ class CodeGenEnvironment(Environment):
 
     def _add_support_from_language_module_to_environment(
         self,
-        lctx: nunavut.lang.LanguageContext,
-        language: nunavut.lang.Language,
+        lctx: LanguageContext,
+        language: Language,
         ln_module: "types.ModuleType",
         is_target: bool = False,
     ) -> None:
@@ -469,15 +497,14 @@ class CodeGenEnvironment(Environment):
                 is_target=is_target,
             )
 
-    def _update_language_support(self, lctx: nunavut.lang.LanguageContext) -> None:
+    def _update_language_support(self, lctx: LanguageContext) -> None:
 
         supported_languages = lctx.get_supported_languages()
         target_language = lctx.get_target_language()
         ln_globals = self.globals["ln"]
-        if target_language is not None:
-            self.globals.update(target_language.get_globals())
-            globals_options_ns = self.globals["options"]
-            globals_options_ns.update(target_language.get_options())
+        self.globals.update(target_language.get_globals())
+        globals_options_ns = self.globals["options"]
+        globals_options_ns.update(target_language.get_options())
         for supported_language in supported_languages.values():
             if supported_language.name not in ln_globals:
                 setattr(
@@ -491,46 +518,12 @@ class CodeGenEnvironment(Environment):
         # then load everything into the environment from this list.
         # note that we don't unload anything here so this method is not idempotent
         for supported_language in supported_languages.values():
-            is_target = target_language is not None and supported_language == target_language
             try:
                 self._add_support_from_language_module_to_environment(
                     lctx,
                     supported_language,
-                    nunavut.lang.LanguageLoader.load_language_module(supported_language.name),
-                    is_target,
+                    LanguageClassLoader.load_language_module(supported_language.name),
+                    (supported_language == target_language),
                 )
             except ModuleNotFoundError:
                 pass
-
-    def _update_nunavut_globals(self, lctx: typing.Optional[nunavut.lang.LanguageContext] = None) -> None:
-
-        # Helper global so we don't have to futz around with the "omit_serialization_support"
-        # logic in the templates. The omit_serialization_support property of the Language
-        # object is read-only so this boolean will remain consistent for the Environment.
-        target_language = None if lctx is None else lctx.get_target_language()
-        if target_language is not None:
-            omit_serialization_support = target_language.omit_serialization_support
-            support_namespace, support_version, _ = target_language.get_support_module()
-        else:
-            logger.debug("There is no target language so we cannot generate serialization support")
-            omit_serialization_support = True
-            support_namespace = ""
-            support_version = (0, 0, 0)
-
-        nunavut_namespace = self.nunavut_global
-
-        setattr(
-            nunavut_namespace,
-            "support",
-            {"omit": omit_serialization_support, "namespace": support_namespace, "version": support_version},
-        )
-
-        if "version" not in nunavut_namespace:
-            import nunavut.version
-            from nunavut.jinja.loaders import DSDLTemplateLoader
-
-            setattr(nunavut_namespace, "version", nunavut.version.__version__)
-            setattr(nunavut_namespace, "platform_version", self._create_platform_version())
-
-            if isinstance(self.loader, DSDLTemplateLoader):
-                setattr(nunavut_namespace, "template_sets", self.loader.get_template_sets())

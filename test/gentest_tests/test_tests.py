@@ -1,6 +1,6 @@
 #
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2019  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 import json
@@ -10,7 +10,7 @@ from pydsdl import read_namespace
 
 from nunavut import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
-from nunavut.lang import LanguageContext
+from nunavut.lang import LanguageContextBuilder
 
 
 def test_instance_tests(gen_paths):  # type: ignore
@@ -20,7 +20,7 @@ def test_instance_tests(gen_paths):  # type: ignore
     """
     root_namespace_dir = gen_paths.dsdl_dir / Path("buncho")
     type_map = read_namespace(str(root_namespace_dir), [])
-    language_context = LanguageContext('js')
+    language_context = LanguageContextBuilder(include_experimental_languages=True).set_target_language('js').create()
     namespace = build_namespace_tree(type_map,
                                      root_namespace_dir,
                                      gen_paths.out_dir,

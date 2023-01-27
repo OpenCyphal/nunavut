@@ -1,6 +1,6 @@
 #
 # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2021  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 """
@@ -37,7 +37,7 @@ class DependencyBuilder:
 
         import pydsdl
         from unittest.mock import MagicMock
-        from nunavut.dependencies import DependencyBuilder
+        from nunavut._dependencies import DependencyBuilder
 
         my_dependant_type_l2 = MagicMock(spec=pydsdl.CompositeType)
         my_dependant_type_l2.parent_service = False

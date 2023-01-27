@@ -10,38 +10,38 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: '3.10'
     - name: install-tox
       run: pip3 install tox
     - name: lint
       run: tox -e lint
     - name: test-nnvg
-      run: tox -e py39-nnvg
+      run: tox -e py310-nnvg
     - name: test-doctest
-      run: tox -e py39-doctest,py39-rstdoctest
+      run: tox -e py310-doctest,py310-rstdoctest
     - name: test-pytest
-      run: tox -e py39-test
+      run: tox -e py310-test
     - name: test-report
       run: tox -e report
     - name: package
       run: tox -e package
     - name: upload-coverage-reports
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: coverage-reports
         path: .tox/report/tmp/*
     - name: upload-xunit-results
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: xunit-results
-        path: .tox/py39-test/tmp/xunit-result.xml
+        path: .tox/py310-test/tmp/xunit-result.xml
     - name: upload-package
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: pypi-package
         path: .tox/package/dist/*
@@ -51,22 +51,22 @@ jobs:
     needs: test
     container: sonarsource/sonar-scanner-cli
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: sonar-cache
       uses: actions/cache@v2
       with:
         path: /opt/sonar-scanner/.sonar/cache
         key: sonar-scanner-cli-4.6.2.2472-${{ runner.os }}
     - name: download-converage-reports
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: coverage-reports
         path: .tox/report/tmp/
     - name: download-xunit-results
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: xunit-results
-        path: .tox/py39-test/tmp/
+        path: .tox/py310-test/tmp/
     - name: set-environment
       run: |
         echo NUNAVUT_MAJOR_MINOR_VERSION=$(./.github/verify.py --major-minor-version-only) >> $GITHUB_ENV
@@ -97,36 +97,27 @@ jobs:
         -Dsonar.python.version=python3.9
 
   compat-test-python3:
-    runs-on: ubuntu-latest
-    needs: test
     strategy:
       matrix:
-        python3-version: ['6', '7', '8', '9', '10']
+        python3-version: ['10']
+        python3-platform: ['ubuntu-latest', 'windows-latest', 'macos-latest']
+        include:
+          - python3-version: 6
+            python3-platform: ubuntu-18.04
+          - python3-version: 7
+            python3-platform: ubuntu-20.04
+          - python3-version: 8
+            python3-platform: ubuntu-20.04
+          - python3-version: 9
+            python3-platform: ubuntu-20.04
+    runs-on: ${{ matrix.python3-platform }}
+    needs: test
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
     - name: setup python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.${{ matrix.python3-version }}
-    - name: setup tox
-      run: pip3 install tox
-    - name: python3.${{ matrix.python3-version }} test
-      run: tox -e py3${{ matrix.python3-version }}-nnvg,py3${{ matrix.python3-version }}-test
-
-  compat-test-windows:
-    runs-on: windows-latest
-    needs: test
-    strategy:
-      matrix:
-        python3-version: ['9', '10']
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
-    - name: setup python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.${{ matrix.python3-version }}
     - name: setup tox
@@ -151,7 +142,7 @@ jobs:
           - build_type: Release
             flag: --disable-asserts
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
     - name: verify
@@ -182,7 +173,7 @@ jobs:
             flag: --disable-asserts
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
     - name: verify
@@ -214,7 +205,7 @@ jobs:
             flag: --disable-asserts
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
     - name: verify
@@ -231,13 +222,13 @@ jobs:
   release:
     if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.repository == 'OpenCyphal/nunavut' }}
     runs-on: ubuntu-latest
-    needs: [compat-test-python3, language-verification-cpp-14, language-verification-cpp-17, language-verification-c, sonar, compat-test-windows]
+    needs: [compat-test-python3, language-verification-cpp-14, language-verification-cpp-17, language-verification-c, sonar]
     steps:
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.9'
     - name: download-package
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: pypi-package
         path: .tox/package/dist/

@@ -1,6 +1,6 @@
 #
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2019  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 
@@ -10,9 +10,9 @@ import json
 
 from pydsdl import read_namespace
 from nunavut import build_namespace_tree, Namespace
-from nunavut.lang import LanguageContext
+from nunavut.lang import LanguageContextBuilder
 from nunavut.jinja import DSDLCodeGenerator
-from nunavut.jinja.loaders import TEMPLATE_SUFFIX
+from nunavut._utilities import TEMPLATE_SUFFIX
 
 
 class a:
@@ -35,7 +35,7 @@ def test_bfs_of_type_for_template(gen_paths):  # type: ignore
     """ Verifies that our template to type lookup logic does a breadth-first search for a valid
     template when searching type names.
     """
-    language_context = LanguageContext(extension='.json')
+    language_context = LanguageContextBuilder(include_experimental_languages=True).set_target_language("js").create()
     empty_namespace = Namespace('',
                                 gen_paths.dsdl_dir,
                                 gen_paths.out_dir,
@@ -54,7 +54,7 @@ def test_one_template(gen_paths):  # type: ignore
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     root_namespace = str(root_namespace_dir)
     serializable_types = read_namespace(root_namespace, [])
-    language_context = LanguageContext(extension='.json')
+    language_context = LanguageContextBuilder(include_experimental_languages=True).set_target_language("js").create()
     namespace = build_namespace_tree(serializable_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,
@@ -79,7 +79,7 @@ def test_get_templates(gen_paths):  # type: ignore
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     root_namespace = str(root_namespace_dir)
     serializable_types = read_namespace(root_namespace, [])
-    language_context = LanguageContext(extension='.json')
+    language_context = LanguageContextBuilder(include_experimental_languages=True).set_target_language("c").create()
     namespace = build_namespace_tree(serializable_types,
                                      root_namespace_dir,
                                      gen_paths.out_dir,

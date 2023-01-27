@@ -1,6 +1,6 @@
 #
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2019  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 """
@@ -101,7 +101,7 @@ class LinePostProcessor(PostProcessor):
         ...
 
         c_style = CommentItAllOut('/*', '*/')
-        my_generator.generate_all(False, True, [c_style])
+        my_generator.generate_all(False, True, True, [c_style])
     """
 
     @abc.abstractmethod

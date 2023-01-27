@@ -1,7 +1,7 @@
 %YAML 1.2
 #
 # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2021  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 ---
@@ -266,7 +266,6 @@ nunavut.lang.cpp:
         all:
             - '^\d{1}'
             - '^_[A-Z]'
-        macro: *nunavut_lang_c_reserved_token_patterns_by_type_macro
     whitespace_encoding_char: "_"
     collapse_whitespace_when_encoding: true
     enable_stropping: true

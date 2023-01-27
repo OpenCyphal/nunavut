@@ -180,7 +180,7 @@ create_dsdl_target(nunavut-support
                    "only")
 
 #
-# Generate types for the UAVCAN v1 public_regulated_data_types set.
+# Generate types for the Cyphal v1 public_regulated_data_types set.
 #
 create_dsdl_target(dsdl-regulated
                    ${NUNAVUT_VERIFICATION_LANG}
@@ -241,7 +241,7 @@ if(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
                         "only")
 
      #
-     # Generate types for the UAVCAN v1 public_regulated_data_types set.
+     # Generate types for the Cyphal v1 public_regulated_data_types set.
      #
      create_dsdl_target(dsdl-regulated-c
                         "c"

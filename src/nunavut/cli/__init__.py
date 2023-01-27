@@ -1,6 +1,6 @@
 #
 # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2021  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 """
@@ -30,7 +30,7 @@ class _LazyVersionAction(argparse._VersionAction):
         values: typing.Any,
         option_string: typing.Optional[str] = None,
     ) -> None:
-        from nunavut.version import __version__
+        from nunavut._version import __version__
 
         parser._print_message(__version__, sys.stdout)
         parser.exit()
@@ -52,11 +52,6 @@ class _NunavutArgumentParser(argparse.ArgumentParser):
         """
         Applies rules between different arguments and handles other special cases.
         """
-        if args.list_inputs is not None and args.target_language is None and args.output_extension is None:
-            # This is a special case where we know we'll never actually use the output extension since
-            # we are only listing the input files. All other cases require either an output extension or
-            # a valid target language.
-            setattr(args, "output_extension", ".tmp")
 
         if args.omit_serialization_support and args.generate_support == "always":
             self.error(
@@ -91,7 +86,7 @@ def _make_parser() -> argparse.ArgumentParser:
     )
 
     parser = _NunavutArgumentParser(
-        description="Generate code from UAVCAN DSDL using pydsdl and jinja2",
+        description="Generate code from Cyphal DSDL using pydsdl and jinja2",
         epilog=epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
@@ -135,8 +130,7 @@ def _make_parser() -> argparse.ArgumentParser:
         Paths to a directory containing templates to use when generating code.
 
         Templates found under these paths will override the built-in templates for a
-        given language. If no target language was provided and no template paths were
-        provided then no source will be generated.
+        given language.
 
     """
         ).lstrip(),
@@ -181,12 +175,10 @@ def _make_parser() -> argparse.ArgumentParser:
         ).lstrip(),
     )
 
-    ext_required = "--list-inputs" not in sys.argv and "--target-language" not in sys.argv and "-l" not in sys.argv
     parser.add_argument(
         "--output-extension",
         "-e",
         type=extension_type,
-        required=ext_required,
         help="The extension to use for generated files.",
     )
 
@@ -342,7 +334,7 @@ def _make_parser() -> argparse.ArgumentParser:
 
         Do not reject unregulated fixed port identifiers.
         This is a dangerous feature that must not be used unless you understand the
-        risks. The background information is provided in the UAVCAN specification.
+        risks. The background information is provided in the Cyphal specification.
 
     """
         ).lstrip(),
@@ -421,7 +413,7 @@ def _make_parser() -> argparse.ArgumentParser:
         description=textwrap.dedent(
             """
 
-        Options passed through to templates as `language_options` on the target language.
+        Options passed through to templates as `options` on the target language.
 
         Note that these arguments are passed though without validation, have no effect on the Nunavut
         library, and may or may not be appropriate based on the target language and generator templates
@@ -505,6 +497,35 @@ def _make_parser() -> argparse.ArgumentParser:
         ).lstrip(),
     )
 
+    ln_opt_group.add_argument(
+        "--configuration",
+        "-c",
+        nargs="*",
+        type=pathlib.Path,
+        help=textwrap.dedent(
+            """
+
+        There is a set of built-in configuration for Nunvut that provides default falues for known
+        languages as documented `in the template guide
+        <https://nunavut.readthedocs.io/en/latest/docs/templates.html#language-options>`_. This argument lets you
+        specify override configuration yamls.
+    """
+        ).lstrip(),
+    )
+
+    ln_opt_group.add_argument(
+        "--list-configuration",
+        "-lc",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+
+        Lists all configuration values resolved for the given arguments.
+
+    """
+        ).lstrip(),
+    )
+
     return parser
 
 
@@ -549,6 +570,5 @@ def main() -> int:
     from nunavut.cli.runners import ArgparseRunner
 
     runner = ArgparseRunner(args, extra_includes)
-    runner.setup()
     runner.run()
     return 0

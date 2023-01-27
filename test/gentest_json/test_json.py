@@ -1,6 +1,6 @@
 #
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2019  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 import json
@@ -8,12 +8,12 @@ from pathlib import Path
 
 from pydsdl import read_namespace
 from nunavut import build_namespace_tree
-from nunavut.lang import LanguageContext
+from nunavut.lang import LanguageContextBuilder, Language
 from nunavut.jinja import DSDLCodeGenerator
 
 
 def test_TestType_0_1(gen_paths):  # type: ignore
-    """ Generates a JSON blob and then reads it back in.
+    """Generates a JSON blob and then reads it back in.
 
     This test uses an extremely simple DSDL type to generate JSON then
     reads this JSON back in and parses it using Python's built-in parser.
@@ -21,20 +21,23 @@ def test_TestType_0_1(gen_paths):  # type: ignore
 
     root_namespace_dir = gen_paths.dsdl_dir / Path("uavcan")
     root_namespace = str(root_namespace_dir)
-    language_context = LanguageContext(extension='.json')
-    namespace = build_namespace_tree(read_namespace(root_namespace, []),
-                                     root_namespace_dir,
-                                     gen_paths.out_dir,
-                                     language_context)
+    language_context = (
+        LanguageContextBuilder(include_experimental_languages=True)
+        .set_target_language_configuration_override(Language.WKCV_DEFINITION_FILE_EXTENSION, ".json")
+        .create()
+    )
+    namespace = build_namespace_tree(
+        read_namespace(root_namespace, []), root_namespace_dir, gen_paths.out_dir, language_context
+    )
     generator = DSDLCodeGenerator(namespace, templates_dir=gen_paths.templates_dir)
     generator.generate_all(False)
 
     # Now read back in and verify
     outfile = gen_paths.find_outfile_in_namespace("uavcan.test.TestType", namespace)
 
-    assert (outfile is not None)
+    assert outfile is not None
 
-    with open(str(outfile), 'r') as json_file:
+    with open(str(outfile), "r") as json_file:
         json_blob = json.load(json_file)
 
     assert json_blob is not None

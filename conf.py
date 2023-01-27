@@ -12,25 +12,21 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-from nunavut.version import __version__
-from datetime import date
+from nunavut._version import __version__ as nunavut_version
+from nunavut._version import __copyright__ as nunavut_copyright
 
 # -- Project information -----------------------------------------------------
 
 project = "nunavut"
-copyright = (
-    "{YEAR} Amazon.com, Inc. or its affiliates. All Rights Reserved. {YEAR}, OpenCyphal Development Team".format(
-        YEAR=date.today().year
-    )
-)
+copyright = nunavut_copyright
 
 author = "OpenCyphal Development Team"
 
-_version_tuple = __version__.split(".")
+_version_tuple = nunavut_version.split(".")
 # The short X.Y version
 version = "{}.{}".format(_version_tuple[0], _version_tuple[1])
 # The full version, including alpha/beta/rc tags
-release = __version__
+release = nunavut_version
 
 exclude_patterns = ["**/test"]
 
@@ -58,6 +54,7 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinxarg.ext",
     "sphinx.ext.intersphinx",
+    "sphinxemoji.sphinxemoji",
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -1,6 +1,6 @@
 #
 # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2021  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 
@@ -26,8 +26,10 @@ class JinjaAssert(Extension):
             from nunavut.jinja import CodeGenEnvironment
             from nunavut.jinja.jinja2 import DictLoader
             from nunavut.jinja.extensions import JinjaAssert
+            from nunavut.lang import LanguageContextBuilder
 
-            e = CodeGenEnvironment(loader=DictLoader({'test': template}),
+            e = CodeGenEnvironment(lctx=LanguageContextBuilder().create(),
+                                   loader=DictLoader({'test': template}),
                                    extensions=[JinjaAssert])
             try:
                 e.get_template('test').render()
@@ -44,7 +46,8 @@ class JinjaAssert(Extension):
 
         .. invisible-code-block: python
 
-            e = CodeGenEnvironment(loader=DictLoader({'test': template}),
+            e = CodeGenEnvironment(lctx=LanguageContextBuilder().create(),
+                                   loader=DictLoader({'test': template}),
                                    extensions=[JinjaAssert])
             try:
                 e.get_template('test').render()
@@ -115,11 +118,11 @@ class UseQuery(Extension):
             from nunavut.jinja import CodeGenEnvironment
             from nunavut.jinja.jinja2 import DictLoader
             from nunavut.jinja.extensions import UseQuery
-            from nunavut.lang import LanguageLoader
+            from nunavut.lang import LanguageClassLoader
             from nunavut.jinja.jinja2 import UndefinedError
             from unittest.mock import MagicMock
 
-            ln_c = LanguageLoader().load_language('c', True)
+            ln_c = LanguageClassLoader().new_language('c')
 
             lctx = MagicMock()
             lctx.get_supported_languages = MagicMock(return_value = {'c': ln_c})
@@ -212,10 +215,6 @@ class UseQuery(Extension):
 
         target_language = self.environment.target_language
 
-        if target_language is None:
-            raise TemplateAssertionError(
-                "ifuses directive cannot be used in a language without a target language.", lineno, name, filename
-            )
         if uses_query_name is None:
             raise TemplateAssertionError("Unknown uses_query_name found.", lineno, name, filename)
 

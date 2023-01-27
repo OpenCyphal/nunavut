@@ -1,6 +1,6 @@
 #
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2018-2019  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 """
@@ -18,13 +18,19 @@ import typing
 
 import pydsdl
 
-from ..._utilities import YesNoDefault, ResourceType
-from ...templates import template_language_filter, template_language_list_filter, template_language_test
-from .. import Dependencies
-from .. import Language as BaseLanguage
-from .._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
-from ..c import _CFit
-from ..c import filter_literal as c_filter_literal
+from nunavut._dependencies import Dependencies
+from nunavut._templates import (
+    template_environment_list_filter,
+    template_language_filter,
+    template_language_list_filter,
+    template_language_test,
+)
+from nunavut._utilities import ResourceType, YesNoDefault
+from nunavut.jinja.environment import Environment
+from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
+from nunavut.lang._language import Language as BaseLanguage
+from nunavut.lang.c import _CFit
+from nunavut.lang.c import filter_literal as c_filter_literal
 
 
 class Language(BaseLanguage):
@@ -70,18 +76,32 @@ class Language(BaseLanguage):
         """
         .. invisible-code-block: python
 
-           from nunavut.lang import LanguageLoader
+           from nunavut.lang import LanguageContextBuilder
 
            # test c++17
-           language = LanguageLoader().load_language('cpp', True, {'std': 'c++17'})
+           language = LanguageContextBuilder(include_experimental_languages=True)\
+               .set_target_language("cpp")\
+               .set_target_language_configuration_override("options", { "std":"c++17"})\
+               .create()\
+               .get_target_language()
+
            assert language._standard_version() == 17
 
            # test c++14
-           language = LanguageLoader().load_language('cpp', True, {'std': 'c++14'})
+           language = LanguageContextBuilder(include_experimental_languages=True)\
+               .set_target_language("cpp")\
+               .set_target_language_configuration_override("options", { "std":"c++14"})\
+               .create()\
+               .get_target_language()
            assert language._standard_version() == 14
 
            # test gnu++20
-           language = LanguageLoader().load_language('cpp', True, {'std': 'gnu++20'})
+           language = LanguageContextBuilder(include_experimental_languages=True)\
+               .set_target_language("cpp")\
+               .set_target_language_configuration_override("options", { "std":"gnu++20"})\
+               .create()\
+               .get_target_language()
+
            assert language._standard_version() == 20
         """
         std = str(self.get_option("std", ""))
@@ -97,18 +117,33 @@ class Language(BaseLanguage):
         """
         .. invisible-code-block: python
 
-           from nunavut.lang import LanguageLoader
+           from nunavut.lang import LanguageClassLoader
 
            # test c++17
-           language = LanguageLoader().load_language('cpp', True, {'std': 'c++17'})
+           language = LanguageContextBuilder(include_experimental_languages=True)\
+               .set_target_language("cpp")\
+               .set_target_language_configuration_override("options", { "std":"c++17"})\
+               .create()\
+               .get_target_language()
+
            assert language._has_variant()
 
            # test c++14
-           language = LanguageLoader().load_language('cpp', True, {'std': 'c++14'})
+           language = LanguageContextBuilder(include_experimental_languages=True)\
+               .set_target_language("cpp")\
+               .set_target_language_configuration_override("options", { "std":"c++14"})\
+               .create()\
+               .get_target_language()
+
            assert not language._has_variant()
 
            # test gnu++20
-           language = LanguageLoader().load_language('cpp', True, {'std': 'gnu++20'})
+           language = LanguageContextBuilder(include_experimental_languages=True)\
+               .set_target_language("cpp")\
+               .set_target_language_configuration_override("options", { "std":"gnu++20"})\
+               .create()\
+               .get_target_language()
+
            assert language._has_variant()
         """
         return self._standard_version() >= 17
@@ -131,25 +166,24 @@ class Language(BaseLanguage):
         Returns a template to the built-in Variable Length Array (VLA) implementation. This is used when no override
         was provided.
 
-        config_no_namespace = {
-                    'nunavut.lang.cpp':
-                    {
-                        'support_namesapce': ''
-                    }
-                }
-
-        lctx = configurable_language_context_factory(config_no_namespace, 'cpp')
+        options = {"target_endianness": "big"}
+        lctx = (
+            LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language("cpp")
+                .set_target_language_configuration_override(Language.WKCV_SUPPORT_NAMESPACE, "")
+                .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
+                .create()
+        )
         template_w_no_namespace = lctx.get_target_language()._get_default_vla_template()
         assert template_w_no_namespace.startswith("VariableLengthArray")
 
-        config_w_namespace = {
-                    'nunavut.lang.cpp':
-                    {
-                        'support_namesapce': 'foo.bar'
-                    }
-                }
-
-        lctx = configurable_language_context_factory(config_w_namespace, 'cpp')
+        lctx = (
+            LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language("cpp")
+                .set_target_language_configuration_override(Language.WKCV_SUPPORT_NAMESPACE, "foo.bar")
+                .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
+                .create()
+        )
         template_w_namespace = lctx.get_target_language()._get_default_vla_template()
         assert template_w_namespace.startswith("foo::bar::VariableLengthArray")
 
@@ -167,7 +201,7 @@ class Language(BaseLanguage):
         .. invisible-code-block: python
 
             from nunavut.lang import Language
-            from nunavut.dependencies import Dependencies
+            from nunavut._dependencies import Dependencies
 
             def do_includes_test(use_foobar, extension):
 
@@ -175,16 +209,14 @@ class Language(BaseLanguage):
                 foobar_header_name = "foobar.h"
                 include_value = '' if not use_foobar else foobar_header_name
 
-                config = {
-                    'nunavut.lang.cpp':
-                    {
-                        'variable_array_type_include': include_value,
-                        'extension': extension
-                    }
-                }
-
-                lctx = configurable_language_context_factory(config, 'cpp')
-                lang_cpp = lctx.get_target_language()
+                lang_cpp = (
+                    LanguageContextBuilder(include_experimental_languages=True)
+                        .set_target_language("cpp")
+                        .set_target_language_configuration_override("variable_array_type_include", include_value)
+                        .set_target_language_configuration_override(Language.WKCV_DEFINITION_FILE_EXTENSION, extension)
+                        .create()
+                        .get_target_language()
+                )
                 assert extension == lang_cpp.extension
 
                 test_dependencies = Dependencies()
@@ -281,13 +313,23 @@ def uses_std_variant(language: Language) -> bool:
         .. invisible-code-block: python
 
             # test c++17
-            config_overrides = {'nunavut.lang.cpp': {'options': {'std': 'c++17' }}}
-            lctx = configurable_language_context_factory(config_overrides, 'cpp')
+            options = {"std": "c++17"}
+            lctx = (
+                LanguageContextBuilder(include_experimental_languages=True)
+                    .set_target_language("cpp")
+                    .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
+                    .create()
+            )
             jinja_filter_tester(None, template, '#include <variant>', lctx)
 
             # test c++14
-            config_overrides = {'nunavut.lang.cpp': {'options': {'std': 'c++14' }}}
-            lctx = configurable_language_context_factory(config_overrides, 'cpp')
+            options = {"std": "c++14"}
+            lctx = (
+                LanguageContextBuilder(include_experimental_languages=True)
+                    .set_target_language("cpp")
+                    .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
+                    .create()
+            )
             jinja_filter_tester(None, template, '#include "user_variant.h"', lctx)
 
     """
@@ -507,10 +549,20 @@ def filter_open_namespace(
 
         # stropping doesn't change our example here.
 
-        lctx = configurable_language_context_factory({'nunavut.lang.cpp': {'enable_stropping': False}}, 'cpp')
+        lctx = (
+            LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language("cpp")
+                .set_target_language_configuration_override(Language.WKCV_ENABLE_STROPPING, False)
+                .create()
+        )
         jinja_filter_tester(filter_open_namespace, template, rendered, lctx, T=T)
 
-        lctx = configurable_language_context_factory({'nunavut.lang.cpp': {'enable_stropping': True}}, 'cpp')
+        lctx = (
+            LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language("cpp")
+                .set_target_language_configuration_override(Language.WKCV_ENABLE_STROPPING, True)
+                .create()
+        )
         jinja_filter_tester(filter_open_namespace, template, rendered, lctx, T=T)
 
     :param str full_namespace: A dot-separated namespace string.
@@ -801,15 +853,63 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
 
 @template_language_list_filter(__name__)
-def filter_includes(language: Language, t: pydsdl.CompositeType, sort: bool = True) -> typing.List[str]:
+@template_environment_list_filter
+def filter_includes(
+    language: Language, env: Environment, t: pydsdl.CompositeType, sort: bool = True
+) -> typing.List[str]:
     """
     Returns a list of all include paths for a given type.
 
     :param pydsdl.CompositeType t: The type to scan for dependencies.
     :param bool sort: If true the returned list will be sorted.
     :return: a list of include headers needed for a given type.
+
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_includes
+        from unittest.mock import MagicMock
+        import pydsdl
+
+        my_type = MagicMock(spec=pydsdl.UnionType)
+        my_type.version = MagicMock()
+        my_type.parent_service = None
+
+    .. code-block:: python
+
+        # Listing the includes for a union with only integer types:
+        template = "{% for include in my_type | includes -%}{{include}}{%- endfor %}"
+
+        # stdint.h will normally be generated
+        rendered = "<cstdint>"
+
+    .. invisible-code-block: python
+
+        jinja_filter_tester(filter_includes, template, rendered, "cpp", my_type=my_type)
+
+    .. code-block:: python
+
+        # You can suppress std includes by setting use_standard_types to False under
+        # nunavut.lang.cpp
+        rendered = ""
+
+    .. invisible-code-block: python
+
+        lctx = (
+            LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language("cpp")
+                .set_target_language_configuration_override("use_standard_types", False)
+                .create()
+        )
+        jinja_filter_tester(filter_includes, template, rendered, lctx, my_type=my_type)
     """
-    return IncludeGenerator(language, t).generate_include_filepart_list(language.extension, sort)
+    try:
+        omit_serialization_support = env.globals["nunavut"].support["omit"]
+    except KeyError:
+        omit_serialization_support = False
+    return IncludeGenerator(language, t, omit_serialization_support).generate_include_filepart_list(
+        language.extension, sort
+    )
 
 
 @template_language_filter(__name__)
@@ -853,6 +953,16 @@ def filter_destructor_name(language: Language, instance: pydsdl.Any) -> str:
     declaration_parts = declaration.split("<")
     declaration_parts[0] = declaration_parts[0].split("::")[-1]
     return "~" + "<".join(declaration_parts)
+
+
+@template_language_filter(__name__)
+def filter_default_value_initializer(language: Language, instance: pydsdl.Any) -> str:
+    """
+    Emit a default initialization statement for the given instance if primitive or array.
+    """
+    if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.ArrayType):
+        return "{}"
+    return ""
 
 
 @template_language_filter(__name__)
@@ -1090,7 +1200,12 @@ def filter_type_from_primitive(language: Language, value: pydsdl.PrimitiveType) 
 
     .. invisible-code-block: python
 
-        lctx = configurable_language_context_factory({'nunavut.lang.cpp': {'use_standard_types': False}}, 'cpp')
+        lctx = (
+            LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language("cpp")
+                .set_target_language_configuration_override("use_standard_types", False)
+                .create()
+        )
         jinja_filter_tester(filter_type_from_primitive,
                             template,
                             rendered,
@@ -1613,10 +1728,15 @@ def filter_block_comment(language: Language, text: str, style: str, indent: int 
 
             jinja_filter_tester(filter_block_comment, template, rendered, 'cpp', text=text)
 
-            from nunavut.lang import LanguageContext
+            from nunavut.lang import LanguageContextBuilder
 
-            comment_configs = LanguageContext('cpp').get_target_language().get_config_value_as_dict('comment_styles')
-
+            comment_configs = (
+                LanguageContextBuilder(include_experimental_languages=True)
+                    .set_target_language('cpp')
+                    .create()
+                    .get_target_language()
+                    .get_config_value_as_dict('comment_styles')
+            )
             if len(comment_configs) != 5:
                 raise RuntimeError('A comment style was added but not documented here. Please document it/them.')
 
