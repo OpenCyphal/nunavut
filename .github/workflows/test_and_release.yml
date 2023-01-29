@@ -53,10 +53,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: sonar-cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: /opt/sonar-scanner/.sonar/cache
-        key: sonar-scanner-cli-4.6.2.2472-${{ runner.os }}
+        key: sonar-scanner-cli-4.8.0.2856-${{ runner.os }}
     - name: download-converage-reports
       uses: actions/download-artifact@v3
       with:
@@ -99,7 +99,7 @@ jobs:
   compat-test-python3:
     strategy:
       matrix:
-        python3-version: ['10']
+        python3-version: ['11']
         python3-platform: ['ubuntu-latest', 'windows-latest', 'macos-latest']
         include:
           - python3-version: 6
@@ -109,6 +109,8 @@ jobs:
           - python3-version: 8
             python3-platform: ubuntu-20.04
           - python3-version: 9
+            python3-platform: ubuntu-20.04
+          - python3-version: 10
             python3-platform: ubuntu-20.04
     runs-on: ${{ matrix.python3-platform }}
     needs: test
