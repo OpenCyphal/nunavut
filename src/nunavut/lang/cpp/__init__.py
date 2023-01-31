@@ -887,8 +887,8 @@ def filter_includes(
         # Listing the includes for a union with only integer types:
         template = "{% for include in my_type | includes -%}{{include}}{%- endfor %}"
 
-        # stdint.h will normally be generated
-        rendered = "<cstdint>"
+        # cstdint will normally be generated. limits is always generated.
+        rendered = "<cstdint><limits>"
 
     .. invisible-code-block: python
 
@@ -898,7 +898,7 @@ def filter_includes(
 
         # You can suppress std includes by setting use_standard_types to False under
         # nunavut.lang.cpp
-        rendered = ""
+        rendered = "<limits>"
 
     .. invisible-code-block: python
 
