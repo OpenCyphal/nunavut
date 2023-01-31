@@ -432,3 +432,8 @@ def test_either_target_or_extension() -> None:
         .get_target_language()
         .name
     )
+
+def test_lang_cpp_use_vector(gen_paths) -> None:
+    """
+    Test override of the built-in variable-length array type.
+    """

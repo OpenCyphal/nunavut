@@ -224,7 +224,7 @@ def test_cpp_filter_includes(gen_paths, stropping, sort, mock_environment):  # t
 
     test_subject = next(filter(lambda type: (type.short_name == "hotness"), type_map))
     imports = filter_includes(lctx.get_target_language(), mock_environment, test_subject, sort=sort)
-    assert len(imports) == 5
+    assert len(imports) == 6
 
     def assert_path_in_imports(path: str) -> None:
         nonlocal imports
@@ -238,6 +238,7 @@ def test_cpp_filter_includes(gen_paths, stropping, sort, mock_environment):  # t
                 '"uavcan/time/SynchronizedTimestamp_1_0.h"',
                 "<array>",
                 "<cstdint>",
+                "<limits>",
             ] == imports
         else:
 
@@ -249,6 +250,7 @@ def test_cpp_filter_includes(gen_paths, stropping, sort, mock_environment):  # t
                     '"uavcan/str/bar_1_0.h"',
                     "<array>",
                     "<cstdint>",
+                    "<limits>",
                 ),
             )
     elif sort:
@@ -258,6 +260,7 @@ def test_cpp_filter_includes(gen_paths, stropping, sort, mock_environment):  # t
             '"uavcan/time/SynchronizedTimestamp_1_0.h"',
             "<array>",
             "<cstdint>",
+            "<limits>",
         ] == imports
     else:
         map(
@@ -268,6 +271,7 @@ def test_cpp_filter_includes(gen_paths, stropping, sort, mock_environment):  # t
                 '"uavcan/str/bar_1_0.h"',
                 "<array>",
                 "<cstdint>",
+                "<limits>",
             ),
         )
 

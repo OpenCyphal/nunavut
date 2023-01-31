@@ -87,6 +87,7 @@ from .lang import LanguageContext as LanguageContext
 from .lang import LanguageContextBuilder as LanguageContextBuilder
 from .lang import UnsupportedLanguageError as UnsupportedLanguageError
 from .lang._config import LanguageConfig as LanguageConfig
+from ._exceptions import InternalError as InternalError
 
 if _sys.version_info[:2] < (3, 5):  # pragma: no cover
     print("A newer version of Python is required", file=_sys.stderr)
@@ -109,6 +110,7 @@ __all__ = [
     "TEMPLATE_SUFFIX",
     "UnsupportedLanguageError",
     "YesNoDefault",
+    "InternalError",
     "__author__",
     "__copyright__",
     "__email__",
