@@ -12,7 +12,7 @@ import re
 
 from nunavut import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
-from nunavut.lang import Language, LanguageContextBuilder
+from nunavut.lang import LanguageContextBuilder
 
 
 include_pattern_map = (

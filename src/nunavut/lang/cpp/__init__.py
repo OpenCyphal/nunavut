@@ -19,6 +19,7 @@ import typing
 import pydsdl
 
 from nunavut._dependencies import Dependencies
+from nunavut._exceptions import InternalError as NunavutInternalError
 from nunavut._templates import (
     template_environment_list_filter,
     template_language_filter,
@@ -149,16 +150,20 @@ class Language(BaseLanguage):
         return self._standard_version() >= 17
 
     @functools.lru_cache()
-    def _get_variable_length_array_path(self) -> typing.Optional[pathlib.Path]:
+    def _get_variable_length_array_path(self) -> pathlib.Path:
         """
         Returns a releative path, suitable for include statements, to the built-in default Variable Length Array (VLA)
         support type.
+
+        :raises: NunavutInternalError if the library was missing the required support file.
         """
         for support_file in self.get_support_files(ResourceType.TYPE_SUPPORT):
             if support_file.stem == "variable_length_array":
                 return (pathlib.Path("/".join(self.support_namespace)) / support_file.name).with_suffix(self.extension)
 
-        return None
+        raise NunavutInternalError(
+            "variable_length_array file was not found in the c++ support files?!"
+        )  # pragma: no cover
 
     @functools.lru_cache()
     def _get_default_vla_template(self) -> str:
@@ -208,11 +213,14 @@ class Language(BaseLanguage):
                 vla_header_name = "nunavut/support/variable_length_array{}".format(extension)
                 foobar_header_name = "foobar.h"
                 include_value = '' if not use_foobar else foobar_header_name
+                language_options = {
+                    "variable_array_type_include": include_value
+                }
 
                 lang_cpp = (
                     LanguageContextBuilder(include_experimental_languages=True)
                         .set_target_language("cpp")
-                        .set_target_language_configuration_override("variable_array_type_include", include_value)
+                        .set_target_language_configuration_override("options", language_options)
                         .set_target_language_configuration_override(Language.WKCV_DEFINITION_FILE_EXTENSION, extension)
                         .create()
                         .get_target_language()
@@ -246,6 +254,7 @@ class Language(BaseLanguage):
             do_includes_test(False, ".h")
         """
         std_includes = []  # type: typing.List[str]
+        std_includes.append("limits")  # we always include limits to support static assertions
         if self.get_config_value_as_bool("use_standard_types"):
             if dep_types.uses_integer:
                 std_includes.append("cstdint")
@@ -257,15 +266,13 @@ class Language(BaseLanguage):
 
         if dep_types.uses_variable_length_array:
             vla_include = None  # type: typing.Optional[str]
-            variable_array_include = self.get_config_value("variable_array_type_include", "")
-            if variable_array_include != "":
+            variable_array_include = str(self.get_option("variable_array_type_include", ""))
+            if len(variable_array_include) > 0:
                 vla_include = variable_array_include
             else:
-                vla_path = self._get_variable_length_array_path()
-                if vla_path is not None:
-                    vla_include = vla_path.as_posix()
+                vla_include = '"{}"'.format(self._get_variable_length_array_path().as_posix())
             if vla_include is not None:
-                includes_formatted.append('"{}"'.format(vla_include))
+                includes_formatted.append(vla_include)
 
         return includes_formatted
 

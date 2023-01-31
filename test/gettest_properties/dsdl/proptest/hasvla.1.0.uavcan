@@ -1,0 +1,3 @@
+uint8[<=50] vla_field
+
+@sealed
