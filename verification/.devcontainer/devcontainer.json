@@ -1,27 +1,27 @@
 {
     "name": "C/C++ verification environment",
-    "dockerFile": "native.Dockerfile",
-    "context": "../..",
-    "settings": {
-        "terminal.integrated.shell.linux": "/bin/bash"
-    },
+    "image": "ghcr.io/opencyphal/toolshed:ts20.4.1",
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspace,type=bind,consistency=delegated",
     "mounts": [
         "source=root-vscode-server,target=/root/.vscode-server/extensions,type=volume",
         "source=nunavut-tox,target=/workspace/.tox,type=volume"
     ],
-    "extensions": [
-        "uavcan.dsdl",
-        "wholroyd.jinja",
-        "ban.spellright",
-        "ms-python.python",
-        "ms-vscode.cpptools",
-        "twxs.cmake",
-        "ms-vscode.cmake-tools",
-        "xaver.clang-format",
-        "hbenl.vscode-test-explorer",
-        "matepek.vscode-catch2-test-adapter"
-    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "uavcan.dsdl",
+                "wholroyd.jinja",
+                "ban.spellright",
+                "ms-python.python",
+                "ms-vscode.cpptools",
+                "twxs.cmake",
+                "ms-vscode.cmake-tools",
+                "xaver.clang-format",
+                "hbenl.vscode-test-explorer",
+                "matepek.vscode-catch2-test-adapter"
+            ]
+        }
+    },
     "postCreateCommand": "git submodule update --init --recursive && tox -e local"
 }
