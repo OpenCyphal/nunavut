@@ -231,9 +231,9 @@ nunavut.lang.c:
     named_types:
         'boolean': 'bool'
         'unsigned_length': 'size_t'
-        'byte': 'uint8_t'
+        'byte': 'unsigned char'
         'unsigned_bit_length': 'size_t'
-        'error_type': 'int8_t'
+        'error_type': 'int'
         'float_32': 'float'
         'float_64': 'double'
     named_values:

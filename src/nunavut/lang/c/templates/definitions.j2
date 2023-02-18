@@ -187,7 +187,7 @@ struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
 /// @returns Negative on error, zero on success.
 static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_(
     const {{ t | full_reference_name }}* const obj, {# -#}
-    {{ typename_byte }}* const buffer,  {# -#}
+    void* const buffer_void,  {# -#}
     {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
 {
     {% from 'serialization.j2' import serialize -%}
