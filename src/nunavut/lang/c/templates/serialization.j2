@@ -13,14 +13,14 @@
 {% macro serialize(t) %}
     {{ typename_byte }}* const buffer = ({{ typename_byte }}*)buffer_void;
     if ((obj == {{ valuetoken_null }}) || (buffer == {{ valuetoken_null }}) || {# -#}
-        (inout_buffer_size_bytes == {{ valuetoken_null }}))
+        (inout_buffer_size_chars == {{ valuetoken_null }}))
     {
         return -NUNAVUT_ERROR_INVALID_ARGUMENT;
     }
 {% if t.inner_type.bit_length_set.max > 0 %}
     {{ _serialize_impl(t) }}
 {% else %}
-    *inout_buffer_size_bytes = 0U;
+    *inout_buffer_size_chars = 0U;
 {% endif %}
     return NUNAVUT_SUCCESS;
 {% endmacro %}
@@ -28,11 +28,13 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_impl(t) %}
-    const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
+    const {{ typename_unsigned_length }} capacity_chars  = *inout_buffer_size_chars;
+    const {{ typename_unsigned_length }} capacity_octets = capacity_chars * CHAR_BIT / 8U;
+    const {{ typename_unsigned_bit_length }} capacity_bits = ({{ typename_unsigned_bit_length }}) capacity_chars * CHAR_BIT;
 {%- if options.enable_override_variable_array_capacity %}
 #ifndef {{ t | full_reference_name }}_DISABLE_SERIALIZATION_BUFFER_CHECK_
 {% endif %}
-    if ((CHAR_BIT * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.inner_type.bit_length_set.max }}UL)
+    if (capacity_bits < {{ t.inner_type.bit_length_set.max }}UL)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
@@ -41,7 +43,7 @@
 {% endif %}
     // Notice that fields that are not an integer number of bytes long may overrun the space allocated for them
     // in the serialization buffer up to the next byte boundary. This is by design and is guaranteed to be safe.
-    {{ typename_unsigned_bit_length }} offset_bits = 0U;
+    {{ typename_unsigned_bit_length }} offset_bits = ini_offset_bits;
 {% if t.inner_type is StructureType %}
     {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
         {% if loop.first %}
@@ -76,13 +78,13 @@
     {{ _pad_to_alignment(t.inner_type.alignment_requirement)|trim|remove_blank_lines }}
     // It is assumed that we know the exact type of the serialized entity, hence we expect the size to match.
 {% if not t.inner_type.bit_length_set.fixed_length %}
-    {{ assert('offset_bits >= %sULL'|format(t.inner_type.bit_length_set.min)) }}
-    {{ assert('offset_bits <= %sULL'|format(t.inner_type.bit_length_set.max)) }}
+    {{ assert('offset_bits - ini_offset_bits >= %sULL'|format(t.inner_type.bit_length_set.min)) }}
+    {{ assert('offset_bits - ini_offset_bits <= %sULL'|format(t.inner_type.bit_length_set.max)) }}
 {% else %}
-    {{ assert('offset_bits == %sULL'|format(t.inner_type.bit_length_set.max)) }}
+    {{ assert('offset_bits - ini_offset_bits == %sULL'|format(t.inner_type.bit_length_set.max)) }}
 {% endif %}
-    {{ assert('offset_bits % CHAR_BIT == 0U') }}
-    *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (offset_bits / CHAR_BIT);
+    {{ assert('offset_bits % 8U == 0U') }}
+    *inout_buffer_size_chars = ({{ typename_unsigned_length }}) (offset_bits + (CHAR_BIT-1U)) / CHAR_BIT);
 {% endmacro %}
 
 
@@ -93,10 +95,10 @@
     {
         {% set ref_padding = 'pad'|to_template_unique_name %}
         {% set ref_err = 'err'|to_template_unique_name %}
-        const uint8_t {{ ref_padding }} = (uint8_t)({{ n_bits }}U - offset_bits % {{ n_bits }}U);
+        const {{ typename_unsigned_bit_length }} {{ ref_padding }} = ({{ typename_unsigned_bit_length }})({{ n_bits }}U - (offset_bits % {{ n_bits }}U));
         {{ assert('%s > 0'|format(ref_padding)) }}
         const {{ typename_error_type }} {{ ref_err }} = {# -#}
-            nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ ref_padding }});  // Optimize?
+            nunavutSetUxx(&buffer[0], capacity_chars, offset_bits, 0U, {{ ref_padding }});  // Optimize?
         if ({{ ref_err }} < 0)
         {
             return {{ ref_err }};
@@ -113,12 +115,14 @@
 {% if t.alignment_requirement > 1 %}
     {{ assert('offset_bits %% %dU == 0U'|format(t.alignment_requirement)) }}
 {% endif %}
-{% if offset.is_aligned_at_byte() %}
-    {{ assert('offset_bits % CHAR_BIT == 0U') }}
+{% if offset.is_aligned_at_byte() and t.alignment_requirement != 8 %}
+    #if CHAR_BIT == 8
+        {{ assert('offset_bits % 8U == 0U') }}
+    #endif
 {% endif %}
     {# NOTICE: If this is a delimited type, we will be requiring the buffer to be at least extent-sized.
      # This is a bit wasteful because when serializing we can often use a smaller buffer. #}
-    {{ assert('(offset_bits + %dULL) <= (capacity_bytes * CHAR_BIT)'|format(t.bit_length_set.max)) }}
+    {{ assert('(offset_bits + %dULL) <= capacity_bits'|format(t.bit_length_set.max)) }}
 
 {%   if t is VoidType %}                {{- _serialize_void(t, offset) }}
 {% elif t is BooleanType %}             {{- _serialize_boolean(t, reference, offset) }}
@@ -143,7 +147,7 @@
 {% else %}
     {% set ref_err = 'err'|to_template_unique_name %}
     const {{ typename_error_type }} {{ ref_err }} = {# -#}
-        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ t.bit_length }}U);  // Optimize?
+        nunavutSetUxx(&buffer[0], capacity_chars, offset_bits, 0U, {{ t.bit_length }}U);  // Optimize?
     if ({{ ref_err }} < 0)
     {
         return {{ ref_err }};
@@ -154,22 +158,41 @@
 
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
-{% macro _serialize_boolean(t, reference, offset) %}
-{% if offset.is_aligned_at_byte() %}
-    buffer[offset_bits / CHAR_BIT] = {{ reference }} ? 1U : 0U;
-{% else %}
+{% macro _serialize_unaligned_boolean(reference) %}
     if ({{ reference }})
     {
-        buffer[offset_bits / CHAR_BIT] = ({{ typename_byte }})(buffer[offset_bits / CHAR_BIT] | (1U << (offset_bits % CHAR_BIT)));
+        buffer[offset_bits >> CHAR_SHIFT] = ({{ typename_byte }})(buffer[offset_bits >> CHAR_SHIFT] | (1U << (offset_bits % CHAR_BIT)));
     }
     else
     {
-        buffer[offset_bits / CHAR_BIT] = ({{ typename_byte }})(buffer[offset_bits / CHAR_BIT] & ~(1U << (offset_bits % CHAR_BIT)));
+        buffer[offset_bits >> CHAR_SHIFT] = ({{ typename_byte }})(buffer[offset_bits >> CHAR_SHIFT] & ~(1U << (offset_bits % CHAR_BIT)));
     }
+{% endmacro %}
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _serialize_boolean(t, reference, offset) %}
+{% if offset.is_aligned_at_byte() %}
+    #if CHAR_BIT == 8
+        buffer[offset_bits / 8U] = {{ reference }} ? 1U : 0U;
+    #else
+        {{ _serialize_unaligned_boolean(reference) | indent }}
+    #endif
+{% else %}
+    {{ _serialize_unaligned_boolean(reference) }}
 {% endif %}
     offset_bits += 1U;
 {% endmacro %}
 
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _serialize_unaligned_integer(t, ref_value) %}
+    {% set ref_err = 'err'|to_template_unique_name %}
+    const {{ typename_error_type }} {{ ref_err }} = nunavutSet{{ 'U' if t is UnsignedIntegerType else 'I' }}xx({# -#}
+        &buffer[0], capacity_chars, offset_bits, {{ ref_value }}, {{ t.bit_length }}U);
+    if ({{ ref_err }} < 0)
+    {
+        return {{ ref_err }};
+    }
+{% endmacro %}
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_integer(t, reference, offset) %}
@@ -197,21 +220,34 @@
     {% set ref_value = reference %}
 {% endif %}
 {% if offset.is_aligned_at_byte() and t.bit_length <= 8 %}
-    buffer[offset_bits / CHAR_BIT] = ({{ typename_byte }})({{ ref_value }});  // C std, 6.3.1.3 Signed and unsigned integers
+    #if CHAR_BIT == 8
+        buffer[offset_bits / 8U] = ({{ typename_byte }})({{ ref_value }});  // C std, 6.3.1.3 Signed and unsigned integers
+    #else
+        {{ _serialize_unaligned_integer(t, ref_value) | indent }}
+    #endif
 {% elif offset.is_aligned_at_byte() and LITTLE_ENDIAN %}
-    (void) memmove(&buffer[offset_bits / CHAR_BIT], &{{ ref_value }}, sizeof({{ ref_value }}));
+    #if CHAR_BIT == 8
+        (void) memmove(&buffer[offset_bits / 8U], &{{ ref_value }}, sizeof({{ ref_value }}));
+    #else
+        {{ _serialize_unaligned_integer(t, ref_value) | indent }}
+    #endif
 {% else %}
-    {% set ref_err = 'err'|to_template_unique_name %}
-    const {{ typename_error_type }} {{ ref_err }} = nunavutSet{{ 'U' if t is UnsignedIntegerType else 'I' }}xx({# -#}
-        &buffer[0], capacity_bytes, offset_bits, {{ ref_value }}, {{ t.bit_length }}U);
-    if ({{ ref_err }} < 0)
-    {
-        return {{ ref_err }};
-    }
+    {{ _serialize_unaligned_integer(t, ref_value) }}
 {% endif %}
     offset_bits += {{ t.bit_length }}U;
 {% endmacro %}
 
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro _serialize_unaligned_float(t, ref_value) %}
+    {% set ref_err = 'err'|to_template_unique_name %}
+    const {{ typename_error_type }} {{ ref_err }} = nunavutSetF{{ t.bit_length }}{#- -#}
+        (&buffer[0], capacity_chars, offset_bits, {{ ref_value }});
+    if ({{ ref_err }} < 0)
+    {
+        return {{ ref_err }};
+    }
+{% endmacro %}
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_float(t, reference, offset) %}
@@ -246,24 +282,30 @@
 {% if offset.is_aligned_at_byte() and LITTLE_ENDIAN %}
     {% if t.bit_length == 16 %}
     {% set ref_half = 'half'|to_template_unique_name %}
-    const uint16_t {{ ref_half }} = nunavutFloat16Pack({{ ref_value }});
-    (void) memmove(&buffer[offset_bits / CHAR_BIT], &{{ ref_half }}, 2U);
+    #if CHAR_BIT == 8
+        const uint_fast16_t {{ ref_half }} = nunavutFloat16Pack({{ ref_value }});
+        (void) memmove(&buffer[offset_bits / 8U], &{{ ref_half }}, 2U);
+    #else
+        {{ _serialize_unaligned_float(t, ref_value) | indent }}
+    #endif
     {% elif t.bit_length == 32 %}
     static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
-    (void) memmove(&buffer[offset_bits / CHAR_BIT], &{{ ref_value }}, 4U);
+    #if CHAR_BIT == 8
+        (void) memmove(&buffer[offset_bits / 8U], &{{ ref_value }}, 4U);
+    #else
+        {{ _serialize_unaligned_float(t, ref_value) | indent }}
+    #endif
     {% elif t.bit_length == 64 %}
     static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
-    (void) memmove(&buffer[offset_bits / CHAR_BIT], &{{ ref_value }}, CHAR_BIT);
+    #if CHAR_BIT == 8
+        (void) memmove(&buffer[offset_bits / 8U], &{{ ref_value }}, 8U);
+    #else
+        {{ _serialize_unaligned_float(t, ref_value) | indent }}
+    #endif
     {% else %}{% assert False %}
     {% endif %}
 {% else %}
-    {% set ref_err = 'err'|to_template_unique_name %}
-    const {{ typename_error_type }} {{ ref_err }} = nunavutSetF{{ t.bit_length }}{#- -#}
-        (&buffer[0], capacity_bytes, offset_bits, {{ ref_value }});
-    if ({{ ref_err }} < 0)
-    {
-        return {{ ref_err }};
-    }
+    {{ _serialize_unaligned_float(t, ref_value) }}
 {% endif %}
     offset_bits += {{ t.bit_length }}U;
 {% endmacro %}
@@ -284,8 +326,19 @@
     {% if offset.is_aligned_at_byte() %}
     // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
     {% endif %}
-    nunavutCopyBits(&buffer[0], offset_bits, {{ t.capacity }}UL * CHAR_BIT, &{{ reference }}[0], 0U);
-    offset_bits += {{ t.capacity }}UL * CHAR_BIT;
+    #if CHAR_BIT == 8
+        nunavutCopyBits(&buffer[0], offset_bits, {{ t.capacity }}UL * 8U, &{{ reference }}[0], 0U);
+        offset_bits += {{ t.capacity }}UL * 8U;
+    #else 
+    {
+    {% set ref_index = 'index'|to_template_unique_name %}
+        for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ t.capacity }}UL; ++{{ ref_index }}) // Size of C array element may not equals to the size of DSDL array element. So, cycle is needed
+        {
+            nunavutCopyBits(&buffer[0], offset_bits, 8U, &{{ reference }}[{{ ref_index }}], 0U);
+            offset_bits += 8U;
+        }
+    }
+    #endif
 
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
 {% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
@@ -299,9 +352,20 @@
     {% if offset.is_aligned_at_byte() %}
     // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
     {% endif %}
-    nunavutCopyBits(&buffer[0], offset_bits, {{ t.capacity }}UL * {{ t.element_type.bit_length }}UL, {# -#}
-                    &{{ reference }}[0], 0U);
-    offset_bits += {{ t.capacity }}UL * {{ t.element_type.bit_length }}UL;
+    #if CHAR_BIT == 8
+        nunavutCopyBits(&buffer[0], offset_bits, {{ t.capacity }}UL * {{ t.element_type.bit_length }}UL, {# -#}
+                        &{{ reference }}[0], 0U);
+        offset_bits += {{ t.capacity }}UL * {{ t.element_type.bit_length }}UL;
+    #else 
+    {
+    {% set ref_index = 'index'|to_template_unique_name %}
+        for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ t.capacity }}UL; ++{{ ref_index }}) // Size of C array element may not equals to the size of DSDL array element. So, cycle is needed
+        {
+            nunavutCopyBits(&buffer[0], offset_bits, {{ t.element_type.bit_length }}U, &{{ reference }}[{{ ref_index }}], 0U);
+            offset_bits += {{ t.element_type.bit_length }}U;
+        }
+    }
+    #endif
 
 {# GENERAL CASE #}
 {% else %}
@@ -345,7 +409,7 @@
 {% set first_element_offset = offset + t.length_field_type.bit_length %}
 {% assert (element_offset.min) == (first_element_offset.min) %}
 {% if first_element_offset.is_aligned_at_byte() %}
-    {{ assert('offset_bits % CHAR_BIT == 0U') }}
+    {{ assert('offset_bits % 8U == 0U') }}
 {% endif %}
 
 {# SPECIAL CASE: PACKED BIT ARRAY #}
@@ -361,8 +425,19 @@
     {% if element_offset.is_aligned_at_byte() %}
     // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
     {% endif %}
-    nunavutCopyBits(&buffer[0], offset_bits, {{ reference }}.count * CHAR_BIT, &{{ reference }}.elements[0], 0U);
-    offset_bits += {{ reference }}.count * CHAR_BIT;
+    #if CHAR_BIT == 8
+        nunavutCopyBits(&buffer[0], offset_bits, {{ reference }}.count * 8UL, &{{ reference }}.elements[0], 0U);
+        offset_bits += {{ reference }}.count * 8UL;
+    #else 
+    {
+    {% set ref_index = 'index'|to_template_unique_name %}
+        for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ reference }}.count; ++{{ ref_index }}) // Size of C array element may not equals to the size of DSDL array element. So, cycle is needed
+        {
+            nunavutCopyBits(&buffer[0], offset_bits, {{ t.element_type.bit_length }}U, &{{ reference }}[{{ ref_index }}], 0U);
+            offset_bits += {{ t.element_type.bit_length }}U;
+        }
+    }
+    #endif
 
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
 {% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
@@ -376,9 +451,19 @@
     {% if element_offset.is_aligned_at_byte() %}
     // Optimization prospect: this item is aligned at the byte boundary, so it is possible to use memmove().
     {% endif %}
-    nunavutCopyBits(&buffer[0], offset_bits, {{ reference }}.count * {{ t.element_type.bit_length }}UL, {# -#}
+    #if CHAR_BIT == 8
+        nunavutCopyBits(&buffer[0], offset_bits, {{ reference }}.count * {{ t.element_type.bit_length }}UL, {# -#}
                     &{{ reference }}.elements[0], 0U);
-    offset_bits += {{ reference }}.count * {{ t.element_type.bit_length }}UL;
+        offset_bits += {{ reference }}.count * {{ t.element_type.bit_length }}UL;
+    #else 
+    {
+    {% set ref_index = 'index'|to_template_unique_name %}
+        for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ reference }}.count; ++{{ ref_index }}) // Size of C array element may not equals to the size of DSDL array element. So, cycle is needed
+        {
+            nunavutCopyBits(&buffer[0], offset_bits, {{ t.element_type.bit_length }}U, &{{ reference }}[{{ ref_index }}], 0U);
+            offset_bits += {{ t.element_type.bit_length }}U;
+        }
+    }
 
 {# GENERAL CASE #}
 {% else %}
@@ -397,38 +482,43 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_composite(t, reference, offset) %}
-{% set ref_err              = 'err'        |to_template_unique_name %}
-{% set ref_size_bytes       = 'size_bytes' |to_template_unique_name %}
+{% set ref_err              = 'err'           |to_template_unique_name %}
+{% set ref_size_octets      = 'size_octets'   |to_template_unique_name %}
+{% set ref_size_chars       = 'size_chars'    |to_template_unique_name %}
 {% set is_variable_size     = not t.inner_type.bit_length_set.fixed_length %}
-{% set size_bytes           = t.inner_type.bit_length_set.max|bits2bytes_ceil %}
-    {{ typename_unsigned_length }} {{ ref_size_bytes }} = {{ size_bytes }}UL;  // Nested object (max) size, in bytes.
+{% set size_bits            = t.inner_type.bit_length_set.max %}
+    const {{ typename_unsigned_length }} {{ ref_size_octets }} = ({{ size_bits }}UL + (8U      -1U)) / 8U      ;  // Nested object (max) size, in octets
+    const {{ typename_unsigned_length }} {{ ref_size_chars }}  = ({{ size_bits }}UL + (CHAR_BIT-1U)) / CHAR_BIT;  // Nested object (max) size, in chars
 
 {# PROLOGUE #}
 {% if t is DelimitedType %}
     {% if is_variable_size %}
     offset_bits += {{ t.delimiter_header_type.bit_length }}U;  // Reserve space for the delimiter header.
     {% else %}
-        {% assert size_bytes * 8 == (t.inner_type.bit_length_set.min) == (t.inner_type.bit_length_set.max) %}
+        {% assert size_bits == (t.inner_type.bit_length_set.min) == (t.inner_type.bit_length_set.max) %}
     // Constant delimiter header can be written ahead of the nested object.
-    {{ _serialize_integer(t.delimiter_header_type, ref_size_bytes, offset)|trim }}
+    {{ _serialize_integer(t.delimiter_header_type, ref_size_octets, offset)|trim }}
     {% endif %}
 {% endif %}
 
 {# NESTED OBJECT SERIALIZATION #}
-    {{ assert('offset_bits % CHAR_BIT == 0U') }}
-    {{ assert('(offset_bits / CHAR_BIT + %s) <= capacity_bytes'|format(ref_size_bytes)) }}
+    {{ assert('offset_bits % 8U == 0U') }}
+    {{ assert('(offset_bits + %s) <= capacity_bits'|format(size_bits)) }}
     {{ typename_error_type }} {{ ref_err }} = {{ t|full_reference_name }}_serialize_(
-        &{{ reference }}, &buffer[offset_bits / CHAR_BIT], &{{ ref_size_bytes }});
+        &{{ reference }}, &buffer[offset_bits / CHAR_BIT], &{{ ref_size_chars }}, offset_bits % CHAR_BIT );
     if ({{ ref_err }} < 0)
     {
         return {{ ref_err }};
     }
     // It is assumed that we know the exact type of the serialized entity, hence we expect the size to match.
 {% if not t.inner_type.bit_length_set.fixed_length %}
-    {{ assert('(%s * CHAR_BIT) >= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set.min)) }}
-    {{ assert('(%s * CHAR_BIT) <= %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set.max)) }}
+    {{ assert('(%s * 8U) >= %sULL'|format(ref_size_octets, t.inner_type.bit_length_set.min)) }}
+    {{ assert('(%s * 8U) <= %sULL'|format(ref_size_octets, t.inner_type.bit_length_set.max)) }}
+    {{ assert('(%s * CHAR_BIT) >= %sULL'|format(ref_size_chars, t.inner_type.bit_length_set.min)) }}
+    {{ assert('(%s * CHAR_BIT) <= %sULL'|format(ref_size_chars, t.inner_type.bit_length_set.max)) }}
 {% else %}
-    {{ assert('(%s * CHAR_BIT) == %sULL'|format(ref_size_bytes, t.inner_type.bit_length_set.max)) }}
+    {{ assert('(%s * 8U) == %sULL'|format(ref_size_octets, t.inner_type.bit_length_set.max)) }}
+    {{ assert('(%s * 8U) <= (%s * CHAR_BIT)'|format(ref_size_octets, ref_size_chars)) }}
 {% endif %}
 
 {# EPILOGUE #}
@@ -436,10 +526,10 @@
     // Jump back to write the delimiter header after the nested object is serialized and its length is known.
     {% if LITTLE_ENDIAN %}
     (void) memmove(&buffer[(offset_bits - {{ t.delimiter_header_type.bit_length }}) / CHAR_BIT], {# -#}
-                   &{{ ref_size_bytes }}, {{ t.delimiter_header_type.bit_length|bits2bytes_ceil }}U);
+                   &{{ ref_size_octets }}, {{ t.delimiter_header_type.bit_length|bits2bytes_ceil }}U);
     {% else %}
-    {{ ref_err }} = nunavutSetUxx(&buffer[0], capacity_bytes, {# -#}
-                                  offset_bits - {{ t.delimiter_header_type.bit_length }}, {{ ref_size_bytes }}, {# -#}
+    {{ ref_err }} = nunavutSetUxx(&buffer[0], capacity_chars, {# -#}
+                                  offset_bits - {{ t.delimiter_header_type.bit_length }}, {{ ref_size_octets }}, {# -#}
                                   {{ t.delimiter_header_type.bit_length }}U);
     if ({{ ref_err }} < 0)
     {
@@ -448,6 +538,6 @@
     {% endif %}
 {% endif %}
 
-    offset_bits += {{ ref_size_bytes }} * CHAR_BIT;  // Advance by the size of the nested object.
-    {{ assert('offset_bits <= (capacity_bytes * CHAR_BIT)') }}
+    offset_bits += {{ ref_size_octets }} * 8U;  // Advance by the size of the nested object.
+    {{ assert('offset_bits <= capacity_bits') }}
 {% endmacro %}

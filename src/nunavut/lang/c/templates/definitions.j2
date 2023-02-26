@@ -160,7 +160,7 @@ struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _define_bitpacked_array_field(name, capacity) -%}
 /// Bitpacked array, capacity {{ capacity }} bits. Access via @ref nunavutSetBit(), @ref nunavutGetBit().
-{{ typename_byte }} {{ name | id }}[{{ capacity | bits2bytes_ceil }}]
+{{ typename_byte }} {{ name | id }}[({{ capacity }}+(CHAR_BIT-1U)) >> CHAR_SHIFT]
 {%- endmacro %}{# https://en.wiktionary.org/wiki/bitpacked #}
 
 
@@ -179,7 +179,7 @@ struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
 /// @param buffer   The destination buffer. There are no alignment requirements.
 ///                 @see {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_
 ///
-/// @param inout_buffer_size_bytes  When calling, this is a pointer to the size of the buffer in bytes.
+/// @param inout_buffer_size_chars  When calling, this is a pointer to the size of the buffer in bytes.
 ///                                 Upon return this value will be updated with the size of the constructed serialized
 ///                                 representation (in bytes); this value is then to be passed over to the transport
 ///                                 layer. In case of error this value is undefined.
@@ -188,7 +188,8 @@ struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
 static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_(
     const {{ t | full_reference_name }}* const obj, {# -#}
     void* const buffer_void,  {# -#}
-    {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
+    {{ typename_unsigned_length }}* const inout_buffer_size_chars
+    const {{ typename_unsigned_bit_length }} ini_offset_bits = 0)
 {
     {% from 'serialization.j2' import serialize -%}
     {{ serialize(t) | trim }}
@@ -205,7 +206,7 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_
 ///                 If the buffer is shorter or longer than expected, it will be implicitly zero-extended or truncated,
 ///                 respectively; see Specification for "implicit zero extension" and "implicit truncation" rules.
 ///
-/// @param inout_buffer_size_bytes  When calling, this is a pointer to the size of the supplied serialized
+/// @param inout_buffer_size_chars  When calling, this is a pointer to the size of the supplied serialized
 ///                                 representation, in bytes. Upon return this value will be updated with the
 ///                                 size of the consumed fragment of the serialized representation (in bytes),
 ///                                 which may be smaller due to the implicit truncation rule, but it is guaranteed
@@ -216,7 +217,7 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_
 static inline {{ typename_error_type }} {{ t | full_reference_name }}_deserialize_(
     {{ t | full_reference_name }}* const out_obj, {# -#}
     const {{ typename_byte }}* buffer, {# -#}
-    {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
+    {{ typename_unsigned_length }}* const inout_buffer_size_chars)
 {
     {% from 'deserialization.j2' import deserialize -%}
     {{ deserialize(t) | trim }}
