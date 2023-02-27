@@ -13,6 +13,7 @@
 #include <cstring>
 #include <type_traits>
 #include <memory>
+#include <limits>
 #include <utility>
 #include <initializer_list>
 #if __cpp_exceptions
