@@ -1,6 +1,6 @@
 //
 // Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-// Copyright (C) 2014 Pavel Kirienko <pavel.kirienko@gmail.com>
+// Copyright (C) 2014 Pavel Kirienko <pavel@opencyphal.org>
 // Copyright (C) 2021  OpenCyphal Development Team  <opencyphal.org>
 // This software is distributed under the terms of the MIT License.
 //
