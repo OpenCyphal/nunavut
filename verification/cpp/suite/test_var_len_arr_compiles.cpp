@@ -118,8 +118,12 @@ struct NotThrowyThing
 
 template <class T>
 class TestDefaultAllocator : public testing::Test { };
-TYPED_TEST_SUITE_P(TestDefaultAllocator);
-TYPED_TEST_P(TestDefaultAllocator, X)
+using DefaultAllocatorTypes = ::testing::Types<
+    nunavut::support::VariableLengthArray<int, 10>,
+    nunavut::support::VariableLengthArray<bool, 10>
+>;
+TYPED_TEST_SUITE(TestDefaultAllocator, DefaultAllocatorTypes);
+TYPED_TEST(TestDefaultAllocator, X)
 {
     TypeParam subject;
 
@@ -141,19 +145,17 @@ TYPED_TEST_P(TestDefaultAllocator, X)
     // Use the subject to ensure it isn't elided.
     ASSERT_EQ(0U, subject.size());
 }
-REGISTER_TYPED_TEST_SUITE_P(TestDefaultAllocator, X);
-using DefaultAllocatorTypes = ::testing::Types<
-    nunavut::support::VariableLengthArray<int, 10>,
-    nunavut::support::VariableLengthArray<bool, 10>
->;
-INSTANTIATE_TYPED_TEST_SUITE_P(X, TestDefaultAllocator, DefaultAllocatorTypes);
 
 // ---------------------------------------------------------------------------------------------------------------------
 
 template <class T>
 class TestNoThrowAllocator : public testing::Test { };
-TYPED_TEST_SUITE_P(TestNoThrowAllocator);
-TYPED_TEST_P(TestNoThrowAllocator, X)
+using NoThrowAllocatorTypes = ::testing::Types<
+    nunavut::support::VariableLengthArray<int, 10, JunkyNoThrowAllocator<int, 10>>,
+    nunavut::support::VariableLengthArray<bool, 10, JunkyNoThrowAllocator<bool, 10>>
+>;
+TYPED_TEST_SUITE(TestNoThrowAllocator, NoThrowAllocatorTypes);
+TYPED_TEST(TestNoThrowAllocator, X)
 {
     TypeParam subject;
 
@@ -176,19 +178,17 @@ TYPED_TEST_P(TestNoThrowAllocator, X)
     // Use the subject to ensure it isn't elided.
     ASSERT_EQ(0U, subject.size());
 }
-REGISTER_TYPED_TEST_SUITE_P(TestNoThrowAllocator, X);
-using NoThrowAllocatorTypes = ::testing::Types<
-    nunavut::support::VariableLengthArray<int, 10, JunkyNoThrowAllocator<int, 10>>,
-    nunavut::support::VariableLengthArray<bool, 10, JunkyNoThrowAllocator<bool, 10>>
->;
-INSTANTIATE_TYPED_TEST_SUITE_P(X, TestNoThrowAllocator, NoThrowAllocatorTypes);
 
 // ---------------------------------------------------------------------------------------------------------------------
 
 template <class T>
 class TestThrowingAllocator : public testing::Test { };
-TYPED_TEST_SUITE_P(TestThrowingAllocator);
-TYPED_TEST_P(TestThrowingAllocator, X)
+using ThrowingAllocatorTypes = ::testing::Types<
+    nunavut::support::VariableLengthArray<int, 10, JunkyThrowingAllocator<int, 10>>,
+    nunavut::support::VariableLengthArray<bool, 10, JunkyThrowingAllocator<int, 10>>
+>;
+TYPED_TEST_SUITE(TestThrowingAllocator, ThrowingAllocatorTypes);
+TYPED_TEST(TestThrowingAllocator, X)
 {
     TypeParam subject;
 
@@ -213,12 +213,6 @@ TYPED_TEST_P(TestThrowingAllocator, X)
     // Use the subject to ensure it isn't elided.
     ASSERT_EQ(0U, subject.size());
 }
-REGISTER_TYPED_TEST_SUITE_P(TestThrowingAllocator, X);
-using ThrowingAllocatorTypes = ::testing::Types<
-    nunavut::support::VariableLengthArray<int, 10, JunkyThrowingAllocator<int, 10>>,
-    nunavut::support::VariableLengthArray<bool, 10, JunkyThrowingAllocator<int, 10>>
->;
-INSTANTIATE_TYPED_TEST_SUITE_P(X, TestThrowingAllocator, ThrowingAllocatorTypes);
 
 // ---------------------------------------------------------------------------------------------------------------------
 
