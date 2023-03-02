@@ -928,6 +928,7 @@ private:
         using difference_type   = typename A::difference_type;
         using reference         = ReferenceImpl<A>;
         using const_reference   = ReferenceImpl<const A>;
+        using pointer           = void;
 
         IteratorImpl() noexcept = default;
 
@@ -956,30 +957,38 @@ private:
 
         IteratorImpl& operator+=(const difference_type n)
         {
-            index_ += n;
+            index_ = static_cast<size_type>(static_cast<difference_type>(index_) + n);
             return *this;
         }
         IteratorImpl& operator-=(const difference_type n)
         {
-            index_ -= n;
+            index_ = static_cast<size_type>(static_cast<difference_type>(index_) - n);
             return *this;
         }
         IteratorImpl operator+(const difference_type n) const
         {
-            return IteratorImpl(*array_, index_ + n);
+            return IteratorImpl(*array_, static_cast<size_type>(static_cast<difference_type>(index_) + n));
         }
         IteratorImpl operator-(const difference_type n) const
         {
-            return IteratorImpl(*array_, index_ - n);
+            return IteratorImpl(*array_, static_cast<size_type>(static_cast<difference_type>(index_) - n));
         }
         difference_type operator-(const IteratorImpl& other) const
         {
             return static_cast<difference_type>(index_) - static_cast<difference_type>(other.index_);
         }
 
-        reference operator*() const
+        reference operator*()
         {
-            return array_->operator[](index_);
+            return this->operator[](0);
+        }
+        const_reference operator*() const
+        {
+            return this->operator[](0);
+        }
+        reference operator[](const difference_type n)
+        {
+            return array_->operator[](static_cast<size_type>(static_cast<difference_type>(index_) + n));
         }
         const_reference operator[](const difference_type n) const
         {
@@ -1268,25 +1277,29 @@ public:
     /// Safe, const access to an element. Throws std::out_of_range if {@code pos} is >= {@code size}.
     /// The returned reference is valid while this object is unless {@code reserve} or {@code shrink_to_fit} is called.
     ///
-    constexpr const_reference at(const size_type pos) const noexcept
+    constexpr const_reference at(const size_type pos) const
     {
         if (pos >= size_)
         {
 #if __cpp_exceptions
             throw std::out_of_range("VariableLengthArray::at");
+#else
+            std::abort();
 #endif
         }
-        return const_reference(*this, pos);
+        return this->operator[](pos);
     }
-    constexpr reference at(const size_type pos) noexcept
+    constexpr reference at(const size_type pos)
     {
         if (pos >= size_)
         {
 #if __cpp_exceptions
             throw std::out_of_range("VariableLengthArray::at");
+#else
+            std::abort();
 #endif
         }
-        return reference(*this, pos);
+        return this->operator[](pos);
     }
 
     ///
