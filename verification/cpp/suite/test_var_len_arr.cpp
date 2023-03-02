@@ -65,6 +65,10 @@ public:
         : heap_()
         , heap_alloc_(o1heapInit(&heap_[0], SizeCount * sizeof(T), nullptr, nullptr))
     {
+        if (nullptr == heap_alloc_)
+        {
+            std::abort();  // Test environment is broken. Maybe the alignment is bad or arena too small?
+        }
     }
 
     O1HeapAllocator(const O1HeapAllocator&)            = delete;
@@ -270,8 +274,11 @@ class VLATestsStatic : public ::testing::Test
 {
 };
 
-using VLATestsStaticAllocators =
-    ::testing::Types<O1HeapAllocator<int, O1HEAP_ALIGNMENT * 8>, JunkyStaticAllocator<int, 10>>;
+using VLATestsStaticAllocators = ::testing::Types<
+    O1HeapAllocator<int, O1HEAP_ALIGNMENT * 8>,
+    O1HeapAllocator<bool, O1HEAP_ALIGNMENT * 32>,
+    JunkyStaticAllocator<int, 10>
+>;
 TYPED_TEST_SUITE(VLATestsStatic, VLATestsStaticAllocators, );
 
 TYPED_TEST(VLATestsStatic, TestOutOfMemory)
@@ -292,12 +299,10 @@ TYPED_TEST(VLATestsStatic, TestOutOfMemory)
             ran_out_of_memory_at  = i;
             break;
         }
-        ASSERT_EQ(i, subject.capacity());
+        ASSERT_LE(i, subject.capacity());
         subject.push_back(static_cast<typename TypeParam::value_type>(i));
         ASSERT_EQ(i, subject.size());
-        typename TypeParam::value_type* pushed = &subject[i - 1];
-        ASSERT_NE(nullptr, pushed);
-        ASSERT_EQ(static_cast<typename TypeParam::value_type>(i), *pushed);
+        ASSERT_EQ(static_cast<typename TypeParam::value_type>(i), subject[i - 1]);
     }
     ASSERT_TRUE(did_run_out_of_memory);
     const std::size_t size_before = subject.size();
@@ -328,12 +333,10 @@ TYPED_TEST(VLATestsStatic, TestOverMaxSize)
 
     for (std::size_t i = 1; i <= MaxSize; ++i)
     {
-        ASSERT_EQ(i, subject.reserve(i));
+        ASSERT_LE(i, subject.reserve(i));
         subject.push_back(static_cast<typename TypeParam::value_type>(i));
-        typename TypeParam::value_type* pushed = &subject[i - 1];
         ASSERT_EQ(i, subject.size());
-        ASSERT_NE(nullptr, pushed);
-        ASSERT_EQ(static_cast<typename TypeParam::value_type>(i), *pushed);
+        ASSERT_EQ(static_cast<typename TypeParam::value_type>(i), subject[i - 1]);
     }
     ASSERT_EQ(MaxSize, subject.reserve(MaxSize + 1));
 
@@ -408,7 +411,7 @@ TEST(VLATestsNonTrivial, TestDestroy)
     ASSERT_EQ(2, dtor_called);
 }
 
-TEST(VLATestsNonTrivial, TestNonFunamental)
+TEST(VLATestsNonTrivial, TestNonFundamental)
 {
     int dtor_called = 0;
 

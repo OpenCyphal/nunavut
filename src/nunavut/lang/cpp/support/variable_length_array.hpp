@@ -1565,6 +1565,10 @@ private:
     allocator_type alloc_;
 };
 
+// required till C++ 17. Redundant but allowed after that.
+template <std::size_t MaxSize, typename Allocator>
+const std::size_t VariableLengthArray<bool, MaxSize, Allocator>::type_max_size;
+
 }  // namespace support
 }  // namespace nunavut
 
