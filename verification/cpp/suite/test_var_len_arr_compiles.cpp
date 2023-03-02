@@ -13,6 +13,7 @@ class JunkyNoThrowAllocator
 {
 public:
     using value_type = T;
+    template <typename U> struct rebind final { using other = JunkyNoThrowAllocator<U, SizeCount>; };
 
     JunkyNoThrowAllocator() noexcept
         : data_()
@@ -58,6 +59,7 @@ class JunkyThrowingAllocator
 {
 public:
     using value_type = T;
+    template <typename U> struct rebind final { using other = JunkyThrowingAllocator<U, SizeCount>; };
 
     JunkyThrowingAllocator()
         : data_()
@@ -112,9 +114,14 @@ struct NotThrowyThing
     NotThrowyThing(NotThrowyThing&&) noexcept {}
 };
 
-TEST(VLATestsStatic, TestDefaultAllocator)
+// ---------------------------------------------------------------------------------------------------------------------
+
+template <class T>
+class TestDefaultAllocator : public testing::Test { };
+TYPED_TEST_SUITE_P(TestDefaultAllocator);
+TYPED_TEST_P(TestDefaultAllocator, X)
 {
-    nunavut::support::VariableLengthArray<int, 10> subject;
+    TypeParam subject;
 
     static_assert(std::is_nothrow_default_constructible<decltype(subject)>::value,
                   "VariableLengthArray's default allocator must be no-throw default constructible");
@@ -134,10 +141,21 @@ TEST(VLATestsStatic, TestDefaultAllocator)
     // Use the subject to ensure it isn't elided.
     ASSERT_EQ(0U, subject.size());
 }
+REGISTER_TYPED_TEST_SUITE_P(TestDefaultAllocator, X);
+using DefaultAllocatorTypes = ::testing::Types<
+    nunavut::support::VariableLengthArray<int, 10>,
+    nunavut::support::VariableLengthArray<bool, 10>
+>;
+INSTANTIATE_TYPED_TEST_SUITE_P(X, TestDefaultAllocator, DefaultAllocatorTypes);
 
-TEST(VLATestsStatic, TestNoThrowAllocator)
+// ---------------------------------------------------------------------------------------------------------------------
+
+template <class T>
+class TestNoThrowAllocator : public testing::Test { };
+TYPED_TEST_SUITE_P(TestNoThrowAllocator);
+TYPED_TEST_P(TestNoThrowAllocator, X)
 {
-    nunavut::support::VariableLengthArray<int, 10, JunkyNoThrowAllocator<int, 10>> subject;
+    TypeParam subject;
 
     static_assert(std::is_nothrow_default_constructible<decltype(subject)>::value,
                   "VariableLengthArray must be no-throw default constructible if the allocator is.");
@@ -158,10 +176,21 @@ TEST(VLATestsStatic, TestNoThrowAllocator)
     // Use the subject to ensure it isn't elided.
     ASSERT_EQ(0U, subject.size());
 }
+REGISTER_TYPED_TEST_SUITE_P(TestNoThrowAllocator, X);
+using NoThrowAllocatorTypes = ::testing::Types<
+    nunavut::support::VariableLengthArray<int, 10, JunkyNoThrowAllocator<int, 10>>,
+    nunavut::support::VariableLengthArray<bool, 10, JunkyNoThrowAllocator<bool, 10>>
+>;
+INSTANTIATE_TYPED_TEST_SUITE_P(X, TestNoThrowAllocator, NoThrowAllocatorTypes);
 
-TEST(VLATestsStatic, TestThrowingAllocator)
+// ---------------------------------------------------------------------------------------------------------------------
+
+template <class T>
+class TestThrowingAllocator : public testing::Test { };
+TYPED_TEST_SUITE_P(TestThrowingAllocator);
+TYPED_TEST_P(TestThrowingAllocator, X)
 {
-    nunavut::support::VariableLengthArray<int, 10, JunkyThrowingAllocator<int, 10>> subject;
+    TypeParam subject;
 
     static_assert(std::is_default_constructible<decltype(subject)>::value &&
                       !std::is_nothrow_default_constructible<decltype(subject)>::value,
@@ -184,8 +213,16 @@ TEST(VLATestsStatic, TestThrowingAllocator)
     // Use the subject to ensure it isn't elided.
     ASSERT_EQ(0U, subject.size());
 }
+REGISTER_TYPED_TEST_SUITE_P(TestThrowingAllocator, X);
+using ThrowingAllocatorTypes = ::testing::Types<
+    nunavut::support::VariableLengthArray<int, 10, JunkyThrowingAllocator<int, 10>>,
+    nunavut::support::VariableLengthArray<bool, 10, JunkyThrowingAllocator<int, 10>>
+>;
+INSTANTIATE_TYPED_TEST_SUITE_P(X, TestThrowingAllocator, ThrowingAllocatorTypes);
 
-TEST(VLATestsStatic, TestNotThrowingCopyCtor)
+// ---------------------------------------------------------------------------------------------------------------------
+
+TEST(ValueThrowing, TestNotThrowingCopyCtor)
 {
     using nothrowy_type =
         nunavut::support::VariableLengthArray<NotThrowyThing, 10, JunkyNoThrowAllocator<NotThrowyThing, 10>>;
@@ -199,7 +236,7 @@ TEST(VLATestsStatic, TestNotThrowingCopyCtor)
                   "the value type doesn't.");
 }
 
-TEST(VLATestsStatic, TestThrowingCopyCtor)
+TEST(ValueThrowing, TestThrowingCopyCtor)
 {
     using throwy_type = nunavut::support::VariableLengthArray<ThrowyThing, 10, JunkyThrowingAllocator<ThrowyThing, 10>>;
     static_assert(!noexcept(throwy_type(std::declval<std::add_lvalue_reference<throwy_type>::type>())),
