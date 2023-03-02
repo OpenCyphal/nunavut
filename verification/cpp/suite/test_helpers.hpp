@@ -9,7 +9,7 @@
 #include "gmock/gmock.h"
 #include "nunavut/support/serialization.hpp"
 
-testing::Message& operator<<(testing::Message& s, const nunavut::support::Error& e){
+inline testing::Message& operator<<(testing::Message& s, const nunavut::support::Error& e){
     using namespace nunavut::support;
     switch(e){
     case Error::SERIALIZATION_INVALID_ARGUMENT: s << "SERIALIZATION_INVALID_ARGUMENT"; break;
@@ -107,7 +107,7 @@ inline double randF64(void)
     return static_cast<double>(randI64());
 }
 
-::testing::AssertionResult CompareFloatsNear(float f1, float f2, float delta) {
+inline ::testing::AssertionResult CompareFloatsNear(float f1, float f2, float delta) {
   if (std::abs(f1-f2) < delta)
     return testing::AssertionSuccess();
   else
