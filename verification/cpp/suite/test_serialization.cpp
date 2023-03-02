@@ -484,6 +484,7 @@ TEST(Serialization, Primitive)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
 #include "regulated/zubax/actuator/esc/Status_0_1.h"
 #pragma GCC diagnostic pop
 
