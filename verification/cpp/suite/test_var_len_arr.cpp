@@ -59,6 +59,7 @@ class O1HeapAllocator
 {
 public:
     using value_type = T;
+    template <typename U> struct rebind final { using other = O1HeapAllocator<U, SizeCount>; };
 
     O1HeapAllocator()
         : heap_()
@@ -96,6 +97,7 @@ class JunkyStaticAllocator
 public:
     using value_type          = T;
     using array_constref_type = const T (&)[SizeCount];
+    template <typename U> struct rebind final { using other = JunkyStaticAllocator<U, SizeCount>; };
 
     JunkyStaticAllocator()
         : data_()
@@ -182,10 +184,14 @@ static_assert(VLATestsGeneric_O1HeapSize > VLATestsGeneric_MinMaxSize, "Unexpect
 }  // end anonymous namespace
 
 using VLATestsGenericAllocators = ::testing::Types<nunavut::support::MallocAllocator<int>,
+                                                   nunavut::support::MallocAllocator<bool>,
                                                    std::allocator<int>,
                                                    std::allocator<long long>,
+                                                   std::allocator<bool>,
                                                    O1HeapAllocator<int, VLATestsGeneric_O1HeapSize>,
-                                                   JunkyStaticAllocator<int, VLATestsGeneric_MinMaxSize>>;
+                                                   O1HeapAllocator<bool, VLATestsGeneric_O1HeapSize>,
+                                                   JunkyStaticAllocator<int, VLATestsGeneric_MinMaxSize>,
+                                                   JunkyStaticAllocator<bool, VLATestsGeneric_MinMaxSize>>;
 TYPED_TEST_SUITE(VLATestsGeneric, VLATestsGenericAllocators, );
 
 TYPED_TEST(VLATestsGeneric, TestReserve)
@@ -197,9 +203,9 @@ TYPED_TEST(VLATestsGeneric, TestReserve)
     ASSERT_EQ(0U, subject.size());
     ASSERT_EQ(10U, subject.max_size());
 
-    ASSERT_EQ(1U, subject.reserve(1));
-
-    ASSERT_EQ(1U, subject.capacity());
+    const auto reserved = subject.reserve(1);
+    ASSERT_LE(1U, reserved);
+    ASSERT_EQ(reserved, subject.capacity());
     ASSERT_EQ(0U, subject.size());
     ASSERT_EQ(10U, subject.max_size());
 }
@@ -208,7 +214,6 @@ TYPED_TEST(VLATestsGeneric, TestPush)
 {
     nunavut::support::VariableLengthArray<typename TypeParam::value_type, VLATestsGeneric_MinMaxSize, TypeParam>
         subject;
-    ASSERT_EQ(nullptr, subject.data());
     ASSERT_EQ(0U, subject.size());
 
     typename TypeParam::value_type x = 0;
@@ -219,10 +224,8 @@ TYPED_TEST(VLATestsGeneric, TestPush)
         ASSERT_EQ(i + 1, subject.size());
         ASSERT_LE(subject.size(), subject.capacity());
 
-        const typename TypeParam::value_type* const pushed = &subject[i];
-
-        ASSERT_EQ(*pushed, x);
-        ++x;
+        ASSERT_EQ(x, subject[i]);
+        x = x + 1;
     }
 }
 
@@ -231,16 +234,15 @@ TYPED_TEST(VLATestsGeneric, TestPop)
     static_assert(20 < VLATestsGeneric_MinMaxSize,
                   "Test requires max size of array is less than max size of the smallest allocator");
     nunavut::support::VariableLengthArray<typename TypeParam::value_type, 20, TypeParam> subject;
-    ASSERT_EQ(10U, subject.reserve(10));
+    const auto reserved = subject.reserve(10);
+    ASSERT_LE(10U, reserved);
     subject.push_back(1);
     ASSERT_EQ(1U, subject.size());
-    const typename TypeParam::value_type* const pushed = &subject[0];
-    ASSERT_NE(nullptr, pushed);
-    ASSERT_EQ(*pushed, 1);
+    ASSERT_EQ(1, subject[0]);
     ASSERT_EQ(1U, subject.size());
     subject.pop_back();
     ASSERT_EQ(0U, subject.size());
-    ASSERT_EQ(10U, subject.capacity());
+    ASSERT_EQ(reserved, subject.capacity());
 }
 
 TYPED_TEST(VLATestsGeneric, TestShrink)
@@ -248,14 +250,13 @@ TYPED_TEST(VLATestsGeneric, TestShrink)
     static_assert(20 < VLATestsGeneric_MinMaxSize,
                   "Test requires max size of array is less than max size of the smallest allocator");
     nunavut::support::VariableLengthArray<typename TypeParam::value_type, 20, TypeParam> subject;
-    ASSERT_EQ(10U, subject.reserve(10));
+    const auto reserved = subject.reserve(10);
+    ASSERT_LE(10U, reserved);
     subject.push_back(1);
     ASSERT_EQ(1U, subject.size());
-    const typename TypeParam::value_type* const pushed = &subject[0];
-    ASSERT_NE(nullptr, pushed);
-    ASSERT_EQ(*pushed, 1);
+    ASSERT_EQ(1, subject[0]);
     ASSERT_EQ(1U, subject.size());
-    ASSERT_EQ(10U, subject.capacity());
+    ASSERT_EQ(reserved, subject.capacity());
     subject.shrink_to_fit();
     ASSERT_EQ(1U, subject.capacity());
 }
@@ -371,6 +372,24 @@ TEST(VLATestsNonTrivial, TestDeallocSize)
     subject.pop_back();
     subject.shrink_to_fit();
     ASSERT_EQ(10U, subject.get_allocator().get_last_dealloc_size());
+}
+
+// This is similar to the generic test extended with entities that are not present in the bool specialization.
+TEST(VLATestsNonTrivial, TestPush)
+{
+    nunavut::support::VariableLengthArray<int, VLATestsGeneric_MinMaxSize> subject;
+    ASSERT_EQ(nullptr, subject.data());
+    ASSERT_EQ(0U, subject.size());
+    int x = 0;
+    for (std::size_t i = 0; i < VLATestsGeneric_MinMaxSize; ++i)
+    {
+        subject.push_back(x);
+        ASSERT_EQ(i + 1, subject.size());
+        ASSERT_LE(subject.size(), subject.capacity());
+        const int* const pushed = &subject[i];
+        ASSERT_EQ(*pushed, x);
+        ++x;
+    }
 }
 
 TEST(VLATestsNonTrivial, TestDestroy)
