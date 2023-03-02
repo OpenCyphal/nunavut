@@ -159,7 +159,6 @@ class CodeGenerator(nunavut._generators.AbstractGenerator):
         package_name_for_templates: typing.Optional[str] = None,
         search_policy: ResourceSearchPolicy = ResourceSearchPolicy.FIND_ALL,
     ):
-
         super().__init__(namespace, generate_namespace_types)
 
         if templates_dir is not None and not isinstance(templates_dir, list):
@@ -668,7 +667,6 @@ class DSDLCodeGenerator(CodeGenerator):
     # +-----------------------------------------------------------------------+
 
     def __init__(self, namespace: nunavut.Namespace, **kwargs: typing.Any):
-
         # set the search policy so we ignore the internal templates iff a filesystem
         # path is provided to the generator.
         super().__init__(namespace, search_policy=ResourceSearchPolicy.FIND_FIRST, **kwargs)
@@ -688,7 +686,7 @@ class DSDLCodeGenerator(CodeGenerator):
             *self.language_context.get_target_language().get_support_module(), is_dryrun, omit_serialization_support
         )
         provider = self.namespace.get_all_types if self.generate_namespace_types else self.namespace.get_all_datatypes
-        for (parsed_type, output_path) in provider():
+        for parsed_type, output_path in provider():
             logger.info("Generating: %s", parsed_type)
             generated.append(self._generate_type(parsed_type, output_path, is_dryrun, allow_overwrite))
         return generated
@@ -785,7 +783,6 @@ class SupportGenerator(CodeGenerator):
     """
 
     def __init__(self, namespace: nunavut.Namespace, **kwargs: typing.Any):
-
         super().__init__(namespace, builtin_template_path="support", **kwargs)
 
         target_language = self.language_context.get_target_language()
@@ -867,7 +864,6 @@ class SupportGenerator(CodeGenerator):
         line_pps: typing.List["nunavut._postprocessors.LinePostProcessor"],
         file_pps: typing.List["nunavut._postprocessors.FilePostProcessor"],
     ) -> pathlib.Path:
-
         if not is_dryrun:
             self._handle_overwrite(target, allow_overwrite)
             target.parent.mkdir(parents=True, exist_ok=True)

@@ -212,7 +212,6 @@ class UseQuery(Extension):
         return result
 
     def _use_query_common(self, uses_query_name: str, lineno: int, name: str, filename: str) -> bool:
-
         target_language = self.environment.target_language
 
         if uses_query_name is None:

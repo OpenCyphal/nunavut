@@ -393,7 +393,6 @@ class TokenEncoder:
         return stropped
 
     def _strop_by_pattern(self, token: str, token_type: str, dry_run: bool) -> str:
-
         stropped = token
 
         reserved_pattern_rules = self._reserved_token_patterns_by_type[token_type]
@@ -439,7 +438,6 @@ class TokenEncoder:
 
     @functools.lru_cache(maxsize=1024)
     def strop(self, token: str, token_type: str = "any") -> str:  # noqa: C901
-
         token_type_lower = token_type.lower()
         if token_type_lower == "all":
             raise ValueError(
