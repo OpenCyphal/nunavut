@@ -24,6 +24,7 @@ class Dependencies:
         self.uses_float = False
         self.uses_variable_length_array = False
         self.uses_array = False
+        self.uses_boolean_static_array = False
         self.uses_bool = False
         self.uses_primitive_static_array = False
         self.uses_union = False
@@ -118,10 +119,12 @@ class DependencyBuilder:
     ) -> None:
         if isinstance(dependant_type, pydsdl.VariableLengthArrayType):
             inout_dependencies.uses_variable_length_array = True
+        elif isinstance(dependant_type.element_type, pydsdl.BooleanType):
+            inout_dependencies.uses_boolean_static_array = True
+        elif isinstance(dependant_type.element_type, pydsdl.PrimitiveType):
+            inout_dependencies.uses_primitive_static_array = True
         else:
             inout_dependencies.uses_array = True
-            if isinstance(dependant_type.element_type, pydsdl.PrimitiveType):
-                inout_dependencies.uses_primitive_static_array = True
 
     @classmethod
     def _extract_dependent_types(

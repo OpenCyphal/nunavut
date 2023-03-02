@@ -258,8 +258,10 @@ class Language(BaseLanguage):
         if self.get_config_value_as_bool("use_standard_types"):
             if dep_types.uses_integer:
                 std_includes.append("cstdint")
-            if dep_types.uses_array:
+            if dep_types.uses_array or dep_types.uses_primitive_static_array:
                 std_includes.append("array")
+            if dep_types.uses_boolean_static_array:
+                std_includes.append("bitset")
         if dep_types.uses_union and self._has_variant():
             std_includes.append("variant")
         includes_formatted = ["<{}>".format(include) for include in sorted(std_includes)]
@@ -280,6 +282,9 @@ class Language(BaseLanguage):
         raw_name = self.default_filter_id_for_target(instance)
 
         return self._get_token_encoder().strop(raw_name, id_type)
+
+    def create_bitset_decl(self, type: str, max_size: int) -> str:
+        return "std::bitset<{MAX_SIZE}>".format(MAX_SIZE=max_size)
 
     def create_array_decl(self, type: str, max_size: int) -> str:
         return "std::array<{TYPE},{MAX_SIZE}>".format(TYPE=type, MAX_SIZE=max_size)
@@ -989,7 +994,10 @@ def filter_declaration(language: Language, instance: pydsdl.Any) -> str:
                 TYPE=filter_declaration(language, instance.element_type), MAX_SIZE=instance.capacity
             )
     elif isinstance(instance, pydsdl.ArrayType):
-        return language.create_array_decl(filter_declaration(language, instance.element_type), instance.capacity)
+        if isinstance(instance.element_type, pydsdl.BooleanType):
+            return language.create_bitset_decl(filter_declaration(language, instance.element_type), instance.capacity)
+        else:
+            return language.create_array_decl(filter_declaration(language, instance.element_type), instance.capacity)
     else:
         return filter_full_reference_name(language, instance)
 
