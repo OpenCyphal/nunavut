@@ -90,7 +90,7 @@ public:
     ///
     using value_type = T;
 
-    VariableLengthArray() noexcept(std::is_nothrow_constructible<allocator_type>::value)
+    constexpr VariableLengthArray() noexcept(std::is_nothrow_constructible<allocator_type>::value)
         : data_(nullptr)
         , capacity_(0)
         , size_(0)
@@ -1053,7 +1053,7 @@ public:
     using iterator       = IteratorImpl<VariableLengthArray>;
     using const_iterator = IteratorImpl<const VariableLengthArray>;
 
-    VariableLengthArray() noexcept
+    constexpr VariableLengthArray() noexcept
         : data_(nullptr)
         , capacity_(0)
         , size_(0)
