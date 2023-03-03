@@ -878,9 +878,9 @@ public:
     class reference final
     {
     public:
-        reference(const reference&) = default;
-        reference(reference&&)      = default;
-        ~reference()                = default;
+        reference(const reference&) noexcept = default;
+        reference(reference&&) noexcept      = default;
+        ~reference() noexcept                = default;
 
         reference& operator=(const bool x)
         {
@@ -948,48 +948,48 @@ private:
 
         IteratorImpl() noexcept = default;
 
-        IteratorImpl& operator++()
+        IteratorImpl& operator++() noexcept
         {
             ++index_;
             return *this;
         }
-        IteratorImpl operator++(int)
+        IteratorImpl operator++(int) noexcept
         {
             const IteratorImpl tmp(*this);
             ++index_;
             return tmp;
         }
-        IteratorImpl& operator--()
+        IteratorImpl& operator--() noexcept
         {
             --index_;
             return *this;
         }
-        IteratorImpl operator--(int)
+        IteratorImpl operator--(int) noexcept
         {
             IteratorImpl tmp(*this);
             --index_;
             return tmp;
         }
 
-        IteratorImpl& operator+=(const difference_type n)
+        IteratorImpl& operator+=(const difference_type n) noexcept
         {
             index_ = static_cast<size_type>(static_cast<difference_type>(index_) + n);
             return *this;
         }
-        IteratorImpl& operator-=(const difference_type n)
+        IteratorImpl& operator-=(const difference_type n) noexcept
         {
             index_ = static_cast<size_type>(static_cast<difference_type>(index_) - n);
             return *this;
         }
-        IteratorImpl operator+(const difference_type n) const
+        IteratorImpl operator+(const difference_type n) const noexcept
         {
             return IteratorImpl(*array_, static_cast<size_type>(static_cast<difference_type>(index_) + n));
         }
-        IteratorImpl operator-(const difference_type n) const
+        IteratorImpl operator-(const difference_type n) const noexcept
         {
             return IteratorImpl(*array_, static_cast<size_type>(static_cast<difference_type>(index_) - n));
         }
-        difference_type operator-(const IteratorImpl& other) const
+        difference_type operator-(const IteratorImpl& other) const noexcept
         {
             return static_cast<difference_type>(index_) - static_cast<difference_type>(other.index_);
         }
@@ -1020,27 +1020,27 @@ private:
             return array_->operator[](static_cast<size_type>(static_cast<difference_type>(index_) + n));
         }
 
-        bool operator==(const IteratorImpl& other) const
+        bool operator==(const IteratorImpl& other) const noexcept
         {
             return array_ == other.array_ && index_ == other.index_;
         }
-        bool operator!=(const IteratorImpl& other) const
+        bool operator!=(const IteratorImpl& other) const noexcept
         {
             return !((*this) == other);
         }
-        bool operator<(const IteratorImpl& other) const
+        bool operator<(const IteratorImpl& other) const noexcept
         {
             return index_ < other.index_;
         }
-        bool operator>(const IteratorImpl& other) const
+        bool operator>(const IteratorImpl& other) const noexcept
         {
             return index_ > other.index_;
         }
-        bool operator<=(const IteratorImpl& other) const
+        bool operator<=(const IteratorImpl& other) const noexcept
         {
             return index_ <= other.index_;
         }
-        bool operator>=(const IteratorImpl& other) const
+        bool operator>=(const IteratorImpl& other) const noexcept
         {
             return index_ >= other.index_;
         }
