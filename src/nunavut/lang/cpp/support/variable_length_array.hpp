@@ -115,13 +115,13 @@ public:
 
     template <class InputIt>
     constexpr VariableLengthArray(
-        InputIt           first,
-        InputIt           last,
-        const std::size_t length,
-        const allocator_type&  alloc =
+        InputIt               first,
+        InputIt               last,
+        const std::size_t     length,
+        const allocator_type& alloc =
             allocator_type()) noexcept(noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1)) &&
-                                  std::is_nothrow_copy_constructible<allocator_type>::value &&
-                                  std::is_nothrow_copy_constructible<T>::value)
+                                       std::is_nothrow_copy_constructible<allocator_type>::value &&
+                                       std::is_nothrow_copy_constructible<T>::value)
         : data_(nullptr)
         , capacity_(0)
         , size_(0)
@@ -185,10 +185,8 @@ public:
     }
 
     VariableLengthArray& operator=(VariableLengthArray&& rhs) noexcept(
-        noexcept(VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(nullptr,
-                                                                                         0,
-                                                                                         0,
-                                                                                         std::declval<allocator_type&>())) &&
+        noexcept(VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<
+                 T>(nullptr, 0, 0, std::declval<allocator_type&>())) &&
         std::is_nothrow_move_assignable<allocator_type>::value)
     {
         fast_deallocate(data_, size_, capacity_, alloc_);
@@ -207,11 +205,8 @@ public:
         return *this;
     }
 
-    ~VariableLengthArray() noexcept(
-        noexcept(VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<T>(nullptr,
-                                                                                         0,
-                                                                                         0,
-                                                                                         std::declval<allocator_type&>())))
+    ~VariableLengthArray() noexcept(noexcept(VariableLengthArray<T, MaxSize, Allocator>::template fast_deallocate<
+                                             T>(nullptr, 0, 0, std::declval<allocator_type&>())))
     {
         fast_deallocate(data_, size_, capacity_, alloc_);
     }
@@ -519,11 +514,15 @@ public:
         // Allocate only enough to store what we have.
         T* minimized_data = nullptr;
 #if __cpp_exceptions
-        try {
+        try
+        {
 #endif
-        minimized_data = alloc_.allocate(size_ * sizeof(T));
+            minimized_data = alloc_.allocate(size_ * sizeof(T));
 #if __cpp_exceptions
-        } catch (const std::bad_alloc& e) { (void) e; }
+        } catch (const std::bad_alloc& e)
+        {
+            (void) e;
+        }
 #endif
 
         if (minimized_data == nullptr)
@@ -766,7 +765,7 @@ private:
     static constexpr void fast_deallocate(U* const          src,
                                           const std::size_t src_size_count,
                                           const std::size_t src_capacity_count,
-                                          allocator_type&        alloc,
+                                          allocator_type&   alloc,
                                           typename std::enable_if<std::is_trivially_destructible<U>::value>::type* =
                                               nullptr) noexcept(noexcept(allocator_type().deallocate(nullptr, 0)))
     {
@@ -782,9 +781,10 @@ private:
         U* const          src,
         const std::size_t src_size_count,
         const std::size_t src_capacity_count,
-        allocator_type&        alloc,
+        allocator_type&   alloc,
         typename std::enable_if<!std::is_trivially_destructible<U>::value>::type* =
-            nullptr) noexcept(std::is_nothrow_destructible<U>::value&& noexcept(allocator_type().deallocate(nullptr, 0)))
+            nullptr) noexcept(std::is_nothrow_destructible<U>::value&& noexcept(allocator_type().deallocate(nullptr,
+                                                                                                            0)))
     {
         std::size_t dtor_iterator = src_size_count;
         while (dtor_iterator > 0)
@@ -799,11 +799,11 @@ private:
     ///
     template <typename U>
     static constexpr void move_and_free(
-        U* const    dst,
-        U* const    src,
-        std::size_t src_len_count,
-        std::size_t src_capacity_count,
-        allocator_type&  alloc,
+        U* const        dst,
+        U* const        src,
+        std::size_t     src_len_count,
+        std::size_t     src_capacity_count,
+        allocator_type& alloc,
         typename std::enable_if<std::is_fundamental<U>::value>::type* =
             nullptr) noexcept(noexcept(fast_deallocate<U>(nullptr, 0, 0, std::declval<allocator_type&>())))
     {
@@ -820,16 +820,19 @@ private:
     ///
     template <typename U>
     static constexpr void move_and_free(
-        U* const    dst,
-        U* const    src,
-        std::size_t src_len_count,
-        std::size_t src_capacity_count,
-        allocator_type&  alloc,
+        U* const        dst,
+        U* const        src,
+        std::size_t     src_len_count,
+        std::size_t     src_capacity_count,
+        allocator_type& alloc,
         typename std::enable_if<!std::is_fundamental<U>::value>::type* = nullptr,
         typename std::enable_if<std::is_move_constructible<U>::value || std::is_copy_constructible<U>::value>::type* =
             nullptr) noexcept((std::is_nothrow_move_constructible<U>::value ||
-                         std::is_nothrow_copy_constructible<
-                             U>::value) && noexcept(fast_deallocate<U>(nullptr, 0, 0, std::declval<allocator_type&>())))
+                               std::is_nothrow_copy_constructible<
+                                   U>::value) && noexcept(fast_deallocate<U>(nullptr,
+                                                                             0,
+                                                                             0,
+                                                                             std::declval<allocator_type&>())))
     {
         if (src_len_count > 0)
         {
