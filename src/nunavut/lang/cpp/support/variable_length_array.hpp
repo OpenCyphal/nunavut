@@ -300,6 +300,10 @@ public:
     {
         return data_;
     }
+    constexpr const_iterator begin() const noexcept
+    {
+        return cbegin();
+    }
 
     ///
     /// Pointer to memory location after the last, valid element. This pointer
@@ -315,6 +319,10 @@ public:
         {
             return &data_[size_];
         }
+    }
+    constexpr const_iterator end() const noexcept
+    {
+        return cend();
     }
 
     ///
@@ -1280,6 +1288,14 @@ public:
     constexpr iterator end() noexcept
     {
         return iterator(*this, size_);
+    }
+    constexpr const_iterator begin() const noexcept
+    {
+        return cbegin();
+    }
+    constexpr const_iterator end() const noexcept
+    {
+        return cend();
     }
 
     ///

@@ -403,6 +403,39 @@ TYPED_TEST(VLATestsNonTrivialCommon, TestPushBackGrowsCapacity)
     ASSERT_EQ(MaxSize, subject.capacity());
 }
 
+TYPED_TEST(VLATestsNonTrivialCommon, TestForEachConstIterators)
+{
+    static constexpr std::size_t                              MaxSize = 9;
+    nunavut::support::VariableLengthArray<TypeParam, MaxSize> subject;
+    auto& const_subject = subject;
+    ASSERT_EQ(0U, const_subject.size());
+    ASSERT_EQ(0U, const_subject.capacity());
+    for (const auto& item: const_subject)  // Requires begin() const, end() const.
+    {
+        (void) item;
+        FAIL();
+    }
+    ASSERT_EQ(0U, const_subject.size());
+    ASSERT_EQ(0U, const_subject.capacity());
+    for (std::size_t i = 0; i < MaxSize; ++i)
+    {
+        ASSERT_EQ(i, const_subject.size());
+        ASSERT_LE(i, const_subject.capacity());
+        subject.push_back(static_cast<TypeParam>(i));
+        ASSERT_EQ(i + 1, const_subject.size());
+        ASSERT_LE(i + 1, const_subject.capacity());
+    }
+    ASSERT_EQ(MaxSize, const_subject.size());
+    ASSERT_EQ(MaxSize, const_subject.capacity());
+    std::size_t i = 0;
+    for (const auto& item : const_subject)  // Requires begin() const, end() const.
+    {
+        ASSERT_EQ(static_cast<TypeParam>(i), item);
+        ++i;
+    }
+    ASSERT_EQ(MaxSize, i);
+}
+
 // +----------------------------------------------------------------------+
 /**
  * Test suite to ensure non-trivial objects are properly handled. This one contains non-generic cases.
