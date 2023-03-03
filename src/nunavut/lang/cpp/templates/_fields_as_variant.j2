@@ -6,7 +6,7 @@
     class VariantType final : public std::variant<
 {%- for field in composite_type.fields_except_padding %}
         {{ field.doc | block_comment('cpp-doxygen', 8, 120) }}
-        {{ field.data_type | declaration }}{% if not loop.last %},{% endif %}
+        _traits_::TypeOf::{{field.name|id}}{% if not loop.last %},{% endif %}
 {%- endfor %}
     >
     {

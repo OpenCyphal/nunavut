@@ -14,49 +14,49 @@
 
 
 static_assert(
-    not regulated::basics::Struct__0_1::IsServiceType,
+    not regulated::basics::Struct__0_1::_traits_::IsServiceType,
     "Regular types are not service types");
 
 static_assert(
-    regulated::basics::Service::Request_0_1::IsServiceType,
+    regulated::basics::Service::Request_0_1::_traits_::IsServiceType,
     "Request is a service type");
 static_assert(
-    regulated::basics::Service::Response_0_1::IsServiceType,
+    regulated::basics::Service::Response_0_1::_traits_::IsServiceType,
     "Response is a service type");
 static_assert(
-    regulated::basics::Service::Service_0_1::IsServiceType,
+    regulated::basics::Service::Service_0_1::_traits_::IsServiceType,
     "Service is a service type");
 
 static_assert(
-    not regulated::basics::Service::Request_0_1::IsService,
+    not regulated::basics::Service::Request_0_1::_traits_::IsService,
     "Request is not a service");
 static_assert(
-    not regulated::basics::Service::Response_0_1::IsService,
+    not regulated::basics::Service::Response_0_1::_traits_::IsService,
     "Response is not a service");
 static_assert(
-    regulated::basics::Service::Service_0_1::IsService,
+    regulated::basics::Service::Service_0_1::_traits_::IsService,
     "Service is a service");
 
 
 static_assert(
-    regulated::basics::Service::Request_0_1::IsRequest,
+    regulated::basics::Service::Request_0_1::_traits_::IsRequest,
     "Request is a request");
 static_assert(
-    not regulated::basics::Service::Response_0_1::IsRequest,
+    not regulated::basics::Service::Response_0_1::_traits_::IsRequest,
     "Response is not a request");
 static_assert(
-    not regulated::basics::Service::Service_0_1::IsRequest,
+    not regulated::basics::Service::Service_0_1::_traits_::IsRequest,
     "Service is not a request");
 
 
 static_assert(
-    not regulated::basics::Service::Request_0_1::IsResponse,
+    not regulated::basics::Service::Request_0_1::_traits_::IsResponse,
     "Request is not a response");
 static_assert(
-    regulated::basics::Service::Response_0_1::IsResponse,
+    regulated::basics::Service::Response_0_1::_traits_::IsResponse,
     "Response is a response");
 static_assert(
-    not regulated::basics::Service::Service_0_1::IsResponse,
+    not regulated::basics::Service::Service_0_1::_traits_::IsResponse,
     "Service is not a response");
 
 
@@ -66,7 +66,7 @@ TEST(Serialization, BasicSerialize) {
     {
         a.value = 1;
         std::fill(std::begin(buffer), std::end(buffer), 0xAA);
-        const auto result = a.serialize(buffer);
+        const auto result = serialize(a, buffer);
         ASSERT_TRUE(result);
         ASSERT_EQ(1U, *result);
         ASSERT_EQ(1U, buffer[0]);
@@ -75,7 +75,7 @@ TEST(Serialization, BasicSerialize) {
     {
         a.value = 0xFF;
         std::fill(std::begin(buffer), std::end(buffer), 0xAA);
-        const auto result = a.serialize(buffer);
+        const auto result = serialize(a, buffer);
         ASSERT_TRUE(result);
         ASSERT_EQ(1U, *result);
         ASSERT_EQ(0x0FU, buffer[0]);
@@ -255,7 +255,7 @@ TEST(Serialization, StructReference)
     uint8_t buf[sizeof(reference)];
     (void) memset(&buf[0], 0x55U, sizeof(buf));  // fill out canaries
 
-    auto result = obj.serialize(buf);
+    auto result = serialize(obj, buf);
     ASSERT_TRUE(result) << "Error is " << static_cast<int>(result.error());
 
     EXPECT_EQ(sizeof(reference) - 16U, result.value());
@@ -319,7 +319,7 @@ TEST(Serialization, StructReference)
     // // Deserialize the above reference representation and compare the result against the original object.
     obj.regulated::basics::Struct__0_1::~Struct__0_1();
     new (&obj)regulated::basics::Struct__0_1();
-    result = obj.deserialize(reference);
+    result = deserialize(obj, reference);
     ASSERT_TRUE(result) << "Error was " << result.error();
     ASSERT_EQ(sizeof(reference) - 16U, result.value());   // 16 trailing bytes implicitly truncated away
 
@@ -358,7 +358,7 @@ TEST(Serialization, StructReference)
     // Repeat the above, but apply implicit zero extension somewhere in the middle.
     obj.regulated::basics::Struct__0_1::~Struct__0_1();
     new (&obj)regulated::basics::Struct__0_1();
-    result = obj.deserialize({reference, 25U, 0U});
+    result = deserialize(obj, {reference, 25U, 0U});
     ASSERT_TRUE(result) << "Error was " << result.error();
     ASSERT_EQ(25U, result.value());   // the returned size shall not exceed the buffer size
 
@@ -436,18 +436,18 @@ TEST(Serialization, Primitive)
         ref.n_f32  = randF32();
         ref.n_f16  = randF16();
 
-        uint8_t buf[regulated::basics::Primitive_0_1::SERIALIZATION_BUFFER_SIZE_BYTES];
+        uint8_t buf[regulated::basics::Primitive_0_1::_traits_::SerializationBufferSizeBytes];
         std::memset(buf, 0, sizeof(buf));
-        auto result = ref.serialize(buf);
+        auto result = serialize(ref, buf);
         ASSERT_TRUE(result) << "Error is " << result.error();
         ASSERT_EQ(
-            static_cast<size_t>(regulated::basics::Primitive_0_1::SERIALIZATION_BUFFER_SIZE_BYTES), result.value());
+            static_cast<size_t>(regulated::basics::Primitive_0_1::_traits_::SerializationBufferSizeBytes), result.value());
 
         regulated::basics::Primitive_0_1 obj;
-        result = obj.deserialize(buf);
+        result = deserialize(obj, buf);
         ASSERT_TRUE(result);
         EXPECT_EQ(
-            static_cast<size_t>(regulated::basics::Primitive_0_1::SERIALIZATION_BUFFER_SIZE_BYTES), result.value());
+            static_cast<size_t>(regulated::basics::Primitive_0_1::_traits_::SerializationBufferSizeBytes), result.value());
         EXPECT_EQ(hex(ref.a_u64)   , hex(obj.a_u64) );
         EXPECT_EQ(hex(ref.a_u32)   , hex(obj.a_u32) );
         EXPECT_EQ(hex(ref.a_u16)   , hex(obj.a_u16) );
@@ -511,14 +511,14 @@ TEST(Serialization, CCppBackAndForth)
         cpp_part.inverter_temperature = randF16();
 
         // We create an empty buffer to hold it's serialized structure:
-        uint8_t buf[regulated::zubax::actuator::esc::Status_0_1::SERIALIZATION_BUFFER_SIZE_BYTES];
+        uint8_t buf[regulated::zubax::actuator::esc::Status_0_1::_traits_::SerializationBufferSizeBytes];
         std::memset(buf, 0, sizeof(buf));
 
         // We serialize structure from C++
-        auto result = cpp_part.serialize(buf);
+        auto result = serialize(cpp_part, buf);
         ASSERT_TRUE(result) << "Error is " << result.error();
         ASSERT_EQ(
-            static_cast<size_t>(regulated::zubax::actuator::esc::Status_0_1::SERIALIZATION_BUFFER_SIZE_BYTES), result.value());
+            static_cast<size_t>(regulated::zubax::actuator::esc::Status_0_1::_traits_::SerializationBufferSizeBytes), result.value());
 
         // And deserialize in C
         regulated_zubax_actuator_esc_Status_0_1 c_parsed;
@@ -557,10 +557,10 @@ TEST(Serialization, CCppBackAndForth)
 
         // And deserialize again in C++
         regulated::zubax::actuator::esc::Status_0_1 cpp_parsed;
-        result = cpp_parsed.deserialize(buf);
+        result = deserialize(cpp_parsed, buf);
         ASSERT_TRUE(result);
         EXPECT_EQ(
-            static_cast<size_t>(regulated::zubax::actuator::esc::Status_0_1::SERIALIZATION_BUFFER_SIZE_BYTES),
+            static_cast<size_t>(regulated::zubax::actuator::esc::Status_0_1::_traits_::SerializationBufferSizeBytes),
             result.value());
 
         // Both C and C++ structures should contain equvalent data
