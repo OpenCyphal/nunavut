@@ -122,7 +122,7 @@ using DefaultAllocatorTypes = ::testing::Types<
     nunavut::support::VariableLengthArray<int, 10>,
     nunavut::support::VariableLengthArray<bool, 10>
 >;
-TYPED_TEST_SUITE(TestDefaultAllocator, DefaultAllocatorTypes);
+TYPED_TEST_SUITE(TestDefaultAllocator, DefaultAllocatorTypes, );
 TYPED_TEST(TestDefaultAllocator, X)
 {
     TypeParam subject;
@@ -154,7 +154,7 @@ using NoThrowAllocatorTypes = ::testing::Types<
     nunavut::support::VariableLengthArray<int, 10, JunkyNoThrowAllocator<int, 10>>,
     nunavut::support::VariableLengthArray<bool, 10, JunkyNoThrowAllocator<bool, 10>>
 >;
-TYPED_TEST_SUITE(TestNoThrowAllocator, NoThrowAllocatorTypes);
+TYPED_TEST_SUITE(TestNoThrowAllocator, NoThrowAllocatorTypes, );
 TYPED_TEST(TestNoThrowAllocator, X)
 {
     TypeParam subject;
@@ -187,7 +187,7 @@ using ThrowingAllocatorTypes = ::testing::Types<
     nunavut::support::VariableLengthArray<int, 10, JunkyThrowingAllocator<int, 10>>,
     nunavut::support::VariableLengthArray<bool, 10, JunkyThrowingAllocator<int, 10>>
 >;
-TYPED_TEST_SUITE(TestThrowingAllocator, ThrowingAllocatorTypes);
+TYPED_TEST_SUITE(TestThrowingAllocator, ThrowingAllocatorTypes, );
 TYPED_TEST(TestThrowingAllocator, X)
 {
     TypeParam subject;
