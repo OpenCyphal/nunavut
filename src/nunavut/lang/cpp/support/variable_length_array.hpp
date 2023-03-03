@@ -856,7 +856,7 @@ template <typename T, std::size_t MaxSize, typename Allocator>
 const std::size_t VariableLengthArray<T, MaxSize, Allocator>::type_max_size;
 
 ///
-/// A memory-optimized specialization for bool storing CHAT_BIT bits per byte;
+/// A memory-optimized specialization for bool storing 8 bits per byte;
 /// the internal bit ordering follows the Cyphal DSDL specification.
 /// Some features are not supported.
 ///
