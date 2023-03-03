@@ -18,7 +18,9 @@
                 "/System/Library/Frameworks",
                 "/Library/Frameworks"
             ],
-            "defines": ["NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY=1"],
+            "defines": [
+                "NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY=1"
+            ],
             "compileCommands": "${workspaceFolder}/.vscode/compile_commands.json",
             "configurationProvider": "ms-vscode.cmake-tools",
             "cStandard": "c11",
@@ -87,7 +89,7 @@
         },
         {
             "name": "Linux-cpp",
-            "intelliSenseMode": "gcc-x64",
+            "intelliSenseMode": "linux-gcc-x64",
             "includePath": [
                 "${workspaceFolder}/submodules/googletest/googlemock/include",
                 "${workspaceFolder}/submodules/unity/src",
