@@ -871,26 +871,23 @@ public:
     using size_type       = std::size_t;
     using allocator_type  = typename std::allocator_traits<Allocator>::template rebind_alloc<Storage>;
 
-private:
-    // The reference does not need to be copyable because URVO will elide the copy.
-    template <typename A>
-    class ReferenceImpl final
+    class reference final
     {
     public:
-        ReferenceImpl(const ReferenceImpl&) = default;
-        ReferenceImpl(ReferenceImpl&&)      = default;
-        ~ReferenceImpl()                    = default;
+        reference(const reference&) = default;
+        reference(reference&&)      = default;
+        ~reference()                = default;
 
-        ReferenceImpl& operator=(const bool x)
+        reference& operator=(const bool x)
         {
             array_.set(index_, x);
             return *this;
         }
-        ReferenceImpl& operator=(const ReferenceImpl& x)
+        reference& operator=(const reference& x)
         {
             return this->operator=(static_cast<bool>(x));
         }
-        ReferenceImpl& operator=(ReferenceImpl&& x)
+        reference& operator=(reference&& x)
         {
             return this->operator=(static_cast<bool>(x));
         }
@@ -904,11 +901,11 @@ private:
             return array_.test(index_);
         }
 
-        bool operator==(const ReferenceImpl& rhs) const
+        bool operator==(const reference& rhs) const
         {
             return static_cast<bool>(*this) == static_cast<bool>(rhs);
         }
-        bool operator!=(const ReferenceImpl& rhs) const
+        bool operator!=(const reference& rhs) const
         {
             return !((*this) == rhs);
         }
@@ -916,16 +913,19 @@ private:
     private:
         friend class VariableLengthArray;
 
-        ReferenceImpl(A& array, const size_type index) noexcept
+        reference(VariableLengthArray& array, const size_type index) noexcept
             : array_(array)
             , index_(index)
         {
         }
 
-        A&              array_;
-        const size_type index_;
+        // The reference does not need to be copyable because URVO will elide the copy.
+        VariableLengthArray& array_;
+        const size_type      index_;
     };
+    using const_reference = bool;
 
+private:
     template <typename A>
     class IteratorImpl final
     {
@@ -933,8 +933,8 @@ private:
         using iterator_category = std::random_access_iterator_tag;
         using value_type        = typename A::value_type;
         using difference_type   = typename A::difference_type;
-        using reference         = ReferenceImpl<A>;
-        using const_reference   = ReferenceImpl<const A>;
+        using reference         = typename A::reference;
+        using const_reference   = typename A::const_reference;
         using pointer           = void;
 
         IteratorImpl() noexcept = default;
@@ -985,7 +985,11 @@ private:
             return static_cast<difference_type>(index_) - static_cast<difference_type>(other.index_);
         }
 
-        reference operator*()
+        ///
+        /// The return type may be either a reference or const_reference depending on whether this iterator is const
+        /// or mutable.
+        ///
+        auto operator*() -> decltype(std::declval<A>()[0])
         {
             return this->operator[](0);
         }
@@ -993,7 +997,12 @@ private:
         {
             return this->operator[](0);
         }
-        reference operator[](const difference_type n)
+
+        ///
+        /// The return type may be either a reference or const_reference depending on whether this iterator is const
+        /// or mutable.
+        ///
+        auto operator[](const difference_type n) -> decltype(std::declval<A>()[n])
         {
             return array_->operator[](static_cast<size_type>(static_cast<difference_type>(index_) + n));
         }
@@ -1041,9 +1050,6 @@ private:
     };
 
 public:
-    using reference       = ReferenceImpl<VariableLengthArray>;
-    using const_reference = ReferenceImpl<const VariableLengthArray>;
-
     using iterator       = IteratorImpl<VariableLengthArray>;
     using const_iterator = IteratorImpl<const VariableLengthArray>;
 
@@ -1268,23 +1274,27 @@ public:
     }
 
     ///
+    /// This is an alias for {@code test}.
+    ///
+    constexpr bool operator[](const size_type pos) const noexcept
+    {
+        return test(pos);
+    }
+
+    ///
     /// If {@code pos} is > {@code size} the behavior is undefined.
     /// The returned reference is valid while this object is unless {@code reserve} or {@code shrink_to_fit} is called.
     ///
-    constexpr const_reference operator[](const size_type pos) const noexcept
-    {
-        return const_reference(*this, pos);
-    }
     constexpr reference operator[](const size_type pos) noexcept
     {
         return reference(*this, pos);
     }
 
     ///
-    /// Safe, const access to an element. Throws std::out_of_range if {@code pos} is >= {@code size}.
+    /// Throws std::out_of_range if {@code pos} is >= {@code size}; calls std::abort() if exceptions are not enabled.
     /// The returned reference is valid while this object is unless {@code reserve} or {@code shrink_to_fit} is called.
     ///
-    constexpr const_reference at(const size_type pos) const
+    constexpr bool at(const size_type pos) const
     {
         if (pos >= size_)
         {
@@ -1294,7 +1304,7 @@ public:
             std::abort();
 #endif
         }
-        return this->operator[](pos);
+        return test(pos);
     }
     constexpr reference at(const size_type pos)
     {
