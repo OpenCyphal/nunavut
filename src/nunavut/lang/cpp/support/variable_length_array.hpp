@@ -910,6 +910,11 @@ public:
             return !((*this) == rhs);
         }
 
+        void flip()
+        {
+            array_.set(index_, !array_.test(index_));
+        }
+
     private:
         friend class VariableLengthArray;
 

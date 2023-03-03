@@ -511,6 +511,13 @@ TEST(VLATestsNonTrivialSpecific, TestBoolIterator)
     b[5] = false;
     ASSERT_EQ(true, *a);
     ASSERT_EQ(false, b[5]);
+    // Flip bit.
+    ASSERT_EQ(false, a[7]);
+    ASSERT_EQ(true, foo[7]);
+    a[7].flip();
+    foo[7].flip();
+    ASSERT_EQ(true, a[7]);
+    ASSERT_EQ(false, foo[7]);
     // Check the final state.
     ASSERT_EQ(10, foo.size());
     ASSERT_EQ(10, foo.capacity());
@@ -521,12 +528,12 @@ TEST(VLATestsNonTrivialSpecific, TestBoolIterator)
     ASSERT_EQ(true, foo.at(4));
     ASSERT_EQ(false, foo.at(5));
     ASSERT_EQ(false, foo.at(6));
-    ASSERT_EQ(true, foo.at(7));
+    ASSERT_EQ(false, foo.at(7));
     ASSERT_EQ(true, foo.at(8));
-    ASSERT_EQ(false, foo.at(9));
+    ASSERT_EQ(true, foo.at(9));
     // Constant iterators.
     ASSERT_EQ(false, *foo.cbegin());
-    ASSERT_EQ(false, *(foo.cend() - 1));
+    ASSERT_EQ(true, *(foo.cend() - 1));
     ASSERT_EQ(true, foo.cbegin()[2]);
 }
 
