@@ -28,6 +28,9 @@
 // +-------------------------------------------------------------------------------------------------------------------+
 {% endifuses -%}
 {{ composite_type.doc | block_comment('cpp-doxygen', 0, 120) }}
+{% if composite_type.deprecated -%}
+[[deprecated("{{ composite_type }} is reaching the end of its life; there may be a newer version available"))]]
+{% endif -%}
 {{ composite_type | definition_begin }} final
 {
     // +---------------------------------------------------------------------------------------------------------------+
