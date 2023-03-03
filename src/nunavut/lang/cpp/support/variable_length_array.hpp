@@ -1249,7 +1249,7 @@ public:
             const auto idx = split_index(pos);
             if (value)
             {
-                data_[idx.first] = data_[idx.first] | (1U << idx.second);
+                data_[idx.first] = static_cast<Storage>(data_[idx.first] | (1U << idx.second));
             }
             else
             {
@@ -1547,7 +1547,8 @@ private:
     {
         if (size_ < capacity_)
         {
-            reference(*this, size_++) = value;
+            const size_type index = size_++;
+            set(index, value);
             return true;
         }
         return false;
