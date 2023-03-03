@@ -1402,7 +1402,6 @@ public:
                 move_and_free(new_data, data_, size_, capacity_, alloc_);
             }  // else the allocator was able to simply extend the reserved area for the same memory pointer.
             data_ = new_data;
-            assert(no_shrink_capacity <= type_max_size);
             capacity_ = no_shrink_capacity;
         }
         return capacity_;
