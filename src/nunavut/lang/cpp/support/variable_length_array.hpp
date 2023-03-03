@@ -877,6 +877,10 @@ private:
     class ReferenceImpl final
     {
     public:
+        ReferenceImpl(const ReferenceImpl&) = default;
+        ReferenceImpl(ReferenceImpl&&)      = default;
+        ~ReferenceImpl()                    = default;
+
         ReferenceImpl& operator=(const bool x)
         {
             array_.set(index_, x);
@@ -884,8 +888,11 @@ private:
         }
         ReferenceImpl& operator=(const ReferenceImpl& x)
         {
-            array_.set(index_, x);
-            return *this;
+            return this->operator=(static_cast<bool>(x));
+        }
+        ReferenceImpl& operator=(ReferenceImpl&& x)
+        {
+            return this->operator=(static_cast<bool>(x));
         }
 
         bool operator~() const
