@@ -274,7 +274,6 @@ class CodeGenEnvironment(Environment):
         is_dryrun: bool = False,
         omit_serialization_support: bool = False,
     ) -> None:
-
         nunavut_namespace = self.nunavut_global
 
         setattr(
@@ -498,7 +497,6 @@ class CodeGenEnvironment(Environment):
             )
 
     def _update_language_support(self, lctx: LanguageContext) -> None:
-
         supported_languages = lctx.get_supported_languages()
         target_language = lctx.get_target_language()
         ln_globals = self.globals["ln"]

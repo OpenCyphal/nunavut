@@ -356,7 +356,6 @@ class LanguageContextBuilder:
         return languages
 
     def _resolve_target_language(self, explicit_value: typing.Optional[str]) -> str:
-
         if explicit_value is not None:
             return explicit_value
 

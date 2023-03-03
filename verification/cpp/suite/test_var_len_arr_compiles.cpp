@@ -13,6 +13,7 @@ class JunkyNoThrowAllocator
 {
 public:
     using value_type = T;
+    template <typename U> struct rebind final { using other = JunkyNoThrowAllocator<U, SizeCount>; };
 
     JunkyNoThrowAllocator() noexcept
         : data_()
@@ -58,6 +59,7 @@ class JunkyThrowingAllocator
 {
 public:
     using value_type = T;
+    template <typename U> struct rebind final { using other = JunkyThrowingAllocator<U, SizeCount>; };
 
     JunkyThrowingAllocator()
         : data_()
@@ -112,9 +114,18 @@ struct NotThrowyThing
     NotThrowyThing(NotThrowyThing&&) noexcept {}
 };
 
-TEST(VLATestsStatic, TestDefaultAllocator)
+// ---------------------------------------------------------------------------------------------------------------------
+
+template <class T>
+class TestDefaultAllocator : public testing::Test { };
+using DefaultAllocatorTypes = ::testing::Types<
+    nunavut::support::VariableLengthArray<int, 10>,
+    nunavut::support::VariableLengthArray<bool, 10>
+>;
+TYPED_TEST_SUITE(TestDefaultAllocator, DefaultAllocatorTypes, );
+TYPED_TEST(TestDefaultAllocator, X)
 {
-    nunavut::support::VariableLengthArray<int, 10> subject;
+    TypeParam subject;
 
     static_assert(std::is_nothrow_default_constructible<decltype(subject)>::value,
                   "VariableLengthArray's default allocator must be no-throw default constructible");
@@ -135,9 +146,18 @@ TEST(VLATestsStatic, TestDefaultAllocator)
     ASSERT_EQ(0U, subject.size());
 }
 
-TEST(VLATestsStatic, TestNoThrowAllocator)
+// ---------------------------------------------------------------------------------------------------------------------
+
+template <class T>
+class TestNoThrowAllocator : public testing::Test { };
+using NoThrowAllocatorTypes = ::testing::Types<
+    nunavut::support::VariableLengthArray<int, 10, JunkyNoThrowAllocator<int, 10>>,
+    nunavut::support::VariableLengthArray<bool, 10, JunkyNoThrowAllocator<bool, 10>>
+>;
+TYPED_TEST_SUITE(TestNoThrowAllocator, NoThrowAllocatorTypes, );
+TYPED_TEST(TestNoThrowAllocator, X)
 {
-    nunavut::support::VariableLengthArray<int, 10, JunkyNoThrowAllocator<int, 10>> subject;
+    TypeParam subject;
 
     static_assert(std::is_nothrow_default_constructible<decltype(subject)>::value,
                   "VariableLengthArray must be no-throw default constructible if the allocator is.");
@@ -159,9 +179,18 @@ TEST(VLATestsStatic, TestNoThrowAllocator)
     ASSERT_EQ(0U, subject.size());
 }
 
-TEST(VLATestsStatic, TestThrowingAllocator)
+// ---------------------------------------------------------------------------------------------------------------------
+
+template <class T>
+class TestThrowingAllocator : public testing::Test { };
+using ThrowingAllocatorTypes = ::testing::Types<
+    nunavut::support::VariableLengthArray<int, 10, JunkyThrowingAllocator<int, 10>>,
+    nunavut::support::VariableLengthArray<bool, 10, JunkyThrowingAllocator<int, 10>>
+>;
+TYPED_TEST_SUITE(TestThrowingAllocator, ThrowingAllocatorTypes, );
+TYPED_TEST(TestThrowingAllocator, X)
 {
-    nunavut::support::VariableLengthArray<int, 10, JunkyThrowingAllocator<int, 10>> subject;
+    TypeParam subject;
 
     static_assert(std::is_default_constructible<decltype(subject)>::value &&
                       !std::is_nothrow_default_constructible<decltype(subject)>::value,
@@ -185,7 +214,9 @@ TEST(VLATestsStatic, TestThrowingAllocator)
     ASSERT_EQ(0U, subject.size());
 }
 
-TEST(VLATestsStatic, TestNotThrowingCopyCtor)
+// ---------------------------------------------------------------------------------------------------------------------
+
+TEST(ValueThrowing, TestNotThrowingCopyCtor)
 {
     using nothrowy_type =
         nunavut::support::VariableLengthArray<NotThrowyThing, 10, JunkyNoThrowAllocator<NotThrowyThing, 10>>;
@@ -199,7 +230,7 @@ TEST(VLATestsStatic, TestNotThrowingCopyCtor)
                   "the value type doesn't.");
 }
 
-TEST(VLATestsStatic, TestThrowingCopyCtor)
+TEST(ValueThrowing, TestThrowingCopyCtor)
 {
     using throwy_type = nunavut::support::VariableLengthArray<ThrowyThing, 10, JunkyThrowingAllocator<ThrowyThing, 10>>;
     static_assert(!noexcept(throwy_type(std::declval<std::add_lvalue_reference<throwy_type>::type>())),

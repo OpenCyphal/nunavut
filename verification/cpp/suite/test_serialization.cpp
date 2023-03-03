@@ -484,6 +484,7 @@ TEST(Serialization, Primitive)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
 #include "regulated/zubax/actuator/esc/Status_0_1.h"
 #pragma GCC diagnostic pop
 
@@ -495,12 +496,12 @@ TEST(Serialization, CCppBackAndForth)
         // We first create a real-world structure with random data:
         regulated::zubax::actuator::esc::Status_0_1 cpp_part;
         cpp_part.index = randI8() & 0x3F;
-        cpp_part.demand_factor = randI8();
+        cpp_part.demand_factor = randU8();
         cpp_part.dc_voltage_warning = randI8() & 0x1;
         cpp_part.overload_warning = randI8() & 0x1;
         cpp_part.motor_temperature_warning = randI8() & 0x1;
         cpp_part.inverter_temperature_warning = randI8() & 0x1;
-        cpp_part.error_count = randI32();
+        cpp_part.error_count = randU32();
         cpp_part.motor_mechanical_angular_velocity.radian_per_second = randF32();
         cpp_part.motor_torque.newton_meter = randF32();
         cpp_part.motor_electrical_frequency.hertz = randF32();

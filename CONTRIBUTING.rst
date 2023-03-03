@@ -265,6 +265,8 @@ In the list of targets that the :code:`cmake --build . --target help` command li
 will be prefixed with :code:`test_` and the psedo-target that also executes the test will be prefixed with
 :code:`run_test_`. You should avoid the :code:`_with_lcov` when you are manually building tests.
 
+To obtain coverage information for the verification suite (not the Python code),
+build the `cov_all` target and inspect the output under the `coverage` directory.
 
 cmake build options
 ------------------------------------------------

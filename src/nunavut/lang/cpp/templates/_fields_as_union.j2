@@ -16,7 +16,7 @@
         } internal_union_value_;
 
     public:
-        static const constexpr std::size_t variant_npos = -1;
+        static const constexpr std::size_t variant_npos = std::numeric_limits<std::size_t>::max();
 
         VariantType()
             : tag_(0)
