@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>  // For floating-point array comparison.
 #include <type_traits>
 #include <memory>
 #include <limits>
