@@ -31,7 +31,7 @@
 {% if composite_type.deprecated -%}
 [[deprecated("{{ composite_type }} is reaching the end of its life; there may be a newer version available"))]]
 {% endif -%}
-{{ composite_type | definition_begin }} final
+struct {{composite_type|short_reference_name}} final
 {
     struct _traits_  // The name is surrounded with underscores to avoid collisions with DSDL attributes.
     {
@@ -127,7 +127,7 @@
 {%- else -%}
 {% include '_fields.j2' %}
 {%- endif %}
-}{{ composite_type | definition_end }}
+};
 
 {% if not nunavut.support.omit %}
 inline nunavut::support::SerializeResult serialize(const {{composite_type|short_reference_name}}& obj,

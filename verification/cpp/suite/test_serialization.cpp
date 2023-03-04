@@ -18,45 +18,45 @@ static_assert(
     "Regular types are not service types");
 
 static_assert(
-    regulated::basics::Service::Request_0_1::_traits_::IsServiceType,
+    regulated::basics::Service_0_1::Request::_traits_::IsServiceType,
     "Request is a service type");
 static_assert(
-    regulated::basics::Service::Response_0_1::_traits_::IsServiceType,
+    regulated::basics::Service_0_1::Response::_traits_::IsServiceType,
     "Response is a service type");
 static_assert(
-    regulated::basics::Service::Service_0_1::_traits_::IsServiceType,
+    regulated::basics::Service_0_1::_traits_::IsServiceType,
     "Service is a service type");
 
 static_assert(
-    not regulated::basics::Service::Request_0_1::_traits_::IsService,
+    not regulated::basics::Service_0_1::Request::_traits_::IsService,
     "Request is not a service");
 static_assert(
-    not regulated::basics::Service::Response_0_1::_traits_::IsService,
+    not regulated::basics::Service_0_1::Response::_traits_::IsService,
     "Response is not a service");
 static_assert(
-    regulated::basics::Service::Service_0_1::_traits_::IsService,
+    regulated::basics::Service_0_1::_traits_::IsService,
     "Service is a service");
 
 
 static_assert(
-    regulated::basics::Service::Request_0_1::_traits_::IsRequest,
+    regulated::basics::Service_0_1::Request::_traits_::IsRequest,
     "Request is a request");
 static_assert(
-    not regulated::basics::Service::Response_0_1::_traits_::IsRequest,
+    not regulated::basics::Service_0_1::Response::_traits_::IsRequest,
     "Response is not a request");
 static_assert(
-    not regulated::basics::Service::Service_0_1::_traits_::IsRequest,
+    not regulated::basics::Service_0_1::_traits_::IsRequest,
     "Service is not a request");
 
 
 static_assert(
-    not regulated::basics::Service::Request_0_1::_traits_::IsResponse,
+    not regulated::basics::Service_0_1::Request::_traits_::IsResponse,
     "Request is not a response");
 static_assert(
-    regulated::basics::Service::Response_0_1::_traits_::IsResponse,
+    regulated::basics::Service_0_1::Response::_traits_::IsResponse,
     "Response is a response");
 static_assert(
-    not regulated::basics::Service::Service_0_1::_traits_::IsResponse,
+    not regulated::basics::Service_0_1::_traits_::IsResponse,
     "Service is not a response");
 
 
