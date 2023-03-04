@@ -5,17 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: nnvg",
+            "name": "Python: nnvg c++",
             "type": "python",
             "request": "launch",
-            "program": "nnvg",
+            "module": "nunavut",
             "cwd": "${workspaceFolder}/src",
-            "args": ["--templates", "${workspaceFolder}/test/gentest_dsdl/templates",
-                     "--generate-namespace-types",
+            "args": ["--experimental-languages",
                      "--verbose",
                      "--outdir", "${workspaceFolder}/nunavut_out",
-                     "-l", "c",
-                     "${workspaceFolder}/test/gentest_dsdl/dsdl/uavcan"]
+                     "-l", "cpp",
+                     "${workspaceFolder}/submodules/public_regulated_data_types/uavcan"]
         },
         {
             "name": "Pytest: current test",
