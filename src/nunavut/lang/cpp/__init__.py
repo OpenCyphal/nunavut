@@ -1543,7 +1543,10 @@ def _make_block_comment(text: str, prefix: str, comment: str, suffix: str, inden
     tw = _make_textwrap(width=line_length, initial_indent=indented_comment, subseqent_indent=indented_comment)
 
     for docline in doc_lines:
-        commented_doc_lines.extend(tw.wrap(docline))
+        # The docs for textwrap.TextWrapper.wrap say:
+        # "If the wrapped output has no content, the returned list is empty."
+        # This behavior cannot be altered so we need to work around it manually.
+        commented_doc_lines.extend(tw.wrap(docline) if docline.strip() else [indented_comment])
 
     if len(suffix) > 0 and len(commented_doc_lines) > 0:
         commented_doc_lines.append("{}{}".format(" " * indent, suffix))
