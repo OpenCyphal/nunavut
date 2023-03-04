@@ -116,12 +116,11 @@ using const_bytespan = span<const {{ typename_byte }}> ;
 /// (128 is not used). Error code 1 is currently also not used to avoid conflicts with 3rd-party software.
 enum class Error{
     // API usage errors:
-    SERIALIZATION_INVALID_ARGUMENT = 2,
-    SERIALIZATION_BUFFER_TOO_SMALL = 3,
+    SerializationBufferTooSmall = 3,
     // Invalid representation (caused by bad input data, not API misuse):
-    REPRESENTATION_BAD_ARRAY_LENGTH=10,
-    REPRESENTATION_BAD_UNION_TAG=11,
-    REPRESENTATION_BAD_DELIMITER_HEADER=12
+    SerializationBadArrayLength=10,
+    RepresentationBadUnionTag=11,
+    RepresentationBadDelimiterHeader=12
 };
 
 
@@ -576,7 +575,7 @@ public:
 
 inline VoidResult bitspan::setZeros({{ typename_unsigned_bit_length }} length){
     if(length > size()){
-        return -Error::SERIALIZATION_BUFFER_TOO_SMALL;
+        return -Error::SerializationBufferTooSmall;
     }
     if(length == 0){
         return {};
@@ -614,12 +613,12 @@ inline Result<bitspan> bitspan::subspan({# -#}
     const {{ typename_unsigned_length }} new_offset_bits = offset_bits % 8U;
     {{ assert('offset_bytes * 8U <= offset_bits') }}
     if(offset_bytes > data_.size()){
-        return -Error::SERIALIZATION_BUFFER_TOO_SMALL;
+        return -Error::SerializationBufferTooSmall;
     }
     const {{ typename_unsigned_length }} new_size_bits = new_offset_bits + size_bits;
     const {{ typename_unsigned_length }} size_available_bits = (data_.size() - offset_bytes) * 8U;
     if(new_size_bits > size_available_bits){
-        return -Error::SERIALIZATION_BUFFER_TOO_SMALL;
+        return -Error::SerializationBufferTooSmall;
     }
     const {{ typename_unsigned_length }} new_size_bytes = new_size_bits / 8U;
     return bitspan( data_.data() + offset_bytes, new_size_bytes, new_offset_bits);
@@ -739,7 +738,7 @@ inline VoidResult bitspan::setBit(const bool value)
 {
     if ((data_.size() * 8U) <= offset_bits_)
     {
-        return -Error::SERIALIZATION_BUFFER_TOO_SMALL;
+        return -Error::SerializationBufferTooSmall;
     }
     const uint8_t val = value ? 1U : 0U;
     const_bitspan{ &val, 1U }.copyTo(*this, 1U);
@@ -751,7 +750,7 @@ inline VoidResult bitspan::setUxx(const uint64_t value, const uint8_t len_bits)
     static_assert(64U == (sizeof(uint64_t) * 8U), "Unexpected size of uint64_t");
     if ((data_.size() * 8) < (offset_bits_ + len_bits))
     {
-        return -Error::SERIALIZATION_BUFFER_TOO_SMALL;
+        return -Error::SerializationBufferTooSmall;
     }
     const {{ typename_unsigned_bit_length }} saturated_len_bits = std::min<{{ typename_unsigned_bit_length }}>({# -#}
         len_bits, 64U);

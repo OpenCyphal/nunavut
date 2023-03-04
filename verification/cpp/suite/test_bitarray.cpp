@@ -89,7 +89,7 @@ TEST(BitSpan, Subspan)
 
     res = sp.subspan(0U, 32U);
     ASSERT_FALSE(res);
-    ASSERT_EQ(nunavut::support::Error::SERIALIZATION_BUFFER_TOO_SMALL, res.error());
+    ASSERT_EQ(nunavut::support::Error::SerializationBufferTooSmall, res.error());
 }
 
 TEST(BitSpan, AlignedPtr) {
@@ -337,7 +337,7 @@ TEST(BitSpan, SetIxx_bufferOverflow)
     ASSERT_EQ(0xAA, buffer[2]);
     rc = nunavut::support::bitspan{buffer, 2U, 2U*8U}.setIxx(0xAA, 8);
     ASSERT_FALSE(rc);
-    ASSERT_EQ(nunavut::support::Error::SERIALIZATION_BUFFER_TOO_SMALL, rc.error());
+    ASSERT_EQ(nunavut::support::Error::SerializationBufferTooSmall, rc.error());
     ASSERT_EQ(0xAA, buffer[2]);
 }
 
@@ -370,7 +370,7 @@ TEST(BitSpan, SetBit_bufferOverflow)
     auto res = nunavut::support::bitspan{buffer, 1U, 8}.setBit(true);
 
     ASSERT_FALSE(res.has_value());
-    ASSERT_EQ(nunavut::support::Error::SERIALIZATION_BUFFER_TOO_SMALL, res.error());
+    ASSERT_EQ(nunavut::support::Error::SerializationBufferTooSmall, res.error());
     ASSERT_EQ(0x00, buffer[1]);
 }
 

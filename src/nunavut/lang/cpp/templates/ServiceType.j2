@@ -13,13 +13,18 @@
 {% set composite_type = T.response_type %}{% include '_composite_type.j2' %}
 
 struct {{ 'Service_%s_%s' | format(T.version.major, T.version.minor) }} {
-    static constexpr bool IsServiceType = true;
-    static constexpr bool IsService = true;
-    static constexpr bool IsRequest = false;
-    static constexpr bool IsResponse = false;
+    struct _traits_
+    {
+        _traits_() = delete;
 
-    using Request = {{ T.request_type | short_reference_name }};
-    using Response = {{ T.response_type | short_reference_name }};
+        static constexpr bool IsServiceType = true;
+        static constexpr bool IsService = true;
+        static constexpr bool IsRequest = false;
+        static constexpr bool IsResponse = false;
+
+        using Request = {{ T.request_type | short_reference_name }};
+        using Response = {{ T.response_type | short_reference_name }};
+    };
 };
 
 }{{ T | definition_end }}
