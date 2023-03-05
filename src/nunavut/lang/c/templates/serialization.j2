@@ -84,7 +84,7 @@
     {{ assert('offset_bits - ini_offset_bits == %sULL'|format(t.inner_type.bit_length_set.max)) }}
 {% endif %}
     {{ assert('offset_bits % 8U == 0U') }}
-    *inout_buffer_size_chars = ({{ typename_unsigned_length }}) (offset_bits + (CHAR_BIT-1U)) / CHAR_BIT);
+    *inout_buffer_size_chars = ({{ typename_unsigned_length }}) ((offset_bits + (CHAR_BIT-1U)) / CHAR_BIT);
 {% endmacro %}
 
 
@@ -464,6 +464,7 @@
             offset_bits += {{ t.element_type.bit_length }}U;
         }
     }
+    #endif
 
 {# GENERAL CASE #}
 {% else %}

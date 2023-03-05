@@ -97,7 +97,7 @@ def run_nnvg(request):  # type: ignore
             this_env.update(env)
         try:
             return subprocess.run(
-                coverage_args + args, check=check_result, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=this_env
+                coverage_args + args, check=check_result, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=this_env, shell=True
             )
         except subprocess.CalledProcessError as e:
             if raise_called_process_error:
