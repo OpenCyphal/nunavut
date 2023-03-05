@@ -5,14 +5,23 @@
 -#}
 {%- extends "base.j2" %}
 {%- block object -%}
-{{ T | definition_begin }}
+namespace {{T|short_reference_name}}
 {
 
 {% set composite_type = T.request_type %}{% include '_composite_type.j2' %}
 
 {% set composite_type = T.response_type %}{% include '_composite_type.j2' %}
 
-struct {{ 'Service_%s_%s' | format(T.version.major, T.version.minor) }} {
+}  // namespace {{T|short_reference_name}}
+
+{% set service_name = '%s_%s_%s' | format(T|short_reference_name, T.version.major, T.version.minor) -%}
+struct {{service_name}}
+{
+    {{service_name}}() = delete;
+
+    using Request  = {{T|short_reference_name}}::{{ T.request_type | short_reference_name }};
+    using Response = {{T|short_reference_name}}::{{ T.response_type | short_reference_name }};
+
     struct _traits_
     {
         _traits_() = delete;
@@ -21,11 +30,7 @@ struct {{ 'Service_%s_%s' | format(T.version.major, T.version.minor) }} {
         static constexpr bool IsService = true;
         static constexpr bool IsRequest = false;
         static constexpr bool IsResponse = false;
-
-        using Request = {{ T.request_type | short_reference_name }};
-        using Response = {{ T.response_type | short_reference_name }};
     };
 };
 
-}{{ T | definition_end }}
 {%- endblock -%}
