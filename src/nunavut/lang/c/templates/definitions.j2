@@ -14,17 +14,17 @@
 {% endif %}
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
-{% macro generate_metadata(t) %}
-{%- set ref = t | full_reference_name %}
+{% macro generate_metadata(t) -%}
+// +-------------------------------------------------------------------------------------------------------------------+
+// | {{ t }}
+// +-------------------------------------------------------------------------------------------------------------------+
+{%- set ref =t|full_reference_name%}
 #define {{ ref }}_FULL_NAME_             "{{ t.full_name }}"
 #define {{ ref }}_FULL_NAME_AND_VERSION_ "{{ t.full_name }}.{{ t.version.major }}.{{ t.version.minor }}"
-{% endmacro %}
-
-{# ----------------------------------------------------------------------------------------------------------------- #}
-{% macro generate_composite(t) %}
-{{ generate_metadata(t) }}
+{%- if t is not ServiceType %}
 {%- assert t.extent % 8 == 0 %}
 {%- assert t.inner_type.extent % 8 == 0 %}
+
 /// Extent is the minimum amount of memory required to hold any serialized representation of any compatible
 /// version of the data type; or, on other words, it is the the maximum possible size of received objects of this type.
 /// The size is specified in bytes (rather than bits) because by definition, extent is an integer number of bytes long.
@@ -32,17 +32,23 @@
 /// When allocating a serialization (TX) buffer, it is safe to use the size of the largest serialized representation
 /// instead of the extent because it provides a tighter bound of the object size; it is safe because the concrete type
 /// is always known during serialization (unlike deserialization). If not sure, use extent everywhere.
-#define {{ t | full_reference_name }}_EXTENT_BYTES_                    {{ t.extent // 8 }}UL
-#define {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_ {{ t.inner_type.extent // 8 }}UL
-static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
-              {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_,
+#define {{ ref }}_EXTENT_BYTES_                    {{ t.extent // 8 }}UL
+#define {{ ref }}_SERIALIZATION_BUFFER_SIZE_BYTES_ {{ t.inner_type.extent // 8 }}UL
+static_assert({{ ref }}_EXTENT_BYTES_ >= {{ ref }}_SERIALIZATION_BUFFER_SIZE_BYTES_,
               "Internal constraint violation");
+{%- endif %}
+{% endmacro %}
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro generate_composite(t) %}
+{{ generate_metadata(t) }}
 
 {%- for constant in t.constants %}
 
 /// {{ constant }}
 #define {{ t | full_reference_name }}_{{ constant.name }} ({{ constant | constant_value }})
 {%- endfor %}
+
 {%- for f in t.fields_except_padding if f.data_type is ArrayType %}
 
 /// Array metadata for: {{ f }}
@@ -61,18 +67,11 @@ static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
 #define {{ t | full_reference_name }}_{{ f.name }}_ARRAY_IS_VARIABLE_LENGTH_ {# -#}
         {{ valuetoken_true if f.data_type is VariableLengthArrayType else valuetoken_false }}
 {%- endfor %}
-{%- if t.inner_type is UnionType %}
-
-/// The number of fields in the union. Valid tag values range from zero to this value minus one, inclusive.
-#define {{ t | full_reference_name }}_UNION_OPTION_COUNT_ {{ t.fields | length }}U
-{%- endif %}
 
 {%- if t.inner_type is StructureType %}
 {{ _define_structure(t.inner_type) }}
-
 {%- elif t.inner_type is UnionType %}
 {{ _define_union(t.inner_type) }}
-
 {%- else %}{% assert False %}{# Not a valid composite type. #}
 {%- endif %}
 
@@ -124,6 +123,9 @@ typedef struct
     };
     {{ t.tag_field_type | type_from_primitive }} _tag_;
 } {{ t | full_reference_name }};
+
+/// The number of fields in the union. Valid tag values range from zero to this value minus one, inclusive.
+#define {{ t | full_reference_name }}_UNION_OPTION_COUNT_ {{ t.fields | length }}U
 {% endmacro %}
 
 
