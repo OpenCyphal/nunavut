@@ -20,11 +20,11 @@
     {
         buffer = (const {{ typename_byte }}*)"";
     }
-{% if t.inner_type.bit_length_set.max > 0 %}
-    {{ _deserialize_impl(t) }}
-{% else %}
+{%- if t.inner_type.bit_length_set.max > 0 %}
+    {{ _deserialize_impl(t)|remove_blank_lines }}
+{%- else %}
     *inout_buffer_size_bytes = 0U;
-{% endif %}
+{%- endif %}
     return NUNAVUT_SUCCESS;
 {% endmacro %}
 
@@ -42,16 +42,16 @@
     {{ _pad_to_alignment(f.data_type.alignment_requirement) }}
         {% endif %}
     // {{ f }}
-    {{ _deserialize_any(f.data_type, 'out_obj->' + (f|id), offset)|trim|remove_blank_lines }}
+    {{ _deserialize_any(f.data_type, 'out_obj->' + (f|id), offset)|trim }}
     {% endfor %}
 {% elif t.inner_type is UnionType %}
     // Union tag field: {{ t.inner_type.tag_field_type }}
-    {{ _deserialize_integer(t.inner_type.tag_field_type, 'out_obj->_tag_', 0|bit_length_set)|trim|remove_blank_lines }}
+    {{ _deserialize_integer(t.inner_type.tag_field_type, 'out_obj->_tag_', 0|bit_length_set)|trim }}
     {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
     {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == out_obj->_tag_)  // {{ f }}
     {
         {%- assert f.data_type.alignment_requirement <= (offset.min) %}
-        {{ _deserialize_any(f.data_type, 'out_obj->' + (f|id), offset)|trim|remove_blank_lines|indent }}
+        {{ _deserialize_any(f.data_type, 'out_obj->' + (f|id), offset)|trim|indent }}
     }
     {%- endfor %}
     else

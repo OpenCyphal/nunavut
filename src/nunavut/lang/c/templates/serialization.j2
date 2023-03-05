@@ -16,11 +16,11 @@
     {
         return -NUNAVUT_ERROR_INVALID_ARGUMENT;
     }
-{% if t.inner_type.bit_length_set.max > 0 %}
-    {{ _serialize_impl(t) }}
-{% else %}
+{%- if t.inner_type.bit_length_set.max > 0 %}
+    {{ _serialize_impl(t)|remove_blank_lines }}
+{%- else %}
     *inout_buffer_size_bytes = 0U;
-{% endif %}
+{%- endif %}
     return NUNAVUT_SUCCESS;
 {% endmacro %}
 
@@ -46,24 +46,24 @@
         {% if loop.first %}
             {% assert f.data_type.alignment_requirement <= t.inner_type.alignment_requirement %}
         {% else %}
-    {{ _pad_to_alignment(f.data_type.alignment_requirement)|trim|remove_blank_lines }}
+    {{ _pad_to_alignment(f.data_type.alignment_requirement)|trim }}
         {% endif %}
     {   // {{ f }}
-        {{ _serialize_any(f.data_type, 'obj->' + (f|id), offset)|trim|remove_blank_lines|indent }}
+        {{ _serialize_any(f.data_type, 'obj->' + (f|id), offset)|trim|indent }}
     }
     {% endfor %}
 {% elif t.inner_type is UnionType %}
     {   // Union tag field: {{ t.inner_type.tag_field_type }}
         {{
             _serialize_integer(t.inner_type.tag_field_type, 'obj->_tag_', 0|bit_length_set)
-           |trim|remove_blank_lines|indent
+           |trim|indent
         }}
     }
     {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
     {{ 'if' if loop.first else 'else if' }} ({{ loop.index0 }}U == obj->_tag_)  // {{ f }}
     {
         {%- assert f.data_type.alignment_requirement <= (offset.min) %}
-        {{ _serialize_any(f.data_type, 'obj->' + (f|id), offset)|trim|remove_blank_lines|indent }}
+        {{ _serialize_any(f.data_type, 'obj->' + (f|id), offset)|trim|indent }}
     }
     {%- endfor %}
     else
@@ -72,7 +72,7 @@
     }
 {% else %}{% assert False %}
 {% endif %}
-    {{ _pad_to_alignment(t.inner_type.alignment_requirement)|trim|remove_blank_lines }}
+    {{ _pad_to_alignment(t.inner_type.alignment_requirement)|trim }}
     // It is assumed that we know the exact type of the serialized entity, hence we expect the size to match.
 {% if not t.inner_type.bit_length_set.fixed_length %}
     {{ assert('offset_bits >= %sULL'|format(t.inner_type.bit_length_set.min)) }}
