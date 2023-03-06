@@ -1413,6 +1413,7 @@ public:
 #endif
         if (new_data != nullptr)
         {
+            std::fill_n(new_data, bits2bytes(no_shrink_capacity), 0);  // Avoid uninitialized reads during modification
             if (new_data != data_)
             {
                 move_and_free(new_data, data_, size_, capacity_, alloc_);
@@ -1464,6 +1465,7 @@ public:
         {
             return false;
         }
+        std::fill_n(minimized_data, bits2bytes(size_), 0);  // Avoid uninitialized reads during modification
         if (minimized_data != data_)
         {
             move_and_free(minimized_data, data_, size_, capacity_, alloc_);
