@@ -14,19 +14,17 @@
 {% endif %}
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
-{% macro generate_metadata(t) %}
-{% set ref = t | full_reference_name %}
+{% macro generate_metadata(t) -%}
+// +-------------------------------------------------------------------------------------------------------------------+
+// | {{ t }}
+// +-------------------------------------------------------------------------------------------------------------------+
+{%- set ref =t|full_reference_name%}
 #define {{ ref }}_FULL_NAME_             "{{ t.full_name }}"
 #define {{ ref }}_FULL_NAME_AND_VERSION_ "{{ t.full_name }}.{{ t.version.major }}.{{ t.version.minor }}"
-{% endmacro %}
+{%- if t is not ServiceType %}
+{%- assert t.extent % 8 == 0 %}
+{%- assert t.inner_type.extent % 8 == 0 %}
 
-{# ----------------------------------------------------------------------------------------------------------------- #}
-{% macro generate_composite(t) %}
-
-{{ generate_metadata(t) }}
-
-{% assert t.extent % 8 == 0 %}
-{% assert t.inner_type.extent % 8 == 0 %}
 /// Extent is the minimum amount of memory required to hold any serialized representation of any compatible
 /// version of the data type; or, on other words, it is the the maximum possible size of received objects of this type.
 /// The size is specified in bytes (rather than bits) because by definition, extent is an integer number of bytes long.
@@ -34,17 +32,25 @@
 /// When allocating a serialization (TX) buffer, it is safe to use the size of the largest serialized representation
 /// instead of the extent because it provides a tighter bound of the object size; it is safe because the concrete type
 /// is always known during serialization (unlike deserialization). If not sure, use extent everywhere.
-#define {{ t | full_reference_name }}_EXTENT_BYTES_                    {{ t.extent // 8 }}UL
-#define {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_ {{ t.inner_type.extent // 8 }}UL
-static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
-              {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_,
+#define {{ ref }}_EXTENT_BYTES_                    {{ t.extent // 8 }}UL
+#define {{ ref }}_SERIALIZATION_BUFFER_SIZE_BYTES_ {{ t.inner_type.extent // 8 }}UL
+static_assert({{ ref }}_EXTENT_BYTES_ >= {{ ref }}_SERIALIZATION_BUFFER_SIZE_BYTES_,
               "Internal constraint violation");
+{%- endif %}
+{% endmacro %}
 
-{% for constant in t.constants %}
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{% macro generate_composite(t) %}
+{{ generate_metadata(t) }}
+
+{%- for constant in t.constants %}
+
 /// {{ constant }}
 #define {{ t | full_reference_name }}_{{ constant.name }} ({{ constant | constant_value }})
 {%- endfor %}
-{% for f in t.fields_except_padding if f.data_type is ArrayType %}
+
+{%- for f in t.fields_except_padding if f.data_type is ArrayType %}
+
 /// Array metadata for: {{ f }}
 {%- if options.enable_override_variable_array_capacity and f.data_type is VariableLengthArrayType %}
 #ifndef {{ t | full_reference_name }}_{{ f.name }}_ARRAY_CAPACITY_
@@ -61,19 +67,13 @@ static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
 #define {{ t | full_reference_name }}_{{ f.name }}_ARRAY_IS_VARIABLE_LENGTH_ {# -#}
         {{ valuetoken_true if f.data_type is VariableLengthArrayType else valuetoken_false }}
 {%- endfor %}
-{% if t.inner_type is UnionType %}
-/// The number of fields in the union. Valid tag values range from zero to this value minus one, inclusive.
-#define {{ t | full_reference_name }}_UNION_OPTION_COUNT_ {{ t.fields | length }}U
-{% endif %}
 
-{% if t.inner_type is StructureType %}
+{%- if t.inner_type is StructureType %}
 {{ _define_structure(t.inner_type) }}
-
-{% elif t.inner_type is UnionType %}
+{%- elif t.inner_type is UnionType %}
 {{ _define_union(t.inner_type) }}
-
-{% else %}{% assert False %}{# Not a valid composite type. #}
-{% endif %}
+{%- else %}{% assert False %}{# Not a valid composite type. #}
+{%- endif %}
 
 {{ _define_functions(t) }}
 
@@ -123,6 +123,9 @@ typedef struct
     };
     {{ t.tag_field_type | type_from_primitive }} _tag_;
 } {{ t | full_reference_name }};
+
+/// The number of fields in the union. Valid tag values range from zero to this value minus one, inclusive.
+#define {{ t | full_reference_name }}_UNION_OPTION_COUNT_ {{ t.fields | length }}U
 {% endmacro %}
 
 
@@ -166,9 +169,7 @@ struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _define_functions(t) %}
-
-{% if not nunavut.support.omit %}
-
+{%- if not nunavut.support.omit %}
 /// Serialize an instance into the provided buffer.
 /// The lifetime of the resulting serialized representation is independent of the original instance.
 /// This method may be slow for large objects (e.g., images, point clouds, radar samples), so in a later revision
@@ -191,7 +192,7 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_
     {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
 {
     {% from 'serialization.j2' import serialize -%}
-    {{ serialize(t) | trim }}
+    {{ serialize(t)|trim|remove_blank_lines }}
 }
 
 /// Deserialize an instance from the provided buffer.
@@ -219,7 +220,7 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_deserializ
     {{ typename_unsigned_length }}* const inout_buffer_size_bytes)
 {
     {% from 'deserialization.j2' import deserialize -%}
-    {{ deserialize(t) | trim }}
+    {{ deserialize(t)|trim|remove_blank_lines }}
 }
 
 /// Initialize an instance to default values. Does nothing if @param out_obj is {{ valuetoken_null }}.
@@ -238,10 +239,10 @@ static inline void {{ t | full_reference_name }}_initialize_({{ t | full_referen
     }
 }
 
-{% endif %}  {# if not nunavut.support.omit #}
+{%- endif %}  {# if not nunavut.support.omit #}
 
-{% for f in t.fields_except_padding %}
-{% if t.inner_type is UnionType %}
+{%- for f in t.fields_except_padding %}
+{%- if t.inner_type is UnionType %}
 /// Mark option "{{ f.name }}" active without initializing it. Does nothing if @param obj is {{ valuetoken_null }}.
 static inline void {{ t | full_reference_name }}_select_{{ f.name }}_{# -#}
                   ({{ t | full_reference_name }}* const obj)
@@ -258,6 +259,6 @@ static inline {{ typename_boolean }} {{ t | full_reference_name }}_is_{{ f.name 
 {
     return ((obj != {{ valuetoken_null }}) && (obj->_tag_ == {{ loop.index0 }}));
 }
-{% endif %}
+{%- endif %}
 {% endfor %}
 {% endmacro %}
