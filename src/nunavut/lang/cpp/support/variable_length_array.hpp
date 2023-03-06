@@ -1413,11 +1413,15 @@ public:
 #endif
         if (new_data != nullptr)
         {
-            std::fill_n(new_data, bits2bytes(no_shrink_capacity), 0);  // Avoid uninitialized reads during modification
             if (new_data != data_)
             {
+                std::fill_n(new_data, bits2bytes(no_shrink_capacity), 0);
                 move_and_free(new_data, data_, size_, capacity_, alloc_);
-            }  // else the allocator was able to simply extend the reserved area for the same memory pointer.
+            }
+            else  // the allocator was able to simply extend the reserved area for the same memory pointer.
+            {
+                std::fill_n(data_ + bits2bytes(capacity_), (no_shrink_capacity - capacity_) / 8U, 0);
+            }
             data_ = new_data;
             capacity_ = no_shrink_capacity;
         }
@@ -1465,9 +1469,9 @@ public:
         {
             return false;
         }
-        std::fill_n(minimized_data, bits2bytes(size_), 0);  // Avoid uninitialized reads during modification
         if (minimized_data != data_)
         {
+            std::fill_n(minimized_data, bits2bytes(size_), 0);  // Avoid uninitialized reads during modification
             move_and_free(minimized_data, data_, size_, capacity_, alloc_);
         }  // else the allocator was able to simply shrink the reserved area for the same memory pointer.
         data_     = minimized_data;
