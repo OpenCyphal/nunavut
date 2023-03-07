@@ -188,11 +188,13 @@ struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
 static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_(
     const {{ t | full_reference_name }}* const obj, {# -#}
     void* const buffer_void,  {# -#}
-    {{ typename_unsigned_length }}* const inout_buffer_size_chars,  {# -#}
-    const {{ typename_unsigned_bit_length }} ini_offset_bits)
+    const {{ typename_unsigned_bit_length }} buffer_size_bits,  {# -#}
+    {{ typename_unsigned_bit_length }}* const inout_offset_bits)
 {
+    {{ typename_byte }}* const buffer = ({{ typename_byte }}*) buffer_void;
     {% from 'serialization.j2' import serialize -%}
     {{ serialize(t) | trim }}
+    (void) buffer_size_bits;
 }
 
 /// Deserialize an instance from the provided buffer.
@@ -215,14 +217,15 @@ static inline {{ typename_error_type }} {{ t | full_reference_name }}_serialize_
 ///
 /// @returns Negative on error, zero on success.
 static inline {{ typename_error_type }} {{ t | full_reference_name }}_deserialize_(
-    {{ t | full_reference_name }}* const out_obj, {# -#}
-    const void* buffer_void, {# -#}
-    {{ typename_unsigned_length }}* const inout_buffer_size_chars, {# -#}
-    {{ typename_unsigned_bit_length }}* const offset_reminder_bits)
+    {{ t | full_reference_name }}* out_obj, {# -#}
+    const void* const buffer_void, {# -#}
+    const {{ typename_unsigned_bit_length }} buffer_size_bits, {# -#}
+    {{ typename_unsigned_bit_length }}* const inout_offset_bits)
 {
     const {{ typename_byte }}* buffer = (const {{ typename_byte }}*) buffer_void;
     {% from 'deserialization.j2' import deserialize -%}
     {{ deserialize(t) | trim }}
+    (void) inout_offset_bits;
 }
 
 /// Initialize an instance to default values. Does nothing if @param out_obj is {{ valuetoken_null }}.
@@ -233,10 +236,9 @@ static inline void {{ t | full_reference_name }}_initialize_({{ t | full_referen
 {
     if (out_obj != {{ valuetoken_null }})
     {
-        {{ typename_unsigned_length }} size_bytes = 0;
-        {{ typename_unsigned_length }} ini_offset_bits = 0;
+        {{ typename_unsigned_length }} offset_bits = 0;
         const {{ typename_byte }} buf = 0;
-        const {{ typename_error_type }} err = {{ t | full_reference_name }}_deserialize_(out_obj, &buf, &size_bytes, &ini_offset_bits);
+        const {{ typename_error_type }} err = {{ t | full_reference_name }}_deserialize_(out_obj, &buf, 0, &offset_bits);
         {{ assert('err >= 0') }}
         (void) err;
     }

@@ -36,14 +36,15 @@ static void testPrimitiveArrayVariableOverride(void)
                       sizeof(ref.n_f64.elements));
 #endif
 
-    size_t size = sizeof(buf);
+    const size_t buf_size_bits = sizeof(buf) * CHAR_BIT;
+    size_t ini_ofs = 0;
 
 #if NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 1
     TEST_ASSERT_EQUAL(NUNAVUT_SUCCESS,
                       regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], &size));
 #else
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL,
-                      regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], &size));
+                      regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], buf_size_bits, &ini_ofs));
 #endif
 }
 

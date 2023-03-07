@@ -141,17 +141,16 @@ static inline {{ typename_unsigned_bit_length }} nunavutChooseMin(const {{ typen
 ///
 ///      buffer                                                                buffer
 ///      origin                                                                 end
-///         [------------------------- buffer_size_chars ------------------------]
+///         [------------------------- buffer_size_bits -------------------------]
 ///         [--------------- fragment_offset_bits ---------------][--- fragment_length_bits ---]
 ///                                                               [-- out bits --]
 ///
 static inline {{ typename_unsigned_bit_length }} nunavutSaturateBufferFragmentBitLength(
-    const {{ typename_unsigned_length }} buffer_size_chars, {# -#}
+    const {{ typename_unsigned_bit_length }} buffer_size_bits, {# -#}
     const {{ typename_unsigned_bit_length }} fragment_offset_bits, {# -#}
     const {{ typename_unsigned_bit_length }} fragment_length_bits)
 {
-    const {{ typename_unsigned_bit_length }} size_bits = ({{ typename_unsigned_bit_length }})(buffer_size_chars * CHAR_BIT);
-    const {{ typename_unsigned_bit_length }} tail_bits = size_bits - nunavutChooseMin(size_bits, fragment_offset_bits);
+    const {{ typename_unsigned_bit_length }} tail_bits = buffer_size_bits - nunavutChooseMin(buffer_size_bits, fragment_offset_bits);
     return nunavutChooseMin(fragment_length_bits, tail_bits);
 }
 
@@ -178,14 +177,15 @@ static inline void nunavutCopyBits(void* const dst,
     {{ assert('src != NULL') }}
     {{ assert('dst != NULL') }}
     {{ assert('src != dst') }}
-    const char* const psrc = (const char*)src;
-    char*       const pdst = (      char*)dst;
-    if ((0U == (src_offset_bits % CHAR_SHIFT_MASK)) && (0U == (dst_offset_bits % CHAR_SHIFT_MASK)))  // Aligned copy, optimized, most common case.
+
+    if ((0U == (src_offset_bits & CHAR_SHIFT_MASK)) && (0U == (dst_offset_bits & CHAR_SHIFT_MASK)))  // Aligned copy, optimized, most common case.
     {
         const char* last_src;
         char*       last_dst;
         unsigned    mask, length_mod;
         const {{ typename_unsigned_length }} length_chars = ({{ typename_unsigned_length }})(length_bits >> CHAR_SHIFT);
+        const char* const psrc    = (src_offset_bits >> CHAR_SHIFT) + (const char*)src;
+        char*       const pdst    = (dst_offset_bits >> CHAR_SHIFT) + (      char*)dst;
         (void)memmove(pdst, psrc, length_chars);
         length_mod = length_bits & CHAR_SHIFT_MASK;
         if (length_mod == 0)
@@ -198,8 +198,10 @@ static inline void nunavutCopyBits(void* const dst,
     }
     #if ((-1) >> 1) < 0  // Right shift is arithmetic (the most common case). So, the fast algorithm is allowed
     {
-        {{ typename_unsigned_bit_length }} src_off  = src_offset_bits;
-        {{ typename_unsigned_bit_length }} dst_off  = dst_offset_bits;
+        const char* const psrc = (const char*)src;
+        char*       const pdst = (      char*)dst;
+        {{ typename_unsigned_bit_length }} src_off = src_offset_bits;
+        {{ typename_unsigned_bit_length }} dst_off = dst_offset_bits;
         const {{ typename_unsigned_bit_length }} last_bit = src_off + length_bits;
         while (last_bit > src_off)
         {
@@ -262,21 +264,21 @@ static inline void nunavutCopyBits(void* const dst,
 }
 
 /// This function is intended for deserialization of contiguous sequences of zero-cost primitives.
-/// It extracts (len_bits) bits that are offset by (off_bits) from the origin of (buf) whose size is (buf_size_chars).
+/// It extracts (len_bits) bits that are offset by (off_bits) from the origin of (buf) whose size is (buf_size_bits).
 /// If the requested (len_bits+off_bits) overruns the buffer, the missing bits are implicitly zero-extended.
 /// If (len_bits % CHAR_BIT != 0), the output buffer is right-zero-padded up to the next byte boundary.
 /// If (off_bits % CHAR_BIT == 0), the operation is delegated to memmove(); otherwise, a much slower unaligned bit copy
 /// algorithm is employed. See @ref nunavutCopyBits() for further details.
 static inline void nunavutGetBits(void* const output,
                                   const void* const buf,
-                                  const {{ typename_unsigned_bit_length }} buf_size_chars,
+                                  const {{ typename_unsigned_bit_length }} buf_size_bits,
                                   const {{ typename_unsigned_bit_length }} off_bits,
                                   const {{ typename_unsigned_bit_length }} len_bits)
 {
     {{ assert('output != NULL') }}
     {{ assert('buf != NULL') }}
     const {{ typename_unsigned_bit_length }} sat_bits = nunavutSaturateBufferFragmentBitLength({# -#}
-        buf_size_chars, off_bits, len_bits);
+        buf_size_bits, off_bits, len_bits);
     // Apply implicit zero extension. Normally, this is a no-op unless (len_bits > sat_bits) or (len_bits & CHAR_SHIFT_MASK) != 0.
     // The former case ensures that if we're copying < CHAR_BIT bits, the MSB in the destination will be zeroed out.
     (void) memset(((char*)output) + (sat_bits >> CHAR_SHIFT), 0, ((len_bits + CHAR_SHIFT_MASK) >> CHAR_SHIFT) - (sat_bits >> CHAR_SHIFT));
@@ -291,20 +293,20 @@ static inline void nunavutGetBits(void* const output,
 ///
 /// Arguments:
 ///     buf             Destination buffer where the result will be stored.
-///     buf_size_chars  Size of the above, in bytes.
+///     buf_size_bits  Size of the above, in bytes.
 ///     off_bits        Offset, in bits, from the beginning of the buffer. May exceed one byte.
 ///     value           The value itself (in case of integers it is promoted to 64-bit for unification).
 ///     len_bits        Length of the serialized representation, in bits. Zero has no effect. Values > 64 bit saturated.
 
 static inline {{typename_error_type}} nunavutSetBit(
     void* const buf,
-    const {{ typename_unsigned_length }} buf_size_chars,
+    const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits,
     const bool value)
 {
     {{ assert('buf != NULL') }}
     unsigned val;
-    if ((buf_size_chars * CHAR_BIT) <= off_bits)
+    if (buf_size_bits <= off_bits)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
@@ -315,14 +317,14 @@ static inline {{typename_error_type}} nunavutSetBit(
 
 static inline {{typename_error_type}} nunavutSetUxx(
     void* const buf,
-    const {{ typename_unsigned_length }} buf_size_chars,
+    const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits,
     const uint64_t value,
     const {{ typename_unsigned_bit_length }} len_bits)
 {
     static_assert(64U == (sizeof(uint64_t) * CHAR_BIT), "Unexpected size of uint64_t");
     {{ assert('buf != NULL') }}
-    if ((buf_size_chars * CHAR_BIT) < (off_bits + len_bits))
+    if (buf_size_bits < (off_bits + len_bits))
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
@@ -332,8 +334,8 @@ static inline {{typename_error_type}} nunavutSetUxx(
 {%- elif options.target_endianness in ('any', 'big') %}
     // The code below is not yet adopted for CHAR_BIT in the big endian mode 
     const uint8_t tmp[sizeof(uint64_t)] = {
-        (uint8_t)((value >> 0U) & 0xFFU),
-        (uint8_t)((value >> 8U) & 0xFFU),
+        (uint8_t)((value >> 0U ) & 0xFFU),
+        (uint8_t)((value >> 8U ) & 0xFFU),
         (uint8_t)((value >> 16U) & 0xFFU),
         (uint8_t)((value >> 24U) & 0xFFU),
         (uint8_t)((value >> 32U) & 0xFFU),
@@ -349,7 +351,7 @@ static inline {{typename_error_type}} nunavutSetUxx(
 
 static inline {{typename_error_type}} nunavutSetIxx(
     void* const buf,
-    const {{ typename_unsigned_length }} buf_size_chars,
+    const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits,
     const int64_t value,
     const {{ typename_unsigned_bit_length }} len_bits)
@@ -357,7 +359,7 @@ static inline {{typename_error_type}} nunavutSetIxx(
     // The naive sign conversion is safe and portable according to the C standard:
     // 6.3.1.3.3: if the new type is unsigned, the value is converted by repeatedly adding or subtracting one more
     // than the maximum value that can be represented in the new type until the value is in the range of the new type.
-    return nunavutSetUxx(buf, buf_size_chars, off_bits, (uint64_t) value, len_bits);
+    return nunavutSetUxx(buf, buf_size_bits, off_bits, (uint64_t) value, len_bits);
 }
 
 /// Deserialize a DSDL field value located at the specified bit offset from the beginning of the source buffer.
@@ -374,43 +376,43 @@ static inline {{typename_error_type}} nunavutSetIxx(
 ///
 /// Arguments:
 ///     buf             Source buffer where the serialized representation will be read from.
-///     buf_size_chars  The size of the source buffer, in bytes (chars). Reads past this limit will return zero bits.
+///     buf_size_bits  The size of the source buffer, in bytes (chars). Reads past this limit will return zero bits.
 ///     off_bits        Offset, in bits, from the beginning of the buffer. May exceed one byte.
 ///     len_bits        Length of the serialized representation, in bits. Zero returns 0. Out-of-range values saturated.
 
 static inline uint_fast8_t nunavutGetU8(const void* const buf,
-                                        const {{ typename_unsigned_length }} buf_size_chars,
+                                        const {{ typename_unsigned_bit_length }} buf_size_bits,
                                         const {{ typename_unsigned_bit_length }} off_bits,
                                         const {{ typename_unsigned_bit_length }} len_bits)
 {
     uint_fast8_t val = 0;
-    const {{ typename_unsigned_bit_length }} bits = {# -#}
-        nunavutSaturateBufferFragmentBitLength(buf_size_chars, off_bits, nunavutChooseMin(len_bits, 8U));
-    {{ assert('bits <= 8U') }}
+    const {{ typename_unsigned_bit_length }} sat_bits = {# -#}
+        nunavutSaturateBufferFragmentBitLength(buf_size_bits, off_bits, nunavutChooseMin(len_bits, 8U));
+    {{ assert('sat_bits <= 8U') }}
     {{ assert('buf != NULL') }}
-    nunavutCopyBits(&val, 0U, bits, buf, off_bits);
+    nunavutCopyBits(&val, 0U, sat_bits, buf, off_bits);
     return val;
 }
 
 static inline bool nunavutGetBit(const void* const buf,
-                                 const {{ typename_unsigned_length }} buf_size_chars,
+                                 const {{ typename_unsigned_bit_length }} buf_size_bits,
                                  const {{ typename_unsigned_bit_length }} off_bits)
 {
-    return 1U == nunavutGetU8(buf, buf_size_chars, off_bits, 1U);
+    return 1U == nunavutGetU8(buf, buf_size_bits, off_bits, 1U);
 }
 
 static inline uint_fast16_t nunavutGetU16(const void* const buf,
-                                          const {{ typename_unsigned_length }} buf_size_chars,
+                                          const {{ typename_unsigned_bit_length }} buf_size_bits,
                                           const {{ typename_unsigned_bit_length }} off_bits,
-                                          const {{ typename_unsigned_length }} len_bits)
+                                          const {{ typename_unsigned_bit_length }} len_bits)
 {
     uint_fast16_t val = 0U;
-    const {{ typename_unsigned_bit_length }} bits = {# -#}
-        nunavutSaturateBufferFragmentBitLength(buf_size_chars, off_bits, nunavutChooseMin(len_bits, 16U));
-    {{ assert('bits <= 16U') }}
+    const {{ typename_unsigned_bit_length }} sat_bits = {# -#}
+        nunavutSaturateBufferFragmentBitLength(buf_size_bits, off_bits, nunavutChooseMin(len_bits, 16U));
+    {{ assert('sat_bits <= 16U') }}
     {{ assert('buf != NULL') }}
 {%- if options.target_endianness == 'little' %}
-    nunavutCopyBits(&val, 0U, bits, buf, off_bits);
+    nunavutCopyBits(&val, 0U, sat_bits, buf, off_bits);
     return val;
 {%- elif options.target_endianness in ('any', 'big') %}
     // The code below is not yet adopted for CHAR_BIT in the big endian mode 
@@ -422,17 +424,17 @@ static inline uint_fast16_t nunavutGetU16(const void* const buf,
 }
 
 static inline uint_fast32_t nunavutGetU32(const void* const buf,
-                                          const {{ typename_unsigned_length }} buf_size_chars,
+                                          const {{ typename_unsigned_bit_length }} buf_size_bits,
                                           const {{ typename_unsigned_bit_length }} off_bits,
                                           const {{ typename_unsigned_bit_length }} len_bits)
 {
     uint_fast32_t val = 0U;
-    const {{ typename_unsigned_bit_length }} bits = {# -#}
-        nunavutSaturateBufferFragmentBitLength(buf_size_chars, off_bits, nunavutChooseMin(len_bits, 32U));
-    {{ assert('bits <= 32U') }}
+    const {{ typename_unsigned_bit_length }} sat_bits = {# -#}
+        nunavutSaturateBufferFragmentBitLength(buf_size_bits, off_bits, nunavutChooseMin(len_bits, 32U));
+    {{ assert('sat_bits <= 32U') }}
     {{ assert('buf != NULL') }}
 {%- if options.target_endianness == 'little' %}
-    nunavutCopyBits(&val, 0U, bits, buf, off_bits);
+    nunavutCopyBits(&val, 0U, sat_bits, buf, off_bits);
     return val;
 {%- elif options.target_endianness in ('any', 'big') %}
     // The code below is not yet adopted for CHAR_BIT in the big endian mode 
@@ -444,17 +446,17 @@ static inline uint_fast32_t nunavutGetU32(const void* const buf,
 }
 
 static inline uint64_t nunavutGetU64(const void* const buf,
-                                     const {{ typename_unsigned_length }} buf_size_chars,
+                                     const {{ typename_unsigned_bit_length }} buf_size_bits,
                                      const {{ typename_unsigned_bit_length }} off_bits,
                                      const {{ typename_unsigned_bit_length }} len_bits)
 {
     uint64_t val = 0U;
-    const {{ typename_unsigned_bit_length }} bits = {# -#}
-        nunavutSaturateBufferFragmentBitLength(buf_size_chars, off_bits, nunavutChooseMin(len_bits, 64U));
-    {{ assert('bits <= 64U') }}
+    const {{ typename_unsigned_bit_length }} sat_bits = {# -#}
+        nunavutSaturateBufferFragmentBitLength(buf_size_bits, off_bits, nunavutChooseMin(len_bits, 64U));
+    {{ assert('sat_bits <= 64U') }}
     {{ assert('buf != NULL') }}
 {%- if options.target_endianness == 'little' %}
-    nunavutCopyBits(&val, 0U, bits, buf, off_bits);
+    nunavutCopyBits(&val, 0U, sat_bits, buf, off_bits);
     return val;
 {%- elif options.target_endianness in ('any', 'big') %}
     // The code below is not yet adopted for CHAR_BIT in the big endian mode 
@@ -473,84 +475,84 @@ static inline uint64_t nunavutGetU64(const void* const buf,
 }
 
 static inline int_fast8_t nunavutGetI8(const void* const buf,
-                                  const {{ typename_unsigned_length }} buf_size_chars,
+                                  const {{ typename_unsigned_bit_length }} buf_size_bits,
                                   const {{ typename_unsigned_bit_length }} off_bits,
                                   const {{ typename_unsigned_bit_length }} len_bits)
 {
-    const {{ typename_unsigned_bit_length }} sat = ({{ typename_unsigned_bit_length }}) nunavutChooseMin(len_bits, 8U);
-    int_fast8_t val = nunavutGetU8(buf, buf_size_chars, off_bits, sat);
+    const {{ typename_unsigned_bit_length }} sat_bits = ({{ typename_unsigned_bit_length }}) nunavutChooseMin(len_bits, 8U);
+    int_fast8_t val = nunavutGetU8(buf, buf_size_bits, off_bits, sat_bits);
     #if ((-1) >> 1) < 0  // Right shift is arithmetic (the most common case). So, the fast algorithm is allowed
     {
-        const int off = sizeof(int_fast8_t)*CHAR_BIT - sat;
+        const int off = sizeof(int_fast8_t)*CHAR_BIT - sat_bits;
         return (int_fast8_t)(val << off) >> off;
     }
     #else  // The below algorithm is not adopted for CHAR_BIT
     {
-        const bool neg = (sat > 0U) && ((val & (1ULL << (sat - 1U))) != 0U);
-        val = ((sat < 8U) && neg) ? (uint8_t)(val | ~((1U << sat) - 1U)) : val;  // Sign extension
+        const bool neg = (sat_bits > 0U) && ((val & (1ULL << (sat_bits - 1U))) != 0U);
+        val = ((sat_bits < 8U) && neg) ? (uint8_t)(val | ~((1U << sat_bits) - 1U)) : val;  // Sign extension
         return neg ? (int8_t)((-(int8_t)(uint8_t) ~val) - 1) : (int8_t) val;
     }
     #endif
 }
 
 static inline int_fast16_t nunavutGetI16(const void* const buf,
-                                    const {{ typename_unsigned_length }} buf_size_chars,
+                                    const {{ typename_unsigned_bit_length }} buf_size_bits,
                                     const {{ typename_unsigned_bit_length }} off_bits,
                                     const {{ typename_unsigned_bit_length }} len_bits)
 {
-    const {{ typename_unsigned_bit_length }} sat = ({{ typename_unsigned_bit_length }}) nunavutChooseMin(len_bits, 16U);
-    int_fast16_t val = nunavutGetU16(buf, buf_size_chars, off_bits, sat);
+    const {{ typename_unsigned_bit_length }} sat_bits = ({{ typename_unsigned_bit_length }}) nunavutChooseMin(len_bits, 16U);
+    int_fast16_t val = nunavutGetU16(buf, buf_size_bits, off_bits, sat_bits);
     #if ((-1) >> 1) < 0  // Right shift is arithmetic (the most common case). So, the fast algorithm is allowed
     {
-        const int off = sizeof(int_fast16_t)*CHAR_BIT - sat;
+        const int off = sizeof(int_fast16_t)*CHAR_BIT - sat_bits;
         return (int_fast16_t)(val << off) >> off;
     }
     #else  // The below algorithm is not adopted for CHAR_BIT
     {
-        const bool    neg = (sat > 0U) && ((val & (1ULL << (sat - 1U))) != 0U);
-        val = ((sat < 16U) && neg) ? (uint16_t)(val | ~((1U << sat) - 1U)) : val;  // Sign extension
+        const bool    neg = (sat_bits > 0U) && ((val & (1ULL << (sat_bits - 1U))) != 0U);
+        val = ((sat_bits < 16U) && neg) ? (uint16_t)(val | ~((1U << sat_bits) - 1U)) : val;  // Sign extension
         return neg ? (int16_t)((-(int16_t)(uint16_t) ~val) - 1) : (int16_t) val;
     }
     #endif
 }
 
 static inline int_fast32_t nunavutGetI32(const void* const buf,
-                                    const {{ typename_unsigned_length }} buf_size_chars,
+                                    const {{ typename_unsigned_bit_length }} buf_size_bits,
                                     const {{ typename_unsigned_bit_length }} off_bits,
                                     const {{ typename_unsigned_bit_length }} len_bits)
 {
-    const {{ typename_unsigned_bit_length }} sat = ({{ typename_unsigned_bit_length }}) nunavutChooseMin(len_bits, 32U);
-    int_fast32_t val = nunavutGetU32(buf, buf_size_chars, off_bits, sat);
+    const {{ typename_unsigned_bit_length }} sat_bits = ({{ typename_unsigned_bit_length }}) nunavutChooseMin(len_bits, 32U);
+    int_fast32_t val = nunavutGetU32(buf, buf_size_bits, off_bits, sat_bits);
     #if ((-1) >> 1) < 0  // Right shift is arithmetic (the most common case). So, the fast algorithm is allowed
     {
-        const int off = sizeof(int_fast32_t)*CHAR_BIT - sat;
+        const int off = sizeof(int_fast32_t)*CHAR_BIT - sat_bits;
         return (int_fast32_t)(val << off) >> off;
     }
     #else  // The below algorithm is not adopted for CHAR_BIT
     {
-        const bool    neg = (sat > 0U) && ((val & (1ULL << (sat - 1U))) != 0U);
-        val = ((sat < 32U) && neg) ? (uint32_t)(val | ~((1UL << sat) - 1U)) : val;  // Sign extension
+        const bool    neg = (sat_bits > 0U) && ((val & (1ULL << (sat_bits - 1U))) != 0U);
+        val = ((sat_bits < 32U) && neg) ? (uint32_t)(val | ~((1UL << sat_bits) - 1U)) : val;  // Sign extension
         return neg ? (int32_t)((-(int32_t) ~val) - 1) : (int32_t) val;
     }
     #endif
 }
 
 static inline int64_t nunavutGetI64(const void* const buf,
-                                    const {{ typename_unsigned_length }} buf_size_chars,
+                                    const {{ typename_unsigned_bit_length }} buf_size_bits,
                                     const {{ typename_unsigned_bit_length }} off_bits,
                                     const {{ typename_unsigned_bit_length }} len_bits)
 {
-    const {{ typename_unsigned_bit_length }} sat = ({{ typename_unsigned_bit_length }}) nunavutChooseMin(len_bits, 64U);
-    int64_t val = nunavutGetU64(buf, buf_size_chars, off_bits, sat);
+    const {{ typename_unsigned_bit_length }} sat_bits = ({{ typename_unsigned_bit_length }}) nunavutChooseMin(len_bits, 64U);
+    int64_t val = nunavutGetU64(buf, buf_size_bits, off_bits, sat_bits);
     #if ((-1) >> 1) < 0  // Right shift is arithmetic (the most common case). So, the fast algorithm is allowed
     {
-        const int off = sizeof(int64_t)*CHAR_BIT - sat;
+        const int off = sizeof(int64_t)*CHAR_BIT - sat_bits;
         return (int64_t)(val << off) >> off;
     }
     #else  // The below algorithm is not adopted for CHAR_BIT
     {
-        const bool    neg = (sat > 0U) && ((val & (1ULL << (sat - 1U))) != 0U);
-        val = ((sat < 64U) && neg) ? (uint64_t)(val | ~((1ULL << sat) - 1U)) : val;  // Sign extension
+        const bool    neg = (sat_bits > 0U) && ((val & (1ULL << (sat_bits - 1U))) != 0U);
+        val = ((sat_bits < 64U) && neg) ? (uint64_t)(val | ~((1ULL << sat_bits) - 1U)) : val;  // Sign extension
         return neg ? (int64_t)((-(int64_t) ~val) - 1) : (int64_t) val;
     }
     #endif
@@ -611,6 +613,7 @@ static inline uint_fast16_t nunavutFloat16Pack(const {{typename_float_32}} value
 
 static inline {{typename_float_32}} nunavutFloat16Unpack(const uint_fast16_t value)
 {
+{#
     {{ float32_union() }}
 
     // The no-lint statements suppress the warning about the use of union. This is required for low-level bit access.
@@ -623,23 +626,40 @@ static inline {{typename_float_32}} nunavutFloat16Unpack(const uint_fast16_t val
         return out.real;
     out.bits |= ((uint_fast32_t)0x00FFU << 23U);
     return out.real;
+#}
+    {{ float32_union() }}
+
+    // The no-lint statements suppress the warning about the use of union. This is required for low-level bit access.
+    Float32Bits magic;    // NOSONAR
+    Float32Bits inf_nan;  // NOSONAR
+    Float32Bits out;      // NOSONAR
+    magic.bits   = ((uint_fast32_t) 0xEFU) << 23U;
+    inf_nan.bits = ((uint_fast32_t) 0x8FU) << 23U;
+    out.bits     = ((uint_fast32_t)(value & 0x7FFFU)) << 13U;
+    out.real    *= magic.real;
+    if (out.real >= inf_nan.real)
+    {
+        out.bits |= ((uint32_t) 0xFFU) << 23U;
+    }
+    out.bits |= ((uint32_t)(value & 0x8000U)) << 16U;
+    return out.real;
 }
 
 static inline {{typename_error_type}} nunavutSetF16(
     void* const buf,
-    const {{ typename_unsigned_length }} buf_size_chars,
+    const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits,
     const {{ typename_float_32 }} value)
 {
-    return nunavutSetUxx(buf, buf_size_chars, off_bits, nunavutFloat16Pack(value), 16U);
+    return nunavutSetUxx(buf, buf_size_bits, off_bits, nunavutFloat16Pack(value), 16U);
 }
 
 static inline {{typename_float_32}} nunavutGetF16(
     const void* const buf,
-    const {{ typename_unsigned_length }} buf_size_chars,
+    const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits)
 {
-    return nunavutFloat16Unpack(nunavutGetU16(buf, buf_size_chars, off_bits, 16U));
+    return nunavutFloat16Unpack(nunavutGetU16(buf, buf_size_bits, off_bits, 16U));
 }
 
 // ---------------------------------------------------- FLOAT32 ----------------------------------------------------
@@ -650,7 +670,7 @@ static_assert(32U == (sizeof({{typename_float_32}}) * CHAR_BIT), "Unsupported fl
 
 static inline {{typename_error_type}} nunavutSetF32(
     void* const buf,
-    const {{ typename_unsigned_length }} buf_size_chars,
+    const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits,
     const {{ typename_float_32 }} value)
 {
@@ -662,12 +682,12 @@ static inline {{typename_error_type}} nunavutSetF32(
         {{typename_float_32}} fl;
         uint_fast32_t in;
     } const tmp = {value};  // NOSONAR
-    return nunavutSetUxx(buf, buf_size_chars, off_bits, tmp.in, 32U);
+    return nunavutSetUxx(buf, buf_size_bits, off_bits, tmp.in, 32U);
 }
 
 static inline {{typename_float_32}} nunavutGetF32(
     const void* const buf,
-    const {{ typename_unsigned_length }} buf_size_chars,
+    const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits)
 {
     // Intentional violation of MISRA: use union to perform fast conversion to an IEEE 754-compatible native
@@ -677,7 +697,7 @@ static inline {{typename_float_32}} nunavutGetF32(
     {
         uint_fast32_t in;
         {{typename_float_32}} fl;
-    } const tmp = {nunavutGetU32(buf, buf_size_chars, off_bits, 32U)};
+    } const tmp = {nunavutGetU32(buf, buf_size_bits, off_bits, 32U)};
     return tmp.fl;
 }
 
@@ -689,7 +709,7 @@ static_assert(64U == (sizeof({{typename_float_64}}) * CHAR_BIT), "Unsupported fl
 
 static inline {{typename_error_type}} nunavutSetF64(
     void* const buf,
-    const {{ typename_unsigned_length }} buf_size_chars,
+    const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits,
     const {{typename_float_64 }} value)
 {
@@ -701,12 +721,12 @@ static inline {{typename_error_type}} nunavutSetF64(
         {{typename_float_64}} fl;
         uint64_t in;
     } const tmp = {value};  // NOSONAR
-    return nunavutSetUxx(buf, buf_size_chars, off_bits, tmp.in, 64U);
+    return nunavutSetUxx(buf, buf_size_bits, off_bits, tmp.in, 64U);
 }
 
 static inline {{typename_float_64}} nunavutGetF64(
     const void* const buf,
-    const {{ typename_unsigned_length }} buf_size_chars,
+    const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits)
 {
     // Intentional violation of MISRA: use union to perform fast conversion to an IEEE 754-compatible native
@@ -716,7 +736,7 @@ static inline {{typename_float_64}} nunavutGetF64(
     {
         uint64_t in;
         {{typename_float_64}} fl;
-    } const tmp = {nunavutGetU64(buf, buf_size_chars, off_bits, 64U)};
+    } const tmp = {nunavutGetU64(buf, buf_size_bits, off_bits, 64U)};
     return tmp.fl;
 }
 
