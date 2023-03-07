@@ -161,6 +161,10 @@ public:
             std::declval<allocator_type&>())) && noexcept(VariableLengthArray<T, MaxSize, Allocator>().reserve(1)) &&
         std::is_nothrow_copy_constructible<allocator_type>::value && std::is_nothrow_copy_constructible<T>::value)
     {
+        if (this == &rhs)
+        {
+            return *this;
+        }
         fast_deallocate(data_, size_, capacity_, alloc_);
         data_     = nullptr;
         capacity_ = 0;
@@ -1136,6 +1140,10 @@ public:
             std::declval<allocator_type&>())) && noexcept(VariableLengthArray<value_type, MaxSize, Allocator>()
                                                               .reserve(1)))
     {
+        if (this == &rhs)
+        {
+            return *this;
+        }
         fast_deallocate(data_, size_, capacity_, alloc_);
         data_     = nullptr;
         capacity_ = 0;
