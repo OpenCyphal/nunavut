@@ -178,7 +178,8 @@
         offset_bits += {{ t.capacity }}UL * {{ t.element_type.bit_length }}U;
     #else
         {% set ref_index = 'index'|to_template_unique_name %}
-        for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ t.capacity }}UL; ++{{ ref_index }})
+        size_t {{ ref_index }};
+        for ({{ ref_index }} = 0U; {{ ref_index }} < {{ t.capacity }}UL; ++{{ ref_index }})
         {
             nunavutGetBits(&{{ reference + '[%s]'|format(ref_index) }}, &buffer[0], buffer_size_bits, offset_bits, {{ t.element_type.bit_length }}UL);
             offset_bits += {{ t.element_type.bit_length }}UL;
@@ -216,7 +217,8 @@
      # spurious alignment of elements but the benefit of such optimization is believed to be negligible. #}
     {% set element_offset = offset + t.element_type.bit_length_set.repeat_range(t.capacity - 1) %}
     {% set ref_index = 'index'|to_template_unique_name %}
-    for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ t.capacity }}UL; ++{{ ref_index }})
+    size_t {{ ref_index }};
+    for ({{ ref_index }} = 0U; {{ ref_index }} < {{ t.capacity }}UL; ++{{ ref_index }})
     {
         {{ _deserialize_any(t.element_type, reference + ('[%s]'|format(ref_index)), element_offset)|trim|indent }}
     }
@@ -232,9 +234,10 @@
         offset_bits += {{ reference }}.count * {{ t.element_type.bit_length }}U;
     #else
         {% set ref_index = 'index'|to_template_unique_name %}
-        for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ reference }}.count; ++{{ ref_index }})
+        size_t {{ ref_index }};
+        for ({{ ref_index }} = 0U; {{ ref_index }} < {{ reference }}.count; ++{{ ref_index }})
         {
-            nunavutGetBits(&{{ reference + '[%s]'|format(ref_index) }}, &buffer[0], buffer_size_bits, offset_bits, {{ t.element_type.bit_length }}UL);
+            nunavutGetBits(&{{ reference }}.elements[{{ ref_index }}], &buffer[0], buffer_size_bits, offset_bits, {{ t.element_type.bit_length }}UL);
             offset_bits += {{ t.element_type.bit_length }}UL;
         }
     #endif
@@ -282,7 +285,8 @@
 {# GENERAL CASE #}
 {% else %}
     {% set ref_index = 'index'|to_template_unique_name %}
-    for (size_t {{ ref_index }} = 0U; {{ ref_index }} < {{ reference }}.count; ++{{ ref_index }})
+    size_t {{ ref_index }};
+    for ({{ ref_index }} = 0U; {{ ref_index }} < {{ reference }}.count; ++{{ ref_index }})
     {
         {{
             _deserialize_any(t.element_type, reference + ('.elements[%s]'|format(ref_index)), element_offset)

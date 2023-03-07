@@ -1,0 +1,456 @@
+ARCHITECTURE(ADSP-TS201)
+
+
+// Libsim provides fast, mostly host emulated IO only supported by
+// the simulator. The libio library provides IO processing (including
+// file support) mostly done by the TigerSHARC target that is supported
+// by the emulator and simulator. Libio together with libsim is the
+// default used, but if __USING_LIBSIM is defined only libsim will be used.
+//   From the driver command line, use options,
+//          "-flags-link -MD__USING_LIBSIM=1"
+//   in the IDDE, add -MD__USING_LIBSIM=1 to the linker additional
+//   options
+
+#ifndef __NO_STD_LIB
+SEARCH_DIR( $ADI_DSP/TS/lib/ts20x_rev_any )
+#endif
+
+#ifndef __USING_LIBSIM
+    #ifdef __TS_BYTE_ADDRESS
+      $IOLIB     = libio_TS201_ba.dlb;
+      $IOLIB_MT  = libio_TS201_mt_ba.dlb;
+    #else
+      // default option, using libio and libsim
+      $IOLIB     = libio_TS201.dlb;
+      $IOLIB_MT  = libio_TS201_mt.dlb;
+    #endif  // __TS_BYTE_ADDRESS
+  $LIBSIM    = ;
+#else
+  // using only libsim
+  $IOLIB     = ;
+  $IOLIB_MT  = ;
+  $LIBSIM    = libsim_TS201.dlb;
+#endif //  __USING_LIBSIM
+
+$MEMINIT = meminit_ts20x.doj;
+
+  #ifdef __TS_BYTE_ADDRESS
+  $LIBC = libc_TS201_ba.dlb;
+  $LIBC_MT =  libc_TS201_mt_ba.dlb;
+  $LIBDSP =  libdsp_TS201_ba.dlb;
+  #ifdef __ADI_LIBEH__
+  $LIBCPP    = libx_TS201_ba.dlb, libcpp_TS201_x_ba.dlb, libcpprt_TS201_x_ba.dlb;
+  $LIBCPP_MT = libx_TS201_mt_ba.dlb, libcpp_TS201_x_mt_ba.dlb, libcpprt_TS201_x_mt_ba.dlb;
+  #else
+  $LIBCPP    = libx_TS201_ba.dlb, libcpp_TS201_ba.dlb, libcpprt_TS201_ba.dlb;
+  $LIBCPP_MT = libx_TS201_mt_ba.dlb, libcpp_TS201_mt_ba.dlb, libcpprt_TS201_mt_ba.dlb;
+  #endif
+  $EXIT      = ts_exit_cpp_TS201_ba.doj;
+  $EXIT_MT   = ts_exit_cpp_TS201_mt_ba.doj;
+  $HDR       = ts_hdr_cpp_TS201_ba.doj;
+  $HDR_MT    = ts_hdr_cpp_TS201_mt_ba.doj;
+  #else
+  $LIBC    = libc_TS201.dlb;
+  $LIBC_MT = libc_TS201_mt.dlb;
+  $LIBDSP  = libdsp_TS201.dlb;
+  #ifdef __ADI_LIBEH__
+  $LIBCPP    = libx_TS201.dlb, libcpp_TS201_x.dlb, libcpprt_TS201_x.dlb;
+  $LIBCPP_MT = libx_TS201_mt.dlb, libcpp_TS201_x_mt.dlb, libcpprt_TS201_x_mt.dlb;
+  #else
+  $LIBCPP    = libx_TS201.dlb, libcpp_TS201.dlb, libcpprt_TS201.dlb;
+  $LIBCPP_MT = libx_TS201_mt.dlb, libcpp_TS201_mt.dlb, libcpprt_TS201_mt.dlb;
+  #endif
+  $EXIT      = ts_exit_cpp_TS201.doj;
+  $EXIT_MT   = ts_exit_cpp_TS201_mt.doj;
+  $HDR       = ts_hdr_cpp_TS201.doj;
+  $HDR_MT    = ts_hdr_cpp_TS201_mt.doj;
+  #endif  // __TS_BYTE_ADDRESS
+
+
+// Libraries from the command line are included in COMMAND_LINE_OBJECTS.
+// The order of the default libraries within $LIBRARIES is
+// libc, I/O libraries, libdsp, libcpp.
+// This order has to be maintained.
+
+#ifdef _ADI_THREADS
+  // This list describes the libraries/ object files used to build programs
+  // with thread support. Any custom file that falls into this category
+  // should be added here.
+  $OBJECTS = $HDR_MT, $COMMAND_LINE_OBJECTS, 
+#if defined(__MEMINIT__)
+             $MEMINIT, 
+#endif
+             $EXIT_MT;
+  $LIBRARIES = $LIBC_MT, $IOLIB_MT, $LIBDSP,
+               $LIBCPP_MT, $LIBSIM;
+#else
+  // This list describes the libraries/ object files used to build programs
+  // without thread support. Any custom file that falls into this category
+  // should be added here.
+  $OBJECTS = $HDR, $COMMAND_LINE_OBJECTS, 
+#if defined(__MEMINIT__)
+             $MEMINIT, 
+#endif
+             $EXIT;
+  $LIBRARIES = $LIBC, $IOLIB,  $LIBDSP,
+             $LIBCPP, $LIBSIM;
+#endif  // _ADI_THREADS
+
+// List of objects and libraries which prefer internal memory as
+// specified by prefersMem attribute.
+
+$OBJS_LIBS_INTERNAL =
+   $OBJECTS{prefersMem("internal")},
+   $LIBRARIES{prefersMem("internal")}
+   ;
+
+// List of objects and libraries which don't have a preference for
+// external memory as specified by prefersMem attribute.
+
+$OBJS_LIBS_NOT_EXTERNAL =
+   $OBJECTS{!prefersMem("external")},
+   $LIBRARIES{!prefersMem("external")}
+   ;
+
+// Internal memory blocks are 0x20000 (128k)
+
+MEMORY
+{
+#if defined(__SILICON_REVISION__) && \
+           ((__SILICON_REVISION__ < 0x100)|| (__SILICON_REVISION__ == 0xffff))
+// For errata 03-00-248 valid for revisions 0.0 and 0.1 we reserve 
+// memory 0x0001FFA0 through 0x0001FFF for the emulator workaround
+    M0Code      { TYPE(RAM) START(0x00000000) END(0x0001FF9F) WIDTH(32) }
+#else
+    M0Code      { TYPE(RAM) START(0x00000000) END(0x0001FFFF) WIDTH(32) }
+#endif
+    M2DataA     { TYPE(RAM) START(0x00040000) END(0x0004FFFF) WIDTH(32) }
+    M2DataB     { TYPE(RAM) START(0x00050000) END(0x0005FFFF) WIDTH(32) }
+    M4DataA     { TYPE(RAM) START(0x00080000) END(0x0008FFFF) WIDTH(32) }
+#ifdef IDDE_ARGS
+#define ARGV_START 0x00090000
+    MEM_ARGV    { TYPE(RAM) START(0x00090000) END(0x000900FF) WIDTH(32) }
+    M4DataB     { TYPE(RAM) START(0x00090100) END(0x0009FFFF) WIDTH(32) }
+#else
+    M4DataB     { TYPE(RAM) START(0x00090000) END(0x0009FFFF) WIDTH(32) }
+#endif
+    M6DataA     { TYPE(RAM) START(0x000C0000) END(0x000DFFFF) WIDTH(32) }
+    M8DataA     { TYPE(RAM) START(0x00100000) END(0x0010FFFF) WIDTH(32) }
+    M8DataB     { TYPE(RAM) START(0x00110000) END(0x0011FFFF) WIDTH(32) }
+    M10DataA     { TYPE(RAM) START(0x00140000) END(0x0014FFFF) WIDTH(32) }
+    M10DataB     { TYPE(RAM) START(0x00150000) END(0x0015FFFF) WIDTH(32) }
+
+    MS0         { TYPE(RAM) START(0x30000000) END(0x37FFFFFF) WIDTH(32) }
+    MS1         { TYPE(RAM) START(0x38000000) END(0x3FFFFFFF) WIDTH(32) }
+    MSSD0       { TYPE(RAM) START(0x40000000) END(0x43FFFFFF) WIDTH(32) }
+    MSSD1       { TYPE(RAM) START(0x50000000) END(0x53FFFFFF) WIDTH(32) }
+    MSSD2       { TYPE(RAM) START(0x60000000) END(0x63FFFFFF) WIDTH(32) }
+    MSSD3       { TYPE(RAM) START(0x70000000) END(0x73FFFFFF) WIDTH(32) }
+
+// Memory blocks need to be less than 2 Gig.
+     HOST        { TYPE(RAM) START(0x80000000) END(0x8FFFFFFF) WIDTH(32) }
+    HOST1       { TYPE(RAM) START(0x90000000) END(0xAFFFFFFF) WIDTH(32) }
+    HOST2       { TYPE(RAM) START(0xB0000000) END(0xCFFFFFFF) WIDTH(32) }
+    HOST3       { TYPE(RAM) START(0xD0000000) END(0xEFFFFFFF) WIDTH(32) }
+    HOST4       { TYPE(RAM) START(0xF0000000) END(0xFFFFFFFF) WIDTH(32) }
+}
+
+PROCESSOR p0
+{
+#ifdef IDDE_ARGS
+      RESOLVE(___argv_string, ARGV_START)
+#endif
+          RESOLVE( _____system_start, 0x00000000 )
+          KEEP( _____system_start, _main, ___ctor_end, __sw_handler_ctor )
+
+    OUTPUT( $COMMAND_LINE_OUTPUT_FILE )
+
+    SECTIONS
+    {
+        code
+        {
+            FILL(0xb3c00000) // Fill any gaps with NOPs.
+            INPUT_SECTION_ALIGN(4)
+            // Ensure that objects which have a preference for internal
+            // memory as specified by the prefersMem attribute are placed
+            // first.
+            INPUT_SECTIONS( $OBJS_LIBS_INTERNAL(program))
+            // Now, place objects which don't have a preference for external
+            // memory
+            INPUT_SECTIONS( $OBJS_LIBS_NOT_EXTERNAL(program))
+            INPUT_SECTIONS( $OBJECTS(program) $LIBRARIES(program) )
+         // The next line adds 10 nops after the last piece of code in the 
+         // code section. This is required on TS201 to prevent uninitialised 
+         // memory getting into the pipeline.
+         . = . + 10;
+        } >M0Code
+
+        // Provide support for initialization, including C++ static
+        // initialization. This section builds a table of
+        // initialization function pointers. These functions are
+        // called in order before the main routine is entered. The
+        // order is determined by the linker section in which the
+        // function pointer has been defined: the C library uses
+        // ctor0 through ctor4, and the compiler uses ctor for C++
+        // static initializers. The C library uses several sections
+        // to satisfy ordering requirements among initializers.
+        // The ctorl marker terminates this section.
+
+        ctor
+        {
+            FORCE_CONTIGUITY
+            INPUT_SECTIONS( $OBJECTS(ctor0) $LIBRARIES(ctor0)  )
+            INPUT_SECTIONS( $OBJECTS(ctor1) $LIBRARIES(ctor1)  )
+            INPUT_SECTIONS( $OBJECTS(ctor2) $LIBRARIES(ctor2)  )
+            INPUT_SECTIONS( $OBJECTS(ctor3) $LIBRARIES(ctor3)  )
+            INPUT_SECTIONS( $OBJECTS(ctor4) $LIBRARIES(ctor4)  )
+            INPUT_SECTIONS( $OBJECTS(ctor)  $LIBRARIES(ctor)  )
+            INPUT_SECTIONS( $OBJECTS(ctorl) $LIBRARIES(ctorl)  )
+        } >M4DataA
+
+        // Table containing heap segment descriptors
+        heaptab
+        {
+            INPUT_SECTIONS( $OBJECTS(heaptab) $LIBRARIES(heaptab) )
+        } >M4DataA
+
+        // Allocate stacks for the application. Note that stacks
+        // grow downward, and must be quad-word aligned. This means
+        // that the location just after the highest word of the stack
+        // is quad-word aligned (evenly divisible by 4). There are two
+        // labels for each stack: "*_base" is the location just ABOVE
+        // the top of the stack, and "*_limit" is the lowest word that
+        // is part of the stack. Each stack occupies all of its own
+        // memory block.
+
+        data1
+        {
+            INPUT_SECTIONS( $OBJS_LIBS_INTERNAL(data1))
+            INPUT_SECTIONS( $OBJS_LIBS_NOT_EXTERNAL(data1))
+            INPUT_SECTIONS( $OBJECTS(data1) $LIBRARIES(data1) )
+        } >M4DataA
+
+#if defined(__MEMINIT__)
+        bsz_init
+        {
+            INPUT_SECTIONS( $OBJECTS(bsz_init) $LIBRARIES(bsz_init))
+        } >M4DataA
+        .meminit {} >M4DataA
+#endif
+    
+        bsz ZERO_INIT
+        {
+            INPUT_SECTIONS( $OBJS_LIBS_INTERNAL(bsz))
+            INPUT_SECTIONS( $OBJS_LIBS_NOT_EXTERNAL(bsz))
+            INPUT_SECTIONS( $OBJECTS(bsz) $LIBRARIES(bsz) )
+        } >M4DataA
+
+        MEM_ARGV
+        {
+            INPUT_SECTIONS( $OBJECTS(MEM_ARGV) $LIBRARIES(MEM_ARGV) )
+        } >M4DataA
+
+        .gdt
+        {
+          FORCE_CONTIGUITY
+          INPUT_SECTIONS( $OBJECTS(.gdt) $LIBRARIES(.gdt) )
+          INPUT_SECTIONS( $OBJECTS(.gdtl) $LIBRARIES(.gdtl) )
+        } > M2DataA
+
+        .frt
+        {
+          INPUT_SECTIONS( $OBJECTS(.frt) $LIBRARIES(.frt) )
+        } > M2DataA
+
+        .cht
+        {
+          INPUT_SECTIONS( $OBJECTS(.cht) $LIBRARIES(.cht) )
+        } > M2DataA
+
+        .edt
+        {
+          INPUT_SECTIONS( $OBJECTS(.edt) $LIBRARIES(.edt) )
+          INPUT_SECTIONS( $OBJECTS(.rtti) $LIBRARIES(.rtti) )
+        } > M2DataA
+
+        vtbl
+        {
+          INPUT_SECTIONS( $OBJECTS(vtbl) $LIBRARIES(vtbl) )
+        } > M2DataA
+
+        data2
+        {
+            INPUT_SECTIONS( $OBJS_LIBS_INTERNAL(data2))
+            INPUT_SECTIONS( $OBJS_LIBS_NOT_EXTERNAL(data2))
+            INPUT_SECTIONS( $OBJECTS(data2) $LIBRARIES(data2) )
+        } >M8DataA
+
+        data2a
+        {
+            INPUT_SECTIONS( $OBJS_LIBS_INTERNAL(data2a))
+            INPUT_SECTIONS( $OBJS_LIBS_NOT_EXTERNAL(data2a))
+            INPUT_SECTIONS( $OBJECTS(data2a) $LIBRARIES(data2a) )
+        } >M2DataA
+
+        data2b
+        {
+            INPUT_SECTIONS( $OBJS_LIBS_INTERNAL(data2b))
+            INPUT_SECTIONS( $OBJS_LIBS_NOT_EXTERNAL(data2b))
+            INPUT_SECTIONS( $OBJECTS(data2b) $LIBRARIES(data2b) )
+        } >M2DataB
+
+        data4a
+        {
+            INPUT_SECTIONS( $OBJS_LIBS_INTERNAL(data4a))
+            INPUT_SECTIONS( $OBJS_LIBS_NOT_EXTERNAL(data4a))
+            INPUT_SECTIONS( $OBJECTS(data4a) $LIBRARIES(data4a) )
+        } >M4DataA
+
+        data4b
+        {
+        // Allocate stacks for the application. Note that stacks
+        // grow downward, and must be quad-word aligned. This means
+        // that the location just after the highest word of the stack
+        // is quad-word aligned (evenly divisible by 4). There are two
+        // labels for each stack: "*_base" is the location just ABOVE
+        // the top of the stack, and "*_limit" is the lowest word that
+        // is part of the stack. Each stack occupies all of its own
+        // memory block.
+ 
+            RESERVE(heaps_and_stack, heaps_and_stack_length = 64K)
+            INPUT_SECTIONS( $OBJECTS(data4b) $LIBRARIES(data4b) )
+            RESERVE_EXPAND(heaps_and_stack, heaps_and_stack_length)
+            ldf_jstack_end = heaps_and_stack;
+            ldf_jstack_base = (ldf_jstack_end + (((heaps_and_stack_length * 30K) / 48K) - 4)) & 0xfffffffc;
+            ldf_jstack_limit = ldf_jstack_base - ldf_jstack_end;
+            ldf_defheap_base = ldf_jstack_base + 4;
+            ldf_defheap_end = (ldf_defheap_base + (((heaps_and_stack_length * 18K) / 48K) - 4)) & 0xfffffffc;
+            ldf_defheap_size = ldf_defheap_end - ldf_defheap_base;
+        } >M4DataB
+
+        data6a
+        {
+            RESERVE(heaps_and_stack_data6a, heaps_and_stack_length_data6a = 64K)
+            INPUT_SECTIONS( $OBJECTS(data6a) $LIBRARIES(data6a) )
+            RESERVE_EXPAND(heaps_and_stack_data6a, heaps_and_stack_length_data6a)
+            ldf_kstack_end = heaps_and_stack_data6a;
+            ldf_kstack_base = (ldf_kstack_end + (((heaps_and_stack_length_data6a * 14K) / 62K) - 4)) & 0xfffffffc;
+            ldf_kstack_limit = ldf_kstack_base - ldf_kstack_end;
+            ldf_altheap_base = ldf_kstack_base + 4;
+            ldf_altheap_end = (ldf_altheap_base + (((heaps_and_stack_length_data6a * 48K) / 62K) - 4)) & 0xfffffffc;
+            ldf_altheap_size = ldf_altheap_end - ldf_altheap_base;
+        } >M6DataA
+
+        data8a
+        {
+            INPUT_SECTIONS( $OBJS_LIBS_INTERNAL(data8a))
+            INPUT_SECTIONS( $OBJS_LIBS_NOT_EXTERNAL(data8a))
+            INPUT_SECTIONS( $OBJECTS(data8a) $LIBRARIES(data8a) )
+        } >M8DataA
+
+        data8b
+        {
+            INPUT_SECTIONS( $OBJS_LIBS_INTERNAL(data8b))
+            INPUT_SECTIONS( $OBJS_LIBS_NOT_EXTERNAL(data8b))
+            INPUT_SECTIONS( $OBJECTS(data8b) $LIBRARIES(data8b) )
+        } >M8DataB
+
+        data10a
+        {
+            INPUT_SECTIONS( $OBJS_LIBS_INTERNAL(data10a))
+            INPUT_SECTIONS( $OBJS_LIBS_NOT_EXTERNAL(data10a))
+            INPUT_SECTIONS( $OBJECTS(data10a) $LIBRARIES(data10a) )
+        } >M10DataA
+
+        data10b
+        {
+            INPUT_SECTIONS( $OBJS_LIBS_INTERNAL(data10b))
+            INPUT_SECTIONS( $OBJS_LIBS_NOT_EXTERNAL(data10b))
+            INPUT_SECTIONS( $OBJECTS(data10b) $LIBRARIES(data10b) )
+        } >M10DataB
+
+        // Allocate stacks for the application. Note that stacks
+        // grow downward, and must be quad-word aligned. This means
+        // that the location just after the highest word of the stack
+        // is quad-word aligned (evenly divisible by 4). There are two
+        // labels for each stack: "*_base" is the location just ABOVE
+        // the top of the stack, and "*_limit" is the lowest word that
+        // is part of the stack. Each stack occupies all of its own
+        // memory block.
+
+        //.................................... not initialized sections    
+        
+        data1_ni NO_INIT
+        {
+            INPUT_SECTIONS( $OBJECTS(data1_ni) $LIBRARIES(data1_ni) )
+        } >M4DataA
+
+        data2_ni NO_INIT
+        {
+            INPUT_SECTIONS( $OBJECTS(data2_ni) $LIBRARIES(data2_ni) )
+        } >M8DataA
+
+        data2a_ni NO_INIT
+        {
+            INPUT_SECTIONS( $OBJECTS(data2a_ni) $LIBRARIES(data2a_ni) )
+            LdfFreeData2a = .;
+            LdfFreeData2aSize32 = MEMORY_START(M2DataA) + MEMORY_SIZEOF(M2DataA) - .; 
+        } >M2DataA
+
+        data2b_ni NO_INIT
+        {
+            INPUT_SECTIONS( $OBJECTS(data2b_ni) $LIBRARIES(data2b_ni) )
+            LdfFreeData2b = .;
+            LdfFreeData2bSize32 = MEMORY_START(M2DataB) + MEMORY_SIZEOF(M2DataB) - .; 
+        } >M2DataB
+
+        data4a_ni NO_INIT
+        {
+            INPUT_SECTIONS( $OBJECTS(data4a_ni) $LIBRARIES(data4a_ni) )
+            LdfFreeData4a = .;
+            LdfFreeData4aSize32 = MEMORY_START(M4DataA) + MEMORY_SIZEOF(M4DataA) - .; 
+        } >M4DataA
+        /*
+        data4b_ni NO_INIT
+        {
+            INPUT_SECTIONS( $OBJECTS(data4b_ni) $LIBRARIES(data4b_ni) )
+            LdfFreeData4b = .;
+            LdfFreeData4bSize32 = MEMORY_START(M4DataB) + MEMORY_SIZEOF(M4DataB) - .; 
+        } >M4DataB
+
+        data6a_ni NO_INIT
+        {
+            INPUT_SECTIONS( $OBJECTS(data6a_ni) $LIBRARIES(data6a_ni) )
+            LdfFreeData6a = .;
+            LdfFreeData6aSize32 = MEMORY_START(M6DataA) + MEMORY_SIZEOF(M6DataA) - .; 
+        } >M6DataA
+        */
+        data8a_ni NO_INIT
+        {
+            INPUT_SECTIONS( $OBJECTS(data8a_ni) $LIBRARIES(data8a_ni) )
+            LdfFreeData8a = .;
+            LdfFreeData8aSize32 = MEMORY_START(M8DataA) + MEMORY_SIZEOF(M8DataA) - .; 
+        } >M8DataA
+
+        data8b_ni NO_INIT
+        {
+            INPUT_SECTIONS( $OBJECTS(data8b_ni) $LIBRARIES(data8b_ni) )
+            LdfFreeData8b = .;
+            LdfFreeData8bSize32 = MEMORY_START(M8DataB) + MEMORY_SIZEOF(M8DataB) - .; 
+        } >M8DataB
+
+        data10a_ni NO_INIT
+        {
+            INPUT_SECTIONS( $OBJECTS(data10a_ni) $LIBRARIES(data10a_ni) )
+            LdfFreeData10a = .;
+            LdfFreeData10aSize32 = MEMORY_START(M10DataA) + MEMORY_SIZEOF(M10DataA) - .; 
+        } >M10DataA
+
+        data10b_ni NO_INIT
+        {
+            INPUT_SECTIONS( $OBJECTS(data10b_ni) $LIBRARIES(data10b_ni) )
+            LdfFreeData10b = .;
+            LdfFreeData10bSize32 = MEMORY_START(M10DataB) + MEMORY_SIZEOF(M10DataB) - .; 
+        } >M10DataB
+    }
+}

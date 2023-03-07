@@ -433,7 +433,7 @@
         size_t {{ ref_index }};
         for ({{ ref_index }} = 0U; {{ ref_index }} < {{ reference }}.count; ++{{ ref_index }}) // Size of C array element may not equals to the size of DSDL array element. So, cycle is needed
         {
-            nunavutCopyBits(&buffer[0], offset_bits, {{ t.element_type.bit_length }}U, &{{ reference }}[{{ ref_index }}], 0U);
+            nunavutCopyBits(&buffer[0], offset_bits, {{ t.element_type.bit_length }}U, &{{ reference }}.elements[{{ ref_index }}], 0U);
             offset_bits += {{ t.element_type.bit_length }}U;
         }
     }
@@ -461,7 +461,7 @@
         size_t {{ ref_index }};
         for ({{ ref_index }} = 0U; {{ ref_index }} < {{ reference }}.count; ++{{ ref_index }}) // Size of C array element may not equals to the size of DSDL array element. So, cycle is needed
         {
-            nunavutCopyBits(&buffer[0], offset_bits, {{ t.element_type.bit_length }}U, &{{ reference }}[{{ ref_index }}], 0U);
+            nunavutCopyBits(&buffer[0], offset_bits, {{ t.element_type.bit_length }}U, &{{ reference }}.elements[{{ ref_index }}], 0U);
             offset_bits += {{ t.element_type.bit_length }}U;
         }
     }
