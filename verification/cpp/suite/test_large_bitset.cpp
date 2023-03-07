@@ -22,11 +22,11 @@ TEST(LargeBitsetTests, serialize)
     sersubject_set->set(1);
     ASSERT_EQ(0x2, sersubject_set->to_ulong());
 
-    const nunavut::support::SerializeResult serresult = sersubject.serialize(bufferspan);
+    const nunavut::support::SerializeResult serresult = uavcan::node::port::serialize(sersubject, bufferspan);
     ASSERT_TRUE(serresult) << "Error is " << static_cast<int>(serresult.error());
 
     uavcan::node::port::SubjectIDList_0_1 dessubject;
-    const nunavut::support::SerializeResult desresult = dessubject.deserialize(nunavut::support::const_bitspan(buffer));
+    const nunavut::support::SerializeResult desresult = uavcan::node::port::deserialize(dessubject, nunavut::support::const_bitspan(buffer));
     ASSERT_TRUE(desresult) << "Error is " << static_cast<int>(desresult.error());
     std::bitset<uavcan::node::port::SubjectIDList_0_1::CAPACITY>* dessubject_set = dessubject.get_mask_if();
     ASSERT_NE(nullptr, dessubject_set);
