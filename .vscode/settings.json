@@ -186,5 +186,30 @@
         "env": "",
         "environment": "",
         "sourceFileMap": "${sourceFileMapObj}"
-    }
+    },
+    "spellright.ignoreRegExps": [
+        "/DLCs/g",
+        "/rhs/ig",
+        "/_?rx_?/",
+        "/_?tx_?/",
+        "/Kirienko/g",
+        "/Pavel/g",
+        "/gtests/g",
+        "/(lib)?cyphal/g",
+        "/ovfl/g",
+        "/Cyphal/ig",
+        "/tparam/g",
+        "/\\.hpp/g",
+        "/endcode/g",
+        "/defgroup/",
+        "/dst/",
+        "/lvs/",
+        "/g(oogle)?mock/",
+        "/g(oogle)?test/",
+        "/(?:de?|con)struct(?:able?|or)/",
+        "/(lib)?uavcan/",
+        "/nunavut/i",
+        "/dsdl/i",
+        "/bitspan/"
+    ],
 }
