@@ -436,6 +436,27 @@ TYPED_TEST(VLATestsNonTrivialCommon, TestForEachConstIterators)
     ASSERT_EQ(MaxSize, i);
 }
 
+#if defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wself-assign-overloaded"
+#endif
+
+TYPED_TEST(VLATestsNonTrivialCommon, SelfAssignment)
+{
+    nunavut::support::VariableLengthArray<TypeParam, 20> subject;
+    subject.push_back(0);
+    subject.push_back(1);
+    ASSERT_EQ(2U, subject.size());
+    subject = subject;
+    ASSERT_EQ(2U, subject.size());
+    ASSERT_EQ(0, subject[0]);
+    ASSERT_EQ(1, subject[1]);
+}
+
+#if defined(__clang__)
+#    pragma clang diagnostic pop
+#endif
+
 // +----------------------------------------------------------------------+
 /**
  * Test suite to ensure non-trivial objects are properly handled. This one contains non-generic cases.
