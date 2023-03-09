@@ -2,6 +2,8 @@
 // This software is distributed under the terms of the MIT License.
 
 
+#include "helpers.h"
+
 #include <nunavut/support/serialization.h>
 
 #if NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 1
@@ -20,7 +22,10 @@ static void testPrimitiveArrayVariableOverride(void)
 {
     regulated_basics_PrimitiveArrayVariable_0_1 ref;
     memset(&ref, 0, sizeof(ref));
-    uint8_t buf[regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_ - 1];
+    const size_t buf_size_chars = (regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
+    size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
+    size_t ini_ofs = 0;
+    unsigned char buf[buf_size_chars - 1];
 
 #if NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 1
     TEST_ASSERT_EQUAL(OVERRIDE_SIZE, regulated_basics_PrimitiveArrayVariable_0_1_a_u64_ARRAY_CAPACITY_);
@@ -36,12 +41,9 @@ static void testPrimitiveArrayVariableOverride(void)
                       sizeof(ref.n_f64.elements));
 #endif
 
-    const size_t buf_size_bits = sizeof(buf) * CHAR_BIT;
-    size_t ini_ofs = 0;
-
 #if NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 1
     TEST_ASSERT_EQUAL(NUNAVUT_SUCCESS,
-                      regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], &size));
+                      regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], buf_size_bits, &ini_ofs));
 #else
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL,
                       regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], buf_size_bits, &ini_ofs));

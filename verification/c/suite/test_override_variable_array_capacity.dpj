@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding='ISO-8859-1'?>
-<visualdsp-project schema="17" name="test_serialization" file="test_serialization.dpj" version="1">
+<visualdsp-project schema="17" name="test_override_variable_array_capacity" file="test_override_variable_array_capacity.dpj" version="1">
 	<!-- Project build target -->
 	<target>
 		<processor revision="Automatic">ADSP-TS201</processor>
@@ -113,7 +113,7 @@
 		</folder>
 		<folder name="Source Files" ext=".c,.cpp,.cxx,.asm,.dsp,.s">
 			<files>
-				<file name=".\test_serialization.c">
+				<file name=".\test_override_variable_array_capacity.c">
 					<file-configurations>
 						<file-configuration name="Debug">
 							<excluded-flag value="no"/>

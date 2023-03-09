@@ -2,10 +2,7 @@
 //
 // Tests the common functionality provided by the Nunavut support headers.
 
-#ifndef NUNAVUT_ASSERT
-  #include <assert.h>
-  #define NUNAVUT_ASSERT assert
-#endif
+#include "helpers.h"
 
 #include "nunavut/support/serialization.h"
 #include "unity.h"  // Include 3rd-party headers afterward to ensure that our header is self-sufficient.

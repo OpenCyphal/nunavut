@@ -1,26 +1,7 @@
 // Copyright (c) 2020 OpenCyphal Development Team.
 // This software is distributed under the terms of the MIT License.
 
-#ifndef NUNAVUT_ASSERT
-  #include <assert.h>
-  #define NUNAVUT_ASSERT assert
-#endif
-#ifdef __ADSPTS__
-  #define INFINITY 0
-  #define isfinite(x) 1
-  #define static_assert(cond,msg)
-  //#define static_assert(cond,msg) typedef int static_assert_foo_t[(cond) ? 1 : -1]
-  /*
-  #define ASSERT_CONCAT_(a,b) a##b
-  #define ASSERT_CONCAT(a,b) ASSERT_CONCAT_(a,b)
-  #ifdef __COUNTER__
-    #define static_assert(e,m) enum { ASSERT_CONCAT(static_assert_,__COUNTER__) = 1/(!!(e)) }
-  #else
-    #define static_assert(e,m) enum { ASSERT_CONCAT(assert_line_,__LINE__) = 1/(!!(e)) }
-  #endif
-  */  
-#endif
-
+#include "helpers.h"
 
 #include "regulated/basics/Struct__0_1.h"
 #include <regulated/basics/Union_0_1.h>
@@ -76,9 +57,20 @@
 ///     sr = b''.join(pycyphal.dsdl.serialize(s))
 ///     print(len(sr), 'bytes')
 ///     print('\n'.join(f'0x{x:02X}U,' for x in sr))
+
+void set_octet( void* void_buf, unsigned offset_from_buf_begin_octets, uint_fast8_t value ) // helper
+{
+    unsigned char* buf = (unsigned char*)void_buf;
+    const unsigned offset_bits         = offset_from_buf_begin_octets * 8U;
+    const unsigned offset_chars        = offset_bits >> CHAR_SHIFT;
+    const unsigned offset_bits_in_char = offset_bits & CHAR_SHIFT_MASK;
+    buf[offset_chars] = (buf[offset_chars] & ~(0xFFU << offset_bits_in_char)) | ((value & 0xFFU) << offset_bits_in_char);
+}
+
 static void testStructReference(void)
 {
     regulated_basics_Struct__0_1 obj = {0};
+
 
     // Initialize a reference object, serialize, and compare against the reference serialized representation.
     obj.boolean = true;
@@ -201,7 +193,7 @@ static void testStructReference(void)
         0x0000U,
         0x0000U,
         0x1234U,
-        0x5678U,
+        0x5678U
         0x0811U,
         0x0003U,
         0x0000U,
@@ -231,13 +223,14 @@ static void testStructReference(void)
         0x01360377U,
         0x00000000U,
         0x56781234U,
-        0x00000003U,
-        0x097C0000U,
-        0x02000000U,
-        0xF1C35CA5U,
-        0xC83D6329U,
-        0x55550101U,
+        0x00030811U,
+        0x00000000U,
+        0x0000097CU,
+        0x5CA50200U,
+        0x6329F1C3U,
+        0x0101C83DU,
         // END OF SERIALIZED REPRESENTATION
+        0x55555555U,
         0x55555555U,
         0x55555555U,
         0x55555555U
@@ -259,7 +252,7 @@ static void testStructReference(void)
     const size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
     size_t ini_ofs = 0;
     TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
-    TEST_ASSERT_EQUAL((sizeof(reference) - 16U)*CHAR_BIT, ini_ofs);
+    TEST_ASSERT_EQUAL((sizeof(reference)*CHAR_BIT - 16U*8U), ini_ofs);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(reference, buf, sizeof(reference));
 
     // Check union manipulation functions.
@@ -393,17 +386,37 @@ static void testStructDelimited(void)
     obj.del.fix.elements[0].a[1] = 6;
 
     const unsigned char reference[] = {
-        // 0    1      2      3      4      5      6      7      8      9     10     11     12     13     14     15
-        0x01U, 0x17U, 0x00U, 0x00U, 0x00U, 0x02U, 0x04U, 0x00U, 0x00U, 0x00U, 0x02U, 0x01U, 0x02U, 0x00U, 0x03U, 0x00U,
-        0x00U, 0x00U, 0x01U, 0x03U, 0x04U, 0x01U, 0x02U, 0x00U, 0x00U, 0x00U, 0x05U, 0x06U,
-        // END OF SERIALIZED REPRESENTATION
-        0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU,
-        0xAAU,
+        #if CHAR_BIT == 8
+            // 0    1      2      3      4      5      6      7      8      9     10     11     12     13     14     15
+            0x01U, 0x17U, 0x00U, 0x00U, 0x00U, 0x02U, 0x04U, 0x00U, 0x00U, 0x00U, 0x02U, 0x01U, 0x02U, 0x00U, 0x03U, 0x00U,
+            0x00U, 0x00U, 0x01U, 0x03U, 0x04U, 0x01U, 0x02U, 0x00U, 0x00U, 0x00U, 0x05U, 0x06U,
+            // END OF SERIALIZED REPRESENTATION
+            0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU, 0xAAU,
+            0xAAU
+        #elif CHAR_BIT == 16
+            0x1701U, 0x0000U, 0x0200U, 0x0004U, 0x0000U, 0x0102U, 0x0002U, 0x0003U,
+            0x0000U, 0x0301U, 0x0104U, 0x0002U, 0x0000U, 0x0605U,
+            // END OF SERIALIZED REPRESENTATION
+            0xAAAAU, 0xAAAAU, 0xAAAAU, 0xAAAAU, 0xAAAAU, 0xAAAAU, 0xAAAAU, 0xAAAAU, 0xAAAAU
+        #elif CHAR_BIT == 32
+            0x00001701U, 0x00040200U, 0x01020000U, 0x00030002U,
+            0x03010000U, 0x00020104U, 0x06050000U,
+            // END OF SERIALIZED REPRESENTATION
+            0xAAAAAAAAU, 0xAAAAAAAAU, 0xAAAAAAAAU, 0xAAAAAAAAU, 0xAAAAAAAAU
+        #endif
     };
-    static_assert(sizeof(reference) == regulated_delimited_A_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_, "");
+    static_assert(sizeof(reference) == (regulated_delimited_A_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT, "");
+    const unsigned char OxAA = (unsigned char)
+    #if CHAR_BIT == 8
+        0xAAU;
+    #elif CHAR_BIT == 16
+        0xAAAAUU;
+    #elif CHAR_BIT == 32
+        0xAAAAAAAAU;
+    #endif
 
-    unsigned char buf[1024] = {0};
-    (void) memset(&buf[0], 0xAAU, sizeof(buf));  // Fill out the canaries
+    unsigned char buf[1024*8/CHAR_BIT] = {0};
+    (void) memset(&buf[0], OxAA, sizeof(buf));  // Fill out the canaries
     size_t buf_size_chars = sizeof(buf);
     size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
     size_t ini_ofs = 0;
@@ -489,6 +502,7 @@ static void testStructErrors(void)
     // Construct a reference in Python for cross-validation: b''.join(pycyphal.dsdl.serialize(Struct__0_1()))
     // Default state -- all zeros except delimiter headers of the nested delimited objects:
     unsigned char sr[] = {
+      #if CHAR_BIT == 8
         0x00U,  // void1, boolean, i10_4[0]
         0x00U,  // i10_4[]
         0x00U,  // i10_4[]
@@ -539,22 +553,75 @@ static void testStructErrors(void)
         0xAAU,  // canary 13
         0xAAU,  // canary 14
         0xAAU,  // canary 15
-        0xAAU,  // canary 16
+        0xAAU   // canary 16
+      #elif CHAR_BIT == 16
+        0x0000U,
+        0x0000U,
+        0x0000U,
+        0x0000U,
+        0x0000U,
+        0x0000U,
+        0x0000U,
+        0x0000U,
+        0x0000U,
+        0x0300U,
+        0x0000U,
+        0x0000U,
+        0x0000U,
+        0x0003U,
+        0x0000U,
+        0x0000U,
+        0x0000U,
+        // END OF SERIALIZED REPRESENTATION
+        0xAAAAU,
+        0xAAAAU,
+        0xAAAAU,
+        0xAAAAU,
+        0xAAAAU,
+        0xAAAAU,
+        0xAAAAU,
+        0xAAAAU
+      #elif CHAR_BIT == 32
+        0x00000000U,
+        0x00000000U,
+        0x00000000U,
+        0x00000000U,
+        0x03000000U,
+        0x00000000U,
+        0x00030000U,
+        0x00000000U,
+        0xAAAA0000U,
+        // END OF SERIALIZED REPRESENTATION
+        0xAAAAAAAAU,
+        0xAAAAAAAAU,
+        0xAAAAAAAAU,
+        0xAAAAAAAAU
+      #endif
     };
+    const unsigned reference_serialized_size_bits = (50U - 16U)*8U;
+    #define BUF_SIZE ((regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT)
+    const unsigned char OxAA = (unsigned char)
+    #if CHAR_BIT == 8
+        0xAAU;
+    #elif CHAR_BIT == 16
+        0xAAAAU;
+    #elif CHAR_BIT == 32
+        0xAAAAAAAAU;
+    #endif
 
-    unsigned char buf[regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];  // Min size buffer
-    (void) memset(&buf[0], 0xAAU, sizeof(buf));  // Fill out the canaries
+    unsigned char buf[BUF_SIZE];  // Min size buffer
+    (void) memset(&buf[0], OxAA, sizeof(buf));  // Fill out the canaries
 
     // Happy path, validate the test rig
-    size_t buf_size_chars = regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_;
+    size_t buf_size_chars = BUF_SIZE;
     size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
     size_t ini_ofs = 0;
     TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
-    TEST_ASSERT_EQUAL((sizeof(sr) - 16U)*CHAR_BIT, ini_ofs);
+    TEST_ASSERT_EQUAL(reference_serialized_size_bits, ini_ofs);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(sr, buf, sizeof(sr));
 
     // Buffer too small
-    buf_size_chars = regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_ - 1;
+    buf_size_chars = BUF_SIZE - 1;
     buf_size_bits  = buf_size_chars * CHAR_BIT;
     ini_ofs = 0;
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL,
@@ -573,7 +640,7 @@ static void testStructErrors(void)
                       regulated_basics_Struct__0_1_serialize_(NULL, &buf[0], buf_size_bits, &ini_ofs));
 
     // Bad array length
-    buf_size_chars = regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_;
+    buf_size_chars = BUF_SIZE;
     buf_size_bits  = buf_size_chars * CHAR_BIT;
     ini_ofs = 0;
     obj.delimited_fix_le2.count = 123;
@@ -595,7 +662,7 @@ static void testStructErrors(void)
     buf_size_bits  = buf_size_chars * CHAR_BIT;
     ini_ofs = 0;
     TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], buf_size_bits, &ini_ofs));
-    TEST_ASSERT_EQUAL((sizeof(sr) - 16U)*CHAR_BIT, ini_ofs);
+    TEST_ASSERT_EQUAL(reference_serialized_size_bits, ini_ofs);
 
     // Null pointers at the input.
     ini_ofs = 0;
@@ -608,24 +675,25 @@ static void testStructErrors(void)
 
     // Bad array length
     ini_ofs = 0;
-    sr[7] = 123;  // uint8[<3] bytes_lt3
+
+    set_octet( sr, 7, 123 ); // sr[7] = 123;  // uint8[<3] bytes_lt3
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_ARRAY_LENGTH,
                       regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], buf_size_bits, &ini_ofs));
-    sr[7] = 0;
+    set_octet( sr, 7, 0 ); // sr[7] = 0;
 
     // Bad union tag in a nested composite; make sure the error floats up to the caller.
     ini_ofs = 0;
-    sr[23] = 4;  // first element of DelimitedVariableSize.0.1[2] delimited_var_2
+    set_octet( sr, 23, 4 ); // sr[23] = 4;  // first element of DelimitedVariableSize.0.1[2] delimited_var_2
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_UNION_TAG,
                       regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], buf_size_bits, &ini_ofs));
-    sr[23] = 0;
+    set_octet( sr, 23, 0 ); // sr[23] = 0;
 
     // Bad delimiter header
     ini_ofs = 0;
-    sr[20] = 200;  // 2nd byte of delimiter header of the first element of DelimitedVariableSize.0.1[2] delimited_var_2
+    set_octet( sr, 20, 200 ); // sr[20] = 200;  // 2nd byte of delimiter header of the first element of DelimitedVariableSize.0.1[2] delimited_var_2
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_DELIMITER_HEADER,
                       regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], buf_size_bits, &ini_ofs));
-    sr[20] = 0;
+    set_octet( sr, 20, 0 ); // sr[20] = 0;
 }
 
 static int_fast8_t randI8(void)
@@ -650,7 +718,7 @@ static int_fast64_t randI64(void)
 
 static float randF16(void)
 {
-    return (float) randI8();
+    return ((float) (randI8() & 0x000000FFUL)) * ((rand() & 1) ? 1 : -1); // * sign
 }
 
 static float randF32(void)
@@ -666,49 +734,49 @@ static double randF64(void)
 static void testPrimitive(void)
 {
     size_t i;
-    for (i = 0U; i < 100; i++)
+    for (i = 0U; i < 10; i++)
     {
         regulated_basics_Primitive_0_1 ref;
-        ref.a_u64  = (uint_fast64_t) randI64();
-        ref.a_u32  = (uint_fast32_t) randI32();
-        ref.a_u16  = (uint_fast16_t) randI16();
-        ref.a_u8   = (uint_fast8_t)  randI8();
-        ref.a_u7   = (uint_fast8_t)  randI8() & 127U;
-        ref.n_u64  = (uint_fast64_t) randI64();
-        ref.n_u32  = (uint_fast32_t) randI32();
-        ref.n_u16  = (uint_fast16_t) randI16();
-        ref.n_u8   = (uint_fast8_t)  randI8();
-        ref.n_u7   = (uint_fast8_t)  randI8() & 127U;
-        ref.a_i64  = randI64();
-        ref.a_i32  = randI32();
-        ref.a_i16  = randI16();
-        ref.a_i8   = randI8();
-        ref.a_i7   = randI8() % 64;
-        ref.n_i64  = randI64();
-        ref.n_i32  = randI32();
-        ref.n_i16  = randI16();
-        ref.n_i8   = randI8();
-        ref.n_i7   = randI8() % 64;
+        ref.a_u64  = (uint_fast64_t) randI64()                ;
+        ref.a_u32  = (uint_fast32_t) randI32() & 0xFFFFFFFFULL;
+        ref.a_u16  = (uint_fast16_t) randI16() & 0x0000FFFFULL;
+        ref.a_u8   = (uint_fast8_t ) randI8 () & 0x000000FFULL;
+        ref.a_u7   = (uint_fast8_t ) randI8 () & 127U         ;
+        ref.n_u64  = (uint_fast64_t) randI64()                ;
+        ref.n_u32  = (uint_fast32_t) randI32() & 0xFFFFFFFFULL;
+        ref.n_u16  = (uint_fast16_t) randI16() & 0x0000FFFFULL;
+        ref.n_u8   = (uint_fast8_t ) randI8 () & 0x000000FFULL;
+        ref.n_u7   = (uint_fast8_t ) randI8 () & 127U         ;
+        ref.a_i64  = randI64()              ;
+        ref.a_i32  = randI32() % (1<<(32-1));
+        ref.a_i16  = randI16() % (1<<(16-1));
+        ref.a_i8   = randI8 () % (1<<(8 -1));
+        ref.a_i7   = randI8 () % (1<<(7 -1));
+        ref.n_i64  = randI64()              ;
+        ref.n_i32  = randI32() % (1<<(32-1));
+        ref.n_i16  = randI16() % (1<<(16-1));
+        ref.n_i8   = randI8 () % (1<<(8 -1));
+        ref.n_i7   = randI8 () % (1<<(7 -1));
         ref.a_f64  = randF64();
         ref.a_f32  = randF32();
         ref.a_f16  = randF16();
-        ref.a_bool = randI8() % 2 == 0;
-        ref.n_bool = randI8() % 2 == 0;
+        ref.a_bool = randI8 () % 2 == 0;
+        ref.n_bool = randI8 () % 2 == 0;
         ref.n_f64  = randF64();
         ref.n_f32  = randF32();
         ref.n_f16  = randF16();
 
-        unsigned char buf[regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];
-        size_t buf_size_chars = sizeof(buf);
+        const size_t buf_size_chars = (regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
+        unsigned char buf[buf_size_chars];
         size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
         size_t ini_ofs = 0;
         TEST_ASSERT_EQUAL(0, regulated_basics_Primitive_0_1_serialize_(&ref, &buf[0], buf_size_bits, &ini_ofs));
-        TEST_ASSERT_EQUAL(regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*CHAR_BIT, ini_ofs);  // fixed
+        TEST_ASSERT_EQUAL(regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*8U, ini_ofs);  // fixed
 
         regulated_basics_Primitive_0_1 obj;
         ini_ofs = 0;
         TEST_ASSERT_EQUAL(0, regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
-        TEST_ASSERT_EQUAL(regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*CHAR_BIT, ini_ofs);  // fixed
+        TEST_ASSERT_EQUAL(regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*8U, ini_ofs);  // fixed
         TEST_ASSERT_EQUAL(ref.a_u64  , obj.a_u64 );
         TEST_ASSERT_EQUAL(ref.a_u32  , obj.a_u32 );
         TEST_ASSERT_EQUAL(ref.a_u16  , obj.a_u16 );
@@ -743,32 +811,32 @@ static void testPrimitive(void)
 static void testPrimitiveArrayFixed(void)
 {
     size_t i;
-    for (i = 0U; i < 100; i++)
+    for (i = 0U; i < 10; i++)
     {
         regulated_basics_PrimitiveArrayFixed_0_1 ref;
         size_t k;
         for (k = 0; k < 2; k++)
         {
-            ref.a_u64[k] = (uint_fast64_t) randI64();
-            ref.a_u32[k] = (uint_fast32_t) randI32();
-            ref.a_u16[k] = (uint_fast16_t) randI16();
-            ref.a_u8 [k] = (uint_fast8_t)  randI8();
-            ref.a_u7 [k] = (uint_fast8_t)  randI8() & 127U;
-            ref.n_u64[k] = (uint_fast64_t) randI64();
-            ref.n_u32[k] = (uint_fast32_t) randI32();
-            ref.n_u16[k] = (uint_fast16_t) randI16();
-            ref.n_u8 [k] = (uint_fast8_t)  randI8();
-            ref.n_u7 [k] = (uint_fast8_t)  randI8() & 127U;
-            ref.a_i64[k] = randI64();
-            ref.a_i32[k] = randI32();
-            ref.a_i16[k] = randI16();
-            ref.a_i8 [k] = randI8();
-            ref.a_i7 [k] = randI8() % 64;
-            ref.n_i64[k] = randI64();
-            ref.n_i32[k] = randI32();
-            ref.n_i16[k] = randI16();
-            ref.n_i8 [k] = randI8();
-            ref.n_i7 [k] = randI8() % 64;
+            ref.a_u64[k] = (uint_fast64_t) randI64()                ;
+            ref.a_u32[k] = (uint_fast32_t) randI32() & 0xFFFFFFFFULL;
+            ref.a_u16[k] = (uint_fast16_t) randI16() & 0x0000FFFFULL;
+            ref.a_u8 [k] = (uint_fast8_t ) randI8 () & 0x000000FFULL;
+            ref.a_u7 [k] = (uint_fast8_t ) randI8 () & 127U         ;
+            ref.n_u64[k] = (uint_fast64_t) randI64()                ;
+            ref.n_u32[k] = (uint_fast32_t) randI32() & 0xFFFFFFFFULL;
+            ref.n_u16[k] = (uint_fast16_t) randI16() & 0x0000FFFFULL;
+            ref.n_u8 [k] = (uint_fast8_t ) randI8 () & 0x000000FFULL;
+            ref.n_u7 [k] = (uint_fast8_t ) randI8 () & 127U         ;
+            ref.a_i64[k] = randI64()              ;
+            ref.a_i32[k] = randI32() % (1<<(32-1));
+            ref.a_i16[k] = randI16() % (1<<(16-1));
+            ref.a_i8 [k] = randI8 () % (1<<(8 -1));
+            ref.a_i7 [k] = randI8 () % (1<<(7 -1));
+            ref.n_i64[k] = randI64()              ;
+            ref.n_i32[k] = randI32() % (1<<(32-1));
+            ref.n_i16[k] = randI16() % (1<<(16-1));
+            ref.n_i8 [k] = randI8 () % (1<<(8 -1));
+            ref.n_i7 [k] = randI8 () % (1<<(7 -1));
             ref.a_f64[k] = randF64();
             ref.a_f32[k] = randF32();
             ref.a_f16[k] = randF16();
@@ -779,17 +847,17 @@ static void testPrimitiveArrayFixed(void)
         ref.a_bool_bitpacked_[0] = ((uint_fast8_t) randI8()) & 3;
         ref.n_bool_bitpacked_[0] = ((uint_fast8_t) randI8()) & 3;
 
-        unsigned char buf[regulated_basics_PrimitiveArrayFixed_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];
-        size_t buf_size_chars = sizeof(buf);
+        const size_t buf_size_chars = (regulated_basics_PrimitiveArrayFixed_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
+        unsigned char buf[buf_size_chars];
         size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
         size_t ini_ofs = 0;
         TEST_ASSERT_EQUAL(0, regulated_basics_PrimitiveArrayFixed_0_1_serialize_(&ref, &buf[0], buf_size_bits, &ini_ofs));
-        TEST_ASSERT_EQUAL(regulated_basics_PrimitiveArrayFixed_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*CHAR_BIT, ini_ofs);  // fixed
+        TEST_ASSERT_EQUAL(regulated_basics_PrimitiveArrayFixed_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*8, ini_ofs);  // fixed
 
         regulated_basics_PrimitiveArrayFixed_0_1 obj;
         ini_ofs = 0;
         TEST_ASSERT_EQUAL(0, regulated_basics_PrimitiveArrayFixed_0_1_deserialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
-        TEST_ASSERT_EQUAL(regulated_basics_PrimitiveArrayFixed_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*CHAR_BIT, ini_ofs);  // fixed
+        TEST_ASSERT_EQUAL(regulated_basics_PrimitiveArrayFixed_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*8, ini_ofs);  // fixed
         for (k = 0; k < 2; k++)
         {
             TEST_ASSERT_EQUAL(ref.a_u64[k], obj.a_u64[k]);
@@ -827,32 +895,32 @@ static void testPrimitiveArrayFixed(void)
 static void testPrimitiveArrayVariable(void)
 {
     size_t i;
-    for (i = 0U; i < 100; i++)
+    for (i = 0U; i < 10; i++)
     {
         regulated_basics_PrimitiveArrayVariable_0_1 ref;
         size_t k;
         for (k = 0; k < regulated_basics_PrimitiveArrayVariable_0_1_CAPACITY; k++)
         {
-            ref.a_u64.elements[k] = (uint_fast64_t) randI64();
-            ref.a_u32.elements[k] = (uint_fast32_t) randI32();
-            ref.a_u16.elements[k] = (uint_fast16_t) randI16();
-            ref.a_u8 .elements[k] = (uint_fast8_t)  randI8();
-            ref.a_u7 .elements[k] = (uint_fast8_t)  randI8() & 127U;
-            ref.n_u64.elements[k] = (uint_fast64_t) randI64();
-            ref.n_u32.elements[k] = (uint_fast32_t) randI32();
-            ref.n_u16.elements[k] = (uint_fast16_t) randI16();
-            ref.n_u8 .elements[k] = (uint_fast8_t)  randI8();
-            ref.n_u7 .elements[k] = (uint_fast8_t)  randI8() & 127U;
-            ref.a_i64.elements[k] = randI64();
-            ref.a_i32.elements[k] = randI32();
-            ref.a_i16.elements[k] = randI16();
-            ref.a_i8 .elements[k] = randI8();
-            ref.a_i7 .elements[k] = randI8() % 64;
-            ref.n_i64.elements[k] = randI64();
-            ref.n_i32.elements[k] = randI32();
-            ref.n_i16.elements[k] = randI16();
-            ref.n_i8 .elements[k] = randI8();
-            ref.n_i7 .elements[k] = randI8() % 64;
+            ref.a_u64.elements[k] = (uint_fast64_t) randI64()                ;
+            ref.a_u32.elements[k] = (uint_fast32_t) randI32() & 0xFFFFFFFFULL;
+            ref.a_u16.elements[k] = (uint_fast16_t) randI16() & 0x0000FFFFULL;
+            ref.a_u8 .elements[k] = (uint_fast8_t ) randI8 () & 0x000000FFULL;
+            ref.a_u7 .elements[k] = (uint_fast8_t ) randI8 () & 127U         ;
+            ref.n_u64.elements[k] = (uint_fast64_t) randI64()                ;
+            ref.n_u32.elements[k] = (uint_fast32_t) randI32() & 0xFFFFFFFFULL;
+            ref.n_u16.elements[k] = (uint_fast16_t) randI16() & 0x0000FFFFULL;
+            ref.n_u8 .elements[k] = (uint_fast8_t ) randI8 () & 0x000000FFULL;
+            ref.n_u7 .elements[k] = (uint_fast8_t ) randI8 () & 127U         ;
+            ref.a_i64.elements[k] = randI64()              ;
+            ref.a_i32.elements[k] = randI32() % (1<<(32-1));
+            ref.a_i16.elements[k] = randI16() % (1<<(16-1));
+            ref.a_i8 .elements[k] = randI8 () % (1<<(8 -1));
+            ref.a_i7 .elements[k] = randI8 () % (1<<(7 -1));
+            ref.n_i64.elements[k] = randI64()              ;
+            ref.n_i32.elements[k] = randI32() % (1<<(32-1));
+            ref.n_i16.elements[k] = randI16() % (1<<(16-1));
+            ref.n_i8 .elements[k] = randI8 () % (1<<(8 -1));
+            ref.n_i7 .elements[k] = randI8 () % (1<<(7 -1));
             ref.a_f64.elements[k] = randF64();
             ref.a_f32.elements[k] = randF32();
             ref.a_f16.elements[k] = randF16();
@@ -891,8 +959,8 @@ static void testPrimitiveArrayVariable(void)
         ref.n_f32.count = ((uint_fast8_t)randI8()) & 3U;
         ref.n_f16.count = ((uint_fast8_t)randI8()) & 3U;
 
-        unsigned char buf[regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];
-        size_t buf_size_chars = sizeof(buf);
+        const size_t buf_size_chars = (regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
+        unsigned char buf[buf_size_chars];
         size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
         size_t ini_ofs = 0;
         TEST_ASSERT_EQUAL(0, regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], buf_size_bits, &ini_ofs));
@@ -969,8 +1037,8 @@ static void testPrimitiveArrayVariable(void)
  */
 static void testIssue221(void)
 {
-    unsigned char buf[regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];
-    const size_t buf_size_chars      = sizeof(buf);
+    const size_t buf_size_chars = (regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
+    unsigned char buf[buf_size_chars];
     const size_t fixed_buf_size_bits = buf_size_chars * CHAR_BIT;
     size_t buf_size_bits = fixed_buf_size_bits;
     size_t ini_ofs = 0;

@@ -1,6 +1,8 @@
 // Copyright (c) 2020 OpenCyphal Development Team.
 // This software is distributed under the terms of the MIT License.
 
+#include "helpers.h"
+
 #include <regulated/basics/Struct__0_1.h>
 #include <regulated/basics/Union_0_1.h>
 #include <regulated/basics/Service_0_1.h>

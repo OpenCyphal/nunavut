@@ -172,17 +172,23 @@
 
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
-{% macro _deserialize_primitive_fixed_length_array(t, reference) %}
+{% macro _deserialize_primitive_fixed_length_array(t, reference, offset) %}
+{% set getter = 'nunavutGet%s%d'|format('U' if t.element_type is UnsignedIntegerType else 'I', t.element_type|to_standard_bit_length) %}
     #if CHAR_BIT == 8
         nunavutGetBits(&{{ reference }}[0], &buffer[0], buffer_size_bits, offset_bits, {{ t.capacity }}UL * {{ t.element_type.bit_length }}U);
         offset_bits += {{ t.capacity }}UL * {{ t.element_type.bit_length }}U;
     #else
-        {% set ref_index = 'index'|to_template_unique_name %}
+{% set ref_index = 'index'|to_template_unique_name %}
         size_t {{ ref_index }};
         for ({{ ref_index }} = 0U; {{ ref_index }} < {{ t.capacity }}UL; ++{{ ref_index }})
         {
-            nunavutGetBits(&{{ reference + '[%s]'|format(ref_index) }}, &buffer[0], buffer_size_bits, offset_bits, {{ t.element_type.bit_length }}UL);
+{% if t.element_type is IntegerType %}
+           {{ reference + '[%s]'|format(ref_index) }} = {{ getter }}(&buffer[0], buffer_size_bits, offset_bits, {{ t.element_type.bit_length }}UL);
             offset_bits += {{ t.element_type.bit_length }}UL;
+{% else %}
+    {% set element_offset = offset + t.bit_length_set %}
+            {{ _deserialize_any(t.element_type, reference + ('[%s]'|format(ref_index)), element_offset)|trim|indent|indent }}
+{% endif %}
         }
     #endif
 {% endmacro %}
@@ -197,7 +203,7 @@
 
 {# SPECIAL CASE: BYTES-LIKE ARRAY #}
 {% elif t.element_type is PrimitiveType and t.element_type.bit_length == 8 and t.element_type is zero_cost_primitive %}
-    {{ _deserialize_primitive_fixed_length_array(t,reference) }}
+    {{ _deserialize_primitive_fixed_length_array(t,reference,offset) }}
 
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
 {% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
@@ -207,7 +213,7 @@
     static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
         {% endif %}
     {% endif %}
-    {{ _deserialize_primitive_fixed_length_array(t,reference) }}
+    {{ _deserialize_primitive_fixed_length_array(t,reference,offset) }}
 
 {# GENERAL CASE #}
 {% else %}
@@ -228,17 +234,23 @@
 
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
-{% macro _deserialize_primitive_variable_length_array(t, reference) %}
+{% macro _deserialize_primitive_variable_length_array(t, reference, offset) %}
+{% set getter = 'nunavutGet%s%d'|format('U' if t.element_type is UnsignedIntegerType else 'I', t.element_type|to_standard_bit_length) %}
     #if CHAR_BIT == 8
         nunavutGetBits(&{{ reference }}.elements[0], &buffer[0], buffer_size_bits, offset_bits, {{ reference }}.count * {{ t.element_type.bit_length }}U);
         offset_bits += {{ reference }}.count * {{ t.element_type.bit_length }}U;
     #else
-        {% set ref_index = 'index'|to_template_unique_name %}
+{% set ref_index = 'index'|to_template_unique_name %}
         size_t {{ ref_index }};
         for ({{ ref_index }} = 0U; {{ ref_index }} < {{ reference }}.count; ++{{ ref_index }})
         {
-            nunavutGetBits(&{{ reference }}.elements[{{ ref_index }}], &buffer[0], buffer_size_bits, offset_bits, {{ t.element_type.bit_length }}UL);
+{% if t.element_type is IntegerType %}
+            {{ reference + '.elements[%s]'|format(ref_index) }} = {{ getter }}(&buffer[0], buffer_size_bits, offset_bits, {{ t.element_type.bit_length }}UL);
             offset_bits += {{ t.element_type.bit_length }}UL;
+{% else %}
+    {% set element_offset = offset + t.bit_length_set %}
+            {{ _deserialize_any(t.element_type, reference + ('.elements[%s]'|format(ref_index)), element_offset)|trim|indent|indent }}
+{% endif %}
         }
     #endif
 {% endmacro %}
@@ -270,7 +282,7 @@
 
 {# SPECIAL CASE: BYTES-LIKE ARRAY #}
 {% elif t.element_type is PrimitiveType and t.element_type.bit_length == 8 and t.element_type is zero_cost_primitive %}
-    {{ _deserialize_primitive_variable_length_array(t,reference) }}
+    {{ _deserialize_primitive_variable_length_array(t,reference,offset) }}
 
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
 {% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
@@ -280,7 +292,7 @@
     static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
         {% endif %}
     {% endif %}
-    {{ _deserialize_primitive_variable_length_array(t,reference) }}
+    {{ _deserialize_primitive_variable_length_array(t,reference,offset) }}
 
 {# GENERAL CASE #}
 {% else %}
