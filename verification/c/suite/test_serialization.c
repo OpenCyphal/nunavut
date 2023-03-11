@@ -79,7 +79,7 @@ static void testStructReference(void)
     obj.i10_4[2] = +0x0055;                             // original value retained
     obj.i10_4[3] = -0x00AA;                             // original value retained
     obj.f16_le2.elements[0] = -1e9F;                    // saturated to -65504
-    obj.f16_le2.elements[1] = +INFINITY;                // infinity retained
+    obj.f16_le2.elements[1] = +INF32;                   // infinity retained
     obj.f16_le2.count = 2;
     obj.unaligned_bitpacked_3_bitpacked_[0] = 0xF5;     // 0b101, rest truncated away and ignored
     obj.sealed._dummy_ = 123;                           // ignored

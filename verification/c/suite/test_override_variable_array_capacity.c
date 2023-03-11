@@ -23,9 +23,9 @@ static void testPrimitiveArrayVariableOverride(void)
     regulated_basics_PrimitiveArrayVariable_0_1 ref;
     memset(&ref, 0, sizeof(ref));
     const size_t buf_size_chars = (regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
-    size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
+    size_t buf_size_bits  = (buf_size_chars - 1) * CHAR_BIT;
     size_t ini_ofs = 0;
-    unsigned char buf[buf_size_chars - 1];
+    unsigned char buf[buf_size_chars];
 
 #if NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 1
     TEST_ASSERT_EQUAL(OVERRIDE_SIZE, regulated_basics_PrimitiveArrayVariable_0_1_a_u64_ARRAY_CAPACITY_);
