@@ -34,10 +34,21 @@
 /// When allocating a serialization (TX) buffer, it is safe to use the size of the largest serialized representation
 /// instead of the extent because it provides a tighter bound of the object size; it is safe because the concrete type
 /// is always known during serialization (unlike deserialization). If not sure, use extent everywhere.
-#define {{ t | full_reference_name }}_EXTENT_BYTES_                    {{ t.extent // 8 }}UL
-#define {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_ {{ t.inner_type.extent // 8 }}UL
-static_assert({{ t | full_reference_name }}_EXTENT_BYTES_ >= {# -#}
-              {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_,
+/// Old suffix _BYTES_ is renamed to _OCTETS_ since byte may consists of 8, 16, 32 bits on different machines
+/// So byte is ambiguous term. Term octet always means 8 bits
+#define {{ t | full_reference_name }}_EXTENT_OCTETS_                    {{ t.extent // 8 }}UL
+#define {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_OCTETS_ {{ t.inner_type.extent // 8 }}UL
+static_assert({{ t | full_reference_name }}_EXTENT_OCTETS_ >= {# -#}
+              {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_OCTETS_,
+              "Internal constraint violation");
+
+/// Minimum addressable word in C is char (consists of 8, 16, 32 bits on different machines). Some mashines have no uint8_t etc.
+/// For unification one should use 'char buffer[buffer_size_chars]' instead of 'uint8_t buffer[buffer_size_octets]'
+/// Definitions below are destined to represent capacity of such char-buffers
+#define {{ t | full_reference_name }}_EXTENT_CHARS_                     (({{ t.extent }}UL + CHAR_SHIFT_MASK) >> CHAR_SHIFT)
+#define {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_CHARS_  (({{ t.inner_type.extent }}UL + CHAR_SHIFT_MASK) >> CHAR_SHIFT)
+static_assert({{ t | full_reference_name }}_EXTENT_CHARS_ >= {# -#}
+              {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_CHARS_,
               "Internal constraint violation");
 
 {% for constant in t.constants %}
@@ -177,7 +188,7 @@ struct  /// Array address equivalence guarantee: &elements[0] == &{{ name }}
 /// @param obj      The object to serialize.
 ///
 /// @param buffer   The destination buffer. There are no alignment requirements.
-///                 @see {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_BYTES_
+///                 @see {{ t | full_reference_name }}_SERIALIZATION_BUFFER_SIZE_OCTETS_
 ///
 /// @param inout_buffer_size_chars  When calling, this is a pointer to the size of the buffer in bytes.
 ///                                 Upon return this value will be updated with the size of the constructed serialized

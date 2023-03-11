@@ -22,7 +22,7 @@ static void testPrimitiveArrayVariableOverride(void)
 {
     regulated_basics_PrimitiveArrayVariable_0_1 ref;
     memset(&ref, 0, sizeof(ref));
-    const size_t buf_size_chars = (regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
+    const size_t buf_size_chars = (regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
     size_t buf_size_bits  = (buf_size_chars - 1) * CHAR_BIT;
     size_t ini_ofs = 0;
     unsigned char buf[buf_size_chars];

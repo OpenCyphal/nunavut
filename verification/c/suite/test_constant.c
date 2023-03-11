@@ -19,7 +19,7 @@ static void testStructConstants(void)
     // Application constants.
     TEST_ASSERT_FLOAT_WITHIN(1e-9, -3.0, regulated_basics_Struct__0_1_CONSTANT_MINUS_THREE);
     TEST_ASSERT_EQUAL((uint32_t) 'Z', regulated_basics_Struct__0_1_CONSTANT_ZEE);
-    TEST_ASSERT_LESS_OR_EQUAL(regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_BYTES_ * 8U,
+    TEST_ASSERT_LESS_OR_EQUAL(regulated_basics_Struct__0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_ * 8U,
                               -regulated_basics_Struct__0_1_CONSTANT_MINUS_MAX_OFFSET);
     TEST_ASSERT_TRUE(regulated_basics_Struct__0_1_CONSTANT_TRUTH);
 
@@ -67,8 +67,8 @@ static void testUnionConstants(void)
     TEST_ASSERT_FALSE(regulated_basics_Union_0_1_HAS_FIXED_PORT_ID_);
     TEST_ASSERT_EQUAL_STRING("regulated.basics.Union", regulated_basics_Union_0_1_FULL_NAME_);
     TEST_ASSERT_EQUAL_STRING("regulated.basics.Union.0.1", regulated_basics_Union_0_1_FULL_NAME_AND_VERSION_);
-    TEST_ASSERT_EQUAL(1U + regulated_basics_Struct__0_1_EXTENT_BYTES_,  // Largest option + union tag field
-                      regulated_basics_Union_0_1_EXTENT_BYTES_);
+    TEST_ASSERT_EQUAL(1U + regulated_basics_Struct__0_1_EXTENT_OCTETS_,  // Largest option + union tag field
+                      regulated_basics_Union_0_1_EXTENT_OCTETS_);
     TEST_ASSERT_EQUAL(3, regulated_basics_Union_0_1_UNION_OPTION_COUNT_);
 
     // Field metadata. Expected values encoded in the field names.
