@@ -8,8 +8,7 @@
         "ban.spellright",
         "ms-python.python",
         "ms-vscode.cpptools",
-        "twxs.cmake",
-        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools-extension-pack",
         "xaver.clang-format",
         "hbenl.vscode-test-explorer",
         "matepek.vscode-catch2-test-adapter"

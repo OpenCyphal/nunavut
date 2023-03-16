@@ -64,10 +64,7 @@ def _make_parser() -> argparse.ArgumentParser:
             platform: native32
             toolchain-family: gcc
 
-    """[
-                1:
-            ]
-        ),
+    """[1:]),
     )
 
     build_args = parser.add_argument_group(
@@ -76,10 +73,7 @@ def _make_parser() -> argparse.ArgumentParser:
             """
         Arguments that can be used in parallel builds. Each of these will change
         the name of the build directory created for the build.
-    """[
-                1:
-            ]
-        ),
+    """[1:]),
     )
 
     build_args.add_argument(
@@ -93,10 +87,7 @@ def _make_parser() -> argparse.ArgumentParser:
 
             export NUNAVUT_FULL_VERSION=$(./_verify.py --version-only)
 
-    """[
-                1:
-            ]
-        ),
+    """[1:]),
     )
 
     build_args.add_argument(
@@ -110,10 +101,19 @@ def _make_parser() -> argparse.ArgumentParser:
 
             export NUNAVUT_MAJOR_MINOR_VERSION=$(./_verify.py --major-minor-version-only)
 
-    """[
-                1:
-            ]
-        ),
+    """[1:]),
+    )
+
+    build_args.add_argument(
+        "--version-check-only",
+        help=textwrap.dedent(
+            """
+        Compares a given semantic version number with the current Nunavut version
+        (stored in src/nunavut/_version.py) and returns 0 if it matches else returns 1.
+
+            if $(./_verify.py --version-check-only 1.0.2); then echo "match"; fi
+
+    """[1:]),
     )
 
     build_args.add_argument("-l", "--language", default="c", help="Value for NUNAVUT_VERIFICATION_LANG (defaults to c)")
@@ -148,10 +148,7 @@ def _make_parser() -> argparse.ArgumentParser:
             """
         Select the toolchain family to use. Use "none" to get the toolchain
         from the environment (i.e. set CC and CXX environment variables).
-                        """[
-                1:
-            ]
-        ),
+                        """[1:]),
     )
 
     build_args.add_argument(
@@ -161,10 +158,7 @@ def _make_parser() -> argparse.ArgumentParser:
             """
         Dummy argument used to support matrix builds where an argument present
         in other builds is not provided in the current build.
-            """[
-                1:
-            ]
-        ),
+            """[1:]),
     )
 
     action_args = parser.add_argument_group(
@@ -172,10 +166,7 @@ def _make_parser() -> argparse.ArgumentParser:
         description=textwrap.dedent(
             """
         Arguments that change the actions taken by the build.
-    """[
-                1:
-            ]
-        ),
+    """[1:]),
     )
 
     action_args.add_argument("-v", "--verbose", action="count", default=0, help="Set output verbosity.")
@@ -190,10 +181,7 @@ def _make_parser() -> argparse.ArgumentParser:
 
         ** WARNING ** This will delete the cmake build directory!
 
-    """[
-                1:
-            ]
-        ),
+    """[1:]),
     )
 
     action_args.add_argument("-c", "--configure-only", action="store_true", help="Configure but do not build.")
@@ -213,10 +201,7 @@ def _make_parser() -> argparse.ArgumentParser:
             """
         Don't actually do anything. Just log what this script would have done.
         Combine with --verbose to ensure you actually see the script's log output.
-    """[
-                1:
-            ]
-        ),
+    """[1:]),
     )
 
     action_args.add_argument(
@@ -237,10 +222,7 @@ def _make_parser() -> argparse.ArgumentParser:
 
         Note: This only applies to the configure step. If you do a build-only this
         argument has no effect.
-    """[
-                1:
-            ]
-        ),
+    """[1:]),
     )
 
     other_options = parser.add_argument_group(
@@ -248,10 +230,7 @@ def _make_parser() -> argparse.ArgumentParser:
         description=textwrap.dedent(
             """
         Additional arguments for modifying how the build runs but which are used less frequently.
-    """[
-                1:
-            ]
-        ),
+    """[1:]),
     )
 
     other_options.add_argument(
@@ -271,10 +250,7 @@ def _make_parser() -> argparse.ArgumentParser:
             """
         We use Ninja by default. Set this flag to omit the explicit generator override
         and use whatever the default is for cmake (i.e. normally make)
-    """[
-                1:
-            ]
-        ),
+    """[1:]),
     )
 
     return parser
@@ -574,6 +550,15 @@ def main() -> int:
         logging_level = logging.DEBUG
 
     logging.basicConfig(format="%(levelname)s: %(message)s", level=logging_level)
+
+    if args.version_check_only is not None:
+        version_as_string = ".".join(_get_version_string())
+        logging.debug(
+            "Comparing nunavut version {} to provided version {} ({})".format(
+                version_as_string,
+                args.version_check_only,
+                "matches" if (version_as_string == args.version_check_only) else "no-match"))
+        return 0 if (version_as_string == args.version_check_only) else 1
 
     logging.debug(
         textwrap.dedent(

@@ -1,6 +1,6 @@
 {
     "name": "C/C++ verification environment",
-    "image": "ghcr.io/opencyphal/toolshed:ts20.4.1",
+    "image": "ghcr.io/opencyphal/toolshed:ts22.4.1",
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspace,type=bind,consistency=delegated",
     "mounts": [
@@ -15,8 +15,7 @@
                 "ban.spellright",
                 "ms-python.python",
                 "ms-vscode.cpptools",
-                "twxs.cmake",
-                "ms-vscode.cmake-tools",
+                "ms-vscode.cpptools-extension-pack",
                 "xaver.clang-format",
                 "hbenl.vscode-test-explorer",
                 "matepek.vscode-catch2-test-adapter"

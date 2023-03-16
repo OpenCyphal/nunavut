@@ -853,7 +853,7 @@ static void testPrimitiveArrayVariable(void)
  */
 static void testIssue221(void)
 {
-    uint8_t buf[regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];
+    uint8_t buf[regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
     const size_t fixed_size = sizeof(buf);
     size_t size = fixed_size;
 
