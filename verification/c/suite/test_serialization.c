@@ -858,8 +858,7 @@ static void testIssue221(void)
     size_t size = fixed_size;
 
     regulated_basics_Primitive_0_1 obj;
-    int8_t result = regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], &size);
-    TEST_ASSERT_EQUAL(0, result);
+    TEST_ASSERT_EQUAL(0, regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], &size));
     size = fixed_size;
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
                       regulated_basics_Primitive_0_1_deserialize_(NULL, &buf[0], &size));
