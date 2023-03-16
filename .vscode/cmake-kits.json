@@ -1,10 +1,10 @@
 [
     {
-        "name": "native-gcc-cpp",
+        "name": "native-gcc",
         "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/gcc-native.cmake"
     },
     {
-        "name": "native-clang-cpp",
+        "name": "native-clang",
         "toolchainFile": "${workspaceFolder}/verification/cmake/toolchains/clang-native.cmake"
     }
 ]

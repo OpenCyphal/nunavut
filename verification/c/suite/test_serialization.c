@@ -853,12 +853,13 @@ static void testPrimitiveArrayVariable(void)
  */
 static void testIssue221(void)
 {
-    uint8_t buf[regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];
+    uint8_t buf[regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
     const size_t fixed_size = sizeof(buf);
     size_t size = fixed_size;
 
     regulated_basics_Primitive_0_1 obj;
-    TEST_ASSERT_EQUAL(0, regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], &size));
+    int8_t result = regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], &size);
+    TEST_ASSERT_EQUAL(0, result);
     size = fixed_size;
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
                       regulated_basics_Primitive_0_1_deserialize_(NULL, &buf[0], &size));
