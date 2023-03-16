@@ -1,0 +1,77 @@
+{
+    "buildType": {
+        "default": "debug",
+        "description": "Variant for verification build kits.",
+        "choices": {
+            "debug": {
+                "short": "Debug",
+                "long": "Debug builds, no optimizations.",
+                "buildType": "Debug"
+            },
+            "release": {
+                "short": "Release",
+                "long": "Release builds, some optimizations",
+                "buildType": "Release"
+            }
+        }
+    },
+    "target":{
+        "default": "native",
+        "choices": {
+            "native": {
+                "short": "native",
+                "long": "Target whatever default cmake has for the current machine."
+            },
+            "native32": {
+                "short": "native32",
+                "long": "Compile for the current machine but force 32-bit code.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_TARGET_PLATFORM": "native32"
+                }
+            },
+            "native64": {
+                "short": "native64",
+                "long": "Compile for the current machine but force 64-bit code.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_TARGET_PLATFORM": "native64"
+                }
+            }
+        }
+    },
+    "language":{
+        "default": "C++14",
+        "choices": {
+            "C": {
+                "short": "--std=c11",
+                "long": "Compile and link using the C11 standard.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_LANG": "c"
+                }
+            },
+            "C++14": {
+                "short": "--std=c++14",
+                "long": "Compile and link using the C++14 standard.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_LANG": "cpp",
+                    "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++14"
+                }
+            },
+            "C++17": {
+                "short": "--std=c++17",
+                "long": "Compile and link using the C++17 standard.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_LANG": "cpp",
+                    "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17"
+                }
+            },
+            "C++20": {
+                "short": "--std=c++20",
+                "long": "Compile and link using the C++20 standard.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_LANG": "cpp",
+                    "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++20"
+                }
+            }
+        }
+    }
+}

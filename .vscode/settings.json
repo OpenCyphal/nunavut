@@ -37,7 +37,6 @@
         "-DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE"
     ],
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-    "C_Cpp.configurationWarnings": "Disabled",
     "files.associations": {
         "*.py.template": "python",
         "*.cc": "cpp",
