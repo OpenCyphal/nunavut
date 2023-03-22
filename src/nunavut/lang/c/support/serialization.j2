@@ -180,12 +180,12 @@ static inline void nunavutCopyBits(void* const dst,
 
     if ((0U == (src_offset_bits & CHAR_SHIFT_MASK)) && (0U == (dst_offset_bits & CHAR_SHIFT_MASK)))  // Aligned copy, optimized, most common case.
     {
-        const char* last_src;
-        char*       last_dst;
-        unsigned    mask, length_mod;
+        const unsigned char* last_src;
+        unsigned char*       last_dst;
+        unsigned             mask, length_mod;
         const {{ typename_unsigned_length }} length_chars = ({{ typename_unsigned_length }})(length_bits >> CHAR_SHIFT);
-        const char* const psrc    = (src_offset_bits >> CHAR_SHIFT) + (const char*)src;
-        char*       const pdst    = (dst_offset_bits >> CHAR_SHIFT) + (      char*)dst;
+        const unsigned char* const psrc = (src_offset_bits >> CHAR_SHIFT) + (const unsigned char*)src;
+        unsigned char*       const pdst = (dst_offset_bits >> CHAR_SHIFT) + (unsigned char*      )dst;
         (void)memmove(pdst, psrc, length_chars);
         length_mod = length_bits & CHAR_SHIFT_MASK;
         if (length_mod == 0)
@@ -198,8 +198,8 @@ static inline void nunavutCopyBits(void* const dst,
     }
     #if ((-1) >> 1) < 0  // Right shift is arithmetic (the most common case). So, the fast algorithm is allowed
     {
-        const char* const psrc = (const char*)src;
-        char*       const pdst = (      char*)dst;
+        const unsigned char* const psrc = src;
+        unsigned char*       const pdst = dst;
         {{ typename_unsigned_bit_length }} src_off = src_offset_bits;
         {{ typename_unsigned_bit_length }} dst_off = dst_offset_bits;
         const {{ typename_unsigned_bit_length }} last_bit = src_off + length_bits;
@@ -281,7 +281,7 @@ static inline void nunavutGetBits(void* const output,
         buf_size_bits, off_bits, len_bits);
     // Apply implicit zero extension. Normally, this is a no-op unless (len_bits > sat_bits) or (len_bits & CHAR_SHIFT_MASK) != 0.
     // The former case ensures that if we're copying < CHAR_BIT bits, the MSB in the destination will be zeroed out.
-    (void) memset(((char*)output) + (sat_bits >> CHAR_SHIFT), 0, ((len_bits + CHAR_SHIFT_MASK) >> CHAR_SHIFT) - (sat_bits >> CHAR_SHIFT));
+    (void) memset((unsigned char*)output + (sat_bits >> CHAR_SHIFT), 0, ((len_bits + CHAR_SHIFT_MASK) >> CHAR_SHIFT) - (sat_bits >> CHAR_SHIFT));
     nunavutCopyBits(output, 0U, sat_bits, buf, off_bits);
 }
 
@@ -299,13 +299,13 @@ static inline void nunavutGetBits(void* const output,
 ///     len_bits        Length of the serialized representation, in bits. Zero has no effect. Values > 64 bit saturated.
 
 static inline {{typename_error_type}} nunavutSetBit(
-    void* const buf,
+    unsigned char* const buf,
     const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits,
     const bool value)
 {
     {{ assert('buf != NULL') }}
-    unsigned val;
+    unsigned char val;
     if (buf_size_bits <= off_bits)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
@@ -316,7 +316,7 @@ static inline {{typename_error_type}} nunavutSetBit(
 }
 
 static inline {{typename_error_type}} nunavutSetUxx(
-    void* const buf,
+    unsigned char* const buf,
     const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits,
     const uint64_t value,
@@ -350,7 +350,7 @@ static inline {{typename_error_type}} nunavutSetUxx(
 }
 
 static inline {{typename_error_type}} nunavutSetIxx(
-    void* const buf,
+    unsigned char* const buf,
     const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits,
     const int64_t value,
@@ -380,7 +380,7 @@ static inline {{typename_error_type}} nunavutSetIxx(
 ///     off_bits        Offset, in bits, from the beginning of the buffer. May exceed one byte.
 ///     len_bits        Length of the serialized representation, in bits. Zero returns 0. Out-of-range values saturated.
 
-static inline uint_fast8_t nunavutGetU8(const void* const buf,
+static inline uint_fast8_t nunavutGetU8(const unsigned char* const buf,
                                         const {{ typename_unsigned_bit_length }} buf_size_bits,
                                         const {{ typename_unsigned_bit_length }} off_bits,
                                         const {{ typename_unsigned_bit_length }} len_bits)
@@ -394,14 +394,14 @@ static inline uint_fast8_t nunavutGetU8(const void* const buf,
     return val;
 }
 
-static inline bool nunavutGetBit(const void* const buf,
+static inline bool nunavutGetBit(const unsigned char* const buf,
                                  const {{ typename_unsigned_bit_length }} buf_size_bits,
                                  const {{ typename_unsigned_bit_length }} off_bits)
 {
     return 1U == nunavutGetU8(buf, buf_size_bits, off_bits, 1U);
 }
 
-static inline uint_fast16_t nunavutGetU16(const void* const buf,
+static inline uint_fast16_t nunavutGetU16(const unsigned char* const buf,
                                           const {{ typename_unsigned_bit_length }} buf_size_bits,
                                           const {{ typename_unsigned_bit_length }} off_bits,
                                           const {{ typename_unsigned_bit_length }} len_bits)
@@ -423,7 +423,7 @@ static inline uint_fast16_t nunavutGetU16(const void* const buf,
 {%- endif %}
 }
 
-static inline uint_fast32_t nunavutGetU32(const void* const buf,
+static inline uint_fast32_t nunavutGetU32(const unsigned char* const buf,
                                           const {{ typename_unsigned_bit_length }} buf_size_bits,
                                           const {{ typename_unsigned_bit_length }} off_bits,
                                           const {{ typename_unsigned_bit_length }} len_bits)
@@ -445,7 +445,7 @@ static inline uint_fast32_t nunavutGetU32(const void* const buf,
 {%- endif %}
 }
 
-static inline uint64_t nunavutGetU64(const void* const buf,
+static inline uint64_t nunavutGetU64(const unsigned char* const buf,
                                      const {{ typename_unsigned_bit_length }} buf_size_bits,
                                      const {{ typename_unsigned_bit_length }} off_bits,
                                      const {{ typename_unsigned_bit_length }} len_bits)
@@ -474,7 +474,7 @@ static inline uint64_t nunavutGetU64(const void* const buf,
 {%- endif %}
 }
 
-static inline int_fast8_t nunavutGetI8(const void* const buf,
+static inline int_fast8_t nunavutGetI8(const unsigned char* const buf,
                                   const {{ typename_unsigned_bit_length }} buf_size_bits,
                                   const {{ typename_unsigned_bit_length }} off_bits,
                                   const {{ typename_unsigned_bit_length }} len_bits)
@@ -495,7 +495,7 @@ static inline int_fast8_t nunavutGetI8(const void* const buf,
     #endif
 }
 
-static inline int_fast16_t nunavutGetI16(const void* const buf,
+static inline int_fast16_t nunavutGetI16(const unsigned char* const buf,
                                     const {{ typename_unsigned_bit_length }} buf_size_bits,
                                     const {{ typename_unsigned_bit_length }} off_bits,
                                     const {{ typename_unsigned_bit_length }} len_bits)
@@ -516,7 +516,7 @@ static inline int_fast16_t nunavutGetI16(const void* const buf,
     #endif
 }
 
-static inline int_fast32_t nunavutGetI32(const void* const buf,
+static inline int_fast32_t nunavutGetI32(const unsigned char* const buf,
                                     const {{ typename_unsigned_bit_length }} buf_size_bits,
                                     const {{ typename_unsigned_bit_length }} off_bits,
                                     const {{ typename_unsigned_bit_length }} len_bits)
@@ -537,7 +537,7 @@ static inline int_fast32_t nunavutGetI32(const void* const buf,
     #endif
 }
 
-static inline int64_t nunavutGetI64(const void* const buf,
+static inline int64_t nunavutGetI64(const unsigned char* const buf,
                                     const {{ typename_unsigned_bit_length }} buf_size_bits,
                                     const {{ typename_unsigned_bit_length }} off_bits,
                                     const {{ typename_unsigned_bit_length }} len_bits)
@@ -646,7 +646,7 @@ static inline {{typename_float_32}} nunavutFloat16Unpack(const uint_fast16_t val
 }
 
 static inline {{typename_error_type}} nunavutSetF16(
-    void* const buf,
+    unsigned char* const buf,
     const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits,
     const {{ typename_float_32 }} value)
@@ -655,7 +655,7 @@ static inline {{typename_error_type}} nunavutSetF16(
 }
 
 static inline {{typename_float_32}} nunavutGetF16(
-    const void* const buf,
+    const unsigned char* const buf,
     const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits)
 {
@@ -669,7 +669,7 @@ static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT,
 static_assert(32U == (sizeof({{typename_float_32}}) * CHAR_BIT), "Unsupported floating point model");
 
 static inline {{typename_error_type}} nunavutSetF32(
-    void* const buf,
+    unsigned char* const buf,
     const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits,
     const {{ typename_float_32 }} value)
@@ -686,7 +686,7 @@ static inline {{typename_error_type}} nunavutSetF32(
 }
 
 static inline {{typename_float_32}} nunavutGetF32(
-    const void* const buf,
+    const unsigned char* const buf,
     const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits)
 {
@@ -708,7 +708,7 @@ static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE,
 static_assert(64U == (sizeof({{typename_float_64}}) * CHAR_BIT), "Unsupported floating point model");
 
 static inline {{typename_error_type}} nunavutSetF64(
-    void* const buf,
+    unsigned char* const buf,
     const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits,
     const {{typename_float_64 }} value)
@@ -725,7 +725,7 @@ static inline {{typename_error_type}} nunavutSetF64(
 }
 
 static inline {{typename_float_64}} nunavutGetF64(
-    const void* const buf,
+    const unsigned char* const buf,
     const {{ typename_unsigned_bit_length }} buf_size_bits,
     const {{ typename_unsigned_bit_length }} off_bits)
 {

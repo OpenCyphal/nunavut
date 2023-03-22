@@ -332,7 +332,7 @@
 
         {{ assert('offset_bits % 8U == 0U') }}
     {% set ref_err = 'err' |to_template_unique_name %}
-        const {{ typename_error_type }} {{ ref_err }} = {{ t|full_reference_name }}_deserialize_(
+        const {{ typename_error_type }} {{ ref_err }} = {{ t|full_reference_name }}_deserialize_impl_(
             &{{ reference }}, &buffer[0], {{ max_size_bits }}, &offset_bits );
         if ({{ ref_err }} < 0)
         {

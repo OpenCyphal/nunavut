@@ -71,7 +71,6 @@ static void testStructReference(void)
 {
     regulated_basics_Struct__0_1 obj = {0};
 
-
     // Initialize a reference object, serialize, and compare against the reference serialized representation.
     obj.boolean = true;
     obj.i10_4[0] = +0x5555;                             // saturates to +511
@@ -248,11 +247,9 @@ static void testStructReference(void)
     unsigned char buf[sizeof(reference)];
     (void) memset(&buf[0], Ox55, sizeof(buf));  // fill out canaries
 
-    const size_t buf_size_chars = sizeof(buf);
-    const size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
-    size_t ini_ofs = 0;
-    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
-    TEST_ASSERT_EQUAL((sizeof(reference)*CHAR_BIT - 16U*8U), ini_ofs);
+    size_t buf_size_chars = sizeof(buf);
+    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &buf_size_chars));
+    TEST_ASSERT_EQUAL((((sizeof(reference)*CHAR_BIT - 16U*8U) + CHAR_SHIFT_MASK) >> CHAR_SHIFT), buf_size_chars);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(reference, buf, sizeof(reference));
 
     // Check union manipulation functions.
@@ -293,9 +290,9 @@ static void testStructReference(void)
     TEST_ASSERT_EQUAL(0, obj.aligned_bitpacked_le3.count);
 
     // Deserialize the above reference representation and compare the result against the original object.
-    ini_ofs = 0;
-    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_deserialize_(&obj, &reference[0], buf_size_bits, &ini_ofs));
-    TEST_ASSERT_EQUAL((sizeof(reference)*CHAR_BIT - 16U*8U), ini_ofs);     // 16 trailing bytes implicitly truncated away
+    buf_size_chars = sizeof(buf);
+    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_deserialize_(&obj, &reference[0], &buf_size_chars));
+    TEST_ASSERT_EQUAL((((sizeof(reference)*CHAR_BIT - 16U*8U) + CHAR_SHIFT_MASK) >> CHAR_SHIFT), buf_size_chars);  // 16 trailing bytes implicitly truncated awayB
 
     TEST_ASSERT_EQUAL(true, obj.boolean);
     TEST_ASSERT_EQUAL(+511, obj.i10_4[0]);                              // saturated
@@ -330,8 +327,8 @@ static void testStructReference(void)
     TEST_ASSERT_EQUAL(1, obj.aligned_bitpacked_le3.count);
 
     // Repeat the above, but apply implicit zero extension somewhere in the middle.
-    ini_ofs = 0;
-    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_deserialize_(&obj, &reference[0], 25U*8U, &ini_ofs));
+    size_t ini_ofs = 0;
+    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_deserialize_impl_(&obj, &reference[0], 25U*8U, &ini_ofs)); // Function _deserialize_ may not be used for CHAR_BIT > 8 since 25 octets can not be divided by CHAR_BIT without reminder
     TEST_ASSERT_EQUAL(25U*8U, ini_ofs);   // the returned size shall not exceed the buffer size
 
     TEST_ASSERT_EQUAL(true, obj.boolean);
@@ -359,7 +356,7 @@ static void testStructReference(void)
     TEST_ASSERT_EQUAL(0, obj.aligned_bitpacked_3_bitpacked_[0]);        //      ZEROS
     TEST_ASSERT_EQUAL(0, obj.unaligned_bitpacked_lt3.count);            //          ALL
     TEST_ASSERT_EQUAL(0, obj.delimited_var_2[0]._tag_);                 //              THE
-    TEST_ASSERT_FLOAT_WITHIN(1e-9, 0, obj.delimited_var_2[0].f16);      //                  WAY
+    TEST_ASSERT_FLOAT_WITHIN(1e-9, 0, obj.delimited_var_2[0].f16);      //    B              WAY
     TEST_ASSERT_EQUAL(0, obj.delimited_var_2[1]._tag_);                 //                      DOWN
     TEST_ASSERT_FLOAT_WITHIN(1e-9, 0, obj.delimited_var_2[1].f16);
     TEST_ASSERT_EQUAL(0, obj.aligned_bitpacked_le3.count);
@@ -418,19 +415,15 @@ static void testStructDelimited(void)
     unsigned char buf[1024*8/CHAR_BIT] = {0};
     (void) memset(&buf[0], OxAA, sizeof(buf));  // Fill out the canaries
     size_t buf_size_chars = sizeof(buf);
-    size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
-    size_t ini_ofs = 0;
-    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_0_serialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
-    TEST_ASSERT_EQUAL(28U*8U, ini_ofs);
+    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_0_serialize_(&obj, &buf[0], &buf_size_chars));
+    TEST_ASSERT_EQUAL(((28U*8U + CHAR_SHIFT_MASK) >> CHAR_SHIFT), buf_size_chars);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(reference, buf, sizeof(reference));
 
     // Deserialize back from the reference using the same type and compare the field values.
     regulated_delimited_A_1_0_initialize_(&obj);  // Erase prior state.
     buf_size_chars = sizeof(reference);
-    buf_size_bits  = buf_size_chars * CHAR_BIT;
-    ini_ofs = 0;
-    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_0_deserialize_(&obj, &reference[0], buf_size_bits, &ini_ofs));
-    TEST_ASSERT_EQUAL(28U*8U, ini_ofs);
+    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_0_deserialize_(&obj, &reference[0], &buf_size_chars));
+    TEST_ASSERT_EQUAL(((28U*8U + CHAR_SHIFT_MASK) >> CHAR_SHIFT), buf_size_chars);
     TEST_ASSERT_TRUE(regulated_delimited_A_1_0_is_del_(&obj));
     TEST_ASSERT_EQUAL(2, obj.del.var.count);
     TEST_ASSERT_EQUAL(2, obj.del.var.elements[0].a.count);
@@ -446,9 +439,9 @@ static void testStructDelimited(void)
 
     // Deserialize using a different type to test extensibility enabled by delimited serialization.
     regulated_delimited_A_1_1 dif;
-    ini_ofs = 0;
-    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_1_deserialize_(&dif, &reference[0], buf_size_bits, &ini_ofs));
-    TEST_ASSERT_EQUAL(28U*8U, ini_ofs);
+    buf_size_chars = sizeof(reference);
+    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_1_deserialize_(&dif, &reference[0], &buf_size_chars));
+    TEST_ASSERT_EQUAL(((28U*8U + CHAR_SHIFT_MASK) >> CHAR_SHIFT), buf_size_chars);
     TEST_ASSERT_TRUE(regulated_delimited_A_1_1_is_del_(&dif));
     TEST_ASSERT_EQUAL(2, dif.del.var.count);
     TEST_ASSERT_EQUAL(2, dif.del.var.elements[0].a.count);
@@ -478,11 +471,11 @@ static void testStructDelimited(void)
     dif.del.fix.elements[1].a[1] = 200;
     dif.del.fix.elements[1].a[2] = 123;
     dif.del.fix.elements[1].b = 99;
-    ini_ofs = 0;
-    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_1_serialize_(&dif, &buf[0], buf_size_bits, &ini_ofs));
-    TEST_ASSERT_EQUAL(30U*8U, ini_ofs);                           // the reference size was computed by hand
-    ini_ofs = 0;
-    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_0_deserialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
+    buf_size_chars = sizeof(reference);
+    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_1_serialize_(&dif, &buf[0], &buf_size_chars));
+    TEST_ASSERT_EQUAL(((30U*8U + CHAR_SHIFT_MASK) >> CHAR_SHIFT), buf_size_chars); // the reference size was computed by hand
+    buf_size_chars = sizeof(reference);
+    TEST_ASSERT_EQUAL(0, regulated_delimited_A_1_0_deserialize_(&obj, &buf[0], &buf_size_chars));
     TEST_ASSERT_TRUE(regulated_delimited_A_1_0_is_del_(&obj));
     TEST_ASSERT_EQUAL(1, obj.del.var.count);
     TEST_ASSERT_EQUAL(2, obj.del.var.elements[0].a.count);
@@ -614,85 +607,76 @@ static void testStructErrors(void)
 
     // Happy path, validate the test rig
     size_t buf_size_chars = BUF_SIZE;
-    size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
-    size_t ini_ofs = 0;
-    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
-    TEST_ASSERT_EQUAL(reference_serialized_size_bits, ini_ofs);
+    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &buf_size_chars));
+    TEST_ASSERT_EQUAL(((reference_serialized_size_bits + CHAR_SHIFT_MASK) >> CHAR_SHIFT), buf_size_chars);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(sr, buf, sizeof(sr));
 
     // Buffer too small
     buf_size_chars = BUF_SIZE - 1;
-    buf_size_bits  = buf_size_chars * CHAR_BIT;
-    ini_ofs = 0;
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL,
-                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
-
+                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &buf_size_chars));
+    buf_size_chars = 0;
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL,
-                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], 0, &ini_ofs));
+                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &buf_size_chars));
 
     // Null pointers at the input
-    ini_ofs = 0;
+    buf_size_chars = BUF_SIZE;
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
-                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], buf_size_bits, NULL));
+                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], NULL));
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
-                      regulated_basics_Struct__0_1_serialize_(&obj, NULL, buf_size_bits, &ini_ofs));
+                      regulated_basics_Struct__0_1_serialize_(&obj, NULL, &buf_size_chars));
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
-                      regulated_basics_Struct__0_1_serialize_(NULL, &buf[0], buf_size_bits, &ini_ofs));
+                      regulated_basics_Struct__0_1_serialize_(NULL, &buf[0], &buf_size_chars));
 
     // Bad array length
     buf_size_chars = BUF_SIZE;
-    buf_size_bits  = buf_size_chars * CHAR_BIT;
-    ini_ofs = 0;
     obj.delimited_fix_le2.count = 123;
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_ARRAY_LENGTH,
-                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
+                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &buf_size_chars));
     obj.delimited_fix_le2.count = 0;
 
     // Bad union tag
-    ini_ofs = 0;
+    buf_size_chars = BUF_SIZE;
     obj.delimited_var_2[0]._tag_ = 42;
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_UNION_TAG,
-                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
+                      regulated_basics_Struct__0_1_serialize_(&obj, &buf[0], &buf_size_chars));
     obj.delimited_var_2[0]._tag_ = 0;
 
     // Bad delimiter header error cannot occur during serialization so this state is not explored.
 
     // The other way around -- deserialization. First, validate the happy path to make sure the test rig is okay.
     buf_size_chars = sizeof(sr);
-    buf_size_bits  = buf_size_chars * CHAR_BIT;
-    ini_ofs = 0;
-    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], buf_size_bits, &ini_ofs));
-    TEST_ASSERT_EQUAL(reference_serialized_size_bits, ini_ofs);
+    TEST_ASSERT_EQUAL(0, regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], &buf_size_chars));
+    TEST_ASSERT_EQUAL(((reference_serialized_size_bits + CHAR_SHIFT_MASK) >> CHAR_SHIFT), buf_size_chars);
 
     // Null pointers at the input.
-    ini_ofs = 0;
+    buf_size_chars = sizeof(sr);
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
-                      regulated_basics_Struct__0_1_deserialize_(&obj, &buf[0], buf_size_bits, NULL));
+                      regulated_basics_Struct__0_1_deserialize_(&obj, &buf[0], NULL));
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
-                      regulated_basics_Struct__0_1_deserialize_(&obj, NULL, buf_size_bits, &ini_ofs));
+                      regulated_basics_Struct__0_1_deserialize_(&obj, NULL, &buf_size_chars));
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
-                      regulated_basics_Struct__0_1_deserialize_(NULL, &buf[0], buf_size_bits, &ini_ofs));
+                      regulated_basics_Struct__0_1_deserialize_(NULL, &buf[0], &buf_size_chars));
 
     // Bad array length
-    ini_ofs = 0;
-
+    buf_size_chars = sizeof(sr);
     set_octet( sr, 7, 123 ); // sr[7] = 123;  // uint8[<3] bytes_lt3
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_ARRAY_LENGTH,
-                      regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], buf_size_bits, &ini_ofs));
+                      regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], &buf_size_chars));
     set_octet( sr, 7, 0 ); // sr[7] = 0;
 
     // Bad union tag in a nested composite; make sure the error floats up to the caller.
-    ini_ofs = 0;
+    buf_size_chars = sizeof(sr);
     set_octet( sr, 23, 4 ); // sr[23] = 4;  // first element of DelimitedVariableSize.0.1[2] delimited_var_2
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_UNION_TAG,
-                      regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], buf_size_bits, &ini_ofs));
+                      regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], &buf_size_chars));
     set_octet( sr, 23, 0 ); // sr[23] = 0;
 
     // Bad delimiter header
-    ini_ofs = 0;
+    buf_size_chars = sizeof(sr);
     set_octet( sr, 20, 200 ); // sr[20] = 200;  // 2nd byte of delimiter header of the first element of DelimitedVariableSize.0.1[2] delimited_var_2
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_REPRESENTATION_BAD_DELIMITER_HEADER,
-                      regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], buf_size_bits, &ini_ofs));
+                      regulated_basics_Struct__0_1_deserialize_(&obj, &sr[0], &buf_size_chars));
     set_octet( sr, 20, 0 ); // sr[20] = 0;
 }
 
@@ -766,17 +750,16 @@ static void testPrimitive(void)
         ref.n_f32  = randF32();
         ref.n_f16  = randF16();
 
-        const size_t buf_size_chars = (regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
-        unsigned char buf[buf_size_chars];
-        size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
-        size_t ini_ofs = 0;
-        TEST_ASSERT_EQUAL(0, regulated_basics_Primitive_0_1_serialize_(&ref, &buf[0], buf_size_bits, &ini_ofs));
-        TEST_ASSERT_EQUAL(regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8U, ini_ofs);  // fixed
+        const size_t origin_buf_size_chars = (regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
+        unsigned char buf[origin_buf_size_chars];
+        size_t buf_size_chars = origin_buf_size_chars;
+        TEST_ASSERT_EQUAL(0, regulated_basics_Primitive_0_1_serialize_(&ref, &buf[0], &buf_size_chars));
+        TEST_ASSERT_EQUAL(origin_buf_size_chars, buf_size_chars);  // fixed
 
         regulated_basics_Primitive_0_1 obj;
-        ini_ofs = 0;
-        TEST_ASSERT_EQUAL(0, regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
-        TEST_ASSERT_EQUAL(regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8U, ini_ofs);  // fixed
+        buf_size_chars = origin_buf_size_chars;
+        TEST_ASSERT_EQUAL(0, regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], &buf_size_chars));
+        TEST_ASSERT_EQUAL(origin_buf_size_chars, buf_size_chars);  // fixed
         TEST_ASSERT_EQUAL(ref.a_u64  , obj.a_u64 );
         TEST_ASSERT_EQUAL(ref.a_u32  , obj.a_u32 );
         TEST_ASSERT_EQUAL(ref.a_u16  , obj.a_u16 );
@@ -847,17 +830,16 @@ static void testPrimitiveArrayFixed(void)
         ref.a_bool_bitpacked_[0] = ((uint_fast8_t) randI8()) & 3;
         ref.n_bool_bitpacked_[0] = ((uint_fast8_t) randI8()) & 3;
 
-        const size_t buf_size_chars = (regulated_basics_PrimitiveArrayFixed_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
-        unsigned char buf[buf_size_chars];
-        size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
-        size_t ini_ofs = 0;
-        TEST_ASSERT_EQUAL(0, regulated_basics_PrimitiveArrayFixed_0_1_serialize_(&ref, &buf[0], buf_size_bits, &ini_ofs));
-        TEST_ASSERT_EQUAL(regulated_basics_PrimitiveArrayFixed_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8, ini_ofs);  // fixed
+        const size_t origin_buf_size_chars = (regulated_basics_PrimitiveArrayFixed_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
+        unsigned char buf[origin_buf_size_chars];
+        size_t buf_size_chars = origin_buf_size_chars;
+        TEST_ASSERT_EQUAL(0, regulated_basics_PrimitiveArrayFixed_0_1_serialize_(&ref, &buf[0], &buf_size_chars));
+        TEST_ASSERT_EQUAL(origin_buf_size_chars, buf_size_chars);  // fixed
 
         regulated_basics_PrimitiveArrayFixed_0_1 obj;
-        ini_ofs = 0;
-        TEST_ASSERT_EQUAL(0, regulated_basics_PrimitiveArrayFixed_0_1_deserialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
-        TEST_ASSERT_EQUAL(regulated_basics_PrimitiveArrayFixed_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8, ini_ofs);  // fixed
+        buf_size_chars = origin_buf_size_chars;
+        TEST_ASSERT_EQUAL(0, regulated_basics_PrimitiveArrayFixed_0_1_deserialize_(&obj, &buf[0], &buf_size_chars));
+        TEST_ASSERT_EQUAL(origin_buf_size_chars, buf_size_chars);  // fixed
         for (k = 0; k < 2; k++)
         {
             TEST_ASSERT_EQUAL(ref.a_u64[k], obj.a_u64[k]);
@@ -959,15 +941,15 @@ static void testPrimitiveArrayVariable(void)
         ref.n_f32.count = ((uint_fast8_t)randI8()) & 3U;
         ref.n_f16.count = ((uint_fast8_t)randI8()) & 3U;
 
-        const size_t buf_size_chars = (regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
-        unsigned char buf[buf_size_chars];
-        size_t buf_size_bits  = buf_size_chars * CHAR_BIT;
-        size_t ini_ofs = 0;
-        TEST_ASSERT_EQUAL(0, regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], buf_size_bits, &ini_ofs));
+
+        const size_t origin_buf_size_chars = (regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
+        unsigned char buf[origin_buf_size_chars];
+        size_t buf_size_chars = origin_buf_size_chars;
+        TEST_ASSERT_EQUAL(0, regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], &buf_size_chars));
 
         regulated_basics_PrimitiveArrayVariable_0_1 obj;
-        ini_ofs = 0;
-        TEST_ASSERT_EQUAL(0, regulated_basics_PrimitiveArrayVariable_0_1_deserialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
+        buf_size_chars = origin_buf_size_chars;
+        TEST_ASSERT_EQUAL(0, regulated_basics_PrimitiveArrayVariable_0_1_deserialize_(&obj, &buf[0], &buf_size_chars));
         for (k = 0; k < regulated_basics_PrimitiveArrayVariable_0_1_CAPACITY; k++)
         {
             TEST_ASSERT_EQUAL(ref.a_u64.count, obj.a_u64.count);
@@ -1032,47 +1014,43 @@ static void testPrimitiveArrayVariable(void)
     }
 }
 
-/*
- * Test that deserialization methods do not signal an error if a zero size is specified for a null output buffer.
- */
+//
+// Test that deserialization methods do not signal an error if a zero size is specified for a null output buffer.
+//
 static void testIssue221(void)
 {
-    const size_t buf_size_chars = (regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
-    unsigned char buf[buf_size_chars];
-    const size_t fixed_buf_size_bits = buf_size_chars * CHAR_BIT;
-    size_t buf_size_bits = fixed_buf_size_bits;
-    size_t ini_ofs = 0;
+    const size_t origin_buf_size_chars = (regulated_basics_Primitive_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
+    unsigned char buf[origin_buf_size_chars];
+    size_t buf_size_chars = origin_buf_size_chars;
 
     regulated_basics_Primitive_0_1 obj;
-    TEST_ASSERT_EQUAL(0, regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], buf_size_bits, &ini_ofs));
-    ini_ofs = 0;
+    TEST_ASSERT_EQUAL(0, regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], &buf_size_chars));
+    buf_size_chars = origin_buf_size_chars;
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
-                      regulated_basics_Primitive_0_1_deserialize_(NULL, &buf[0], buf_size_bits, &ini_ofs));
-    ini_ofs = 0;
+                      regulated_basics_Primitive_0_1_deserialize_(NULL, &buf[0], &buf_size_chars));
+    buf_size_chars = origin_buf_size_chars;
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
-                      regulated_basics_Primitive_0_1_deserialize_(&obj, NULL, buf_size_bits, &ini_ofs));
+                      regulated_basics_Primitive_0_1_deserialize_(&obj, NULL, &buf_size_chars));
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_INVALID_ARGUMENT,
-                      regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], buf_size_bits, NULL));
-    ini_ofs = 0;
+                      regulated_basics_Primitive_0_1_deserialize_(&obj, &buf[0], NULL));
+    buf_size_chars = 0;
     TEST_ASSERT_EQUAL(0,
-                      regulated_basics_Primitive_0_1_deserialize_(&obj, NULL, 0, &ini_ofs));
-    TEST_ASSERT_EQUAL(0, ini_ofs);
+                      regulated_basics_Primitive_0_1_deserialize_(&obj, NULL, &buf_size_chars));
+    TEST_ASSERT_EQUAL(0, buf_size_chars);
 }
 
-/*
- * Ensure that, where there is no input data, the deserialization method applies the zero-extension rule as defined
- * in section 3.7.1.4 of the specification.
- */
+//
+// Ensure that, where there is no input data, the deserialization method applies the zero-extension rule as defined
+// in section 3.7.1.4 of the specification.
+//
 static void testIssue221_zeroExtensionRule(void)
 {
-    size_t buf_size_bits = 0;
-    size_t ini_ofs = 0;
+    size_t buf_size_chars = 0;
     uavcan_pnp_NodeIDAllocationData_2_0 obj;
     obj.node_id.value = 0xAAAA;
-    TEST_ASSERT_EQUAL(0, uavcan_pnp_NodeIDAllocationData_2_0_deserialize_(&obj, NULL, buf_size_bits, &ini_ofs));
+    TEST_ASSERT_EQUAL(0, uavcan_pnp_NodeIDAllocationData_2_0_deserialize_(&obj, NULL, &buf_size_chars));
     TEST_ASSERT_EQUAL(0, obj.node_id.value);
 }
-
 
 void setUp(void)
 {

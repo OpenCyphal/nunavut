@@ -268,7 +268,7 @@ class _CFit(enum.Enum):
     IN_64 = 64
 
     def to_std_int(self, is_signed: bool) -> str:
-        return "{}int_fast{}_t".format(("" if is_signed else "u"), self.value)
+        return "{}int_least{}_t".format(("" if is_signed else "u"), self.value)
 
     def to_c_int(self, is_signed: bool) -> str:
         if self.value == 8:

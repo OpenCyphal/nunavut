@@ -7,8 +7,6 @@
 -#}
 
 {% from 'definitions.j2' import assert, LITTLE_ENDIAN %}
-
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro serialize(t) %}
     if ((obj == {{ valuetoken_null }}) || (buffer == {{ valuetoken_null }}) || {# -#}
@@ -18,11 +16,9 @@
     }
 {% if t.inner_type.bit_length_set.max > 0 %}
     {{ _serialize_impl(t) }}
-{% endif %}
+{%- endif %}
     return NUNAVUT_SUCCESS;
 {% endmacro %}
-
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_impl(t) %}
 {%- if options.enable_override_variable_array_capacity %}
@@ -80,8 +76,6 @@
     {{ assert('offset_bits % 8U == 0U') }}
     *inout_offset_bits = offset_bits;
 {% endmacro %}
-
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _pad_to_alignment(n_bits) %}
 {% if n_bits > 1 %}
@@ -102,14 +96,12 @@
     }
 {% endif %}
 {% endmacro %}
-
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_any(t, reference, offset) %}
 {% if t.alignment_requirement > 1 %}
     {{ assert('offset_bits %% %dU == 0U'|format(t.alignment_requirement)) }}
 {% endif %}
-{% if offset.is_aligned_at_byte() and t.alignment_requirement != 8 %}
+{% if options.enable_serialization_asserts and offset.is_aligned_at_byte() and t.alignment_requirement != 8 %}
     #if CHAR_BIT == 8
         {{ assert('offset_bits % 8U == 0U') }}
     #endif
@@ -128,8 +120,6 @@
 {% else %}{% assert False %}
 {% endif %}
 {% endmacro %}
-
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_void(t, offset) %}
 {% if offset.is_aligned_at_byte() %}
@@ -149,8 +139,6 @@
 {% endif %}
     offset_bits += {{ t.bit_length }}UL;
 {% endmacro %}
-
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_unaligned_boolean(reference) %}
     if ({{ reference }})
@@ -162,7 +150,6 @@
         buffer[offset_bits >> CHAR_SHIFT] = ({{ typename_byte }})(buffer[offset_bits >> CHAR_SHIFT] & ~(1U << (offset_bits & CHAR_SHIFT_MASK)));
     }
 {% endmacro %}
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_boolean(t, reference, offset) %}
 {% if offset.is_aligned_at_byte() %}
@@ -176,7 +163,6 @@
 {% endif %}
     offset_bits += 1U;
 {% endmacro %}
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_unaligned_integer(t, ref_value) %}
     {% set ref_err = 'err'|to_template_unique_name %}
@@ -187,7 +173,6 @@
         return {{ ref_err }};
     }
 {% endmacro %}
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_integer(t, reference, offset) %}
 {% if t is saturated %}
@@ -230,8 +215,6 @@
 {% endif %}
     offset_bits += {{ t.bit_length }}U;
 {% endmacro %}
-
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_unaligned_float(t, ref_value) %}
     {% set ref_err = 'err'|to_template_unique_name %}
@@ -242,7 +225,6 @@
         return {{ ref_err }};
     }
 {% endmacro %}
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_float(t, reference, offset) %}
 {% if t is saturated %}
@@ -303,8 +285,6 @@
 {% endif %}
     offset_bits += {{ t.bit_length }}U;
 {% endmacro %}
-
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_fixed_length_array(t, reference, offset) %}
 {# SPECIAL CASE: PACKED BIT ARRAY #}
@@ -334,7 +314,6 @@
         }
     }
     #endif
-
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
 {% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
     // Saturation code not emitted -- assume the native representation is conformant.
@@ -362,12 +341,11 @@
         }
     }
     #endif
-
 {# GENERAL CASE #}
 {% else %}
     {
         {% set ref_origin_offset = 'origin'|to_template_unique_name %}
-        const {{ typename_unsigned_bit_length }} {{ ref_origin_offset }} = offset_bits;
+        const {{ typename_unsigned_bit_length }} {{ ref_origin_offset }} = offset_bits; (void) {{ ref_origin_offset }};
         {# Element offset is the superposition of each individual element offset plus the array's own offset.
          # For example, an array like uint8[3] offset by 16 bits would have its element_offset = {16, 24, 32}.
          # We can also unroll element deserialization for small arrays (e.g., below ~10 elements) to take advantage of
@@ -386,12 +364,9 @@
         {% else %}
         {{ assert('(offset_bits - %s) == %sULL'|format(ref_origin_offset, t.bit_length_set.max)) }}
         {% endif %}
-        (void) {{ ref_origin_offset }};
      }
 {% endif %}
 {% endmacro %}
-
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_variable_length_array(t, reference, offset) %}
 {# SERIALIZE THE IMPLICIT ARRAY LENGTH FIELD #}
@@ -401,7 +376,6 @@
     }
     // Array length prefix: {{ t.length_field_type }}
     {{ _serialize_integer(t.length_field_type, reference + '.count', offset) }}
-
 {# COMPUTE THE ARRAY ELEMENT OFFSETS #}
 {# NOTICE: The offset is no longer valid at this point because we just emitted the array length prefix. #}
 {% set element_offset = offset + t.bit_length_set %}
@@ -410,7 +384,6 @@
 {% if first_element_offset.is_aligned_at_byte() %}
     {{ assert('offset_bits % 8U == 0U') }}
 {% endif %}
-
 {# SPECIAL CASE: PACKED BIT ARRAY #}
 {% if t.element_type is BooleanType %}
     {% if first_element_offset.is_aligned_at_byte() %}
@@ -418,7 +391,6 @@
     {% endif %}
     nunavutCopyBits(&buffer[0], offset_bits, {{ reference }}.count, &{{ reference }}.bitpacked[0], 0U);
     offset_bits += {{ reference }}.count;
-
 {# SPECIAL CASE: BYTES-LIKE ARRAY #}
 {% elif t.element_type is PrimitiveType and t.element_type.bit_length == 8 and t.element_type is zero_cost_primitive %}
     {% if element_offset.is_aligned_at_byte() %}
@@ -438,7 +410,6 @@
         }
     }
     #endif
-
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
 {% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
     // Saturation code not emitted -- assume the native representation is conformant.
@@ -466,7 +437,6 @@
         }
     }
     #endif
-
 {# GENERAL CASE #}
 {% else %}
     {
@@ -480,11 +450,8 @@
             }}
         }
      }
-
 {% endif %}
 {% endmacro %}
-
-
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_composite(t, reference, offset) %}
 {% set ref_err              = 'err'         |to_template_unique_name %}
@@ -492,8 +459,8 @@
 {% set ref_size_octets      = 'size_octets' |to_template_unique_name %}
 {% set is_variable_size     = not t.inner_type.bit_length_set.fixed_length %}
 {% set size_bits            = t.inner_type.bit_length_set.max %}
-    const {{ typename_unsigned_bit_length }} {{ original_offset }} = offset_bits;
-    {{ typename_unsigned_bit_length }} {{ ref_size_octets }} = ({{ size_bits }}UL + 7U) / 8U;  // Nested object (max) size, in octets
+    const {{ typename_unsigned_bit_length }} {{ original_offset }} = offset_bits; (void){{ original_offset }};
+    {{ typename_unsigned_bit_length }} {{ ref_size_octets }} = ({{ size_bits }}UL + 7U) / 8U; (void){{ ref_size_octets }};  // Nested object (max) size, in octets
 {# PROLOGUE #}
 {% if t is DelimitedType %}
     {% if is_variable_size %}
@@ -504,11 +471,10 @@
     {{ _serialize_integer(t.delimiter_header_type, ref_size_octets, offset)|trim }}
     {% endif %}
 {% endif %}
-
 {# NESTED OBJECT SERIALIZATION #}
     {{ assert('offset_bits % 8U == 0U') }}
     {{ assert('(offset_bits + %s) <= buffer_size_bits'|format(size_bits)) }}
-    {{ typename_error_type }} {{ ref_err }} = {{ t|full_reference_name }}_serialize_(
+    {{ typename_error_type }} {{ ref_err }} = {{ t|full_reference_name }}_serialize_impl_(
         &{{ reference }}, &buffer[0], buffer_size_bits, &offset_bits );
     if ({{ ref_err }} < 0)
     {
@@ -521,7 +487,6 @@
 {% else %}
     {{ assert('%s <= %sULL'|format(size_bits, t.inner_type.bit_length_set.max)) }}
 {% endif %}
-
 {# EPILOGUE #}
 {% if t is DelimitedType and is_variable_size %}
     // Jump back to write the delimiter header after the nested object is serialized and its length is known.
@@ -532,6 +497,5 @@
         return {{ ref_err }};
     }
 {% endif %}
-
     {{ assert('offset_bits <= buffer_size_bits') }}
 {% endmacro %}

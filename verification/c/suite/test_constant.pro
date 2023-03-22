@@ -2,6 +2,7 @@ TEMPLATE = app
 CONFIG += console c++14
 CONFIG -= app_bundle
 CONFIG -= qt
+CONFIG += warn_on
 
 TEST_TYPES_PATH = $$_PRO_FILE_PWD_/../../nunavut_test_types/test0/nunavut_out
 UAVCAN_PATH = $$_PRO_FILE_PWD_/../../../submodules/public_regulated_data_types/nunavut_out

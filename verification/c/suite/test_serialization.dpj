@@ -20,7 +20,7 @@
 					<option><![CDATA[|-Version>4.5|-v>0|-g>1|-l>0|-save-temps>0|-sp>0]]></option>
 				</tool>
 				<tool type="Linker">
-					<option><![CDATA[|-Version>5.0|-flags-link -t>0|-flags-link -S>0|-flags-link -s>0|-mem>0|-flags-link -warnonce>0|-map>0|-flags-link -xref>0|-flags-link -save-temps>0|-flags-link -ip>0|-flags-link -e>0|-flags-link -ev>0|-flags-link -MD__ADI_LIBEH__>0|-add-debug-libpaths>1]]></option>
+					<option><![CDATA[|-Version>5.0|-flags-link -t>0|-flags-link -S>0|-flags-link -s>0|-mem>0|-flags-link -warnonce>0|-map>1|-flags-link -xref>0|-flags-link -save-temps>0|-flags-link -ip>0|-flags-link -e>0|-flags-link -ev>0|-flags-link -MD__ADI_LIBEH__>0|-add-debug-libpaths>1]]></option>
 				</tool>
 				<tool type="Archiver">
 					<option><![CDATA[]]></option>

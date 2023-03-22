@@ -22,10 +22,9 @@ static void testPrimitiveArrayVariableOverride(void)
 {
     regulated_basics_PrimitiveArrayVariable_0_1 ref;
     memset(&ref, 0, sizeof(ref));
-    const size_t buf_size_chars = (regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
-    size_t buf_size_bits  = (buf_size_chars - 1) * CHAR_BIT;
-    size_t ini_ofs = 0;
-    unsigned char buf[buf_size_chars];
+    const size_t origin_buf_size_chars = (regulated_basics_PrimitiveArrayVariable_0_1_SERIALIZATION_BUFFER_SIZE_OCTETS_*8+CHAR_SHIFT_MASK) >> CHAR_SHIFT;
+    unsigned char buf[origin_buf_size_chars];
+    size_t buf_size_chars  = origin_buf_size_chars-1;
 
 #if NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 1
     TEST_ASSERT_EQUAL(OVERRIDE_SIZE, regulated_basics_PrimitiveArrayVariable_0_1_a_u64_ARRAY_CAPACITY_);
@@ -46,7 +45,7 @@ static void testPrimitiveArrayVariableOverride(void)
                       regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], buf_size_bits, &ini_ofs));
 #else
     TEST_ASSERT_EQUAL(-NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL,
-                      regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], buf_size_bits, &ini_ofs));
+                      regulated_basics_PrimitiveArrayVariable_0_1_serialize_(&ref, &buf[0], &buf_size_chars));
 #endif
 }
 

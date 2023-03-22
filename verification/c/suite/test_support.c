@@ -238,24 +238,27 @@ static void testNunavutGetBits(void)
 
 static void testNunavutSetIxx_neg1(void)
 {
-    int64_t i64 = 0;
-    nunavutSetIxx(&i64, sizeof(i64)*CHAR_BIT, 0, -1, 64);
-    TEST_ASSERT_EQUAL_HEX64(((int64_t)(-1)), i64);
+    unsigned char buf[8] = {x00,x00,x00,x00,x00,x00,x00,x00};
+    int64_t i64 = -1;
+    nunavutSetIxx(buf, 64, 0, -1, 64);
+    TEST_ASSERT_EQUAL_HEX64(0,memcmp(buf,&i64,sizeof(i64)));
 }
 
 static void testNunavutSetIxx_neg255(void)
 {
-    int64_t i64 = 0;
+    unsigned char buf[8] = {x00,x00,x00,x00,x00,x00,x00,x00};
+    int64_t i64 = -1;
     const signed char min_val = xFF;
-    nunavutSetIxx(&i64, sizeof(i64)*CHAR_BIT, 0, min_val, 64);
-    TEST_ASSERT_EQUAL_HEX64(((int64_t)min_val), i64);
+    nunavutSetIxx(buf, 64, 0, min_val, 64);
+    TEST_ASSERT_EQUAL_HEX64(0,memcmp(buf,&i64,sizeof(i64)));
 }
 
 static void testNunavutSetIxx_neg255_tooSmall(void)
 {
-    int64_t i64 = 0;
-    nunavutSetIxx(&i64, sizeof(i64)*CHAR_BIT, 0, -255, 8);
-    TEST_ASSERT_EQUAL_HEX64(0x01, i64);
+    unsigned char buf[8] = {0,0,0,0,0,0,0,0};
+    int64_t i64 = 1;
+    nunavutSetIxx(buf, 64, 0, -255, 8);
+    TEST_ASSERT_EQUAL_HEX64(0,memcmp(buf,&i64,sizeof(i64)));
 }
 
 static void testNunavutSetIxx_bufferOverflow(void)
@@ -306,14 +309,18 @@ static void testNunavutGetBit(void)
 
 static void testNunavutGetU8(void)
 {
-    const unsigned char data[] = {0xAAFE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    TEST_ASSERT_EQUAL_HEX8(0xFE, nunavutGetU8(data, sizeof(data)*CHAR_BIT, 0, 8U));
+    const uint_fast16_t data16[] = {0xAAFE, 0x000, 0x0000, 0x0000};
+    unsigned char data_char[8];
+    (void)memcpy(data_char,data16,sizeof(data_char));
+    TEST_ASSERT_EQUAL_HEX8(0xFE, nunavutGetU8(data_char,8,0,8U));
 }
 
 static void testNunavutGetU8_tooSmall(void)
 {
-    const unsigned char data[] = {0xAAFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    TEST_ASSERT_EQUAL_HEX8(0x7F, nunavutGetU8(data, sizeof(data), 0, 7U));
+    const uint_fast16_t data16[] = {0xAAFF, 0x000, 0x0000, 0x0000};  // little endian!
+    unsigned char data_char[8];
+    (void)memcpy(data_char,data16,sizeof(data_char));
+    TEST_ASSERT_EQUAL_HEX8(0x7F, nunavutGetU8(data_char, 8, 0, 7U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -323,13 +330,15 @@ static void testNunavutGetU8_tooSmall(void)
 static void testNunavutGetU16(void)
 {
     const unsigned char data[] = {xAA, xAA};
-    TEST_ASSERT_EQUAL_HEX16(0xAAAA, nunavutGetU16(data, sizeof(data)*CHAR_BIT, 0, 16U));
+    TEST_ASSERT_EQUAL_HEX16(0xAAAA, nunavutGetU16(data, 16, 0, 16U));
 }
 
 static void testNunavutGetU16_tooSmall(void)
 {
-    const unsigned char data[] = {0xAAAA};
-    TEST_ASSERT_EQUAL_HEX16(0x0055, nunavutGetU16(data, sizeof(data)*CHAR_BIT, 9, 16U));
+    const uint_fast16_t data16[] = {0xAAAA};
+    unsigned char data_char[8];
+    (void)memcpy(data_char,data16,sizeof(uint_fast16_t));
+    TEST_ASSERT_EQUAL_HEX16(0x0055, nunavutGetU16(data_char, 16, 9, 16U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -338,14 +347,14 @@ static void testNunavutGetU16_tooSmall(void)
 
 static void testNunavutGetU32(void)
 {
-    const uint_fast32_t data[] = {0xAAAAAAAA};
-    TEST_ASSERT_EQUAL_HEX32(0xAAAAAAAA, nunavutGetU32(data, sizeof(data)*CHAR_BIT, 0, 32U));
+    const unsigned char data[] = {xAA, xAA, xAA, xAA};
+    TEST_ASSERT_EQUAL_HEX32(0xAAAAAAAA, nunavutGetU32(data, 32, 0, 32U));
 }
 
 static void testNunavutGetU32_tooSmall(void)
 {
-    const uint_fast32_t data[] = {0xAAAAAAAA};
-    TEST_ASSERT_EQUAL_HEX32(0x00555555, nunavutGetU32(data, sizeof(data)*CHAR_BIT, 9, 32U));
+    const unsigned char data[] = {xAA, xAA, xAA, xAA};
+    TEST_ASSERT_EQUAL_HEX32(0x00555555, nunavutGetU32(data, 32, 9, 32U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -355,13 +364,13 @@ static void testNunavutGetU32_tooSmall(void)
 static void testNunavutGetU64(void)
 {
     const unsigned char data[] = {xAA, xAA, xAA, xAA, xAA, xAA, xAA, xAA};
-    TEST_ASSERT_EQUAL_HEX64(0xAAAAAAAAAAAAAAAA, nunavutGetU64(data, sizeof(data)*CHAR_BIT, 0, 64U));
+    TEST_ASSERT_EQUAL_HEX64(0xAAAAAAAAAAAAAAAAull, nunavutGetU64(data, 64, 0, 64U));
 }
 
 static void testNunavutGetU64_tooSmall(void)
 {
-    const uint64_t data[] = {0xAAAAAAAAAAAAAAAA};
-    TEST_ASSERT_EQUAL_HEX64(0x0055555555555555, nunavutGetU64(data, sizeof(data)*CHAR_BIT, 9, 64U));
+    const unsigned char data[] = {xAA, xAA, xAA, xAA, xAA, xAA, xAA, xAA};
+    TEST_ASSERT_EQUAL_HEX64(0x0055555555555555ull, nunavutGetU64(data, 64, 9, 64U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -398,26 +407,26 @@ static void testNunavutGetI8_zeroDataLen(void)
 
 static void testNunavutGetI16(void)
 {
-    const uint_fast16_t data[] = {0xFFFF};
-    TEST_ASSERT_EQUAL_INT16(-1, nunavutGetI16(data, sizeof(data)*CHAR_BIT, 0, 16U));
+    const unsigned char data[] = {xFF, xFF};
+    TEST_ASSERT_EQUAL_INT16(-1, nunavutGetI16(data, 16, 0, 16U));
 }
 
 static void testNunavutGetI16_tooSmall(void)
 {
-    const uint_fast16_t data[] = {0xFFFF};
-    TEST_ASSERT_EQUAL_INT16(32767, nunavutGetI16(data, sizeof(data)*CHAR_BIT, 1, 16U));
+    const unsigned char data[] = {xFF, xFF};
+    TEST_ASSERT_EQUAL_INT16(32767, nunavutGetI16(data, 16, 1, 16U));
 }
 
 static void testNunavutGetI16_tooSmallAndNegative(void)
 {
-    const uint_fast16_t data[] = {0xFFFF};
-    TEST_ASSERT_EQUAL_INT16(-1, nunavutGetI16(data, sizeof(data)*CHAR_BIT, 0, 12U));
+    const unsigned char data[] = {xFF, xFF};
+    TEST_ASSERT_EQUAL_INT16(-1, nunavutGetI16(data, 16, 0, 12U));
 }
 
 static void testNunavutGetI16_zeroDataLen(void)
 {
-    const uint_fast16_t data[] = {0xFFFF};
-    TEST_ASSERT_EQUAL_INT16(0, nunavutGetI16(data, sizeof(data)*CHAR_BIT, 0, 0U));
+    const unsigned char data[] = {xFF, xFF};
+    TEST_ASSERT_EQUAL_INT16(0, nunavutGetI16(data, 16, 0, 0U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -426,26 +435,26 @@ static void testNunavutGetI16_zeroDataLen(void)
 
 static void testNunavutGetI32(void)
 {
-    const uint_fast32_t data[] = {0xFFFFFFFF};
-    TEST_ASSERT_EQUAL_INT32(-1, nunavutGetI32(data, sizeof(data)*CHAR_BIT, 0, 32U));
+    const unsigned char data[] = {xFF, xFF, xFF, xFF};
+    TEST_ASSERT_EQUAL_INT32(-1, nunavutGetI32(data, 32, 0, 32U));
 }
 
 static void testNunavutGetI32_tooSmall(void)
 {
-    const uint_fast32_t data[] = {0xFFFFFFFF};
-    TEST_ASSERT_EQUAL_INT32(2147483647, nunavutGetI32(data, sizeof(data)*CHAR_BIT, 1, 32U));
+    const unsigned char data[] = {xFF, xFF, xFF, xFF};
+    TEST_ASSERT_EQUAL_INT32(2147483647, nunavutGetI32(data, 32, 1, 32U));
 }
 
 static void testNunavutGetI32_tooSmallAndNegative(void)
 {
-    const uint_fast32_t data[] = {0xFFFFFFFF};
-    TEST_ASSERT_EQUAL_INT32(-1, nunavutGetI32(data, sizeof(data)*CHAR_BIT, 0, 20U));
+    const unsigned char data[] = {xFF, xFF, xFF, xFF};
+    TEST_ASSERT_EQUAL_INT32(-1, nunavutGetI32(data, 32, 0, 20U));
 }
 
 static void testNunavutGetI32_zeroDataLen(void)
 {
-    const uint_fast32_t data[] = {0xFFFFFFFF};
-    TEST_ASSERT_EQUAL_INT32(0, nunavutGetI32(data, sizeof(data)*CHAR_BIT, 0, 0U));
+    const unsigned char data[] = {xFF, xFF, xFF, xFF};
+    TEST_ASSERT_EQUAL_INT32(0, nunavutGetI32(data, 32, 0, 0U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -454,26 +463,26 @@ static void testNunavutGetI32_zeroDataLen(void)
 
 static void testNunavutGetI64(void)
 {
-    const uint64_t data[] = {0xFFFFFFFFFFFFFFFF};
-    TEST_ASSERT_EQUAL_INT64(-1, nunavutGetI64(data, sizeof(data)*CHAR_BIT, 0, 64U));
+    const unsigned char data[] = {xFF, xFF, xFF, xFF, xFF, xFF, xFF, xFF};
+    TEST_ASSERT_EQUAL_INT64(-1, nunavutGetI64(data, 64, 0, 64U));
 }
 
 static void testNunavutGetI64_tooSmall(void)
 {
-    const uint64_t data[] = {0xFFFFFFFFFFFFFFFF};
-    TEST_ASSERT_EQUAL_INT64(9223372036854775807, nunavutGetI64(data, sizeof(data)*CHAR_BIT, 1, 64U));
+    const unsigned char data[] = {xFF, xFF, xFF, xFF, xFF, xFF, xFF, xFF};
+    TEST_ASSERT_EQUAL_INT64(9223372036854775807ull, nunavutGetI64(data, 64, 1, 64U));
 }
 
 static void testNunavutGetI64_tooSmallAndNegative(void)
 {
-    const uint64_t data[] = {0xFFFFFFFFFFFFFFFF};
-    TEST_ASSERT_EQUAL_INT64(-1, nunavutGetI64(data, sizeof(data)*CHAR_BIT, 0, 60U));
+    const unsigned char data[] = {xFF, xFF, xFF, xFF, xFF, xFF, xFF, xFF};
+    TEST_ASSERT_EQUAL_INT64(-1, nunavutGetI64(data, 64, 0, 60U));
 }
 
 static void testNunavutGetI64_zeroDataLen(void)
 {
-    const uint64_t data[] = {0xFFFFFFFFFFFFFFFF};
-    TEST_ASSERT_EQUAL_INT64(0, nunavutGetI64(data, sizeof(data)*CHAR_BIT, 0, 0U));
+    const unsigned char data[] = {xFF, xFF, xFF, xFF, xFF, xFF, xFF, xFF};
+    TEST_ASSERT_EQUAL_INT64(0, nunavutGetI64(data, 64, 0, 0U));
 }
 
 // +--------------------------------------------------------------------------+
@@ -628,8 +637,12 @@ static void testNunavutFloat16PackUnpack_NAN(void)
 
 static void testNunavutSetF16(void)
 {
-    uint_fast16_t x = 0;
-    nunavutSetF16(&x, sizeof(x)*CHAR_BIT, 0, 3.14f);
+    // >>> hex(int.from_bytes(np.array([np.float16('3.14')]).tobytes(), 'little'))
+    // '0x4248'
+    uint32_t x = 0;
+    unsigned char data[] = {x00, x00, x00, x00};
+    nunavutSetF16(data, 16, 0, 3.14f);
+    (void)memcpy(&x,data,sizeof(uint32_t));
     TEST_ASSERT_EQUAL_HEX8(0x48, (x >> 0 ) & 0xFF);
     TEST_ASSERT_EQUAL_HEX8(0x42, (x >> 8 ) & 0xFF);
     TEST_ASSERT_EQUAL_HEX8(0x00, (x >> 16) & 0xFF);
@@ -644,7 +657,9 @@ static void testNunavutGetF16(void)
     // >>> hex(int.from_bytes(np.array([np.float16('3.14')]).tobytes(), 'little'))
     // '0x4248'
     const uint_fast16_t x = 0x4248;
-    const float result = nunavutGetF16(&x, sizeof(x)*CHAR_BIT, 0);
+    unsigned char data[sizeof(x)] = {0};
+    (void)memcpy(data,&x,sizeof(x));
+    const float result = nunavutGetF16(data, 16, 0);
     TEST_ASSERT_FLOAT_WITHIN(0.001f, 3.14f, result);
 }
 
@@ -707,30 +722,30 @@ static void testNunavutSetF32(void)
 
 static void testNunavutGetF32(void)
 {
-    const uint_fast32_t neg_inf = 0xff800000;
-    const uint_fast32_t inf     = 0x7f800000;
-    const uint_fast32_t nan     = 0x7fc00000;
-    const uint_fast32_t pi      = 0x4048f5c3;
+    const uint_fast32_t neg_inf = 0xff800000; unsigned char neg_inf_chars[sizeof(neg_inf)]; (void)memcpy(neg_inf_chars,&neg_inf,sizeof(neg_inf));
+    const uint_fast32_t inf     = 0x7f800000; unsigned char inf_chars    [sizeof(inf    )]; (void)memcpy(inf_chars    ,&inf    ,sizeof(inf    ));
+    const uint_fast32_t nan     = 0x7fc00000; unsigned char nan_chars    [sizeof(nan    )]; (void)memcpy(nan_chars    ,&nan    ,sizeof(nan    ));
+    const uint_fast32_t pi      = 0x4048f5c3; unsigned char pi_chars     [sizeof(pi     )]; (void)memcpy(pi_chars     ,&pi     ,sizeof(pi     ));
     float result;
 
     // >>> hex(int.from_bytes(np.array([-np.float32('infinity')]).tobytes(), 'little'))
     // '0xff800000'
-    result = nunavutGetF32(&neg_inf, sizeof(neg_inf)*CHAR_BIT, 0);
+    result = nunavutGetF32(neg_inf_chars, sizeof(neg_inf)*CHAR_BIT, 0);
     TEST_ASSERT_FLOAT_IS_NEG_INF(result);
 
     // >>> hex(int.from_bytes(np.array([np.float32('infinity')]).tobytes(), 'little'))
     // '0x7f800000'
-    result = nunavutGetF32(&inf, sizeof(inf)*CHAR_BIT, 0);
+    result = nunavutGetF32(inf_chars, sizeof(inf)*CHAR_BIT, 0);
     TEST_ASSERT_FLOAT_IS_INF(result);
 
     // >>> hex(int.from_bytes(np.array([np.float32('nan')]).tobytes(), 'little'))
     // '0x7fc00000'
-    result = nunavutGetF32(&nan, sizeof(nan)*CHAR_BIT, 0);
+    result = nunavutGetF32(nan_chars, sizeof(nan)*CHAR_BIT, 0);
     TEST_ASSERT_FLOAT_IS_NAN(result);
 
     // >>> hex(int.from_bytes(np.array([np.float32('3.14')]).tobytes(), 'little'))
     // '0x4048f5c3'
-    result = nunavutGetF32(&pi, sizeof(pi)*CHAR_BIT, 0);
+    result = nunavutGetF32(pi_chars, sizeof(pi)*CHAR_BIT, 0);
     TEST_ASSERT_EQUAL_FLOAT(3.14f, result);
 }
 
@@ -740,30 +755,30 @@ static void testNunavutGetF32(void)
 
 static void testNunavutGetF64(void)
 {
-    const uint64_t pi      = 0x400921fb54442d18;
-    const uint64_t inf     = 0x7ff0000000000000;
-    const uint64_t neg_inf = 0xfff0000000000000;
-    const uint64_t nan     = 0x7ff8000000000000;
+    const uint64_t neg_inf = 0xfff0000000000000; unsigned char neg_inf_chars[sizeof(neg_inf)]; (void)memcpy(neg_inf_chars,&neg_inf,sizeof(neg_inf));
+    const uint64_t inf     = 0x7ff0000000000000; unsigned char inf_chars    [sizeof(inf    )]; (void)memcpy(inf_chars    ,&inf    ,sizeof(inf    ));
+    const uint64_t nan     = 0x7ff8000000000000; unsigned char nan_chars    [sizeof(nan    )]; (void)memcpy(nan_chars    ,&nan    ,sizeof(nan    ));
+    const uint64_t pi      = 0x400921fb54442d18; unsigned char pi_chars     [sizeof(pi     )]; (void)memcpy(pi_chars     ,&pi     ,sizeof(pi     ));
     double result;
 
     // >>> hex(int.from_bytes(np.array([np.float64('3.141592653589793')]).tobytes(), 'little'))
     // '0x400921fb54442d18'
-    result = nunavutGetF64(&pi, sizeof(pi)*CHAR_BIT, 0);
+    result = nunavutGetF64(pi_chars, sizeof(pi)*CHAR_BIT, 0);
     TEST_ASSERT_EQUAL_DOUBLE(3.141592653589793, result);
 
     // >>> hex(int.from_bytes(np.array([np.float64('infinity')]).tobytes(), 'little'))
     // '0x7ff0000000000000'
-    result = nunavutGetF64(&inf, sizeof(inf)*CHAR_BIT, 0);
+    result = nunavutGetF64(inf_chars, sizeof(inf)*CHAR_BIT, 0);
     TEST_ASSERT_DOUBLE_IS_INF(result);
 
     // >>> hex(int.from_bytes(np.array([-np.float64('infinity')]).tobytes(), 'little'))
     // '0xfff0000000000000'
-    result = nunavutGetF64(&neg_inf, sizeof(neg_inf)*CHAR_BIT, 0);
+    result = nunavutGetF64(neg_inf_chars, sizeof(neg_inf)*CHAR_BIT, 0);
     TEST_ASSERT_DOUBLE_IS_NEG_INF(result);
 
     // >>> hex(int.from_bytes(np.array([np.float64('nan')]).tobytes(), 'little'))
     // '0x7ff8000000000000'
-    result = nunavutGetF64(&nan, sizeof(nan)*CHAR_BIT, 0);
+    result = nunavutGetF64(nan_chars, sizeof(nan)*CHAR_BIT, 0);
     TEST_ASSERT_DOUBLE_IS_NAN(result);
 }
 
@@ -773,7 +788,7 @@ static void testNunavutGetF64(void)
 //
 // Compare the results of Nunavut serialization to the IEEE definition. These must match.
 //
-static void helperAssertSerFloat64SameAsIEEE(const double original_value, const void* serialized_result)
+static void helperAssertSerFloat64SameAsIEEE(const double original_value, const unsigned char* serialized_result)
 {
     typedef union
     {
@@ -785,39 +800,42 @@ static void helperAssertSerFloat64SameAsIEEE(const double original_value, const 
             uint64_t negative : 1 ;
         } ieee;
     } AsInt;
-    const AsInt* serialized = (const AsInt*)serialized_result;
+    AsInt serialized;
+    (void)memcpy(&serialized.f, serialized_result, sizeof(double)); 
     AsInt original; original.f = original_value;
 
-    TEST_ASSERT_EQUAL_HEX64_MESSAGE( original.ieee.mantissa, serialized->ieee.mantissa, "Mantissa did not match.");
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE( original.ieee.exponent, serialized->ieee.exponent, "Exponent did not match.");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE ( original.ieee.negative, serialized->ieee.negative, "Negative did not match.");
+    TEST_ASSERT_EQUAL_HEX64_MESSAGE( original.ieee.mantissa, serialized.ieee.mantissa, "Mantissa did not match.");
+    TEST_ASSERT_EQUAL_HEX16_MESSAGE( original.ieee.exponent, serialized.ieee.exponent, "Exponent did not match.");
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE ( original.ieee.negative, serialized.ieee.negative, "Negative did not match.");
 }
 
 static void testNunavutSetF64(void)
 {
-    double x = 0;
-    nunavutSetF64(&x, sizeof(x)*CHAR_BIT, 0, 3.141592653589793);
-    helperAssertSerFloat64SameAsIEEE(3.141592653589793, &x);
+    unsigned char x_chars[sizeof(double)];
 
-    memset(&x, 0, sizeof(x));
-    nunavutSetF64(&x, sizeof(x)*CHAR_BIT, 0, -3.141592653589793);
-    helperAssertSerFloat64SameAsIEEE(-3.141592653589793, &x);
+    memset(x_chars, 0, sizeof(double));
+    nunavutSetF64(x_chars, sizeof(double)*CHAR_BIT, 0, 3.141592653589793);
+    helperAssertSerFloat64SameAsIEEE(3.141592653589793, x_chars);
 
-    memset(&x, 0, sizeof(x));
-    nunavutSetF64(&x, sizeof(x)*CHAR_BIT, 0, -NAN64);
-    helperAssertSerFloat64SameAsIEEE(-NAN64, &x);
+    memset(x_chars, 0, sizeof(double));
+    nunavutSetF64(x_chars, sizeof(double)*CHAR_BIT, 0, -3.141592653589793);
+    helperAssertSerFloat64SameAsIEEE(-3.141592653589793, x_chars);
 
-    memset(&x, 0, sizeof(x));
-    nunavutSetF64(&x, sizeof(x)*CHAR_BIT, 0, NAN64);
-    helperAssertSerFloat64SameAsIEEE(NAN64, &x);
+    memset(x_chars, 0, sizeof(double));
+    nunavutSetF64(x_chars, sizeof(double)*CHAR_BIT, 0, -NAN64);
+    helperAssertSerFloat64SameAsIEEE(-NAN64, x_chars);
 
-    memset(&x, 0, sizeof(x));
-    nunavutSetF64(&x, sizeof(x)*CHAR_BIT, 0, INF64);
-    helperAssertSerFloat64SameAsIEEE(INF64, &x);
+    memset(x_chars, 0, sizeof(double));
+    nunavutSetF64(x_chars, sizeof(double)*CHAR_BIT, 0, NAN64);
+    helperAssertSerFloat64SameAsIEEE(NAN64, x_chars);
 
-    memset(&x, 0, sizeof(x));
-    nunavutSetF64(&x, sizeof(x)*CHAR_BIT, 0, -INF64);
-    helperAssertSerFloat64SameAsIEEE(-INF64, &x);
+    memset(x_chars, 0, sizeof(double));
+    nunavutSetF64(x_chars, sizeof(double)*CHAR_BIT, 0, INF64);
+    helperAssertSerFloat64SameAsIEEE(INF64, x_chars);
+
+    memset(x_chars, 0, sizeof(double));
+    nunavutSetF64(x_chars, sizeof(double)*CHAR_BIT, 0, -INF64);
+    helperAssertSerFloat64SameAsIEEE(-INF64, x_chars);
 }
 
 // +--------------------------------------------------------------------------+
