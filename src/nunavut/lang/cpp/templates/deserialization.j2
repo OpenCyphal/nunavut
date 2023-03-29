@@ -201,15 +201,15 @@
 {% endif %}
     {# GENERAL CASE #}
     {% set ref_index = 'index'|to_template_unique_name %}
+    {% set tmp_element = 'tmp'|to_template_unique_name %}
         for ({{ typename_unsigned_length }} {{ ref_index }} = 0U; {{ ref_index }} < {{ ref_size }}; ++{{ ref_index }})
         {
-            // TODO This is terribly inefficient. We need to completely refactor this template to use C++ emplace and
-            // move semantics instead of assuming C-style containers
-            {{ reference }}.push_back();
+            {{ t.element_type | declaration }} {{ tmp_element }} = {{ t.element_type | declaration }}();
             {{
-                _deserialize_any(t.element_type, reference + ('[%s]'|format(ref_index)), element_offset)
+                _deserialize_any(t.element_type, tmp_element, element_offset)
             |trim|indent
             }}
+            {{ reference }}.push_back(std::move({{ tmp_element }}));
         }
 
     }
