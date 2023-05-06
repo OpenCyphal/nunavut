@@ -7,10 +7,15 @@
     Filters for generating python. All filters in this
     module will be available in the template's global namespace as ``py``.
 """
+from __future__ import annotations
 import builtins
 import functools
 import keyword
-import typing
+import base64
+import gzip
+import pickle
+import itertools
+from typing import Any, Iterable
 
 import pydsdl
 
@@ -31,7 +36,7 @@ class Language(BaseLanguage):
     Concrete, Python-specific :class:`nunavut.lang.Language` object.
     """
 
-    PYTHON_RESERVED_IDENTIFIERS = sorted(list(map(str, list(keyword.kwlist) + dir(builtins))))  # type: typing.List[str]
+    PYTHON_RESERVED_IDENTIFIERS = sorted(list(map(str, list(keyword.kwlist) + dir(builtins))))  # type: list[str]
 
     @functools.lru_cache(maxsize=None)
     def _get_token_encoder(self) -> TokenEncoder:
@@ -40,11 +45,11 @@ class Language(BaseLanguage):
         """
         return TokenEncoder(self, additional_reserved_identifiers=self.PYTHON_RESERVED_IDENTIFIERS)
 
-    def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
+    def get_includes(self, dep_types: Dependencies) -> list[str]:
         # imports aren't includes
         return []
 
-    def filter_id(self, instance: typing.Any, id_type: str = "any") -> str:
+    def filter_id(self, instance: Any, id_type: str = "any") -> str:
         raw_name = self.default_filter_id_for_target(instance)
 
         return self._get_token_encoder().strop(raw_name, id_type)
@@ -108,7 +113,7 @@ def filter_to_template_unique_name(context: SupportsTemplateContext, base_token:
 
 
 @template_language_filter(__name__)
-def filter_id(language: Language, instance: typing.Any, id_type: str = "any") -> str:
+def filter_id(language: Language, instance: Any, id_type: str = "any") -> str:
     """
     Filter that produces a valid Python identifier for a given object. The encoding may not
     be reversible.
@@ -264,7 +269,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
 
 @template_language_list_filter(__name__)
-def filter_imports(language: Language, t: pydsdl.CompositeType, sort: bool = True) -> typing.List[str]:
+def filter_imports(language: Language, t: pydsdl.CompositeType, sort: bool = True) -> list[str]:
     """
     Returns a list of all modules that must be imported to use a given type.
 
@@ -302,7 +307,7 @@ def filter_imports(language: Language, t: pydsdl.CompositeType, sort: bool = Tru
 
 
 @template_language_int_filter(__name__)
-def filter_longest_id_length(language: Language, attributes: typing.List[pydsdl.Attribute]) -> int:
+def filter_longest_id_length(language: Language, attributes: list[pydsdl.Attribute]) -> int:
     """
     Return the length of the longest identifier in a list of :class:`pydsdl.Attribute` objects.
 
@@ -332,3 +337,52 @@ def filter_longest_id_length(language: Language, attributes: typing.List[pydsdl.
         return max(map(len, map(functools.partial(filter_id, language), attributes)))
     else:
         return max(map(len, attributes))
+
+
+def filter_pickle_object(x: Any) -> str:
+    """
+    Serializes the given object using pickle and then compresses it using gzip and then encodes it using base85.
+    """
+    pck = base64.b85encode(gzip.compress(pickle.dumps(x, protocol=4))).decode().strip()  # type: str
+    segment_gen = map("".join, itertools.zip_longest(*([iter(pck)] * 100), fillvalue=""))
+    return "\n".join(repr(x) for x in segment_gen)
+
+
+def filter_numpy_scalar_type(t: pydsdl.Any) -> str:
+    """
+    Returns the numpy scalar type that is the closest match to the given DSDL type.
+    """
+
+    def pick_width(w: int) -> int:
+        for o in [8, 16, 32, 64]:
+            if w <= o:
+                return o
+        raise ValueError(f"Invalid bit width: {w}")  # pragma: no cover
+
+    if isinstance(t, pydsdl.BooleanType):
+        return "_np_.bool_"
+    if isinstance(t, pydsdl.SignedIntegerType):
+        return f"_np_.int{pick_width(t.bit_length)}"
+    if isinstance(t, pydsdl.UnsignedIntegerType):
+        return f"_np_.uint{pick_width(t.bit_length)}"
+    if isinstance(t, pydsdl.FloatType):
+        return f"_np_.float{pick_width(t.bit_length)}"
+    assert not isinstance(t, pydsdl.PrimitiveType), "Forgot to handle some primitive types"
+    return "_np_.object_"
+
+
+def filter_newest_minor_version_aliases(tys: Iterable[pydsdl.CompositeType]) -> list[tuple[str, pydsdl.CompositeType]]:
+    """
+    Implementation of https://github.com/OpenCyphal/nunavut/issues/193
+    """
+    tys = list(tys)
+    return [
+        (
+            f"{name}_{major}",
+            max(
+                (t for t in tys if t.short_name == name and t.version.major == major),
+                key=lambda x: int(x.version.minor),
+            ),
+        )
+        for name, major in sorted({(x.short_name, x.version.major) for x in tys})
+    ]
