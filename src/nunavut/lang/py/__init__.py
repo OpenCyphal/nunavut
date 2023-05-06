@@ -339,7 +339,7 @@ def filter_longest_id_length(language: Language, attributes: list[pydsdl.Attribu
         return max(map(len, attributes))
 
 
-def filter_pickle_object(x: Any) -> str:
+def filter_pickle(x: Any) -> str:
     """
     Serializes the given object using pickle and then compresses it using gzip and then encodes it using base85.
     """

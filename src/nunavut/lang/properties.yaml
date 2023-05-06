@@ -332,6 +332,8 @@ nunavut.lang.py:
     enable_stropping: true
     encoding_prefix: zX
     stropping_suffix: _
+    limit_empty_lines: 1
+    trim_trailing_whitespace: true
 
 nunavut.lang.js:
     extension: .js
