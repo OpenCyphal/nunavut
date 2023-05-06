@@ -216,6 +216,7 @@
         "bitorder",
         "bools",
         "Bxxx",
+        "caplog",
         "CDEF",
         "Cyphal",
         "DSDL",
@@ -223,11 +224,13 @@
         "EDCB",
         "elementwise",
         "fillvalue",
+        "fpid",
         "frombuffer",
         "itemsize",
         "Kirienko",
         "maxsplit",
         "nbytes",
+        "ndarray",
         "ndim",
         "opencyphal",
         "packbits",
@@ -238,6 +241,7 @@
         "tobytes",
         "uavcan",
         "unpackbits",
-        "unseparate"
+        "unseparate",
+        "unstropped"
     ],
 }
