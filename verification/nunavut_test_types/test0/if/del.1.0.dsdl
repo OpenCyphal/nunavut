@@ -1,0 +1,5 @@
+# The name of this type is a Python keyword.
+void8
+B.1.0[2]    else    # This is a Python/C keyword.
+B.1.0[<=2]  raise   # This is a Python keyword.
+@sealed

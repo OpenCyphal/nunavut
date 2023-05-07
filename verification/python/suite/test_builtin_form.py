@@ -6,22 +6,21 @@ from __future__ import annotations
 import logging
 import pytest
 import pydsdl
-import nunavut_support
-from ._util import expand_service_types, make_random_object
+from .util import expand_service_types, make_random_object
 from .conftest import GeneratedPackageInfo
 
 
 _logger = logging.getLogger(__name__)
 
 
-# noinspection PyUnusedLocal
 def test_builtin_form_manual(compiled: list[GeneratedPackageInfo]) -> None:
+    from nunavut_support import to_builtin, update_from_builtin
     import uavcan.node
     import uavcan.register
     import uavcan.primitive.array
     import uavcan.time
 
-    bi = nunavut_support.to_builtin(
+    bi = to_builtin(
         uavcan.node.Heartbeat_1_0(
             uptime=123456,
             health=uavcan.node.Health_1_0(2),
@@ -36,7 +35,7 @@ def test_builtin_form_manual(compiled: list[GeneratedPackageInfo]) -> None:
         "vendor_specific_status_code": 186,
     }
 
-    bi = nunavut_support.to_builtin(
+    bi = to_builtin(
         uavcan.node.GetInfo_1_0.Response(
             protocol_version=uavcan.node.Version_1_0(1, 2),
             hardware_version=uavcan.node.Version_1_0(3, 4),
@@ -61,7 +60,7 @@ def test_builtin_form_manual(compiled: list[GeneratedPackageInfo]) -> None:
         "certificate_of_authenticity": list(range(100)),
     }
 
-    bi = nunavut_support.to_builtin(
+    bi = to_builtin(
         uavcan.register.Access_1_0.Response(
             timestamp=uavcan.time.SynchronizedTimestamp_1_0(1234567890),
             mutable=True,
@@ -95,10 +94,12 @@ def test_builtin_form_manual(compiled: list[GeneratedPackageInfo]) -> None:
 
     with pytest.raises(ValueError, match=".*field.*"):
         bi["nonexistent_field"] = 123
-        nunavut_support.update_from_builtin(uavcan.register.Access_1_0.Response(), bi)
+        update_from_builtin(uavcan.register.Access_1_0.Response(), bi)
 
 
 def test_builtin_form_automatic(compiled: list[GeneratedPackageInfo]) -> None:
+    from nunavut_support import to_builtin, update_from_builtin, get_class
+
     for info in compiled:
         for model in expand_service_types(info.models):
             if model.bit_length_set.max / 8 > 1024 * 1024:
@@ -106,8 +107,8 @@ def test_builtin_form_automatic(compiled: list[GeneratedPackageInfo]) -> None:
                 continue  # Skip large objects because they take forever to convert and test
 
             obj = make_random_object(model)
-            bi = nunavut_support.to_builtin(obj)
-            reconstructed = nunavut_support.update_from_builtin(nunavut_support.get_class(model)(), bi)
+            bi = to_builtin(obj)
+            reconstructed = update_from_builtin(get_class(model)(), bi)
 
             if str(obj) != str(reconstructed) or repr(obj) != repr(reconstructed):  # pragma: no branch
                 if pydsdl.FloatType.__name__ not in repr(model):  # pragma: no cover
@@ -125,8 +126,9 @@ def test_builtin_form_automatic(compiled: list[GeneratedPackageInfo]) -> None:
 
 
 def test_issue_147(compiled: list[GeneratedPackageInfo]) -> None:
+    from nunavut_support import update_from_builtin
     from uavcan.register import Access_1_0
 
     # Automatic promotion https://github.com/OpenCyphal/pycyphal/issues/147
-    valid = nunavut_support.update_from_builtin(Access_1_0.Request(), "uavcan.pub.measurement")
+    valid = update_from_builtin(Access_1_0.Request(), "uavcan.pub.measurement")
     assert valid.name.name.tobytes().decode() == "uavcan.pub.measurement"

@@ -1,3 +1,6 @@
+# This large data type is needed to ensure there are no scalability issues in the generated code.
+# For example, string representations should be constructible even for very large data types.
+
 @deprecated
 
 uint16 PIXELS_PER_ROW = 3840
@@ -9,5 +12,6 @@ void8
 
 @assert _offset_ == {64}
 uint8[PIXELS_PER_IMAGE * 3] pixels                  # Row major, top-left pixel first, color ordering RGB
+# TODO: replace "uint8" with "byte" after https://github.com/OpenCyphal/pydsdl/pull/97 is in.
 
 @sealed

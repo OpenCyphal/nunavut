@@ -10,7 +10,6 @@ import itertools
 import functools
 import numpy
 import pydsdl
-import nunavut_support
 
 
 def expand_service_types(
@@ -34,6 +33,7 @@ def make_random_object(model: pydsdl.SerializableType) -> Any:
     """
     Returns an object of the specified DSDL type populated with random data.
     """
+    from nunavut_support import get_class, set_attribute
 
     def fifty_fifty() -> bool:
         return random.random() >= 0.5
@@ -41,7 +41,7 @@ def make_random_object(model: pydsdl.SerializableType) -> Any:
     if isinstance(model, pydsdl.BooleanType):
         return fifty_fifty()
 
-    if isinstance(model, pydsdl.IntegerType):  # noinspection PyTypeChecker
+    if isinstance(model, pydsdl.IntegerType):
         return random.randint(int(model.inclusive_value_range.min), int(model.inclusive_value_range.max))
 
     if isinstance(model, pydsdl.FloatType):  # We want inf/nan as well, so we generate int and then reinterpret
@@ -84,17 +84,17 @@ def make_random_object(model: pydsdl.SerializableType) -> Any:
         return out
 
     if isinstance(model, pydsdl.StructureType):
-        o = nunavut_support.get_class(model)()
+        o = get_class(model)()
         for f in model.fields_except_padding:
             v = make_random_object(f.data_type)
-            nunavut_support.set_attribute(o, f.name, v)
+            set_attribute(o, f.name, v)
         return o
 
     if isinstance(model, pydsdl.UnionType):
         f = random.choice(model.fields)
         v = make_random_object(f.data_type)
-        o = nunavut_support.get_class(model)()
-        nunavut_support.set_attribute(o, f.name, v)
+        o = get_class(model)()
+        set_attribute(o, f.name, v)
         return o
 
     if isinstance(model, pydsdl.DelimitedType):
@@ -109,32 +109,33 @@ def are_close(model: pydsdl.SerializableType, a: Any, b: Any) -> bool:
     beware that it evaluates (NaN == NaN) as True. This is what we want when testing,
     but this is not what most real systems expect.
     """
-    if a is None or b is None:  # These occur, for example, in unions
-        return (a is None) == (b is None)
+    from nunavut_support import get_model, get_attribute
 
-    if isinstance(model, pydsdl.CompositeType):
-        if type(a) != type(b):  # pragma: no cover  # pylint: disable=unidiomatic-typecheck
-            return False
-        for f in nunavut_support.get_model(a).fields_except_padding:  # pragma: no cover
-            if not are_close(
-                f.data_type, nunavut_support.get_attribute(a, f.name), nunavut_support.get_attribute(b, f.name)
-            ):
+    with numpy.errstate(invalid='ignore'):  # Ignore NaNs
+        if a is None or b is None:  # These occur, for example, in unions
+            return (a is None) == (b is None)
+
+        if isinstance(model, pydsdl.CompositeType):
+            if type(a) != type(b):  # pragma: no cover  # pylint: disable=unidiomatic-typecheck
                 return False
-        return True  # Empty objects of same type compare equal
+            for f in get_model(a).fields_except_padding:  # pragma: no cover
+                if not are_close(f.data_type, get_attribute(a, f.name), get_attribute(b, f.name)):
+                    return False
+            return True  # Empty objects of same type compare equal
 
-    if isinstance(model, pydsdl.ArrayType):
-        if len(a) != len(b) or a.dtype != b.dtype:  # pragma: no cover
-            return False
-        if isinstance(model.element_type, pydsdl.PrimitiveType):
-            return bool(numpy.allclose(a, b, equal_nan=True))  # Speedup for large arrays like images or point clouds
-        return all(itertools.starmap(functools.partial(are_close, model.element_type), zip(a, b)))
+        if isinstance(model, pydsdl.ArrayType):
+            if len(a) != len(b) or a.dtype != b.dtype:  # pragma: no cover
+                return False
+            if isinstance(model.element_type, pydsdl.PrimitiveType):
+                return bool(numpy.allclose(a, b, equal_nan=True))  # Speedup for large arrays like images or point clouds
+            return all(itertools.starmap(functools.partial(are_close, model.element_type), zip(a, b)))
 
-    if isinstance(model, pydsdl.FloatType):
-        t = {
-            16: numpy.float16,
-            32: numpy.float32,
-            64: numpy.float64,
-        }[model.bit_length]
-        return bool(numpy.allclose(t(a), t(b), equal_nan=True))  # type: ignore
+        if isinstance(model, pydsdl.FloatType):
+            t = {
+                16: numpy.float16,
+                32: numpy.float32,
+                64: numpy.float64,
+            }[model.bit_length]
+            return bool(numpy.allclose(t(a), t(b), equal_nan=True))  # type: ignore
 
-    return bool(numpy.allclose(a, b))
+        return bool(numpy.allclose(a, b))

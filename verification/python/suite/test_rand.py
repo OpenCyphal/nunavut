@@ -13,23 +13,32 @@ import dataclasses
 import numpy
 import pytest
 import pydsdl
-import nunavut_support
-from ._util import expand_service_types, make_random_object, are_close
+from .util import expand_service_types, make_random_object, are_close
 from .conftest import GeneratedPackageInfo
 
 
-# Fail the test if any type takes longer than this to serialize or deserialize on average.
-# This may appear huge but it's necessary to avoid false positives in the CI environment.
 _MAX_ALLOWED_SERIALIZATION_DESERIALIZATION_TIME = 90e-3
+"""
+Fail the test if any type takes longer than this to serialize or deserialize on average.
+This may appear huge but it's necessary to avoid false positives in the CI environment.
+"""
 
-# When generating random serialized representations, limit the number of fragments to this value
-# for performance reasons. Also, a large number of fragments may occasionally cause the test to run out of memory
-# and be killed, especially so in cloud-hosted CI systems which are always memory-impaired.
 _MAX_RANDOM_SERIALIZED_REPRESENTATION_FRAGMENTS = 1000
+"""
+When generating random serialized representations, limit the number of fragments to this value
+for performance reasons. Also, a large number of fragments may occasionally cause the test to run out of memory
+and be killed, especially so in cloud-hosted CI systems which are always memory-impaired.
+"""
 
-# Set this environment variable to a higher value for a deeper state exploration.
-_NUM_RANDOM_SAMPLES = int(os.environ.get("PYCYPHAL_TEST_NUM_RANDOM_SAMPLES", 5))
+_NUM_RANDOM_SAMPLES = int(os.environ.get("NUNAVUT_PYTHON_TEST_NUM_RANDOM_SAMPLES", 5))
+"""
+Set this environment variable to a higher value for a deeper exploration.
+"""
 
+_MAX_EXTENT_BYTES = 99 * 1024 ** 2
+"""
+Do not test data types whose extent exceeds this limit.
+"""
 
 _logger = logging.getLogger(__name__)
 
@@ -46,6 +55,8 @@ class _TypeTestStatistics:
 
 
 def test_random(compiled: list[GeneratedPackageInfo], caplog: Any) -> None:
+    from nunavut_support import get_class, serialize, deserialize
+
     _logger.info(
         "Number of random samples: %s. Set the environment variable PYCYPHAL_TEST_NUM_RANDOM_SAMPLES to override.",
         _NUM_RANDOM_SAMPLES,
@@ -60,13 +71,16 @@ def test_random(compiled: list[GeneratedPackageInfo], caplog: Any) -> None:
     for info in compiled:
         for model in expand_service_types(info.models, keep_services=True):
             if not isinstance(model, pydsdl.ServiceType):
-                performance[model] = _test_type(model, _NUM_RANDOM_SAMPLES)
+                if model.extent > 8 * _MAX_EXTENT_BYTES:
+                    _logger.info("Skipping %s due to excessive size", model)
+                else:
+                    performance[model] = _test_type(model, _NUM_RANDOM_SAMPLES)
             else:
-                dtype = nunavut_support.get_class(model)
+                dtype = get_class(model)
                 with pytest.raises(TypeError):
-                    assert list(nunavut_support.serialize(dtype()))
+                    assert list(serialize(dtype()))
                 with pytest.raises(TypeError):
-                    nunavut_support.deserialize(dtype, [memoryview(b"")])
+                    deserialize(dtype, [memoryview(b"")])
 
     _logger.info("Tested types ordered by serialization speed, %d random samples per type", _NUM_RANDOM_SAMPLES)
     _logger.info(
@@ -89,8 +103,10 @@ def test_random(compiled: list[GeneratedPackageInfo], caplog: Any) -> None:
 
 
 def _test_type(model: pydsdl.CompositeType, num_random_samples: int) -> _TypeTestStatistics:
+    from nunavut_support import get_class, get_model, deserialize
+
     _logger.debug("Roundtrip serialization test of %s with %d random samples", model, num_random_samples)
-    dtype = nunavut_support.get_class(model)
+    dtype = get_class(model)
     samples: list[tuple[float, float]] = [_serialize_deserialize(dtype())]
     rand_sr_validness: list[bool] = []
 
@@ -105,8 +121,8 @@ def _test_type(model: pydsdl.CompositeType, num_random_samples: int) -> _TypeTes
         sample_ser = once(make_random_object(model))
 
         # Reverse test: get random serialized representation, deserialize; if successful, serialize again and compare
-        sr = _make_random_fragmented_serialized_representation(nunavut_support.get_model(dtype).bit_length_set)
-        ob = nunavut_support.deserialize(dtype, sr)
+        sr = _make_random_fragmented_serialized_representation(get_model(dtype).bit_length_set)
+        ob = deserialize(dtype, sr)
         rand_sr_validness.append(ob is not None)
         sample_des: tuple[float, float] | None = None
         if ob:
@@ -132,29 +148,31 @@ def _test_type(model: pydsdl.CompositeType, num_random_samples: int) -> _TypeTes
 
 
 def _serialize_deserialize(obj: object) -> tuple[float, float]:
+    from nunavut_support import get_class, get_model, serialize, deserialize
+
     gc.collect()
     gc.disable()  # Must be disabled, otherwise it induces spurious false-positive performance warnings
 
     ts = time.process_time()
-    chunks = list(nunavut_support.serialize(obj))  # GC must be disabled while we're in the timed context
+    chunks = list(serialize(obj))  # GC must be disabled while we're in the timed context
     ser_sample = time.process_time() - ts
 
     ts = time.process_time()
-    d = nunavut_support.deserialize(type(obj), chunks)  # GC must be disabled while we're in the timed context
+    d = deserialize(type(obj), chunks)  # GC must be disabled while we're in the timed context
     des_sample = time.process_time() - ts
 
     gc.enable()
 
     assert d is not None
     assert type(obj) is type(d)
-    assert nunavut_support.get_model(obj) == nunavut_support.get_model(d)
+    assert get_model(obj) == get_model(d)
 
-    if not are_close(nunavut_support.get_model(obj), obj, d):  # pragma: no cover
+    if not are_close(get_model(obj), obj, d):  # pragma: no cover
         assert False, f"{obj} != {d}; sr: {bytes().join(chunks).hex()}"  # Branched for performance reasons
 
     # Similar floats may produce drastically different string representations, so if there is at least one float inside,
     # we skip the string representation equality check.
-    if pydsdl.FloatType.__name__ not in repr(nunavut_support.get_model(d)):
+    if pydsdl.FloatType.__name__ not in repr(get_model(d)):
         assert str(obj) == str(d)
         assert repr(obj) == repr(d)
 

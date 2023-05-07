@@ -6,7 +6,6 @@ from __future__ import annotations
 import logging
 import numpy
 import pytest
-import nunavut_support
 from .conftest import GeneratedPackageInfo
 
 
@@ -16,7 +15,7 @@ _logger = logging.getLogger(__name__)
 def test_manual_assignment(compiled: list[GeneratedPackageInfo]) -> None:
     from uavcan.primitive import Unstructured_1_0 as Un, String_1_0 as St
 
-    _ = compiled
+    del compiled
 
     ob1 = Un(memoryview(b"Hello world"))
     assert ob1.value.tobytes().decode() == "Hello world"
@@ -25,17 +24,19 @@ def test_manual_assignment(compiled: list[GeneratedPackageInfo]) -> None:
     assert ob2.value.tobytes().decode() == "Hello world"
 
 
-# noinspection PyUnusedLocal
 def test_manual_del(compiled: list[GeneratedPackageInfo]) -> None:
-    import test_dsdl_namespace.if_
+    from nunavut_support import serialize, deserialize, get_attribute, set_attribute
+    import if_
+
+    del compiled
 
     # Implicit zero extension
-    ize = nunavut_support.deserialize(test_dsdl_namespace.if_.del_1_0, [memoryview(b"")])
+    ize = deserialize(if_.del_1_0, [memoryview(b"")])
     assert ize is not None
-    assert repr(ize) == repr(test_dsdl_namespace.if_.del_1_0())
+    assert repr(ize) == repr(if_.del_1_0())
 
-    obj = nunavut_support.deserialize(
-        test_dsdl_namespace.if_.del_1_0,
+    obj = deserialize(
+        if_.del_1_0,
         _compile_serialized_representation(
             # void8
             "00000000"
@@ -77,24 +78,26 @@ def test_manual_del(compiled: list[GeneratedPackageInfo]) -> None:
     assert len(obj.raise_) == 0
 
     with pytest.raises(AttributeError, match="nonexistent"):
-        nunavut_support.get_attribute(obj, "nonexistent")
+        get_attribute(obj, "nonexistent")
 
     with pytest.raises(AttributeError, match="nonexistent"):
-        nunavut_support.set_attribute(obj, "nonexistent", 123)
+        set_attribute(obj, "nonexistent", 123)
 
 
-# noinspection PyUnusedLocal
 def test_manual_heartbeat(compiled: list[GeneratedPackageInfo]) -> None:
+    from nunavut_support import deserialize, get_attribute, set_attribute
     import uavcan.node
 
+    del compiled
+
     # Implicit zero extension
-    ize = nunavut_support.deserialize(uavcan.node.Heartbeat_1_0, [memoryview(b"")])
+    ize = deserialize(uavcan.node.Heartbeat_1_0, [memoryview(b"")])
     assert ize is not None
     assert repr(ize) == repr(uavcan.node.Heartbeat_1_0())
     assert ize.uptime == 0
     assert ize.vendor_specific_status_code == 0
 
-    obj = nunavut_support.deserialize(
+    obj = deserialize(
         uavcan.node.Heartbeat_1_0,
         _compile_serialized_representation(
             _bin(0xEFBE_ADDE, 32),  # uptime dead beef in little-endian byte order
@@ -110,27 +113,26 @@ def test_manual_heartbeat(compiled: list[GeneratedPackageInfo]) -> None:
     assert obj.vendor_specific_status_code == 0b10101111
 
     with pytest.raises(AttributeError, match="nonexistent"):
-        nunavut_support.get_attribute(obj, "nonexistent")
+        get_attribute(obj, "nonexistent")
 
     with pytest.raises(AttributeError, match="nonexistent"):
-        nunavut_support.set_attribute(obj, "nonexistent", 123)
+        set_attribute(obj, "nonexistent", 123)
 
 
 def test_minor_alias(compiled: list[GeneratedPackageInfo]) -> None:
-    _ = compiled
+    from regulated.delimited import BDelimited_1, BDelimited_1_1, BDelimited_1_0
 
-    from test_dsdl_namespace.delimited import BDelimited_1, BDelimited_1_1, BDelimited_1_0
-
+    del compiled
     assert BDelimited_1 is not BDelimited_1_0  # type: ignore
     assert BDelimited_1 is BDelimited_1_1
 
 
-# noinspection PyUnusedLocal
 def test_delimited(compiled: list[GeneratedPackageInfo]) -> None:
-    del compiled
+    from nunavut_support import serialize, deserialize
+    from regulated.delimited import A_1_0, A_1_1, BDelimited_1_0, BDelimited_1_1
+    from regulated.delimited import CFixed_1_0, CFixed_1_1, CVariable_1_0, CVariable_1_1
 
-    from test_dsdl_namespace.delimited import A_1_0, A_1_1, BDelimited_1_0, BDelimited_1_1
-    from test_dsdl_namespace.delimited import CFixed_1_0, CFixed_1_1, CVariable_1_0, CVariable_1_1
+    del compiled
 
     def u8(x: int) -> bytes:
         return int(x).to_bytes(1, "little")
@@ -146,7 +148,7 @@ def test_delimited(compiled: list[GeneratedPackageInfo]) -> None:
         ),
     )
     print("object below:\n", o)
-    sr = b"".join(nunavut_support.serialize(o))
+    sr = b"".join(serialize(o))
     del o
     # fmt: off
     ref = (
@@ -170,7 +172,7 @@ def test_delimited(compiled: list[GeneratedPackageInfo]) -> None:
     assert sr == ref
 
     # Deserialize using a DIFFERENT MINOR VERSION which requires the implicit zero extension/truncation rules to work.
-    q = nunavut_support.deserialize(A_1_1, [memoryview(sr)])
+    q = deserialize(A_1_1, [memoryview(sr)])
     assert q
     assert q.del_ is not None
     assert len(q.del_.var) == 2
@@ -187,10 +189,10 @@ def test_delimited(compiled: list[GeneratedPackageInfo]) -> None:
             fix=[CFixed_1_1([5, 6, 7], 8), CFixed_1_1([100, 200, 123], 99)],
         ),
     )
-    sr = b"".join(nunavut_support.serialize(q))
+    sr = b"".join(serialize(q))
     del q
     print(" ".join(f"{b:02x}" for b in sr))
-    p = nunavut_support.deserialize(A_1_0, [memoryview(sr)])
+    p = deserialize(A_1_0, [memoryview(sr)])
     assert p
     assert p.del_ is not None
     assert len(p.del_.var) == 1
@@ -201,7 +203,7 @@ def test_delimited(compiled: list[GeneratedPackageInfo]) -> None:
     assert list(p.del_.fix[1].a) == [100, 200]  # 3rd is implicitly truncated, b is implicitly truncated
 
     # Delimiter header too large.
-    assert None is nunavut_support.deserialize(A_1_1, [memoryview(b"\x01" + b"\xFF" * 4)])
+    assert None is deserialize(A_1_1, [memoryview(b"\x01" + b"\xFF" * 4)])
 
 
 def _compile_serialized_representation(*binary_chunks: str) -> list[memoryview]:

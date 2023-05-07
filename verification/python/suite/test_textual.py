@@ -4,12 +4,13 @@
 
 from __future__ import annotations
 import pydsdl
-import nunavut_support
-from ._util import expand_service_types, make_random_object
+from .util import expand_service_types, make_random_object
 from .conftest import GeneratedPackageInfo
 
 
 def test_textual(compiled: list[GeneratedPackageInfo]) -> None:
+    from nunavut_support import get_attribute
+
     def validate(obj: object, s: str) -> None:
         for f in model.fields_except_padding:  # pylint: disable=undefined-loop-variable
             field_present = (f"{f.name}=" in s) or (f"{f.name}_=" in s)
@@ -17,7 +18,7 @@ def test_textual(compiled: list[GeneratedPackageInfo]) -> None:
                 # In unions only the active field is printed.
                 # The active field may contain nested fields which  may be named similarly to other fields
                 # in the current union, so we can't easily ensure lack of non-active fields in the output.
-                field_active = nunavut_support.get_attribute(obj, f.name) is not None
+                field_active = get_attribute(obj, f.name) is not None
                 if field_active:
                     assert field_present, f"{f.name}: {s}"
             else:
