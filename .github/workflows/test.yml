@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: ghcr.io/opencyphal/toxic:ts20.4.1
+    container: ghcr.io/opencyphal/toxic:tx20.4.1
     steps:
     - uses: actions/checkout@v3
       with:
