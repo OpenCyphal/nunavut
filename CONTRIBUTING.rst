@@ -72,8 +72,8 @@ To run the full suite of `tox`_ tests locally you'll need docker. Once you have 
 and running do::
 
     git submodule update --init --recursive
-    docker pull ghcr.io/opencyphal/toxic:tx20.4.1
-    docker run --rm -v $PWD:/repo ghcr.io/opencyphal/toxic:tx20.4.1 tox
+    docker pull ghcr.io/opencyphal/toxic:tx22.4.1
+    docker run --rm -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.1 tox
 
 To run a limited suite using only locally available interpreters directly on your host machine,
 skip the docker invocations and use ``tox -s``.
