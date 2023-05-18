@@ -9,15 +9,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    container: ghcr.io/opencyphal/toxic:ts20.4.1
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: true
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: install-tox
-      run: pip3 install tox
     - name: lint
       run: tox -e lint
     - name: test-nnvg
