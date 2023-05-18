@@ -48,11 +48,9 @@ jobs:
     container: sonarsource/sonar-scanner-cli
     steps:
     - uses: actions/checkout@v3
-    - name: sonar-cache
-      uses: actions/cache@v3
       with:
-        path: /opt/sonar-scanner/.sonar/cache
-        key: sonar-scanner-cli-4.8.0.2856-${{ runner.os }}
+        # Disabling shallow clone is recommended for improving relevancy of reporting
+        fetch-depth: 0
     - name: download-converage-reports
       uses: actions/download-artifact@v3
       with:
@@ -71,26 +69,28 @@ jobs:
       working-directory: .tox
     - name: report-release
       if: ${{ github.event_name != 'pull_request' }}
+      uses: sonarsource/sonarcloud-github-action@master
       env:
-        SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        sonar-scanner -X \
-        -Dsonar.login=${{ env.SONARQUBE_TOKEN }} \
-        -Dsonar.buildString=${{ env.GITHUB_RUN_ID }} \
-        -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }} \
-        -Dsonar.python.version=python3.9
+        SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+      with:
+        args: >
+          -Dsonar.login=${{ env.SONAR_TOKEN }}
+          -Dsonar.buildString=${{ env.GITHUB_RUN_ID }}
+          -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }}
+          -Dsonar.python.version=python3.10
     - name: report-pr
       if: ${{ github.event_name == 'pull_request' }}
+      uses: sonarsource/sonarcloud-github-action@master
       env:
-        SONARQUBE_TOKEN: 6526e88c286672a7852fea52056c4b6ea583aaf7
+        SONAR_TOKEN: 6526e88c286672a7852fea52056c4b6ea583aaf7
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        sonar-scanner -X \
-        -Dsonar.login=${{ env.SONARQUBE_TOKEN }} \
-        -Dsonar.buildString=${{ env.GITHUB_RUN_ID }} \
-        -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }} \
-        -Dsonar.python.version=python3.9
+      with:
+        args: >
+          -Dsonar.login=${{ env.SONAR_TOKEN }} \
+          -Dsonar.buildString=${{ env.GITHUB_RUN_ID }} \
+          -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }} \
+          -Dsonar.python.version=python3.10
 
   compat-test-python3-windows-and-mac:
     strategy:
