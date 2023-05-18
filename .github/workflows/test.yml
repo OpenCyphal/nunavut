@@ -87,9 +87,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         args: >
-          -Dsonar.login=${{ env.SONAR_TOKEN }} \
-          -Dsonar.buildString=${{ env.GITHUB_RUN_ID }} \
-          -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }} \
+          -Dsonar.login=${{ env.SONAR_TOKEN }}
+          -Dsonar.buildString=${{ env.GITHUB_RUN_ID }}
+          -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }}
           -Dsonar.python.version=python3.10
 
   compat-test-python3-windows-and-mac:
