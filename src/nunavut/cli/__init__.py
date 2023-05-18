@@ -108,9 +108,9 @@ def _make_parser() -> argparse.ArgumentParser:
         the vendor-specific namespace won't be able to use data types from the standard
         namespace.
 
-        Additional directories can also be specified through the environment variable
-        DSDL_INCLUDE_PATH, where the path entries are separated by colons ":" on posix
-        systems and ";" on Windows.
+        Additional directories can also be specified through an environment variable
+        DSDL_INCLUDE_PATH where the path entries are separated by colons ":" on
+        posix systems and ";" on Windows.
 
     """
         ).lstrip(),
@@ -562,9 +562,7 @@ def main() -> int:
     #
     extra_includes = args.lookup_dir
 
-    # legacy variable. We'll support this for a time.
-    extra_includes_from_env = _extra_includes_from_env("UAVCAN_DSDL_INCLUDE_PATH")
-    extra_includes_from_env += _extra_includes_from_env("DSDL_INCLUDE_PATH")
+    extra_includes_from_env = _extra_includes_from_env("DSDL_INCLUDE_PATH")
     extra_includes += sorted(extra_includes_from_env)
 
     from nunavut.cli.runners import ArgparseRunner

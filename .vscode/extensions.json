@@ -2,15 +2,9 @@
     // See http://go.microsoft.com/fwlink/?LinkId=827846
     // for the documentation about the extensions.json format
     "recommendations": [
-        "ms-azuretools.vscode-docker",
         "uavcan.dsdl",
         "wholroyd.jinja",
-        "ban.spellright",
-        "ms-python.python",
-        "ms-vscode.cpptools",
-        "ms-vscode.cpptools-extension-pack",
-        "xaver.clang-format",
-        "hbenl.vscode-test-explorer",
-        "matepek.vscode-catch2-test-adapter"
+        "streetsidesoftware.code-spell-checker",
+        "ms-python.python"
     ]
 }

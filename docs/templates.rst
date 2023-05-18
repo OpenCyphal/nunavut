@@ -306,10 +306,6 @@ C++ Filters
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_declaration
    :noindex:
-.. autofunction:: nunavut.lang.cpp.filter_definition_begin
-   :noindex:
-.. autofunction:: nunavut.lang.cpp.filter_definition_end
-   :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_to_namespace_qualifier
    :noindex:
 .. autofunction:: nunavut.lang.cpp.filter_type_from_primitive
