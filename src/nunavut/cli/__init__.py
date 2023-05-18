@@ -562,7 +562,9 @@ def main() -> int:
     #
     extra_includes = args.lookup_dir
 
-    extra_includes_from_env = _extra_includes_from_env("CYPHAL_PATH", "DSDL_INCLUDE", "DSDL_INCLUDE_PATH")
+    extra_includes_from_env = _extra_includes_from_env("CYPHAL_PATH")
+    extra_includes_from_env += _extra_includes_from_env("DSDL_INCLUDE")
+    extra_includes_from_env += _extra_includes_from_env("DSDL_INCLUDE_PATH")
     extra_includes += sorted(extra_includes_from_env)
 
     from nunavut.cli.runners import ArgparseRunner
