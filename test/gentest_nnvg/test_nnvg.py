@@ -16,8 +16,8 @@ from nunavut.lang import LanguageContextBuilder
 from nunavut.lang._language import LanguageClassLoader
 
 
-@pytest.mark.parametrize("env_var_name", ["CYPHAL_PATH", "DSDL_INCLUDE", "DSDL_INCLUDE_PATH"])
-def test_CYPHAL_PATH(gen_paths: typing.Any, run_nnvg: typing.Callable, env_var_name: str) -> None:
+@pytest.mark.parametrize("env_var_name", ["DSDL_INCLUDE_PATH"])
+def test_DSDL_INCLUDE_PATH(gen_paths: typing.Any, run_nnvg: typing.Callable, env_var_name: str) -> None:
     """
     Verify that supported environment variables are used by nnvg.
     """

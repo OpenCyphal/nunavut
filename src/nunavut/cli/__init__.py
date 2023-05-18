@@ -109,7 +109,7 @@ def _make_parser() -> argparse.ArgumentParser:
         namespace.
 
         Additional directories can also be specified through an environment variable
-        CYPHAL_PATH or DSDL_PATH where the path entries are separated by colons ":" on
+        DSDL_INCLUDE_PATH where the path entries are separated by colons ":" on
         posix systems and ";" on Windows.
 
     """
@@ -558,13 +558,11 @@ def main() -> int:
     logging.info("Running %s using sys.prefix: %s", pathlib.Path(__file__).name, sys.prefix)
 
     #
-    # Parse CYPHAL_PATH
+    # Parse DSDL_INCLUDE_PATH
     #
     extra_includes = args.lookup_dir
 
-    extra_includes_from_env = _extra_includes_from_env("CYPHAL_PATH")
-    extra_includes_from_env += _extra_includes_from_env("DSDL_INCLUDE")
-    extra_includes_from_env += _extra_includes_from_env("DSDL_INCLUDE_PATH")
+    extra_includes_from_env = _extra_includes_from_env("DSDL_INCLUDE_PATH")
     extra_includes += sorted(extra_includes_from_env)
 
     from nunavut.cli.runners import ArgparseRunner
