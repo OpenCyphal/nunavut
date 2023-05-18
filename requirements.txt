@@ -1,7 +1,7 @@
 # This file provided for readthedocs.io only. Use tox.ini for all dependencies.
 
 # sphinx 7.0 is not compatible with sphinx_rtd_theme
-sphinx == 6.2.1
+sphinx ~= 6.2.1
 sphinx-argparse
 sphinx_rtd_theme
 sphinxemoji
