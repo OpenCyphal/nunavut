@@ -83,7 +83,7 @@ jobs:
       if: ${{ github.event_name == 'pull_request' }}
       uses: sonarsource/sonarcloud-github-action@master
       env:
-        SONAR_TOKEN: 6526e88c286672a7852fea52056c4b6ea583aaf7
+        SONAR_TOKEN: "6526e88c286672a7852fea52056c4b6ea583aaf7"
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         args: >
