@@ -562,9 +562,7 @@ def main() -> int:
     #
     extra_includes = args.lookup_dir
 
-    # legacy variable. We'll support this for a time.
-    extra_includes_from_env = _extra_includes_from_env("UAVCAN_DSDL_INCLUDE_PATH")
-    extra_includes_from_env += _extra_includes_from_env("DSDL_INCLUDE_PATH")
+    extra_includes_from_env = _extra_includes_from_env("DSDL_INCLUDE_PATH")
     extra_includes += sorted(extra_includes_from_env)
 
     from nunavut.cli.runners import ArgparseRunner

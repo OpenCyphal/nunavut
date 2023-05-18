@@ -45,7 +45,8 @@
                 "short": "--std=c11",
                 "long": "Compile and link using the C11 standard.",
                 "settings": {
-                    "NUNAVUT_VERIFICATION_LANG": "c"
+                    "NUNAVUT_VERIFICATION_LANG": "c",
+                    "NUNAVUT_VERIFICATION_LANG_STANDARD": "c11"
                 }
             },
             "C++14": {
