@@ -39,6 +39,11 @@ if sys.byteorder != "little":  # pragma: no cover
         "please implement the missing code and submit a pull request upstream, then remove this exception."
     )
 
+API_VERSION = 1
+"""
+This is the version of the API that the generated code expects to be available at runtime.
+"""
+
 __all__ = [
     "serialize",
     "deserialize",

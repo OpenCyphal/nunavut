@@ -17,8 +17,15 @@
 # pylint: skip-file
 # mypy: warn_unused_ignores=False
 
+{% set REQUIRED_NUNAVUT_SUPPORT_API_VERSION = 1 -%}
+{#- This number shall match the corresponding version number in the Nunavut support library. -#}
+
+{% set ARRAY_PRINT_SUMMARIZATION_THRESHOLD = 100 -%}
+{#- How many elements in the array trigger summarization rather than full output.
+ #- Summarization replaces middle elements with an ellipsis. -#}
+
 from __future__ import annotations
-from nunavut_support import Serializer as _Serializer_, Deserializer as _Deserializer_
+from nunavut_support import Serializer as _Serializer_, Deserializer as _Deserializer_, API_VERSION as _NSAPIV_
 import numpy as _np_
 from numpy.typing import NDArray as _NDArray_
 import pydsdl as _pydsdl_
@@ -27,11 +34,12 @@ import warnings as _warnings_
 {%- endif -%}
 {%- for n in T|imports %}
 import {{ n }}
-{%- endfor -%}
+{%- endfor %}
 
-{#- How many elements in the array trigger summarization rather than full output.
- #- Summarization replaces middle elements with an ellipsis. -#}
-{%- set ARRAY_PRINT_SUMMARIZATION_THRESHOLD = 100 -%}
+if _NSAPIV_ != {{REQUIRED_NUNAVUT_SUPPORT_API_VERSION}}:
+    raise RuntimeError(
+        f"Incompatible Nunavut support API version: { _NSAPIV_ } != {{REQUIRED_NUNAVUT_SUPPORT_API_VERSION}}"
+    )
 
 {%- from 'serialization.j2' import serialize -%}
 {%- from 'deserialization.j2' import deserialize -%}
