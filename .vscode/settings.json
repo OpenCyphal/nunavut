@@ -39,6 +39,7 @@
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "files.associations": {
         "*.py.template": "python",
+        "nunavut_support.j2": "python",
         "*.cc": "cpp",
         "*.hpp": "cpp",
         "__bit_reference": "cpp",
