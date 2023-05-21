@@ -9,15 +9,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    container: ghcr.io/opencyphal/toxic:tx22.4.1
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: true
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: install-tox
-      run: pip3 install tox
     - name: lint
       run: tox -e lint
     - name: test-nnvg
@@ -52,11 +48,9 @@ jobs:
     container: sonarsource/sonar-scanner-cli
     steps:
     - uses: actions/checkout@v3
-    - name: sonar-cache
-      uses: actions/cache@v3
       with:
-        path: /opt/sonar-scanner/.sonar/cache
-        key: sonar-scanner-cli-4.8.0.2856-${{ runner.os }}
+        # Disabling shallow clone is recommended for improving relevancy of reporting
+        fetch-depth: 0
     - name: download-converage-reports
       uses: actions/download-artifact@v3
       with:
@@ -75,43 +69,34 @@ jobs:
       working-directory: .tox
     - name: report-release
       if: ${{ github.event_name != 'pull_request' }}
+      uses: sonarsource/sonarcloud-github-action@master
       env:
-        SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        sonar-scanner -X \
-        -Dsonar.login=${{ env.SONARQUBE_TOKEN }} \
-        -Dsonar.buildString=${{ env.GITHUB_RUN_ID }} \
-        -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }} \
-        -Dsonar.python.version=python3.9
+        SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+      with:
+        args: >
+          -Dsonar.login=${{ env.SONAR_TOKEN }}
+          -Dsonar.buildString=${{ env.GITHUB_RUN_ID }}
+          -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }}
+          -Dsonar.python.version=python3.10
     - name: report-pr
       if: ${{ github.event_name == 'pull_request' }}
+      uses: sonarsource/sonarcloud-github-action@master
       env:
-        SONARQUBE_TOKEN: 6526e88c286672a7852fea52056c4b6ea583aaf7
+        SONAR_TOKEN: "6526e88c286672a7852fea52056c4b6ea583aaf7"
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        sonar-scanner -X \
-        -Dsonar.login=${{ env.SONARQUBE_TOKEN }} \
-        -Dsonar.buildString=${{ env.GITHUB_RUN_ID }} \
-        -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }} \
-        -Dsonar.python.version=python3.9
+      with:
+        args: >
+          -Dsonar.login=${{ env.SONAR_TOKEN }}
+          -Dsonar.buildString=${{ env.GITHUB_RUN_ID }}
+          -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }}
+          -Dsonar.python.version=python3.10
 
-  compat-test-python3:
+  compat-test-python3-windows-and-mac:
     strategy:
       matrix:
-        python3-version: ['11']
-        python3-platform: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        include:
-          - python3-version: 6
-            python3-platform: ubuntu-18.04
-          - python3-version: 7
-            python3-platform: ubuntu-20.04
-          - python3-version: 8
-            python3-platform: ubuntu-20.04
-          - python3-version: 9
-            python3-platform: ubuntu-20.04
-          - python3-version: 10
-            python3-platform: ubuntu-20.04
+        python3-version: ['10','11']
+        python3-platform: ['windows-latest', 'macos-latest']
     runs-on: ${{ matrix.python3-platform }}
     needs: test
     steps:
@@ -124,6 +109,20 @@ jobs:
         python-version: 3.${{ matrix.python3-version }}
     - name: setup tox
       run: pip3 install tox
+    - name: python3.${{ matrix.python3-version }} test
+      run: tox -e py3${{ matrix.python3-version }}-nnvg,py3${{ matrix.python3-version }}-test
+
+  compat-test-python3-ubuntu:
+    strategy:
+      matrix:
+        python3-version: ['7', '8', '9', '10', '11']
+    runs-on: ubuntu-latest
+    container: ghcr.io/opencyphal/toxic:tx22.4.1
+    needs: test
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
     - name: python3.${{ matrix.python3-version }} test
       run: tox -e py3${{ matrix.python3-version }}-nnvg,py3${{ matrix.python3-version }}-test
 

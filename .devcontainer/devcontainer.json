@@ -1,6 +1,6 @@
 {
     "name": "Python dev environment",
-    "image": "ghcr.io/opencyphal/toxic:tx20.4.1",
+    "image": "ghcr.io/opencyphal/toxic:tx22.4.1",
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
     "mounts": [
@@ -12,7 +12,7 @@
             "extensions": [
                 "uavcan.dsdl",
                 "wholroyd.jinja",
-                "ban.spellright",
+                "streetsidesoftware.code-spell-checker",
                 "ms-python.python"
             ]
         }
