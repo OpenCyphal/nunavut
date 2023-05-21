@@ -28,7 +28,7 @@ version = "{}.{}".format(_version_tuple[0], _version_tuple[1])
 # The full version, including alpha/beta/rc tags
 release = nunavut_version
 
-exclude_patterns = ["**/test"]
+exclude_patterns = ["**/test", "**/.nox"]
 
 with open(".gitignore", "r") as gif:
     for line in gif:
