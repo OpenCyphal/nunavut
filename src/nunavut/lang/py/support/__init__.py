@@ -27,4 +27,4 @@ def list_support_files(
     """
     if resource_type not in (ResourceType.ANY, ResourceType.SERIALIZATION_SUPPORT):
         return empty_list_support_files()
-    return (x for x in iter_package_resources(__name__, ".py") if x.stem != "__init__")
+    return iter_package_resources(__name__, ".j2")
