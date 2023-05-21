@@ -3,7 +3,7 @@
 [tool.pytest.ini_options]
 testpaths = [
     "suite",
-    "../../src/nunavut/lang/py/support/nunavut_support.py",  # Run the doctests in the support module.
+    "../../src/nunavut/lang/py/support/nunavut_support.py",  # Run the tests and doctests in the support module.
 ]
 python_files     = "*.py"
 log_level        = "DEBUG"
