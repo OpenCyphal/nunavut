@@ -35,7 +35,7 @@ _NUM_RANDOM_SAMPLES = int(os.environ.get("NUNAVUT_PYTHON_TEST_NUM_RANDOM_SAMPLES
 Set this environment variable to a higher value for a deeper exploration.
 """
 
-_MAX_EXTENT_BYTES = 99 * 1024 ** 2
+_MAX_EXTENT_BYTES = 99 * 1024**2
 """
 Do not test data types whose extent exceeds this limit.
 """
@@ -148,7 +148,7 @@ def _test_type(model: pydsdl.CompositeType, num_random_samples: int) -> _TypeTes
 
 
 def _serialize_deserialize(obj: object) -> tuple[float, float]:
-    from nunavut_support import get_class, get_model, serialize, deserialize
+    from nunavut_support import get_model, serialize, deserialize
 
     gc.collect()
     gc.disable()  # Must be disabled, otherwise it induces spurious false-positive performance warnings

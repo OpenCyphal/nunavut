@@ -9,7 +9,7 @@ from .util import expand_service_types, make_random_object
 from .conftest import GeneratedPackageInfo
 
 
-_MAX_EXTENT_BYTES = 99 * 1024 ** 2
+_MAX_EXTENT_BYTES = 99 * 1024**2
 """
 Do not test data types whose extent exceeds this limit.
 """

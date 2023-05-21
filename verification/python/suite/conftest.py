@@ -76,6 +76,7 @@ def pytest_configure(config: Any) -> None:
 def _run_nnvg(args: list[str], env: dict[str, str] | None = None) -> None:
     """Helper to invoke nnvg for unit testing within the proper python coverage wrapper."""
     import subprocess
+
     coverage_args = ["coverage", "run", "--parallel-mode", "-m", "nunavut"]
     this_env = os.environ.copy()
     if env is not None:

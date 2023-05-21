@@ -111,7 +111,7 @@ def are_close(model: pydsdl.SerializableType, a: Any, b: Any) -> bool:
     """
     from nunavut_support import get_model, get_attribute
 
-    with numpy.errstate(invalid='ignore'):  # Ignore NaNs
+    with numpy.errstate(invalid="ignore"):  # Ignore NaNs
         if a is None or b is None:  # These occur, for example, in unions
             return (a is None) == (b is None)
 
@@ -127,7 +127,9 @@ def are_close(model: pydsdl.SerializableType, a: Any, b: Any) -> bool:
             if len(a) != len(b) or a.dtype != b.dtype:  # pragma: no cover
                 return False
             if isinstance(model.element_type, pydsdl.PrimitiveType):
-                return bool(numpy.allclose(a, b, equal_nan=True))  # Speedup for large arrays like images or point clouds
+                return bool(
+                    numpy.allclose(a, b, equal_nan=True)
+                )  # Speedup for large arrays like images or point clouds
             return all(itertools.starmap(functools.partial(are_close, model.element_type), zip(a, b)))
 
         if isinstance(model, pydsdl.FloatType):

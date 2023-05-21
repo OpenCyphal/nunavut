@@ -25,7 +25,7 @@ def test_manual_assignment(compiled: list[GeneratedPackageInfo]) -> None:
 
 
 def test_manual_del(compiled: list[GeneratedPackageInfo]) -> None:
-    from nunavut_support import serialize, deserialize, get_attribute, set_attribute
+    from nunavut_support import deserialize, get_attribute, set_attribute
     import if_
 
     del compiled
