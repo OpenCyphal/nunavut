@@ -387,7 +387,7 @@ _sy = Sybil(
         DocTestParser(optionflags=ELLIPSIS),
         PythonCodeBlockParser(),
     ],
-    pattern="**/*.py",
+    pattern="**/*",
     excludes=[
         "**/markupsafe/*",
         "**/jinja2/*",
@@ -397,6 +397,7 @@ _sy = Sybil(
         "**/CONTRIBUTING.rst",
         "**/verification/*",
         "**/prof/*",
+        "*.j2",
         "*.png",
     ],
     fixtures=[
