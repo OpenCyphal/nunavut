@@ -19,7 +19,7 @@ VERIFICATION_DIR = SELF_DIR.parent.parent
 ROOT_DIR = VERIFICATION_DIR.parent
 PUBLIC_REGULATED_DATA_TYPES_DIR = ROOT_DIR / "submodules" / "public_regulated_data_types"
 TEST_TYPES_DIR = VERIFICATION_DIR / "nunavut_test_types"
-COMPILE_OUTPUT_DIR = VERIFICATION_DIR / "build_py"
+COMPILE_OUTPUT_DIR = (Path.cwd() / "nunavut_out").resolve()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -38,7 +38,8 @@ def compiled() -> list[GeneratedPackageInfo]:
     per namespace.
     Automatically adds the path to the generated packages to sys path to make them importable.
     """
-    print("DSDL GENERATION OUTPUT (must be in sys.path):", COMPILE_OUTPUT_DIR)
+    if str(COMPILE_OUTPUT_DIR) not in sys.path:
+        sys.path.insert(0, str(COMPILE_OUTPUT_DIR))
     out: list[GeneratedPackageInfo] = []
     root_namespace_directories = [
         PUBLIC_REGULATED_DATA_TYPES_DIR / "uavcan",
