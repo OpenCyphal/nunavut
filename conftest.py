@@ -387,7 +387,7 @@ _sy = Sybil(
         DocTestParser(optionflags=ELLIPSIS),
         PythonCodeBlockParser(),
     ],
-    pattern="**/*",
+    pattern="**/*.py",
     excludes=[
         "**/markupsafe/*",
         "**/jinja2/*",

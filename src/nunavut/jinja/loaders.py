@@ -199,7 +199,7 @@ class DSDLTemplateLoader(BaseLoader):
             template_name = l.type_to_template(pydsdl.StructureType)
 
             assert template_name is not None
-            assert template_name.name == 'Any.j2'
+            assert template_name.name == 'StructureType.j2'
 
         """
         template_path = None
