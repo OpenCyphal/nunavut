@@ -3,9 +3,18 @@
 # Author: Pavel Kirienko <pavel@opencyphal.org>
 
 from __future__ import annotations
+import logging
 import pydsdl
 from .util import expand_service_types, make_random_object
 from .conftest import GeneratedPackageInfo
+
+
+_MAX_EXTENT_BYTES = 99 * 1024 ** 2
+"""
+Do not test data types whose extent exceeds this limit.
+"""
+
+_logger = logging.getLogger(__name__)
 
 
 def test_textual(compiled: list[GeneratedPackageInfo]) -> None:
@@ -27,6 +36,10 @@ def test_textual(compiled: list[GeneratedPackageInfo]) -> None:
 
     for info in compiled:
         for model in expand_service_types(info.models):
+            if model.extent > 8 * _MAX_EXTENT_BYTES:
+                _logger.info("Skipping %s due to excessive size", model)
+                continue
+            _logger.debug("Testing textual representation of %s...", model)
             for fn in [str, repr]:
                 assert callable(fn)
                 for _ in range(10):

@@ -1,0 +1,23 @@
+# Settings specific to the Python codegen verification suite only. Not related to Nunavut itself.
+
+[tool.pytest.ini_options]
+testpaths = [
+    "suite",
+    "../../src/nunavut/lang/py/support/nunavut_support.py",  # Run the doctests in the support module.
+]
+python_files     = "*.py"
+log_level        = "DEBUG"
+log_cli_level    = "WARNING"
+log_cli          = true
+log_file         = "pytest.log"
+addopts          = "--doctest-modules -v"
+filterwarnings = [
+    "ignore::DeprecationWarning",  # Some of the DSDL-generated types are deprecated on purpose.
+]
+
+[tool.black]
+line-length = 120
+target-version = ["py311"]
+include = '''
+(.*\.pyi?$)
+'''

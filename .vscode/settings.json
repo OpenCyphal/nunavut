@@ -214,6 +214,7 @@
     "cSpell.words": [
         "allclose",
         "astype",
+        "autouse",
         "bitorder",
         "bools",
         "Bxxx",
@@ -221,6 +222,7 @@
         "CDEF",
         "codegen",
         "Cyphal",
+        "doctests",
         "DSDL",
         "dtype",
         "EDCB",
