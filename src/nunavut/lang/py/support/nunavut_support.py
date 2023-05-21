@@ -390,7 +390,7 @@ def _byte_as_bit_string(x: int) -> str:
     return bin(x)[2:].zfill(8)
 
 
-def _unittest_serializer_to_str() -> None:
+def test_serializer_to_str() -> None:
     ser = Serializer.new(50)
     assert str(ser) == ""
     ser.add_aligned_u8(0b11001110)
@@ -403,7 +403,7 @@ def _unittest_serializer_to_str() -> None:
     assert str(ser) == "11001110 11111111 11111111 xxxx1110"
 
 
-def _unittest_serializer_aligned() -> None:
+def test_serializer_aligned() -> None:
     from pytest import raises
 
     def unseparate(s: Any) -> str:
@@ -523,7 +523,7 @@ def _unittest_serializer_aligned() -> None:
         ser.buffer[0] = 123  # The buffer is read-only for safety reasons
 
 
-def _unittest_serializer_unaligned() -> None:  # Tricky cases with unaligned fields (very tricky)
+def test_serializer_unaligned() -> None:  # Tricky cases with unaligned fields (very tricky)
     ser = Serializer.new(40)
 
     ser.add_unaligned_array_of_bits(
@@ -647,7 +647,7 @@ def _unittest_serializer_unaligned() -> None:  # Tricky cases with unaligned fie
     print("repr(serializer):", repr(ser))
 
 
-def _unittest_serializer_fork_bytes() -> None:
+def test_serializer_fork_bytes() -> None:
     import pytest
 
     r = Serializer.new(16)
@@ -1122,7 +1122,7 @@ def _ensure_cardinal(i: int) -> None:
         raise ValueError(f"Cardinal may not be negative: {i}")
 
 
-def _unittest_deserializer_aligned() -> None:
+def test_deserializer_aligned() -> None:
     from pytest import raises, approx
 
     # The buffer is constructed from the corresponding serialization test.
@@ -1236,7 +1236,7 @@ def _unittest_deserializer_aligned() -> None:
     print("repr(deserializer):", repr(des))
 
 
-def _unittest_deserializer_unaligned() -> None:
+def test_deserializer_unaligned() -> None:
     from pytest import approx
 
     des = Deserializer.new([memoryview(bytearray([0b10101010, 0b01011101, 0b11001100, 0b10010001]))])
@@ -1333,7 +1333,7 @@ def _unittest_deserializer_unaligned() -> None:
     print("repr(deserializer):", repr(des))
 
 
-def _unittest_deserializer_fork_bytes() -> None:
+def test_deserializer_fork_bytes() -> None:
     import pytest
 
     m = Deserializer.new(
