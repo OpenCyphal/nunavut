@@ -3,8 +3,10 @@
 # Author: Pavel Kirienko <pavel@opencyphal.org>
 # type: ignore
 
+import os
 import shutil
 from pathlib import Path
+import subprocess
 import nox
 
 
@@ -12,10 +14,14 @@ PYTHONS = ["3.8", "3.9", "3.10", "3.11"]
 
 nox.options.error_on_external_run = True
 
-SUITE_ROOT_DIR = Path(__file__).resolve().parent
-SUITE_SRC_DIR = SUITE_ROOT_DIR / "suite"
-NUNAVUT_ROOT_DIR = SUITE_ROOT_DIR.parent.parent
-GENERATED_DIR = SUITE_ROOT_DIR / "nunavut_out"
+# Please keep these updated if the project directory is changed.
+SUITE_DIR = Path(__file__).resolve().parent
+SUITE_SRC_DIR = SUITE_DIR / "suite"
+VERIFICATION_DIR = SUITE_DIR.parent
+NUNAVUT_DIR = VERIFICATION_DIR.parent
+
+PUBLIC_REGULATED_DATA_TYPES_DIR = NUNAVUT_DIR / "submodules" / "public_regulated_data_types"
+TEST_TYPES_DIR = VERIFICATION_DIR / "nunavut_test_types"
 
 
 @nox.session(python=False)
@@ -41,7 +47,7 @@ def clean(session):
 
 @nox.session(python=PYTHONS)
 def test(session):
-    session.install("-e", str(NUNAVUT_ROOT_DIR))
+    session.install("-e", str(NUNAVUT_DIR))
     session.install("-e", ".")
     session.install("-r", "generated_code_requirements.txt")
     session.install(
@@ -50,7 +56,43 @@ def test(session):
         "mypy       ~= 1.2",
         "pylint     ~= 2.17",
     )
-    session.run("coverage", "run", "-m", "pytest")
+
+    # The tmp dir will contain the DSDL-generated packages. We do not want to contaminate the source tree.
+    # Invoke Nunavut manually prior to running the tests because the generated packages must already be available.
+    # Invoking Nunavut from within PyTest is not possible because it will not be able to find the generated packages.
+    root_namespace_dirs = [
+        PUBLIC_REGULATED_DATA_TYPES_DIR / "uavcan",
+        TEST_TYPES_DIR / "test0" / "regulated",
+        TEST_TYPES_DIR / "test0" / "if",
+    ]
+    generated_dir = Path(session.create_tmp()).resolve()
+    for nsd in root_namespace_dirs:
+        session.log(f"Compiling {nsd}...")
+        _run_nnvg(
+            [str(Path(nsd).resolve()), "--target-language=py", "--outdir", str(generated_dir)],
+            env={
+                "DSDL_INCLUDE_PATH": os.pathsep.join(map(str, root_namespace_dirs)),
+            },
+        )
+    session.log(f"Compilation finished")
+
+    # Run PyTest against the verification suite and the generated code at the same time.
+    # If there are any doctests or unit tests within the generated code, they will be executed as well.
+    test_paths = [
+        SUITE_SRC_DIR,
+        generated_dir,
+    ]
+    session.run(
+        "coverage",
+        "run",
+        "-m",
+        "pytest",
+        *map(str, test_paths),
+        env={
+            "NUNAVUT_VERIFICATION_DSDL_PATH": os.pathsep.join(map(str, root_namespace_dirs)),
+            "PYTHONPATH": str(generated_dir),
+        },
+    )
     session.run("coverage", "report", "--fail-under=95")
     if session.interactive:
         session.run("coverage", "html")
@@ -61,16 +103,25 @@ def test(session):
     session.run(
         "mypy",
         "--strict",
-        f"--config-file={NUNAVUT_ROOT_DIR / 'tox.ini'}",  # Inherit the settings from the outer project.
+        f"--config-file={NUNAVUT_DIR / 'tox.ini'}",  # Inherit the settings from the outer project. Not sure about it.
         str(SUITE_SRC_DIR),
-        *[str(x) for x in GENERATED_DIR.iterdir() if x.is_dir() and x.name[0] not in "._"],
+        *[str(x) for x in generated_dir.iterdir() if x.is_dir() and x.name[0] not in "._"],
     )
     session.run(
         "pylint",
         str(SUITE_SRC_DIR),
         env={
-            "PYTHONPATH": str(GENERATED_DIR),
+            "PYTHONPATH": str(generated_dir),
         },
+    )
+
+
+def _run_nnvg(args: list[str], env: dict[str, str] | None = None) -> None:
+    subprocess.check_call(
+        ["nnvg"] + args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=os.environ.copy() | (env or {}),
     )
 
 
