@@ -63,7 +63,7 @@ def test(session):
         "--strict",
         f"--config-file={NUNAVUT_ROOT_DIR / 'tox.ini'}",  # Inherit the settings from the outer project.
         str(SUITE_SRC_DIR),
-        *[str(x) for x in GENERATED_DIR.iterdir() if x.is_dir()],
+        *[str(x) for x in GENERATED_DIR.iterdir() if x.is_dir() and x.name[0] not in "._"],
     )
     session.run(
         "pylint",
