@@ -118,7 +118,7 @@ def test(session):
 
 def _run_nnvg(args: list[str], env: dict[str, str] | None = None) -> None:
     subprocess.check_call(
-        ["nnvg"] + args,
+        ["python", "-m", "nunavut"] + args,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=os.environ.copy() | (env or {}),
