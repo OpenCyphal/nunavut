@@ -257,6 +257,7 @@
         "uavcan",
         "unpackbits",
         "unseparate",
-        "unstropped"
+        "unstropped",
+        "WKCV"
     ],
 }
