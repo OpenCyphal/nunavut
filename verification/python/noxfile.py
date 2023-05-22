@@ -6,7 +6,6 @@
 import os
 import shutil
 from pathlib import Path
-import subprocess
 import nox
 
 
@@ -67,9 +66,12 @@ def test(session):
     ]
     generated_dir = Path(session.create_tmp()).resolve()
     for nsd in root_namespace_dirs:
-        session.log(f"Compiling {nsd}...")
-        _run_nnvg(
-            [str(Path(nsd).resolve()), "--target-language=py", "--outdir", str(generated_dir)],
+        session.run(
+            "nnvg",
+            str(Path(nsd).resolve()),
+            "--target-language=py",
+            "--outdir",
+            str(generated_dir),
             env={
                 "DSDL_INCLUDE_PATH": os.pathsep.join(map(str, root_namespace_dirs)),
             },
@@ -113,15 +115,6 @@ def test(session):
         env={
             "PYTHONPATH": str(generated_dir),
         },
-    )
-
-
-def _run_nnvg(args: list[str], env: dict[str, str] | None = None) -> None:
-    subprocess.check_call(
-        ["python", "-m", "nunavut"] + args,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        env=os.environ.copy() | (env or {}),
     )
 
 
