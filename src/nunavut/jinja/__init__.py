@@ -783,6 +783,7 @@ class SupportGenerator(CodeGenerator):
     """
 
     def __init__(self, namespace: nunavut.Namespace, **kwargs: typing.Any):
+        kwargs.update(templates_dir=None)
         super().__init__(namespace, builtin_template_path="support", **kwargs)
 
         target_language = self.language_context.get_target_language()
