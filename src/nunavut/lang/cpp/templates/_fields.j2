@@ -10,5 +10,5 @@
     // +----------------------------------------------------------------------+
     {% endif -%}
     {{ field.doc | block_comment('cpp-doxygen', 4, 120) }}
-    _traits_::TypeOf::{{field.name|id}} {{ field | id }}{{ field.data_type | default_value_initializer }};
+    typename _traits_::TypeOf::{{field.name|id}} {{ field | id }};
 {%- endfor -%}

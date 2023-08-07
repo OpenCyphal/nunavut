@@ -29,6 +29,16 @@ vector.yaml
         variable_array_type_include: <vector>
         variable_array_type_template: std::vector<{TYPE}>
 
+variable_length_array_with_polymorphic_allocator.yaml
+"""""""""""""""""
+
+.. code-block :: yaml
+
+        variable_array_type_include: <cetl/variable_length_array.hpp>
+        variable_array_type_template: "cetl::VariableLengthArray<{TYPE}, typename std::allocator_traits<Allocator>::template rebind_alloc<{TYPE}>>"
+        variable_array_type_init_args_template: "{SIZE}"
+        variable_array_type_allocator_type: "cetl::pf17::pmr::polymorphic_allocator"
+
 nnvg command
 """"""""""""""""""
 

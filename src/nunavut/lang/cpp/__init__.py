@@ -18,6 +18,8 @@ import typing
 
 import pydsdl
 
+from enum import auto, Enum
+
 from nunavut._dependencies import Dependencies
 from nunavut._exceptions import InternalError as NunavutInternalError
 from nunavut._templates import (
@@ -32,6 +34,15 @@ from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGener
 from nunavut.lang._language import Language as BaseLanguage
 from nunavut.lang.c import _CFit
 from nunavut.lang.c import filter_literal as c_filter_literal
+
+
+class SpecialMethods(Enum):
+    DefaultConstructorWithOptionalAllocator = auto()
+    CopyConstructor = auto()
+    CopyConstructorWithAllocator = auto()
+    MoveConstructor = auto()
+    MoveConstructorWithAllocator = auto()
+    Destructor = auto()
 
 
 class Language(BaseLanguage):
@@ -165,40 +176,6 @@ class Language(BaseLanguage):
             "variable_length_array file was not found in the c++ support files?!"
         )  # pragma: no cover
 
-    @functools.lru_cache()
-    def _get_default_vla_template(self) -> str:
-        """
-        Returns a template to the built-in Variable Length Array (VLA) implementation. This is used when no override
-        was provided.
-
-        options = {"target_endianness": "big"}
-        lctx = (
-            LanguageContextBuilder(include_experimental_languages=True)
-                .set_target_language("cpp")
-                .set_target_language_configuration_override(Language.WKCV_SUPPORT_NAMESPACE, "")
-                .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
-                .create()
-        )
-        template_w_no_namespace = lctx.get_target_language()._get_default_vla_template()
-        assert template_w_no_namespace.startswith("VariableLengthArray")
-
-        lctx = (
-            LanguageContextBuilder(include_experimental_languages=True)
-                .set_target_language("cpp")
-                .set_target_language_configuration_override(Language.WKCV_SUPPORT_NAMESPACE, "foo.bar")
-                .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
-                .create()
-        )
-        template_w_namespace = lctx.get_target_language()._get_default_vla_template()
-        assert template_w_namespace.startswith("foo::bar::VariableLengthArray")
-
-        """
-        base_template = "VariableLengthArray<{TYPE}, {MAX_SIZE}>"
-        if len(self.support_namespace) > 0:
-            return "::".join(self.support_namespace) + "::" + base_template
-        else:
-            return base_template
-
     def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
         """
         Get includes for c++ source.
@@ -255,6 +232,7 @@ class Language(BaseLanguage):
         """
         std_includes = []  # type: typing.List[str]
         std_includes.append("limits")  # we always include limits to support static assertions
+        std_includes.append("memory")  # for std::allocator and std::allocator_traits
         if self.get_config_value_as_bool("use_standard_types"):
             if dep_types.uses_integer:
                 std_includes.append("cstdint")
@@ -278,6 +256,17 @@ class Language(BaseLanguage):
 
         return includes_formatted
 
+    def get_globals(self) -> typing.Mapping[str, typing.Any]:
+        """
+        Make additional globals available in the cpp jinja templates
+
+        :return: A mapping of global names to global values.
+        """
+        globals_map : dict[str, typing.Any]= {}
+        globals_map.update(super().get_globals())
+        globals_map["SpecialMethods"] = SpecialMethods
+        return globals_map
+
     def filter_id(self, instance: typing.Any, id_type: str = "any") -> str:
         raw_name = self.default_filter_id_for_target(instance)
 
@@ -288,14 +277,6 @@ class Language(BaseLanguage):
 
     def create_array_decl(self, type: str, max_size: int) -> str:
         return "std::array<{TYPE},{MAX_SIZE}>".format(TYPE=type, MAX_SIZE=max_size)
-
-    def create_vla_decl(self, type: str, max_size: int) -> str:
-        variable_array_type_template = self.get_option("variable_array_type_template")
-
-        if not isinstance(variable_array_type_template, str) or len(variable_array_type_template) == 0:
-            variable_array_type_template = self._get_default_vla_template()
-
-        return variable_array_type_template.format(TYPE=type, MAX_SIZE=max_size)
 
 
 @template_language_test(__name__)
@@ -968,13 +949,78 @@ def filter_destructor_name(language: Language, instance: pydsdl.Any) -> str:
 
 
 @template_language_filter(__name__)
-def filter_default_value_initializer(language: Language, instance: pydsdl.Any) -> str:
+def filter_value_initializer(language: Language, instance: pydsdl.Any, initialization_context: SpecialMethods) -> str:
     """
     Emit a default initialization statement for the given instance if primitive or array.
     """
-    if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.ArrayType):
-        return "{}"
+
+    def needs_rhs(initialization_context: SpecialMethods) -> bool:
+        return (initialization_context in (
+                SpecialMethods.CopyConstructor,
+                SpecialMethods.CopyConstructorWithAllocator,
+                SpecialMethods.MoveConstructor,
+                SpecialMethods.MoveConstructorWithAllocator))
+
+    def needs_allocator(instance: pydsdl.Any, initialization_context: SpecialMethods) -> bool:
+        return (initialization_context in (
+                SpecialMethods.DefaultConstructorWithOptionalAllocator,
+                SpecialMethods.CopyConstructorWithAllocator,
+                SpecialMethods.MoveConstructorWithAllocator)
+                and (isinstance(instance.data_type, pydsdl.VariableLengthArrayType)
+                     or isinstance(instance.data_type, pydsdl.CompositeType)))
+
+    def needs_vla_init_args(instance: pydsdl.Any, initialization_context: SpecialMethods) -> bool:
+        return (initialization_context == SpecialMethods.DefaultConstructorWithOptionalAllocator
+                and isinstance(instance.data_type, pydsdl.VariableLengthArrayType))
+
+    def needs_move(initialization_context: SpecialMethods) -> bool:
+        return (initialization_context in (
+                SpecialMethods.MoveConstructor,
+                SpecialMethods.MoveConstructorWithAllocator))
+
+    if (isinstance(instance.data_type, pydsdl.PrimitiveType)
+            or isinstance(instance.data_type, pydsdl.ArrayType)
+            or isinstance(instance.data_type, pydsdl.CompositeType)):
+
+        wrap: str = ""
+        rhs: str = ""
+        trailing_args: list[str] = []
+
+        if needs_rhs(initialization_context):
+            rhs = "rhs." + language.filter_id(instance)
+
+        if needs_allocator(instance, initialization_context):
+            trailing_args.append("allocator")
+
+        if needs_vla_init_args(instance, initialization_context):
+            init_args_template = language.get_option("variable_array_type_init_args_template")
+            if isinstance(init_args_template, str) and len(init_args_template) > 0:
+                trailing_args.append(init_args_template.format(SIZE=instance.data_type.capacity))
+
+        if needs_move(initialization_context):
+            wrap = "std::move"
+
+        if wrap:
+            rhs = wrap + "(" + rhs + ")"
+        constructor_args = []
+        if rhs:
+            constructor_args.append(rhs)
+        if trailing_args:
+            constructor_args.extend(trailing_args)
+        return "{" + ",".join(constructor_args) + "}"
+
     return ""
+
+
+@template_language_filter(__name__)
+def filter_field_declaration(language: Language, instance: pydsdl.Any) -> str:
+    """
+    Emit a field declaration that accounts for the message being a templated type
+    """
+    suffix: str = ""
+    if isinstance(instance, pydsdl.CompositeType):
+        suffix = "_Impl<T, Allocator>"
+    return filter_declaration(language, instance) + suffix
 
 
 @template_language_filter(__name__)
@@ -986,13 +1032,12 @@ def filter_declaration(language: Language, instance: pydsdl.Any) -> str:
         return filter_type_from_primitive(language, instance)
     elif isinstance(instance, pydsdl.VariableLengthArrayType):
         variable_array_type_template = language.get_option("variable_array_type_template")
-
         if not isinstance(variable_array_type_template, str) or len(variable_array_type_template) == 0:
-            return language.create_vla_decl(filter_declaration(language, instance.element_type), instance.capacity)
-        else:
-            return variable_array_type_template.format(
-                TYPE=filter_declaration(language, instance.element_type), MAX_SIZE=instance.capacity
-            )
+            raise RuntimeError("You must specify a value for the 'variable_array_type_template' option.")
+
+        return variable_array_type_template.format(
+            TYPE=filter_declaration(language, instance.element_type), MAX_SIZE=instance.capacity
+        )
     elif isinstance(instance, pydsdl.ArrayType):
         if isinstance(instance.element_type, pydsdl.BooleanType):
             return language.create_bitset_decl(filter_declaration(language, instance.element_type), instance.capacity)

@@ -10,3 +10,6 @@
 [submodule "submodules/o1heap"]
 	path = submodules/o1heap
 	url = https://github.com/pavel-kirienko/o1heap.git
+[submodule "submodules/CETL"]
+	path = submodules/CETL
+	url = https://github.com/OpenCyphal/CETL.git

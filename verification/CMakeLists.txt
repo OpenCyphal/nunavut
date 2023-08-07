@@ -164,6 +164,13 @@ find_package(nnvg REQUIRED)
 find_package(o1heap REQUIRED)
 
 #
+# Use a config for CETL VLA + PMR
+#
+if(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
+     set(NNVG_FLAGS "--configuration=${NUNAVUT_VERIFICATION_ROOT}/suite/cetl_vla_pmr_configuration.yaml")
+endif()
+
+#
 # Generate serialization support headers
 #
 create_dsdl_target(nunavut-support
@@ -278,6 +285,25 @@ if(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
      add_dependencies(dsdl-test-c nunavut-support-c)
 endif()
 
+#
+# Generate additional types for CETL VLA PMR verification
+#
+create_dsdl_target(dsdl-test-cetlpmr
+                   ${NUNAVUT_VERIFICATION_LANG}
+                   "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
+                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
+                   ${CMAKE_SOURCE_DIR}/nunavut_test_types/cetl_vla_pmr_test_types/mymsgs
+                   OFF
+                   ${NUNAVUT_VERIFICATION_SER_ASSERT}
+                   ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
+                   ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
+                   ON
+                   "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
+                   "never"
+                   ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
+
+add_dependencies(dsdl-test-cetlpmr nunavut-support)
+
 # +---------------------------------------------------------------------------+
 # | FLAG SETS
 # +---------------------------------------------------------------------------+
@@ -356,8 +382,10 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
                             "${${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS}"
                             dsdl-regulated
                             dsdl-test
+                            dsdl-test-cetlpmr
                             ${LOCAL_ADDITIONAL_DSDL_LIBS}
                             o1heap)
+    target_include_directories(${NATIVE_TEST_NAME} PUBLIC "${NUNAVUT_PROJECT_ROOT}/submodules/CETL/include")
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
     define_natve_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})

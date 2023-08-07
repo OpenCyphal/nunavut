@@ -1,0 +1,3 @@
+float32[<=8] outer_items
+Inner.1.0 inner
+@sealed

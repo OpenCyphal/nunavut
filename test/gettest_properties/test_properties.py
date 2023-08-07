@@ -38,8 +38,8 @@ def test_issue_277(gen_paths, variable_array_type_template: str, variable_array_
         vla_decl_pattern = re.compile(r"\b|^{}\B".format(variable_array_type_template.format(TYPE="std::uint8_t")))
         vla_include_pattern = re.compile(r"\B#include\s+{}\B".format(variable_array_type_include))
     else:
-        vla_decl_pattern = re.compile(r"\b|^nunavut::support::VariableLengthArray<std::uint8_t,\s*50>\B")
-        vla_include_pattern = re.compile(r"\B#include\s+\"nunavut/support/variable_length_array\.hpp\"\B")
+        vla_decl_pattern = re.compile(r"\b|^std::vector<std::uint8_t,\s>typename std::allocator_traits<Allocator>::template rebind_alloc<std::uint8_t>\B")
+        vla_include_pattern = re.compile(r"\B#include\s+\"<cetl/variable_length_array\.hpp\"\B")
 
     overrides_file = gen_paths.out_dir / pathlib.Path("overrides_test_issue_277.yaml")
 
