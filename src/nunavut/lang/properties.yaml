@@ -311,12 +311,28 @@ nunavut.lang.cpp:
         enable_serialization_asserts: false
         enable_override_variable_array_capacity: false
         std: c++14
+        cast_format: "static_cast<{type}>({value})"
         # Provide non-empty values to override the type used for variable-length arrays in C++ types.
         variable_array_type_include: "<vector>"
-        variable_array_type_template: "std::vector<{TYPE}, typename std::allocator_traits<Allocator>::template rebind_alloc<{TYPE}>>"
-        variable_array_type_init_args_template: ""
-        variable_array_type_allocator_type: "std::allocator"
-        cast_format: "static_cast<{type}>({value})"
+        variable_array_type_template: "std::vector<{TYPE}>"
+        variable_array_type_constructor_args: ""
+        allocator_include: ""
+        allocator_type: ""
+        ctor_convention: "default"
+    cetl++_options:
+        variable_array_type_include: '"cetl/variable_length_array.hpp"'
+        variable_array_type_template: "cetl::VariableLengthArray<{TYPE}, {REBIND_ALLOCATOR}>"
+        variable_array_type_constructor_args: "{MAX_SIZE}"
+        allocator_include: '"cetl/pf17/sys/memory_resource.hpp"'
+        allocator_type: "cetl::pf17::pmr::polymorphic_allocator"
+        ctor_convention: "uses-trailing-allocator"
+    c++17-pmr_options:
+        variable_array_type_include: "<vector>"
+        variable_array_type_template: "std::vector<{TYPE}, {REBIND_ALLOCATOR}>"
+        variable_array_type_constructor_args: ""
+        allocator_include: "<memory>"
+        allocator_type: "std::pmr::polymorphic_allocator"
+        ctor_convention: "uses-trailing-allocator"
 
 
 nunavut.lang.py:

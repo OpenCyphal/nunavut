@@ -50,7 +50,7 @@ def list_support_files(resource_type: ResourceType = ResourceType.ANY) -> typing
         support_file_count = 0
         for path in list_support_files(ResourceType.TYPE_SUPPORT):
             support_file_count +=1
-        assert support_file_count > 0
+        assert support_file_count == 0
 
     :return: A list of C++ support header resources.
     """

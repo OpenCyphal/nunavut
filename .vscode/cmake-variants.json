@@ -57,12 +57,28 @@
                     "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++14"
                 }
             },
+            "CETL++": {
+                "short": "--std=cetl++",
+                "long": "Compile and link using the C++14 standard and use CETL.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_LANG": "cpp",
+                    "NUNAVUT_VERIFICATION_LANG_STANDARD": "cetl++"
+                }
+            },
             "C++17": {
                 "short": "--std=c++17",
                 "long": "Compile and link using the C++17 standard.",
                 "settings": {
                     "NUNAVUT_VERIFICATION_LANG": "cpp",
                     "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17"
+                }
+            },
+            "C++17 PMR": {
+                "short": "--std=c++17-pmr",
+                "long": "Compile and link using the C++17 standard and use polymorphic memory resources.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_LANG": "cpp",
+                    "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17-pmr"
                 }
             },
             "C++20": {

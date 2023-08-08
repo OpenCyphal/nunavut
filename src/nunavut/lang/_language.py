@@ -118,6 +118,11 @@ class Language(metaclass=abc.ABCMeta):
         self._tests = dict()  # type: typing.Dict[str, typing.Callable]
         self._uses = dict()  # type: typing.Dict[str, typing.Callable]
 
+        self._validate_language_options(self._language_options)
+
+    def _validate_language_options(self, language_options: typing.Mapping[str, typing.Any]) -> None:
+        pass
+
     def __getattr__(self, name: str) -> typing.Any:
         """
         Any attribute access to a Language object will return the regular properties and
@@ -221,6 +226,9 @@ class Language(metaclass=abc.ABCMeta):
     # +-----------------------------------------------------------------------+
     # | METHODS
     # +-----------------------------------------------------------------------+
+
+    def _add_additional_globals(self, globals_map: typing.Dict[str, typing.Any]) -> None:
+        pass
 
     def get_support_module(self) -> typing.Tuple[str, typing.Tuple[int, int, int], typing.Optional["types.ModuleType"]]:
         """
@@ -468,6 +476,8 @@ class Language(metaclass=abc.ABCMeta):
                 globals_map["typename_{}".format(key)] = value
             for key, value in self.named_values.items():
                 globals_map["valuetoken_{}".format(key)] = value
+
+            self._add_additional_globals(globals_map)
 
             self._globals = globals_map
         return self._globals

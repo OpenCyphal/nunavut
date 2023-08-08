@@ -16,35 +16,48 @@ See :ref:`template-language-guide` until this section is more complete.
 Using a Different Variable-Length Array Type
 ==============================================
 
-For now this tip is important for people using the experimental C++ support. To use :code:`std::vector` instead of the
-minimal build-in :code:`variable_length_array` type create a properties override yaml file and pass it to nnvg.
+For now this tip is important for people using the experimental C++ support.  To set which variable length array
+implementation to use, create a properties override yaml file and pass it to nnvg.  Specifying the use of an
+allocator is optional (If ctor_convention is set to "default" then the allocator_include and allocator_type
+properties don't need to be set.)
 
-vector.yaml
+Alternatively, you may specify the language standard argument as -std=c++17-pmr or -std=cetl++ as short-hand for
+the following configurations shown below.
+
+c++17-pmr.yaml
 """""""""""""""""
 
 .. code-block :: yaml
 
     nunavut.lang.cpp:
       options:
-        variable_array_type_include: <vector>
-        variable_array_type_template: std::vector<{TYPE}>
+        variable_array_type_include: "<vector>"
+        variable_array_type_template: "std::vector<{TYPE}, {REBIND_ALLOCATOR}>"
+        variable_array_type_constructor_args: ""
+        allocator_include: "<memory>"
+        allocator_type: "std::pmr::polymorphic_allocator"
+        ctor_convention: "uses-trailing-allocator"
 
-variable_length_array_with_polymorphic_allocator.yaml
+cetl++.yaml
 """""""""""""""""
 
 .. code-block :: yaml
 
-        variable_array_type_include: <cetl/variable_length_array.hpp>
-        variable_array_type_template: "cetl::VariableLengthArray<{TYPE}, typename std::allocator_traits<Allocator>::template rebind_alloc<{TYPE}>>"
-        variable_array_type_init_args_template: "{SIZE}"
-        variable_array_type_allocator_type: "cetl::pf17::pmr::polymorphic_allocator"
+    nunavut.lang.cpp:
+      options:
+        variable_array_type_include: '"cetl/variable_length_array.hpp"'
+        variable_array_type_template: "cetl::VariableLengthArray<{TYPE}, {REBIND_ALLOCATOR}>"
+        variable_array_type_constructor_args: "{MAX_SIZE}"
+        allocator_include: '"cetl/pf17/sys/memory_resource.hpp"'
+        allocator_type: "cetl::pf17::pmr::polymorphic_allocator"
+        ctor_convention: "uses-trailing-allocator"
 
 nnvg command
 """"""""""""""""""
 
 .. code-block :: bash
 
-    nnvg --configuration=vector.yaml \
+    nnvg --configuration=c++17-pmr.yaml \  # or --configuration=cetl++.yaml
          -l cpp \
         --experimental-languages \
         -I path/to/public_regulated_data_types/uavcan \

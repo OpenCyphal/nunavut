@@ -3,12 +3,13 @@
  * Authors: Skeets Norquist <skeets@amazon.com>
  * Sanity tests.
  */
+
 #include "gmock/gmock.h"
 #include "cetl/pf17/byte.hpp"
-#include "cetl/pf17/memory_resource.hpp"
 #include "cetl/pf17/sys/memory_resource.hpp"
 #include "mymsgs/Inner_1_0.hpp"
 #include "mymsgs/Outer_1_0.hpp"
+
 
 /**
  * Inner message using cetl::pf17::pmr::polymorphic_allocator
@@ -18,11 +19,14 @@ TEST(CetlVlaPmrTests, TestInner) {
     cetl::pf17::pmr::monotonic_buffer_resource mbr{buffer.data(), buffer.size(), cetl::pf17::pmr::null_memory_resource()};
     cetl::pf17::pmr::polymorphic_allocator<mymsgs::Inner_1_0> pa{&mbr};
 
+    // Reserve and push five items onto the array
     mymsgs::Inner_1_0 inner{pa};
     inner.inner_items.reserve(5);
     for (std::uint32_t i = 0; i < 5; i++) {
         inner.inner_items.push_back(i);
     }
+
+    // Verify that the backing buffer has the five items
     for (std::uint32_t i = 0; i < 5; i++) {
         ASSERT_EQ(i, *reinterpret_cast<std::uint32_t*>(buffer.data()+(sizeof(std::uint32_t)*i)));
     }

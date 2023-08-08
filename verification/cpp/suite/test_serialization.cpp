@@ -164,7 +164,7 @@ TEST(Serialization, StructReference)
     ASSERT_EQ(3U, obj.u2_le4.size());
     //obj.u2_le4.push_back(0xFF);                       // ignored because the length is 3
     obj.delimited_fix_le2.reserve(1);
-    obj.delimited_fix_le2.push_back();                  // ignored
+    obj.delimited_fix_le2.push_back({});                // ignored
     ASSERT_EQ(1U, obj.delimited_fix_le2.size());
     obj.u16_2[0] = 0x1234;
     obj.u16_2[1] = 0x5678;

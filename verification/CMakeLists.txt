@@ -164,19 +164,12 @@ find_package(nnvg REQUIRED)
 find_package(o1heap REQUIRED)
 
 #
-# Use a config for CETL VLA + PMR
-#
-if(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
-     set(NNVG_FLAGS "--configuration=${NUNAVUT_VERIFICATION_ROOT}/suite/cetl_vla_pmr_configuration.yaml")
-endif()
-
-#
 # Generate serialization support headers
 #
 create_dsdl_target(nunavut-support
                    ${NUNAVUT_VERIFICATION_LANG}
                    "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
+                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/default
                    ""
                    OFF
                    ${NUNAVUT_VERIFICATION_SER_ASSERT}
@@ -192,7 +185,7 @@ create_dsdl_target(nunavut-support
 create_dsdl_target(dsdl-regulated
                    ${NUNAVUT_VERIFICATION_LANG}
                    "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
+                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/default
                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
                    OFF
                    ${NUNAVUT_VERIFICATION_SER_ASSERT}
@@ -210,7 +203,7 @@ add_dependencies(dsdl-regulated nunavut-support)
 create_dsdl_target(dsdl-test
                    ${NUNAVUT_VERIFICATION_LANG}
                    "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
+                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/default
                    ${CMAKE_SOURCE_DIR}/nunavut_test_types/test0/regulated
                    OFF
                    ${NUNAVUT_VERIFICATION_SER_ASSERT}
@@ -237,7 +230,7 @@ if(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
      create_dsdl_target(nunavut-support-c
                         "c"
                         "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                        ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
+                        ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/default
                         ""
                         OFF
                         ${NUNAVUT_VERIFICATION_SER_ASSERT}
@@ -253,7 +246,7 @@ if(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
      create_dsdl_target(dsdl-regulated-c
                         "c"
                         "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                        ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
+                        ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/default
                         ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
                         OFF
                         ${NUNAVUT_VERIFICATION_SER_ASSERT}
@@ -271,7 +264,7 @@ if(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
      create_dsdl_target(dsdl-test-c
                         "c"
                         "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                        ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
+                        ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/default
                         ${CMAKE_SOURCE_DIR}/nunavut_test_types/test0/regulated
                         OFF
                         ${NUNAVUT_VERIFICATION_SER_ASSERT}
@@ -285,24 +278,43 @@ if(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
      add_dependencies(dsdl-test-c nunavut-support-c)
 endif()
 
-#
-# Generate additional types for CETL VLA PMR verification
-#
-create_dsdl_target(dsdl-test-cetlpmr
-                   ${NUNAVUT_VERIFICATION_LANG}
-                   "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}
-                   ${CMAKE_SOURCE_DIR}/nunavut_test_types/cetl_vla_pmr_test_types/mymsgs
-                   OFF
-                   ${NUNAVUT_VERIFICATION_SER_ASSERT}
-                   ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
-                   ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
-                   ON
-                   "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
-                   "never"
-                   ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
 
-add_dependencies(dsdl-test-cetlpmr nunavut-support)
+if(NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++" OR NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr")
+     #
+     # Generate serialization support headers with config matching the langauge standard
+     #
+     create_dsdl_target(nunavut-support-array-with-allocator
+                    ${NUNAVUT_VERIFICATION_LANG}
+                    "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
+                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/array-with-allocator
+                    ""
+                    OFF
+                    ${NUNAVUT_VERIFICATION_SER_ASSERT}
+                    ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
+                    ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
+                    ON
+                    "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
+                    "only")
+
+     #
+     # Generate additional types with config matching the langauge standard
+     #
+     create_dsdl_target(dsdl-test-array-with-allocator
+                    ${NUNAVUT_VERIFICATION_LANG}
+                    "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
+                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/array-with-allocator
+                    ${CMAKE_SOURCE_DIR}/nunavut_test_types/nested_array_types/mymsgs
+                    OFF
+                    ${NUNAVUT_VERIFICATION_SER_ASSERT}
+                    ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
+                    ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
+                    ON
+                    "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
+                    "never"
+                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
+
+     add_dependencies(dsdl-test-array-with-allocator nunavut-support-array-with-allocator)
+endif()
 
 # +---------------------------------------------------------------------------+
 # | FLAG SETS
@@ -363,6 +375,14 @@ set(ALL_TEST_COVERAGE "")
 
 foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
+
+    # Skip tests not relevant to the specified language standard
+    if((NATIVE_TEST_NAME STREQUAL "test_array_cetl++" AND NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++")
+          OR
+       (NATIVE_TEST_NAME STREQUAL "test_array_c++17-pmr" AND NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr"))
+        continue()
+    endif()
+
     set(${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS, "")
     list(APPEND ${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS})
 
@@ -375,14 +395,22 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
           list(APPEND ${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS "-Wno-old-style-cast")
     endif()
 
+    # Link the library that was built for the specified language standard
+    set(TEST_LINK_LIBS "")
+    if((NATIVE_TEST_NAME STREQUAL "test_array_cetl++" AND NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++")
+        OR
+       (NATIVE_TEST_NAME STREQUAL "test_array_c++17-pmr" AND NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr"))
+          set(TEST_LINK_LIBS dsdl-test-array-with-allocator)
+    else()
+          set(TEST_LINK_LIBS dsdl-regulated dsdl-test)
+    endif()
+
     define_native_unit_test("gtest"
                             ${NATIVE_TEST_NAME}
                             ${NATIVE_TEST}
                             ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
                             "${${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS}"
-                            dsdl-regulated
-                            dsdl-test
-                            dsdl-test-cetlpmr
+                            ${TEST_LINK_LIBS}
                             ${LOCAL_ADDITIONAL_DSDL_LIBS}
                             o1heap)
     target_include_directories(${NATIVE_TEST_NAME} PUBLIC "${NUNAVUT_PROJECT_ROOT}/submodules/CETL/include")

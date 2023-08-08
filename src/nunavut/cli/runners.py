@@ -144,6 +144,12 @@ class ArgparseRunner:
         language_options["enable_serialization_asserts"] = self._args.enable_serialization_asserts
         language_options["enable_override_variable_array_capacity"] = self._args.enable_override_variable_array_capacity
         if self._args.language_standard is not None:
+            valid_language_standards: typing.List[str] = ["c11", "c++14", "cetl++", "c++17", "c++17-pmr", "c++20"]
+            if self._args.language_standard not in valid_language_standards:
+                raise RuntimeError(
+                    f"'{self._args.language_standard}' language standard not found. "
+                    f"Must be one of {', '.join(valid_language_standards)}."
+                )
             language_options["std"] = self._args.language_standard
 
         if self._args.configuration is None:
@@ -155,17 +161,18 @@ class ArgparseRunner:
 
         target_language_name = self._args.target_language
 
-        return (
-            LanguageContextBuilder(include_experimental_languages=self._args.experimental_languages)
-            .set_target_language(target_language_name)
-            .set_additional_config_files(additional_config_files)
-            .set_target_language_extension(self._args.output_extension)
-            .set_target_language_configuration_override(
-                Language.WKCV_NAMESPACE_FILE_STEM, self._args.namespace_output_stem
-            )
-            .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, language_options)
-            .create()
+        builder: LanguageContextBuilder = LanguageContextBuilder(
+            include_experimental_languages=self._args.experimental_languages
         )
+        builder.set_target_language(target_language_name)
+        builder.load_default_config(self._args.language_standard)
+        builder.set_additional_config_files(additional_config_files)
+        builder.set_target_language_extension(self._args.output_extension)
+        builder.set_target_language_configuration_override(
+            Language.WKCV_NAMESPACE_FILE_STEM, self._args.namespace_output_stem
+        )
+        builder.set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, language_options)
+        return builder.create()
 
     # +---------------------------------------------------------------------------------------------------------------+
     # | PRIVATE :: RUN METHODS

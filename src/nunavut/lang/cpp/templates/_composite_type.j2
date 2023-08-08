@@ -31,68 +31,50 @@
 {% if composite_type.deprecated -%}
 [[deprecated("{{ composite_type }} is reaching the end of its life; there may be a newer version available")]]
 {% endif -%}
-template <class T, class Allocator = std::allocator<T>>
-struct {{composite_type|short_reference_name}}_Impl final
+{% if options.ctor_convention != ConstructorConvention.Default.value -%}
+template <class T, class Allocator = {{ options.allocator_type }}<T>>
+{% endif -%}
+struct {{composite_type|short_reference_impl_name}} final
 {
+{%- if options.ctor_convention != ConstructorConvention.Default.value %}
     // Default constructor
-    {{composite_type|short_reference_name}}_Impl(const Allocator& allocator = Allocator()){%if composite_type.fields_except_padding %} :{%endif%}
+    {{composite_type|short_reference_impl_name}}(const Allocator& allocator = Allocator()){%if composite_type.fields_except_padding %} :{%endif%}
     {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }}{{ field | value_initializer(SpecialMethods.DefaultConstructorWithOptionalAllocator) }}{%if not loop.last %},{%endif %}
+        {{ field | id }}{{ field | value_initializer(SpecialMethod.DefaultConstructorWithOptionalAllocator) }}{%if not loop.last %},{%endif %}
     {%- endfor %}
     { }
 
     // Destructor
-    ~{{composite_type|short_reference_name}}_Impl() = default;
+    ~{{composite_type|short_reference_impl_name}}() = default;
 
     // Copy constructor
-    {{composite_type|short_reference_name}}_Impl(const {{composite_type|short_reference_name}}_Impl& rhs){%if composite_type.fields_except_padding %} :{%endif%}
-    {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }}{{ field | value_initializer(SpecialMethods.CopyConstructor) }}{%if not loop.last %},{%endif %}
-    {%- endfor %}
-    {
-    }
+    {{composite_type|short_reference_impl_name}}(const {{composite_type|short_reference_impl_name}}&) = default;
 
     // Copy constructor with allocator
-    {{composite_type|short_reference_name}}_Impl(const {{composite_type|short_reference_name}}_Impl& rhs, const Allocator& allocator){%if composite_type.fields_except_padding %} :{%endif%}
+    {{composite_type|short_reference_impl_name}}(const {{composite_type|short_reference_impl_name}}& rhs, const Allocator& allocator){%if composite_type.fields_except_padding %} :{%endif%}
     {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }}{{ field | value_initializer(SpecialMethods.CopyConstructorWithAllocator) }}{%if not loop.last %},{%endif %}
+        {{ field | id }}{{ field | value_initializer(SpecialMethod.CopyConstructorWithAllocator) }}{%if not loop.last %},{%endif %}
     {%- endfor %}
     {
     }
 
     // Move constructor
-    {{composite_type|short_reference_name}}_Impl({{composite_type|short_reference_name}}_Impl&& rhs){%if composite_type.fields_except_padding %} :{%endif%}
-    {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }}{{ field | value_initializer(SpecialMethods.MoveConstructor) }}{%if not loop.last %},{%endif %}
-    {%- endfor %}
-    {
-    }
+    {{composite_type|short_reference_impl_name}}({{composite_type|short_reference_impl_name}}&&) = default;
 
     // Move constructor with allocator
-    {{composite_type|short_reference_name}}_Impl({{composite_type|short_reference_name}}_Impl&& rhs, const Allocator& allocator){%if composite_type.fields_except_padding %} :{%endif%}
+    {{composite_type|short_reference_impl_name}}({{composite_type|short_reference_impl_name}}&& rhs, const Allocator& allocator){%if composite_type.fields_except_padding %} :{%endif%}
     {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }}{{ field | value_initializer(SpecialMethods.MoveConstructorWithAllocator) }}{%if not loop.last %},{%endif %}
+        {{ field | id }}{{ field | value_initializer(SpecialMethod.MoveConstructorWithAllocator) }}{%if not loop.last %},{%endif %}
     {%- endfor %}
     {
     }
 
     // Copy assignment
-    {{composite_type|short_reference_name}}_Impl& operator=(const {{composite_type|short_reference_name}}_Impl& rhs)
-    {
-    {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }} = rhs.{{ field | id }};
-    {%- endfor %}
-        return *this;
-    }
+    {{composite_type|short_reference_impl_name}}& operator=(const {{composite_type|short_reference_impl_name}}&) = default;
 
     // Move assignment
-    {{composite_type|short_reference_name}}_Impl& operator=({{composite_type|short_reference_name}}_Impl&& rhs)
-    {
-    {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }} = std::move(rhs.{{ field | id }});
-    {%- endfor %}
-        return *this;
-    }
+    {{composite_type|short_reference_impl_name}}& operator=({{composite_type|short_reference_impl_name}}&&) = default;
+{%- endif %}
 
     struct _traits_  // The name is surrounded with underscores to avoid collisions with DSDL attributes.
     {
@@ -190,19 +172,33 @@ struct {{composite_type|short_reference_name}}_Impl final
 {%- endif %}
 };
 
-using {{composite_type|short_reference_name}} = {{composite_type|short_reference_name}}_Impl<decltype(nullptr), {{ options.variable_array_type_allocator_type }}<decltype(nullptr)>>;
+{% if options.ctor_convention != ConstructorConvention.Default.value -%}
+using {{composite_type|short_reference_name}} = {{composite_type|short_reference_impl_name}}<decltype(nullptr), {{ options.allocator_type }}<decltype(nullptr)>>;
+{% endif -%}
 
-{% if not nunavut.support.omit %}
+{% if not nunavut.support.omit -%}
+
+{%- macro message_arg_type(message_name) -%}
+{{message_name}}
+{%- if options.ctor_convention != ConstructorConvention.Default.value -%}
+<T, Allocator>
+{%- endif -%}
+{%- endmacro -%}
+
+{% if options.ctor_convention != ConstructorConvention.Default.value %}
 template <class T, class Allocator>
-inline nunavut::support::SerializeResult serialize(const {{composite_type|short_reference_name}}_Impl<T, Allocator>& obj,
+{% endif -%}
+inline nunavut::support::SerializeResult serialize(const {{ message_arg_type(composite_type|short_reference_impl_name) }}& obj,
                                                    nunavut::support::bitspan out_buffer)
 {
     {% from 'serialization.j2' import serialize -%}
     {{ serialize(composite_type) | trim | remove_blank_lines }}
 }
 
+{% if options.ctor_convention != ConstructorConvention.Default.value -%}
 template <class T, class Allocator>
-inline nunavut::support::SerializeResult deserialize({{composite_type|short_reference_name}}_Impl<T, Allocator>& obj,
+{% endif -%}
+inline nunavut::support::SerializeResult deserialize({{ message_arg_type(composite_type|short_reference_impl_name) }}& obj,
                                                      nunavut::support::const_bitspan in_buffer)
 {
     {% from 'deserialization.j2' import deserialize -%}
