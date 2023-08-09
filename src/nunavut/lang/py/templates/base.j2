@@ -17,9 +17,6 @@
 # pylint: skip-file
 # mypy: warn_unused_ignores=False
 
-{% set REQUIRED_NUNAVUT_SUPPORT_API_VERSION = 1 -%}
-{#- This number shall match the corresponding version number in the Nunavut support library. -#}
-
 {% set ARRAY_PRINT_SUMMARIZATION_THRESHOLD = 100 -%}
 {#- How many elements in the array trigger summarization rather than full output.
  #- Summarization replaces middle elements with an ellipsis. -#}
@@ -36,9 +33,9 @@ import warnings as _warnings_
 import {{ n }}
 {%- endfor %}
 
-if _NSAPIV_ != {{REQUIRED_NUNAVUT_SUPPORT_API_VERSION}}:
+if _NSAPIV_[0] != {{ nunavut.support.version[0] }}:
     raise RuntimeError(
-        f"Incompatible Nunavut support API version: { _NSAPIV_ } != {{REQUIRED_NUNAVUT_SUPPORT_API_VERSION}}"
+        f"Incompatible Nunavut support API version: support { _NSAPIV_ }, package {{ nunavut.support.version }}"
     )
 
 {%- from 'serialization.j2' import serialize -%}

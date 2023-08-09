@@ -39,7 +39,7 @@ if sys.byteorder != "little":  # pragma: no cover
         "please implement the missing code and submit a pull request upstream, then remove this exception."
     )
 
-API_VERSION = 1  # TODO: provide this from Nunavut at code generation time instead of hard-coding in the template.
+API_VERSION = {{ nunavut.support.version }}
 """
 This is the version of the API that the generated code expects to be available at runtime.
 """
