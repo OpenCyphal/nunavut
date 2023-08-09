@@ -405,6 +405,10 @@ class {{ name }}:
     _EXTENT_BYTES_ = {{ type.extent // 8 }}
 
     {% set meta_type = type.__class__.__name__ -%}
+    # The big, scary blog of opaque data below contains a serialized PyDSDL object with the metadata of the
+    # DSDL type this class is generated from. It is needed for reflection and runtime introspection.
+    # Eventually we should replace this with ad-hoc constants such that no blob is needed and the generated code
+    # is not dependent on PyDSDL.
     _MODEL_: _pydsdl_.{{ meta_type }} = _restore_constant_(
         {{ type | pickle | indent(8) }}
     )

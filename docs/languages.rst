@@ -47,7 +47,7 @@ Python
 The Python language support generates Python packages that depend on the following packages:
 
 * **PyDSDL** --- maintained by the OpenCyphal team at https://github.com/OpenCyphal/pydsdl.
-* **NumPy** --- a third-party dependency.
+* **NumPy** --- a third-party dependency needed for fast serialization of arrays, esp. bit arrays.
 * :code:`nunavut_support.py` --- produced by Nunavut itself and stored next to the other generated packages.
   When redistributing generated code, this package should be included as well.
 

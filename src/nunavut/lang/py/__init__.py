@@ -36,7 +36,7 @@ class Language(BaseLanguage):
     Concrete, Python-specific :class:`nunavut.lang.Language` object.
     """
 
-    PYTHON_RESERVED_IDENTIFIERS = sorted(list(map(str, list(keyword.kwlist) + dir(builtins))))  # type: list[str]
+    PYTHON_RESERVED_IDENTIFIERS: list[str] = sorted(list(map(str, list(keyword.kwlist) + dir(builtins))))
 
     @functools.lru_cache(maxsize=None)
     def _get_token_encoder(self) -> TokenEncoder:
