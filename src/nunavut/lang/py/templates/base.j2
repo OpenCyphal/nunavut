@@ -17,6 +17,9 @@
 # pylint: skip-file
 # mypy: warn_unused_ignores=False
 
+{% assert options.enable_serialization_asserts -%}
+{#- These templates always generate serialization asserts. -#}
+
 {% set ARRAY_PRINT_SUMMARIZATION_THRESHOLD = 100 -%}
 {#- How many elements in the array trigger summarization rather than full output.
  #- Summarization replaces middle elements with an ellipsis. -#}

@@ -38,6 +38,10 @@ class Language(BaseLanguage):
 
     PYTHON_RESERVED_IDENTIFIERS: list[str] = sorted(list(map(str, list(keyword.kwlist) + dir(builtins))))
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._language_options["enable_serialization_asserts"] = True
+
     @functools.lru_cache(maxsize=None)
     def _get_token_encoder(self) -> TokenEncoder:
         """
