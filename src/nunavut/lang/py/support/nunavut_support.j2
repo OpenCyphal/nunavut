@@ -12,7 +12,7 @@ The generated code currently requires the following dependencies to be available
 - NumPy
 - PyDSDL
 
-This module also contains built-in unit tests and doctests.
+This module also contains built-in unit test functions (named "test_*") and doctests.
 To execute the tests, simply invoke PyTest on this file as follows::
 
     pytest --doctest-modules nunavut_support.py
@@ -396,6 +396,7 @@ def _byte_as_bit_string(x: int) -> str:
 
 
 def test_serializer_to_str() -> None:
+    """This is a unit test, not for production use."""
     ser = Serializer.new(50)
     assert str(ser) == ""
     ser.add_aligned_u8(0b11001110)
@@ -409,6 +410,7 @@ def test_serializer_to_str() -> None:
 
 
 def test_serializer_aligned() -> None:
+    """This is a unit test, not for production use."""
     from pytest import raises
 
     def unseparate(s: Any) -> str:
@@ -529,6 +531,7 @@ def test_serializer_aligned() -> None:
 
 
 def test_serializer_unaligned() -> None:  # Tricky cases with unaligned fields (very tricky)
+    """This is a unit test, not for production use."""
     ser = Serializer.new(40)
 
     ser.add_unaligned_array_of_bits(
@@ -653,6 +656,7 @@ def test_serializer_unaligned() -> None:  # Tricky cases with unaligned fields (
 
 
 def test_serializer_fork_bytes() -> None:
+    """This is a unit test, not for production use."""
     import pytest
 
     r = Serializer.new(16)
@@ -1128,6 +1132,7 @@ def _ensure_cardinal(i: int) -> None:
 
 
 def test_deserializer_aligned() -> None:
+    """This is a unit test, not for production use."""
     from pytest import raises, approx
 
     # The buffer is constructed from the corresponding serialization test.
@@ -1242,6 +1247,7 @@ def test_deserializer_aligned() -> None:
 
 
 def test_deserializer_unaligned() -> None:
+    """This is a unit test, not for production use."""
     from pytest import approx
 
     des = Deserializer.new([memoryview(bytearray([0b10101010, 0b01011101, 0b11001100, 0b10010001]))])
@@ -1339,6 +1345,7 @@ def test_deserializer_unaligned() -> None:
 
 
 def test_deserializer_fork_bytes() -> None:
+    """This is a unit test, not for production use."""
     import pytest
 
     m = Deserializer.new(
