@@ -219,3 +219,16 @@ jobs:
                           --toolchain-family ${{ matrix.compiler }} \
                           --endianness ${{ matrix.endianness }} \
                           ${{ matrix.flag }}
+
+  language-verification-python:
+    runs-on: ubuntu-latest
+    needs: test
+    container: ghcr.io/opencyphal/toxic:tx22.4.1
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - name: verify
+      run: |
+        cd verification/python
+        nox

@@ -397,6 +397,7 @@ _sy = Sybil(
         "**/CONTRIBUTING.rst",
         "**/verification/*",
         "**/prof/*",
+        "*.j2",
         "*.png",
     ],
     fixtures=[

@@ -1,0 +1,5 @@
+# This file lists the dependencies of generated Python code.
+# Observe that Nunavut itself is not required for use of the generated code.
+# This file is relied on by the verification suite to ensure there are no implicit undocumented dependencies.
+
+numpy ~= 1.24

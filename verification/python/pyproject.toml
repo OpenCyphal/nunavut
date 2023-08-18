@@ -1,0 +1,81 @@
+# Settings specific to the Python codegen verification suite only. Not related to Nunavut itself.
+
+# --------------------------------------------------  PYTEST  --------------------------------------------------
+[tool.pytest.ini_options]
+python_files     = "*.py"
+log_level        = "DEBUG"
+log_cli_level    = "WARNING"
+log_cli          = true
+log_file         = "pytest.log"
+addopts          = "--doctest-modules -v"
+filterwarnings = [
+    "ignore::DeprecationWarning",  # Some of the DSDL-generated types are deprecated on purpose.
+]
+
+# --------------------------------------------------  COVERAGE  --------------------------------------------------
+[tool.coverage.run]
+source = [
+    "suite",
+]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "assert False",
+]
+
+# --------------------------------------------------  PYLINT  --------------------------------------------------
+[tool.pylint.MASTER]
+fail-under = 9.9
+
+[tool.pylint.'MESSAGES CONTROL']
+confidence = "UNDEFINED"  # Valid levels: HIGH, INFERENCE, INFERENCE_FAILURE, UNDEFINED.
+disable = [
+    "cyclic-import",
+    "useless-import-alias",
+    "import-outside-toplevel",
+    "fixme",
+    "inconsistent-return-statements",
+    "unbalanced-tuple-unpacking",
+    "no-name-in-module",
+    "superfluous-parens",
+    "unsubscriptable-object",
+    "too-few-public-methods",
+    "import-error",
+    "no-self-use",
+    "multiple-statements",
+    "arguments-differ",
+    "too-many-statements",
+    "useless-super-delegation",
+    "too-many-instance-attributes",
+    "too-many-public-methods",
+    "consider-using-f-string",
+    "unspecified-encoding",
+    "use-implicit-booleaness-not-comparison",
+    "too-many-return-statements",  # Already covered by the branch limit.
+]
+
+[tool.pylint.REPORTS]
+output-format = "colorized"
+
+[tool.pylint.DESIGN]
+max-branches = 20
+max-locals = 20
+
+[tool.pylint.FORMAT]
+max-line-length = 120
+
+[tool.pylint.BASIC]
+bad-names = []
+variable-rgx = "[a-z_][a-z0-9_]*"
+
+# --------------------------------------------------  BLACK  --------------------------------------------------
+[tool.black]
+line-length = 120
+target-version = ["py311"]
+include = '''
+(.*\.pyi?$)
+'''

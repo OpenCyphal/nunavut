@@ -188,7 +188,7 @@ We rely on `read the docs`_ to build our documentation from github but we also v
 as part of our tox build. This means you can view a local copy after completing a full, successful
 test run (See `Running The Tests`_) or do
 :code:`docker run --rm -t -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.1 /bin/sh -c "tox -e docs"` to build
-the docs target. You can open the index.html under .tox/docs/tmp/index.html or run a local
+the docs target. You can open the index.html under ``.tox/docs/tmp/index.html`` or run a local
 web-server::
 
     python3 -m http.server --directory .tox/docs/tmp &
