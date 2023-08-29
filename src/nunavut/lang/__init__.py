@@ -19,6 +19,8 @@ from ._language import LanguageClassLoader as LanguageClassLoader
 
 logger = logging.getLogger(__name__)
 
+NUNAVUT_LANG_CPP = "nunavut.lang.cpp"
+
 
 class UnsupportedLanguageError(ValueError):
     """
@@ -223,9 +225,9 @@ class LanguageContextBuilder:
     def load_default_config(self, language_standard: str) -> None:
         self._ln_loader.config  # Accessing this property causes the defaults to load
         defaults_key = f"{language_standard}_options"
-        if defaults_key in self._ln_loader.config.sections()["nunavut.lang.cpp"]:
-            defaults_data = self._ln_loader.config.get_config_value_as_dict("nunavut.lang.cpp", defaults_key)
-            self._ln_loader.config.update_section("nunavut.lang.cpp", {"options": defaults_data})
+        if defaults_key in self._ln_loader.config.sections()[NUNAVUT_LANG_CPP]:
+            defaults_data = self._ln_loader.config.get_config_value_as_dict(NUNAVUT_LANG_CPP, defaults_key)
+            self._ln_loader.config.update_section(NUNAVUT_LANG_CPP, {"options": defaults_data})
 
     def set_additional_config_files(
         self, additional_config_files: typing.List[pathlib.Path]

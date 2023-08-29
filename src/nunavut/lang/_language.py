@@ -121,6 +121,7 @@ class Language(metaclass=abc.ABCMeta):
         self._validate_language_options(self._language_options)
 
     def _validate_language_options(self, language_options: typing.Mapping[str, typing.Any]) -> None:
+        """Subclasses may override this method to validate language-specific options"""
         pass
 
     def __getattr__(self, name: str) -> typing.Any:
@@ -228,6 +229,7 @@ class Language(metaclass=abc.ABCMeta):
     # +-----------------------------------------------------------------------+
 
     def _add_additional_globals(self, globals_map: typing.Dict[str, typing.Any]) -> None:
+        """Subclasses may override this method to populate additional language-specific globals"""
         pass
 
     def get_support_module(self) -> typing.Tuple[str, typing.Tuple[int, int, int], typing.Optional["types.ModuleType"]]:

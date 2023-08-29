@@ -257,14 +257,14 @@ class Language(BaseLanguage):
             std_includes.append("variant")
         includes_formatted = ["<{}>".format(include) for include in sorted(std_includes)]
 
+        allocator_include = str(self.get_option("allocator_include", ""))
+        if len(allocator_include) > 0:
+            includes_formatted.append(allocator_include)
+
         if dep_types.uses_variable_length_array:
             variable_array_include = str(self.get_option("variable_array_type_include", ""))
             if len(variable_array_include) > 0:
                 includes_formatted.append(variable_array_include)
-
-            allocator_include = str(self.get_option("allocator_include", ""))
-            if len(allocator_include) > 0:
-                includes_formatted.append(allocator_include)
 
         return includes_formatted
 
@@ -272,24 +272,6 @@ class Language(BaseLanguage):
         raw_name = self.default_filter_id_for_target(instance)
 
         return self._get_token_encoder().strop(raw_name, id_type)
-
-    def filter_short_reference_impl_name(
-        self, t: pydsdl.CompositeType, stropping: YesNoDefault = YesNoDefault.DEFAULT, id_type: str = "any"
-    ) -> str:
-        """
-        Formulate the type name.  If an allocator is being used (ctor_convention != "default") then it will be
-        suffixed with "_Impl" and a type alias will define the concrete type with template arguments filled in.
-
-        :param pydsdl.CompositeType t: The DSDL type to get the reference name for.
-        :param YesNoDefault stropping: If DEFAULT then the stropping value configured for the target language is used
-                                       else this overrides that value.
-        :param str id_type:         A type of identifier. This is different for each language. For example, for C this
-                                    value can be 'typedef', 'macro', 'function', or 'enum'.
-                                    Use 'any' to apply stropping rules for all identifier types to the instance.
-        """
-        name: str = self.filter_short_reference_name(t, stropping, id_type)
-        suffix: str = "" if self.get_option("ctor_convention") == ConstructorConvention.Default.value else "_Impl"
-        return name + suffix
 
     def create_bitset_decl(self, type: str, max_size: int) -> str:
         return "std::bitset<{MAX_SIZE}>".format(MAX_SIZE=max_size)
@@ -301,7 +283,7 @@ class Language(BaseLanguage):
         variable_array_type_template = self.get_option("variable_array_type_template")
         if not isinstance(variable_array_type_template, str) or len(variable_array_type_template) == 0:
             raise RuntimeError("You must specify a value for the 'variable_array_type_template' option.")
-        rebind_allocator = "typename std::allocator_traits<Allocator>::template rebind_alloc<{TYPE}>".format(TYPE=type)
+        rebind_allocator = "std::allocator_traits<allocator_type>::rebind_alloc<{TYPE}>".format(TYPE=type)
         return variable_array_type_template.format(TYPE=type, MAX_SIZE=max_size, REBIND_ALLOCATOR=rebind_allocator)
 
 
@@ -871,16 +853,6 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
     return language.filter_short_reference_name(t)
 
 
-@template_language_filter(__name__)
-def filter_short_reference_impl_name(language: Language, t: pydsdl.CompositeType) -> str:
-    if isinstance(t, pydsdl.ServiceType):
-        if YesNoDefault.test_truth(YesNoDefault.DEFAULT, language.enable_stropping):
-            return language.filter_id(t.short_name)
-        else:
-            return str(t.short_name)
-    return language.filter_short_reference_impl_name(t)
-
-
 @template_language_list_filter(__name__)
 @template_environment_list_filter
 def filter_includes(
@@ -994,32 +966,38 @@ def filter_default_value_initializer(language: Language, instance: pydsdl.Any) -
     return ""
 
 
+def needs_rhs(special_method: SpecialMethod) -> bool:
+    """Helper method used by filter_value_initializer()"""
+    return special_method in (
+        SpecialMethod.CopyConstructorWithAllocator,
+        SpecialMethod.MoveConstructorWithAllocator,
+    )
+
+
+def needs_allocator(instance: pydsdl.Any) -> bool:
+    """Helper method used by filter_value_initializer()"""
+    return isinstance(instance.data_type, pydsdl.VariableLengthArrayType) or isinstance(
+        instance.data_type, pydsdl.CompositeType
+    )
+
+
+def needs_vla_init_args(instance: pydsdl.Any, special_method: SpecialMethod) -> bool:
+    """Helper method used by filter_value_initializer()"""
+    return special_method == SpecialMethod.DefaultConstructorWithOptionalAllocator and isinstance(
+        instance.data_type, pydsdl.VariableLengthArrayType
+    )
+
+
+def needs_move(special_method: SpecialMethod) -> bool:
+    """Helper method used by filter_value_initializer()"""
+    return special_method == SpecialMethod.MoveConstructorWithAllocator
+
+
 @template_language_filter(__name__)
-def filter_value_initializer(  # noqa: C901 disable warning about function being too complex
-    language: Language, instance: pydsdl.Any, special_method: SpecialMethod
-) -> str:
+def filter_value_initializer(language: Language, instance: pydsdl.Any, special_method: SpecialMethod) -> str:
     """
     Emit an initialization expression for a C++ special method.
     """
-
-    def needs_rhs(special_method: SpecialMethod) -> bool:
-        return special_method in (
-            SpecialMethod.CopyConstructorWithAllocator,
-            SpecialMethod.MoveConstructorWithAllocator,
-        )
-
-    def needs_allocator(instance: pydsdl.Any) -> bool:
-        return isinstance(instance.data_type, pydsdl.VariableLengthArrayType) or isinstance(
-            instance.data_type, pydsdl.CompositeType
-        )
-
-    def needs_vla_init_args(instance: pydsdl.Any, special_method: SpecialMethod) -> bool:
-        return special_method == SpecialMethod.DefaultConstructorWithOptionalAllocator and isinstance(
-            instance.data_type, pydsdl.VariableLengthArrayType
-        )
-
-    def needs_move(special_method: SpecialMethod) -> bool:
-        return special_method == SpecialMethod.MoveConstructorWithAllocator
 
     if (
         isinstance(instance.data_type, pydsdl.PrimitiveType)
@@ -1057,20 +1035,6 @@ def filter_value_initializer(  # noqa: C901 disable warning about function being
         return "{" + ", ".join(args) + "}"
 
     return ""
-
-
-@template_language_filter(__name__)
-def filter_field_declaration(language: Language, instance: pydsdl.Any) -> str:
-    """
-    Emit a field declaration that accounts for the message being a templated type
-    """
-    suffix: str = ""
-    if (
-        isinstance(instance, pydsdl.CompositeType)
-        and language.get_option("ctor_convention") != ConstructorConvention.Default.value
-    ):
-        suffix = "_Impl<T, Allocator>"
-    return filter_declaration(language, instance) + suffix
 
 
 @template_language_filter(__name__)

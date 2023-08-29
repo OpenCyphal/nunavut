@@ -36,6 +36,7 @@ c++17-pmr.yaml
         variable_array_type_constructor_args: ""
         allocator_include: "<memory>"
         allocator_type: "std::pmr::polymorphic_allocator"
+        allocator_is_default_constructible: true
         ctor_convention: "uses-trailing-allocator"
 
 cetl++.yaml
@@ -50,6 +51,7 @@ cetl++.yaml
         variable_array_type_constructor_args: "{MAX_SIZE}"
         allocator_include: '"cetl/pf17/sys/memory_resource.hpp"'
         allocator_type: "cetl::pf17::pmr::polymorphic_allocator"
+        allocator_is_default_constructible: false
         ctor_convention: "uses-trailing-allocator"
 
 nnvg command

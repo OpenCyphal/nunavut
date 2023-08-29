@@ -29,13 +29,13 @@ def test_issue_277(gen_paths):  # type: ignore
         "variable_array_type_constructor_args": "g_bad_global_thing",
         "allocator_include": '"MyCrazyAllocator.hpp"',
         "allocator_type": "MyCrazyAllocator",
+        "allocator_is_default_constructible": True,
         "ctor_convention": "uses-leading-allocator"
     }
 
     vla_decl_pattern = re.compile(r"\b|^MyCrazyArray\B")
     vla_include_pattern = re.compile(r"^#include\s+\"MyCrazyArray\.hpp\"$")
     alloc_include_pattern = re.compile(r"^#include\s+\"MyCrazyAllocator\.hpp\"$")
-    alloc_decl_pattern = re.compile(r".*\bclass Allocator = MyCrazyAllocator\b")
     vla_constructor_args_pattern = re.compile(r".*\bstd::allocator_arg, allocator, g_bad_global_thing\b")
 
     overrides_file = gen_paths.out_dir / pathlib.Path("overrides_test_issue_277.yaml")
@@ -68,7 +68,6 @@ def test_issue_277(gen_paths):  # type: ignore
     found_vla_decl = False
     found_vla_include = False
     found_alloc_include = False
-    found_alloc_decl = False
     found_vla_constructor_args = False
     with open(str(outfile), "r") as header_file:
         for line in header_file:
@@ -78,13 +77,10 @@ def test_issue_277(gen_paths):  # type: ignore
                 found_vla_include = True
             if not found_alloc_include and alloc_include_pattern.search(line):
                 found_alloc_include = True
-            if not found_alloc_decl and alloc_decl_pattern.search(line):
-                found_alloc_decl = True
             if not found_vla_constructor_args and vla_constructor_args_pattern.search(line):
                 found_vla_constructor_args = True
 
     assert found_vla_decl
     assert found_vla_include
     assert found_alloc_include
-    assert found_alloc_decl
     assert found_vla_constructor_args

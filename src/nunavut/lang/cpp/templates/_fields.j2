@@ -11,7 +11,7 @@
     {% endif -%}
     {{ field.doc | block_comment('cpp-doxygen', 4, 120) }}
     {% if options.ctor_convention != ConstructorConvention.Default.value -%}
-    typename _traits_::TypeOf::{{field.name|id}} {{ field | id }};
+    _traits_::TypeOf::{{field.name|id}} {{ field | id }};
     {%- else -%}
     _traits_::TypeOf::{{field.name|id}} {{ field | id }}{{ field.data_type | default_value_initializer }};
     {%- endif -%}
