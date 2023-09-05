@@ -320,7 +320,7 @@ nunavut.lang.cpp:
         allocator_type: ""
         allocator_is_default_constructible: true
         ctor_convention: "default"
-    cetl++_options:
+    cetl++14-17_options:
         variable_array_type_include: '"cetl/variable_length_array.hpp"'
         variable_array_type_template: "cetl::VariableLengthArray<{TYPE}, {REBIND_ALLOCATOR}>"
         variable_array_type_constructor_args: "{MAX_SIZE}"

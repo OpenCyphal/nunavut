@@ -484,6 +484,7 @@ def _make_parser() -> argparse.ArgumentParser:
     ln_opt_group.add_argument(
         "--language-standard",
         "-std",
+        choices=["c11", "c++14", "cetl++14-17", "c++17", "c++17-pmr", "c++20"],
         help=textwrap.dedent(
             """
 

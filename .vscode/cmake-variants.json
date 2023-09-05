@@ -58,11 +58,11 @@
                 }
             },
             "CETL++": {
-                "short": "--std=cetl++",
-                "long": "Compile and link using the C++14 standard and use CETL.",
+                "short": "--std=cetl++14-17",
+                "long": "Compile and link using the C++14 standard and use CETL C++17 polyfill types.",
                 "settings": {
                     "NUNAVUT_VERIFICATION_LANG": "cpp",
-                    "NUNAVUT_VERIFICATION_LANG_STANDARD": "cetl++"
+                    "NUNAVUT_VERIFICATION_LANG_STANDARD": "cetl++14-17"
                 }
             },
             "C++17": {
@@ -75,7 +75,7 @@
             },
             "C++17 PMR": {
                 "short": "--std=c++17-pmr",
-                "long": "Compile and link using the C++17 standard and use polymorphic memory resources.",
+                "long": "Compile and link using the C++17 standard and use std polymorphic allocator.",
                 "settings": {
                     "NUNAVUT_VERIFICATION_LANG": "cpp",
                     "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17-pmr"

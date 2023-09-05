@@ -12,17 +12,18 @@ C++ (experimental)
 
 See :ref:`template-language-guide` until this section is more complete.
 
-==============================================
-Using a Different Variable-Length Array Type
-==============================================
+============================================================
+Using a Different Variable-Length Array Type and Allocator
+============================================================
 
 For now this tip is important for people using the experimental C++ support.  To set which variable length array
 implementation to use, create a properties override yaml file and pass it to nnvg.  Specifying the use of an
 allocator is optional (If ctor_convention is set to "default" then the allocator_include and allocator_type
 properties don't need to be set.)
 
-Alternatively, you may specify the language standard argument as -std=c++17-pmr or -std=cetl++ as short-hand for
-the following configurations shown below.
+Alternatively, you may specify the language standard argument as -std=c++17-pmr or -std=cetl++14-17 as short-hand for
+the following configurations shown below.  Note that "cetl++14-17" means target C++14 but use the CETL C++17 polyfill
+types.
 
 c++17-pmr.yaml
 """""""""""""""""
@@ -39,7 +40,7 @@ c++17-pmr.yaml
         allocator_is_default_constructible: true
         ctor_convention: "uses-trailing-allocator"
 
-cetl++.yaml
+cetl++14-17.yaml
 """""""""""""""""
 
 .. code-block :: yaml
@@ -59,7 +60,7 @@ nnvg command
 
 .. code-block :: bash
 
-    nnvg --configuration=c++17-pmr.yaml \  # or --configuration=cetl++.yaml
+    nnvg --configuration=c++17-pmr.yaml \  # or --configuration=cetl++14-17.yaml
          -l cpp \
         --experimental-languages \
         -I path/to/public_regulated_data_types/uavcan \

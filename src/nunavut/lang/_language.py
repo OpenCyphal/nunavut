@@ -118,12 +118,6 @@ class Language(metaclass=abc.ABCMeta):
         self._tests = dict()  # type: typing.Dict[str, typing.Callable]
         self._uses = dict()  # type: typing.Dict[str, typing.Callable]
 
-        self._validate_language_options(self._language_options)
-
-    def _validate_language_options(self, language_options: typing.Mapping[str, typing.Any]) -> None:
-        """Subclasses may override this method to validate language-specific options"""
-        pass
-
     def __getattr__(self, name: str) -> typing.Any:
         """
         Any attribute access to a Language object will return the regular properties and

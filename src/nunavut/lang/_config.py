@@ -10,9 +10,32 @@ import re
 import types
 import typing
 
+from enum import auto, Enum
+
 from yaml import Loader as YamlLoader
 from yaml import load as yaml_loader
 from nunavut._utilities import deep_update
+
+NUNAVUT_LANG_CPP = "nunavut.lang.cpp"
+
+
+class ConstructorConvention(Enum):
+    Default = "default"
+    UsesLeadingAllocator = "uses-leading-allocator"
+    UsesTrailingAllocator = "uses-trailing-allocator"
+
+    @staticmethod
+    def parse_string(s: str) -> typing.Optional[typing.Any]:  # annoying mypy cheat due to returning type being defined
+        for e in ConstructorConvention:
+            if s == e.value:
+                return e
+        return None
+
+
+class SpecialMethod(Enum):
+    DefaultConstructorWithOptionalAllocator = auto()
+    CopyConstructorWithAllocator = auto()
+    MoveConstructorWithAllocator = auto()
 
 
 class LanguageConfig:
@@ -594,6 +617,26 @@ class LanguageConfig:
             raise TypeError("{}.{} exists but is not a list. (is type {})".format(section_name, key, type(raw_value)))
 
         return default_value
+
+    def apply_defaults(self, language_standard: str) -> None:
+        defaults_key = f"{language_standard}_options"
+        if defaults_key in self.sections()[NUNAVUT_LANG_CPP]:
+            defaults_data = self.get_config_value_as_dict(NUNAVUT_LANG_CPP, defaults_key)
+            self.update_section(NUNAVUT_LANG_CPP, {"options": defaults_data})
+
+    def validate_language_options(self) -> None:
+        options = self.get_config_value_as_dict(NUNAVUT_LANG_CPP, "options")
+        ctor_convention_str: str = options["ctor_convention"]
+        ctor_convention = ConstructorConvention.parse_string(ctor_convention_str)
+        if not ctor_convention:
+            raise RuntimeError(
+                f"ctor_convention property '{ctor_convention_str}' is invalid and must be one of "
+                + (",".join([f"'{e.value}'" for e in ConstructorConvention]))
+            )
+        if ctor_convention != ConstructorConvention.Default and not options["allocator_type"]:
+            raise RuntimeError(
+                f"allocator_type property must be specified when ctor_convention is '{ctor_convention_str}'"
+            )
 
 
 # +-------------------------------------------------------------------------------------------------------------------+

@@ -18,8 +18,6 @@ import typing
 
 import pydsdl
 
-from enum import auto, Enum
-
 from nunavut._dependencies import Dependencies
 from nunavut._templates import (
     template_environment_list_filter,
@@ -30,28 +28,10 @@ from nunavut._templates import (
 from nunavut._utilities import YesNoDefault
 from nunavut.jinja.environment import Environment
 from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
+from nunavut.lang._config import ConstructorConvention, SpecialMethod
 from nunavut.lang._language import Language as BaseLanguage
 from nunavut.lang.c import _CFit
 from nunavut.lang.c import filter_literal as c_filter_literal
-
-
-class ConstructorConvention(Enum):
-    Default = "default"
-    UsesLeadingAllocator = "uses-leading-allocator"
-    UsesTrailingAllocator = "uses-trailing-allocator"
-
-    @staticmethod
-    def parse_string(s: str) -> typing.Optional[typing.Any]:  # annoying mypy cheat due to returning type being defined
-        for e in ConstructorConvention:
-            if s == e.value:
-                return e
-        return None
-
-
-class SpecialMethod(Enum):
-    DefaultConstructorWithOptionalAllocator = auto()
-    CopyConstructorWithAllocator = auto()
-    MoveConstructorWithAllocator = auto()
 
 
 class Language(BaseLanguage):
@@ -81,19 +61,6 @@ class Language(BaseLanguage):
 
         # we couldn't help after all. raise the pending error.
         raise pending_error
-
-    def _validate_language_options(self, language_options: typing.Mapping[str, typing.Any]) -> None:
-        ctor_convention_str: str = language_options["ctor_convention"]
-        ctor_convention = ConstructorConvention.parse_string(ctor_convention_str)
-        if not ctor_convention:
-            raise RuntimeError(
-                f"ctor_convention property '{ctor_convention_str}' is invalid and must be one of "
-                + (",".join([f"'{e.value}'" for e in ConstructorConvention]))
-            )
-        if ctor_convention != ConstructorConvention.Default and not language_options["allocator_type"]:
-            raise RuntimeError(
-                f"allocator_type property must be specified when ctor_convention is '{ctor_convention_str}'"
-            )
 
     @functools.lru_cache(maxsize=None)
     def _get_token_encoder(self) -> TokenEncoder:
@@ -999,6 +966,7 @@ def filter_value_initializer(language: Language, instance: pydsdl.Any, special_m
     Emit an initialization expression for a C++ special method.
     """
 
+    value_initializer: str = ""
     if (
         isinstance(instance.data_type, pydsdl.PrimitiveType)
         or isinstance(instance.data_type, pydsdl.ArrayType)
@@ -1032,9 +1000,9 @@ def filter_value_initializer(language: Language, instance: pydsdl.Any, special_m
         if rhs:
             args.append(rhs)
         args = leading_args + args + trailing_args
-        return "{" + ", ".join(args) + "}"
+        value_initializer = "{" + ", ".join(args) + "}"
 
-    return ""
+    return value_initializer
 
 
 @template_language_filter(__name__)

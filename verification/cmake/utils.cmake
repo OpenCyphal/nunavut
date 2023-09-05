@@ -34,7 +34,7 @@ function(replace_cxx_std ARG_OVERRIDE_CXX_STD
                          ARG_REPLACE_INOUT)
 
     # Convert the Nunavut CLI language standard into the underlying C++ compiler language standard flag
-    if(ARG_OVERRIDE_CXX_STD STREQUAL "cetl++")
+    if(ARG_OVERRIDE_CXX_STD STREQUAL "cetl++14-17")
         set(ARG_OVERRIDE_CXX_STD "c++14")
     elseif(ARG_OVERRIDE_CXX_STD STREQUAL "c++17-pmr")
         set(ARG_OVERRIDE_CXX_STD "c++17")

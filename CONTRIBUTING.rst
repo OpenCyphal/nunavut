@@ -80,8 +80,8 @@ skip the docker invocations and use ``tox -s``.
 
 To run the language verification build you'll need to use a different docker container::
 
-    docker pull ghcr.io/opencyphal/toolshed:ts20.4.1
-    docker run --rm -it -v $PWD:/workspace ghcr.io/opencyphal/toolshed:ts20.4.1
+    docker pull ghcr.io/opencyphal/toolshed:ts22.4.1
+    docker run --rm -it -v $PWD:/workspace ghcr.io/opencyphal/toolshed:ts22.4.1
     cd /workspace
     ./.github/verify.py -l c
     ./.github/verify.py -l cpp

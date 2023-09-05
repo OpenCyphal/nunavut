@@ -279,7 +279,7 @@ if(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
 endif()
 
 
-if(NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++" OR NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr")
+if(NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++14-17" OR NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr")
      #
      # Generate serialization support headers with config matching the langauge standard
      #
@@ -377,7 +377,7 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
 
     # Skip tests not relevant to the specified language standard
-    if((NATIVE_TEST_NAME STREQUAL "test_array_cetl++" AND NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++")
+    if((NATIVE_TEST_NAME STREQUAL "test_array_cetl++14-17" AND NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++14-17")
           OR
        (NATIVE_TEST_NAME STREQUAL "test_array_c++17-pmr" AND NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr"))
         continue()
@@ -397,7 +397,7 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
 
     # Link the library that was built for the specified language standard
     set(TEST_LINK_LIBS "")
-    if((NATIVE_TEST_NAME STREQUAL "test_array_cetl++" AND NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++")
+    if((NATIVE_TEST_NAME STREQUAL "test_array_cetl++14-17" AND NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++14-17")
         OR
        (NATIVE_TEST_NAME STREQUAL "test_array_c++17-pmr" AND NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr"))
           set(TEST_LINK_LIBS dsdl-test-array-with-allocator)
