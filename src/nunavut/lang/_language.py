@@ -222,6 +222,10 @@ class Language(metaclass=abc.ABCMeta):
     # | METHODS
     # +-----------------------------------------------------------------------+
 
+    def _add_additional_globals(self, globals_map: typing.Dict[str, typing.Any]) -> None:
+        """Subclasses may override this method to populate additional language-specific globals"""
+        pass
+
     def get_support_module(self) -> typing.Tuple[str, typing.Tuple[int, int, int], typing.Optional["types.ModuleType"]]:
         """
         Returns the module object for the language support files.
@@ -468,6 +472,8 @@ class Language(metaclass=abc.ABCMeta):
                 globals_map["typename_{}".format(key)] = value
             for key, value in self.named_values.items():
                 globals_map["valuetoken_{}".format(key)] = value
+
+            self._add_additional_globals(globals_map)
 
             self._globals = globals_map
         return self._globals

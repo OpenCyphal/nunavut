@@ -8,10 +8,10 @@
     module will be available in the template's global namespace as ``cpp``.
 """
 
+
 import fractions
 import functools
 import io
-import pathlib
 import re
 import textwrap
 import typing
@@ -19,16 +19,16 @@ import typing
 import pydsdl
 
 from nunavut._dependencies import Dependencies
-from nunavut._exceptions import InternalError as NunavutInternalError
 from nunavut._templates import (
     template_environment_list_filter,
     template_language_filter,
     template_language_list_filter,
     template_language_test,
 )
-from nunavut._utilities import ResourceType, YesNoDefault
+from nunavut._utilities import YesNoDefault
 from nunavut.jinja.environment import Environment
 from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
+from nunavut.lang._config import ConstructorConvention, SpecialMethod
 from nunavut.lang._language import Language as BaseLanguage
 from nunavut.lang.c import _CFit
 from nunavut.lang.c import filter_literal as c_filter_literal
@@ -149,55 +149,12 @@ class Language(BaseLanguage):
         """
         return self._standard_version() >= 17
 
-    @functools.lru_cache()
-    def _get_variable_length_array_path(self) -> pathlib.Path:
+    def _add_additional_globals(self, globals_map: typing.Dict[str, typing.Any]) -> None:
         """
-        Returns a releative path, suitable for include statements, to the built-in default Variable Length Array (VLA)
-        support type.
-
-        :raises: NunavutInternalError if the library was missing the required support file.
+        Make additional globals available in the cpp jinja templates
         """
-        for support_file in self.get_support_files(ResourceType.TYPE_SUPPORT):
-            if support_file.stem == "variable_length_array":
-                return (pathlib.Path("/".join(self.support_namespace)) / support_file.name).with_suffix(self.extension)
-
-        raise NunavutInternalError(
-            "variable_length_array file was not found in the c++ support files?!"
-        )  # pragma: no cover
-
-    @functools.lru_cache()
-    def _get_default_vla_template(self) -> str:
-        """
-        Returns a template to the built-in Variable Length Array (VLA) implementation. This is used when no override
-        was provided.
-
-        options = {"target_endianness": "big"}
-        lctx = (
-            LanguageContextBuilder(include_experimental_languages=True)
-                .set_target_language("cpp")
-                .set_target_language_configuration_override(Language.WKCV_SUPPORT_NAMESPACE, "")
-                .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
-                .create()
-        )
-        template_w_no_namespace = lctx.get_target_language()._get_default_vla_template()
-        assert template_w_no_namespace.startswith("VariableLengthArray")
-
-        lctx = (
-            LanguageContextBuilder(include_experimental_languages=True)
-                .set_target_language("cpp")
-                .set_target_language_configuration_override(Language.WKCV_SUPPORT_NAMESPACE, "foo.bar")
-                .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
-                .create()
-        )
-        template_w_namespace = lctx.get_target_language()._get_default_vla_template()
-        assert template_w_namespace.startswith("foo::bar::VariableLengthArray")
-
-        """
-        base_template = "VariableLengthArray<{TYPE}, {MAX_SIZE}>"
-        if len(self.support_namespace) > 0:
-            return "::".join(self.support_namespace) + "::" + base_template
-        else:
-            return base_template
+        globals_map["ConstructorConvention"] = ConstructorConvention
+        globals_map["SpecialMethod"] = SpecialMethod
 
     def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
         """
@@ -205,53 +162,54 @@ class Language(BaseLanguage):
 
         .. invisible-code-block: python
 
-            from nunavut.lang import Language
+            from nunavut.lang import Language, LanguageContextBuilder
             from nunavut._dependencies import Dependencies
 
-            def do_includes_test(use_foobar, extension):
+            def do_includes_test(override_vla_include, override_allocator_include):
 
-                vla_header_name = "nunavut/support/variable_length_array{}".format(extension)
-                foobar_header_name = "foobar.h"
-                include_value = '' if not use_foobar else foobar_header_name
+                foobar_vla_header_name = "foobar_vla.hpp"
+                foobar_allocator_header_name = "foobar_allocator.hpp"
                 language_options = {
-                    "variable_array_type_include": include_value
+                    "variable_array_type_include": '' if not override_vla_include else foobar_vla_header_name,
+                    "allocator_include": '' if not override_allocator_include else foobar_allocator_header_name
                 }
 
                 lang_cpp = (
                     LanguageContextBuilder(include_experimental_languages=True)
                         .set_target_language("cpp")
                         .set_target_language_configuration_override("options", language_options)
-                        .set_target_language_configuration_override(Language.WKCV_DEFINITION_FILE_EXTENSION, extension)
                         .create()
                         .get_target_language()
                 )
-                assert extension == lang_cpp.extension
 
                 test_dependencies = Dependencies()
                 test_dependencies.uses_variable_length_array = True
 
-                # If we override the include we should not provide the built-in default
-                # variable array implementation.
+                # If we override the include we should not provide the default
+                # variable array include.
 
-                found_foobar = False
-                found_vla_header_name = False
+                found_foobar_vla_header_name = False
+                found_foobar_allocator_header_name = False
                 for include in lang_cpp.get_includes(test_dependencies):
-                    if vla_header_name in include:
-                        found_vla_header_name = True
-                    if foobar_header_name in include:
-                        found_foobar = True
+                    if foobar_vla_header_name in include:
+                        found_foobar_vla_header_name = True
+                    if foobar_allocator_header_name in include:
+                        found_foobar_allocator_header_name = True
 
-                if use_foobar:
-                    assert found_foobar
-                    assert not found_vla_header_name
+                if override_vla_include:
+                    assert found_foobar_vla_header_name
                 else:
-                    assert not found_foobar
-                    assert found_vla_header_name
+                    assert not found_foobar_vla_header_name
 
-            do_includes_test(True, ".hpp")
-            do_includes_test(False, ".hpp")
-            do_includes_test(True, ".h")
-            do_includes_test(False, ".h")
+                if override_allocator_include:
+                    assert found_foobar_allocator_header_name
+                else:
+                    assert not found_foobar_allocator_header_name
+
+            do_includes_test(True, True)
+            do_includes_test(True, False)
+            do_includes_test(False, False)
+            do_includes_test(False, True)
         """
         std_includes = []  # type: typing.List[str]
         std_includes.append("limits")  # we always include limits to support static assertions
@@ -266,15 +224,14 @@ class Language(BaseLanguage):
             std_includes.append("variant")
         includes_formatted = ["<{}>".format(include) for include in sorted(std_includes)]
 
+        allocator_include = str(self.get_option("allocator_include", ""))
+        if len(allocator_include) > 0:
+            includes_formatted.append(allocator_include)
+
         if dep_types.uses_variable_length_array:
-            vla_include = None  # type: typing.Optional[str]
             variable_array_include = str(self.get_option("variable_array_type_include", ""))
             if len(variable_array_include) > 0:
-                vla_include = variable_array_include
-            else:
-                vla_include = '"{}"'.format(self._get_variable_length_array_path().as_posix())
-            if vla_include is not None:
-                includes_formatted.append(vla_include)
+                includes_formatted.append(variable_array_include)
 
         return includes_formatted
 
@@ -291,11 +248,10 @@ class Language(BaseLanguage):
 
     def create_vla_decl(self, type: str, max_size: int) -> str:
         variable_array_type_template = self.get_option("variable_array_type_template")
-
         if not isinstance(variable_array_type_template, str) or len(variable_array_type_template) == 0:
-            variable_array_type_template = self._get_default_vla_template()
-
-        return variable_array_type_template.format(TYPE=type, MAX_SIZE=max_size)
+            raise RuntimeError("You must specify a value for the 'variable_array_type_template' option.")
+        rebind_allocator = "std::allocator_traits<allocator_type>::rebind_alloc<{TYPE}>".format(TYPE=type)
+        return variable_array_type_template.format(TYPE=type, MAX_SIZE=max_size, REBIND_ALLOCATOR=rebind_allocator)
 
 
 @template_language_test(__name__)
@@ -977,6 +933,78 @@ def filter_default_value_initializer(language: Language, instance: pydsdl.Any) -
     return ""
 
 
+def needs_rhs(special_method: SpecialMethod) -> bool:
+    """Helper method used by filter_value_initializer()"""
+    return special_method in (
+        SpecialMethod.CopyConstructorWithAllocator,
+        SpecialMethod.MoveConstructorWithAllocator,
+    )
+
+
+def needs_allocator(instance: pydsdl.Any) -> bool:
+    """Helper method used by filter_value_initializer()"""
+    return isinstance(instance.data_type, pydsdl.VariableLengthArrayType) or isinstance(
+        instance.data_type, pydsdl.CompositeType
+    )
+
+
+def needs_vla_init_args(instance: pydsdl.Any, special_method: SpecialMethod) -> bool:
+    """Helper method used by filter_value_initializer()"""
+    return special_method == SpecialMethod.DefaultConstructorWithOptionalAllocator and isinstance(
+        instance.data_type, pydsdl.VariableLengthArrayType
+    )
+
+
+def needs_move(special_method: SpecialMethod) -> bool:
+    """Helper method used by filter_value_initializer()"""
+    return special_method == SpecialMethod.MoveConstructorWithAllocator
+
+
+@template_language_filter(__name__)
+def filter_value_initializer(language: Language, instance: pydsdl.Any, special_method: SpecialMethod) -> str:
+    """
+    Emit an initialization expression for a C++ special method.
+    """
+
+    value_initializer: str = ""
+    if (
+        isinstance(instance.data_type, pydsdl.PrimitiveType)
+        or isinstance(instance.data_type, pydsdl.ArrayType)
+        or isinstance(instance.data_type, pydsdl.CompositeType)
+    ):
+        wrap: str = ""
+        rhs: str = ""
+        leading_args: typing.List[str] = []
+        trailing_args: typing.List[str] = []
+
+        if needs_rhs(special_method):
+            rhs = "rhs." + language.filter_id(instance)
+
+        if needs_vla_init_args(instance, special_method):
+            constructor_args = language.get_option("variable_array_type_constructor_args")
+            if isinstance(constructor_args, str) and len(constructor_args) > 0:
+                trailing_args.append(constructor_args.format(MAX_SIZE=instance.data_type.capacity))
+
+        if needs_allocator(instance):
+            if language.get_option("ctor_convention") == ConstructorConvention.UsesLeadingAllocator.value:
+                leading_args.extend(["std::allocator_arg", "allocator"])
+            else:
+                trailing_args.append("allocator")
+
+        if needs_move(special_method):
+            wrap = "std::move"
+
+        if wrap:
+            rhs = "{}({})".format(wrap, rhs)
+        args = []
+        if rhs:
+            args.append(rhs)
+        args = leading_args + args + trailing_args
+        value_initializer = "{" + ", ".join(args) + "}"
+
+    return value_initializer
+
+
 @template_language_filter(__name__)
 def filter_declaration(language: Language, instance: pydsdl.Any) -> str:
     """
@@ -985,14 +1013,7 @@ def filter_declaration(language: Language, instance: pydsdl.Any) -> str:
     if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.VoidType):
         return filter_type_from_primitive(language, instance)
     elif isinstance(instance, pydsdl.VariableLengthArrayType):
-        variable_array_type_template = language.get_option("variable_array_type_template")
-
-        if not isinstance(variable_array_type_template, str) or len(variable_array_type_template) == 0:
-            return language.create_vla_decl(filter_declaration(language, instance.element_type), instance.capacity)
-        else:
-            return variable_array_type_template.format(
-                TYPE=filter_declaration(language, instance.element_type), MAX_SIZE=instance.capacity
-            )
+        return language.create_vla_decl(filter_declaration(language, instance.element_type), instance.capacity)
     elif isinstance(instance, pydsdl.ArrayType):
         if isinstance(instance.element_type, pydsdl.BooleanType):
             return language.create_bitset_decl(filter_declaration(language, instance.element_type), instance.capacity)

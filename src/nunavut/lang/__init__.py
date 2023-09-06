@@ -220,6 +220,12 @@ class LanguageContextBuilder:
             self._target_language_name = LanguageClassLoader.to_language_name(target_language)
         return self
 
+    def load_default_config(self, language_standard: str) -> None:
+        self._ln_loader.config.apply_defaults(language_standard)
+
+    def validate_langauge_options(self) -> None:
+        self._ln_loader.config.validate_language_options()
+
     def set_additional_config_files(
         self, additional_config_files: typing.List[pathlib.Path]
     ) -> "LanguageContextBuilder":

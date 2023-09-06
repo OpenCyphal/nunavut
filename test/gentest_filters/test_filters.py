@@ -288,7 +288,7 @@ def test_filter_includes_cpp_vla(gen_paths, mock_environment):  # type: ignore
 
     test_subject = next(filter(lambda type: (type.short_name == "uses_vla"), type_map))
     imports = filter_includes(lctx.get_target_language(), mock_environment, test_subject)
-    assert '"nunavut/support/variable_length_array.h"' in imports
+    assert "<vector>" in imports
 
 
 @typing.no_type_check

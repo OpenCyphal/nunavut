@@ -155,17 +155,19 @@ class ArgparseRunner:
 
         target_language_name = self._args.target_language
 
-        return (
-            LanguageContextBuilder(include_experimental_languages=self._args.experimental_languages)
-            .set_target_language(target_language_name)
-            .set_additional_config_files(additional_config_files)
-            .set_target_language_extension(self._args.output_extension)
-            .set_target_language_configuration_override(
-                Language.WKCV_NAMESPACE_FILE_STEM, self._args.namespace_output_stem
-            )
-            .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, language_options)
-            .create()
+        builder: LanguageContextBuilder = LanguageContextBuilder(
+            include_experimental_languages=self._args.experimental_languages
         )
+        builder.set_target_language(target_language_name)
+        builder.load_default_config(self._args.language_standard)
+        builder.set_additional_config_files(additional_config_files)
+        builder.validate_langauge_options()
+        builder.set_target_language_extension(self._args.output_extension)
+        builder.set_target_language_configuration_override(
+            Language.WKCV_NAMESPACE_FILE_STEM, self._args.namespace_output_stem
+        )
+        builder.set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, language_options)
+        return builder.create()
 
     # +---------------------------------------------------------------------------------------------------------------+
     # | PRIVATE :: RUN METHODS

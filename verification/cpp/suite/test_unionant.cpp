@@ -126,8 +126,7 @@ TEST(UnionantTests, union_value_move_ctor)
         {
             {
                 reinterpret_cast<const unsigned char*>(hello_world),
-                reinterpret_cast<const unsigned char*>(&hello_world[11]),
-                11
+                reinterpret_cast<const unsigned char*>(&hello_world[11])
             }
         }
                                                                                                             );
@@ -154,8 +153,7 @@ TEST(UnionantTests, union_value_move_assignment)
     const decltype(uavcan::primitive::String_1_0::value) hello_world_vla
             {
                 reinterpret_cast<const unsigned char*>(hello_world),
-                reinterpret_cast<const unsigned char*>(&hello_world[11]),
-                11
+                reinterpret_cast<const unsigned char*>(&hello_world[11])
             };
     ValueType                      a{};
     uavcan::primitive::String_1_0& a_result = a.union_value.emplace<ValueType::VariantType::IndexOf::string>(

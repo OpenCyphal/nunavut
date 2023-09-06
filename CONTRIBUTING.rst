@@ -80,8 +80,8 @@ skip the docker invocations and use ``tox -s``.
 
 To run the language verification build you'll need to use a different docker container::
 
-    docker pull ghcr.io/opencyphal/toolshed:ts20.4.1
-    docker run --rm -it -v $PWD:/workspace ghcr.io/opencyphal/toolshed:ts20.4.1
+    docker pull ghcr.io/opencyphal/toolshed:ts22.4.1
+    docker run --rm -it -v $PWD:/workspace ghcr.io/opencyphal/toolshed:ts22.4.1
     cd /workspace
     ./.github/verify.py -l c
     ./.github/verify.py -l cpp
@@ -141,7 +141,7 @@ way to ensure the example is correct especially if used in a trailing ``invisibl
         assert 'scotec_mcu_timer' == filter_to_snake_case(input)
 
 These tests are run as part of the regular pytest build. You can see the Sybil setup in the
-``conftest.py`` found under the ``src`` directory but otherwise shouldn't need to worry about
+``conftest.py`` found under the project directory but otherwise shouldn't need to worry about
 it. The simple rule is; if the docstring ends up in the rendered documentation then your
 ``code-block`` tests will be executed as unit tests.
 

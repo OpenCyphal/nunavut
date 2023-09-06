@@ -16,30 +16,27 @@ from nunavut import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import Language, LanguageClassLoader, LanguageContextBuilder
 
-vla_properties = (
-    ["", ""],
-    ["std::vector<{TYPE}>", "<vector>"],
-)
 
-
-@pytest.mark.parametrize("variable_array_type_template,variable_array_type_include", vla_properties)
-def test_issue_277(gen_paths, variable_array_type_template: str, variable_array_type_include: str):  # type: ignore
+def test_issue_277(gen_paths):  # type: ignore
     """
     Writes a temporary yaml file to override configuration and verifies the values made it through to the generated
     C++ output.
     """
 
     override_language_options = {
-        "variable_array_type_template": variable_array_type_template,
-        "variable_array_type_include": variable_array_type_include,
+        "variable_array_type_template": "MyCrazyArray<{TYPE}, {REBIND_ALLOCATOR}>",
+        "variable_array_type_include": '"MyCrazyArray.hpp"',
+        "variable_array_type_constructor_args": "g_bad_global_thing",
+        "allocator_include": '"MyCrazyAllocator.hpp"',
+        "allocator_type": "MyCrazyAllocator",
+        "allocator_is_default_constructible": True,
+        "ctor_convention": "uses-leading-allocator"
     }
 
-    if variable_array_type_template != "":
-        vla_decl_pattern = re.compile(r"\b|^{}\B".format(variable_array_type_template.format(TYPE="std::uint8_t")))
-        vla_include_pattern = re.compile(r"\B#include\s+{}\B".format(variable_array_type_include))
-    else:
-        vla_decl_pattern = re.compile(r"\b|^nunavut::support::VariableLengthArray<std::uint8_t,\s*50>\B")
-        vla_include_pattern = re.compile(r"\B#include\s+\"nunavut/support/variable_length_array\.hpp\"\B")
+    vla_decl_pattern = re.compile(r"\b|^MyCrazyArray\B")
+    vla_include_pattern = re.compile(r"^#include\s+\"MyCrazyArray\.hpp\"$")
+    alloc_include_pattern = re.compile(r"^#include\s+\"MyCrazyAllocator\.hpp\"$")
+    vla_constructor_args_pattern = re.compile(r".*\bstd::allocator_arg, allocator, g_bad_global_thing\b")
 
     overrides_file = gen_paths.out_dir / pathlib.Path("overrides_test_issue_277.yaml")
 
@@ -67,14 +64,23 @@ def test_issue_277(gen_paths, variable_array_type_template: str, variable_array_
 
     assert outfile is not None
 
+
     found_vla_decl = False
     found_vla_include = False
+    found_alloc_include = False
+    found_vla_constructor_args = False
     with open(str(outfile), "r") as header_file:
         for line in header_file:
             if not found_vla_decl and vla_decl_pattern.search(line):
                 found_vla_decl = True
             if not found_vla_include and vla_include_pattern.search(line):
                 found_vla_include = True
+            if not found_alloc_include and alloc_include_pattern.search(line):
+                found_alloc_include = True
+            if not found_vla_constructor_args and vla_constructor_args_pattern.search(line):
+                found_vla_constructor_args = True
 
     assert found_vla_decl
     assert found_vla_include
+    assert found_alloc_include
+    assert found_vla_constructor_args

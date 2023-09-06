@@ -56,7 +56,15 @@ def test_var_array_override_cpp(gen_paths):  # type: ignore
     Make sure we can override the type generated for variable-length
     arrays.
     """
-    language_option_overrides = {"variable_array_type_template": "scotec::TerribleArray<{TYPE},{MAX_SIZE}>"}
+    language_option_overrides = {
+        "variable_array_type_include": '"scotec/array.hpp"',
+        "variable_array_type_template": "scotec::TerribleArray<{TYPE}, {MAX_SIZE}, {REBIND_ALLOCATOR}>",
+        "variable_array_type_constructor_args": "{MAX_SIZE}",
+        "allocator_include": '"scotec/alloc.hpp"',
+        "allocator_type": "TerribleAllocator",
+        "allocator_is_default_constructible": True,
+        "ctor_convention": "uses-leading-allocator"
+    }
     root_namespace = str(gen_paths.dsdl_dir / Path("radar"))
     compound_types = pydsdl.read_namespace(root_namespace, [], allow_unregulated_fixed_port_id=True)
     language_context = (
@@ -72,6 +80,11 @@ def test_var_array_override_cpp(gen_paths):  # type: ignore
 
     assert_pattern_match_in_file(
         gen_paths.find_outfile_in_namespace("radar.Phased", namespace),
-        re.compile(r"\s*using *antennae_per_bank *= *scotec::TerribleArray<float,2677>;\s*"),
+        re.compile(r'^#include "scotec/alloc.hpp"$'),
+        re.compile(r'^#include "scotec/array.hpp"$'),
+        re.compile(r".*\bconst _traits_::allocator_type& allocator = _traits_::allocator_type()"),
+        re.compile(r"\s*using *antennae_per_bank *= *scotec::TerribleArray<float, *2677, *std::allocator_traits<allocator_type>::rebind_alloc<float>>;\s*"),
         re.compile(r"\s*using *bank_normal_rads *= *std::array<float,3>;\s*"),
+        re.compile(r"\s*antennae_per_bank{std::allocator_arg, *allocator, *2677},\s*"),
+
     )
