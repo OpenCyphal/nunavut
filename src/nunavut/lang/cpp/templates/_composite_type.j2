@@ -84,17 +84,43 @@ struct {{composite_type|short_reference_name}} final
 {%- endfor %}
     };
 {% if options.ctor_convention != ConstructorConvention.Default.value %}
+    {%- if options.allocator_is_default_constructible %}
     // Default constructor
-    {{composite_type|short_reference_name}}(const _traits_::allocator_type& allocator
+    {{composite_type|short_reference_name}}()
+    {%- if composite_type.fields_except_padding %} :{% endif %}
+    {%- for field in composite_type.fields_except_padding %}
+        {{ field | id }}{{ field.data_type | default_value_initializer }}{%if not loop.last %},{%endif %}
+    {%- endfor %}
+    {
+    }
+    {%- endif %}
+
+    // Allocator constructor
+    explicit {{composite_type|short_reference_name}}(const _traits_::allocator_type& allocator)
+    {%- if composite_type.fields_except_padding %} :{% endif %}
+    {%- for field in composite_type.fields_except_padding %}
+        {{ field | id }}{{ field | value_initializer(SpecialMethod.AllocatorConstructor) }}{%if not loop.last %},{%endif %}
+    {%- endfor %}
+    {
+        (void)allocator; // avoid unused param warning
+    }
+
+    {% if composite_type.fields_except_padding %}
+    // Initializing constructor
+    {{ composite_type | explicit_decorator(SpecialMethod.InitializingConstructorWithAllocator)}}(
+    {%- for field in composite_type.fields_except_padding %}
+        const _traits_::TypeOf::{{ field | id }}& {{ field | id }},
+    {%- endfor %}
+        const _traits_::allocator_type& allocator
     {%- if options.allocator_is_default_constructible %} = _traits_::allocator_type(){% endif %})
     {%- if composite_type.fields_except_padding %} :{% endif %}
     {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }}{{ field | value_initializer(SpecialMethod.DefaultConstructorWithOptionalAllocator) }}{%if not loop.last %},{%endif %}
+        {{ field | id }}{{ field | value_initializer(SpecialMethod.InitializingConstructorWithAllocator) }}{%if not loop.last %},{%endif %}
     {%- endfor %}
-    { }
-
-    // Destructor
-    ~{{composite_type|short_reference_name}}() = default;
+    {
+        (void)allocator; // avoid unused param warning
+    }
+    {%- endif %}
 
     // Copy constructor
     {{composite_type|short_reference_name}}(const {{composite_type|short_reference_name}}&) = default;
@@ -106,6 +132,7 @@ struct {{composite_type|short_reference_name}} final
         {{ field | id }}{{ field | value_initializer(SpecialMethod.CopyConstructorWithAllocator) }}{%if not loop.last %},{%endif %}
     {%- endfor %}
     {
+        (void)allocator; // avoid unused param warning
     }
 
     // Move constructor
@@ -118,6 +145,7 @@ struct {{composite_type|short_reference_name}} final
         {{ field | id }}{{ field | value_initializer(SpecialMethod.MoveConstructorWithAllocator) }}{%if not loop.last %},{%endif %}
     {%- endfor %}
     {
+        (void)allocator; // avoid unused param warning
     }
 
     // Copy assignment
@@ -125,6 +153,9 @@ struct {{composite_type|short_reference_name}} final
 
     // Move assignment
     {{composite_type|short_reference_name}}& operator=({{composite_type|short_reference_name}}&&) = default;
+
+    // Destructor
+    ~{{composite_type|short_reference_name}}() = default;
 {%- endif %}
 
 {%- for constant in composite_type.constants %}
