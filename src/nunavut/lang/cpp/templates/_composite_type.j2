@@ -132,6 +132,7 @@ struct {{composite_type|short_reference_name}} final
         {{ field | id }}{{ field | value_initializer(SpecialMethod.CopyConstructorWithAllocator) }}{%if not loop.last %},{%endif %}
     {%- endfor %}
     {
+        (void)rhs;       // avoid unused param warning
         (void)allocator; // avoid unused param warning
     }
 
@@ -145,6 +146,7 @@ struct {{composite_type|short_reference_name}} final
         {{ field | id }}{{ field | value_initializer(SpecialMethod.MoveConstructorWithAllocator) }}{%if not loop.last %},{%endif %}
     {%- endfor %}
     {
+        (void)rhs;       // avoid unused param warning
         (void)allocator; // avoid unused param warning
     }
 
