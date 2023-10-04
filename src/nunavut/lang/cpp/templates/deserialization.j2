@@ -204,7 +204,7 @@
     {% set tmp_element = 'tmp'|to_template_unique_name %}
         for ({{ typename_unsigned_length }} {{ ref_index }} = 0U; {{ ref_index }} < {{ ref_size }}; ++{{ ref_index }})
         {
-            {{ t.element_type | declaration }} {{ tmp_element }} = {{ t.element_type | declaration }}();
+            {{ t.element_type | declaration }} {{ tmp_element }} = {{ t.element_type | declaration }}({{ t.element_type | default_construction(reference) }});
             {{
                 _deserialize_any(t.element_type, tmp_element, element_offset)
             |trim|indent

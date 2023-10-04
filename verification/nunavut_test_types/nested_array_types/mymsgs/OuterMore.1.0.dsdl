@@ -1,0 +1,4 @@
+float32[<=8] outer_items
+InnerMore.1.0[<=2] inners
+int64 outer_primitive
+@sealed

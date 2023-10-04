@@ -33,7 +33,8 @@ class ConstructorConvention(Enum):
 
 
 class SpecialMethod(Enum):
-    DefaultConstructorWithOptionalAllocator = auto()
+    AllocatorConstructor = auto()
+    InitializingConstructorWithAllocator = auto()
     CopyConstructorWithAllocator = auto()
     MoveConstructorWithAllocator = auto()
 

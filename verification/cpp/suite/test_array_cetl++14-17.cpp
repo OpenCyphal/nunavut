@@ -8,7 +8,9 @@
 #include "cetl/pf17/byte.hpp"
 #include "cetl/pf17/sys/memory_resource.hpp"
 #include "mymsgs/Inner_1_0.hpp"
+#include "mymsgs/InnerMore_1_0.hpp"
 #include "mymsgs/Outer_1_0.hpp"
+#include "mymsgs/OuterMore_1_0.hpp"
 
 
 /**
@@ -68,38 +70,59 @@ TEST(CetlVlaPmrTests, TestOuter) {
  * Serialization roundtrip using cetl::pf17::pmr::polymorphic_allocator
  */
 TEST(CetlVlaPmrTests, SerializationRoundtrip) {
-    std::array<cetl::pf17::byte, 200> buffer{};
+    std::array<cetl::pf17::byte, 500> buffer{};
     cetl::pf17::pmr::monotonic_buffer_resource mbr{buffer.data(), buffer.size(), cetl::pf17::pmr::null_memory_resource()};
-    cetl::pf17::pmr::polymorphic_allocator<mymsgs::Outer_1_0> pa{&mbr};
+    cetl::pf17::pmr::polymorphic_allocator<mymsgs::OuterMore_1_0> pa{&mbr};
 
-    // Fill the data: inner first, then outer
-    mymsgs::Outer_1_0 outer1{pa};
-    outer1.inner.inner_items.reserve(5);
-    for (std::uint32_t i = 0; i < 5; i++) {
-        outer1.inner.inner_items.push_back(i);
-    }
-    outer1.outer_items.reserve(8);
-    for (float i = 0; i < 8; i++) {
-        outer1.outer_items.push_back(i + 5.0f);
-    }
+    // Fill the data
+    const mymsgs::OuterMore_1_0 outer1(
+        {{1, 2, 3, 4}, pa},             // float32[<=8] outer_items
+        {                               // InnerMore.1.0[<=2] inners
+            {
+                {                           // InnerMore_1_0
+                    {{55, 66, 77}, pa},         // uint32[<=5] inner_items
+                    false,                      // bool inner_primitive
+                    pa
+                },
+                {                           // InnerMore_1_0
+                    {{88, 99}, pa},             // uint32[<=5] inner_items
+                    true,                       // bool inner_primitive
+                    pa
+                }
+            },
+            pa
+        },
+        777777,                         // int64 outer_primitive
+        pa
+    );
 
     // Serialize it
-    std::array<unsigned char, mymsgs::Outer_1_0::_traits_::SerializationBufferSizeBytes> roundtrip_buffer{};
+    std::array<unsigned char, mymsgs::OuterMore_1_0::_traits_::SerializationBufferSizeBytes> roundtrip_buffer{};
     nunavut::support::bitspan ser_buffer(roundtrip_buffer);
     const auto ser_result = serialize(outer1, ser_buffer);
     ASSERT_TRUE(ser_result);
 
     // Deserialize it
-    mymsgs::Outer_1_0 outer2{pa};
+    mymsgs::OuterMore_1_0 outer2{pa};
     nunavut::support::const_bitspan des_buffer(static_cast<const unsigned char*>(roundtrip_buffer.data()), roundtrip_buffer.size());
     const auto des_result = deserialize(outer2, des_buffer);
     ASSERT_TRUE(des_result);
 
     // Verify that the messages match
-    for (std::uint32_t i = 0; i < 5; i++) {
-        ASSERT_EQ(outer1.inner.inner_items[i], outer2.inner.inner_items[i]);
-    }
-    for (std::uint32_t i = 0; i < 8; i++) {
-        ASSERT_EQ(outer1.outer_items[i], outer2.outer_items[i]);
-    }
+    ASSERT_EQ(outer2.outer_items.size(), 4);
+    ASSERT_EQ(outer2.outer_items[0], 1);
+    ASSERT_EQ(outer2.outer_items[1], 2);
+    ASSERT_EQ(outer2.outer_items[2], 3);
+    ASSERT_EQ(outer2.outer_items[3], 4);
+    ASSERT_EQ(outer2.inners.size(), 2);
+    ASSERT_EQ(outer2.inners[0].inner_items.size(), 3);
+    ASSERT_EQ(outer2.inners[0].inner_items[0], 55);
+    ASSERT_EQ(outer2.inners[0].inner_items[1], 66);
+    ASSERT_EQ(outer2.inners[0].inner_items[2], 77);
+    ASSERT_EQ(outer2.inners[0].inner_primitive, false);
+    ASSERT_EQ(outer2.inners[1].inner_items.size(), 2);
+    ASSERT_EQ(outer2.inners[1].inner_items[0], 88);
+    ASSERT_EQ(outer2.inners[1].inner_items[1], 99);
+    ASSERT_EQ(outer2.inners[1].inner_primitive, true);
+    ASSERT_EQ(outer2.outer_primitive, 777777);
 }
