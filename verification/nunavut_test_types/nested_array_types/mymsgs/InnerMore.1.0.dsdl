@@ -1,0 +1,3 @@
+uint32[<=5] inner_items
+bool inner_primitive
+@sealed

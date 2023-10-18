@@ -924,13 +924,38 @@ def filter_destructor_name(language: Language, instance: pydsdl.Any) -> str:
 
 
 @template_language_filter(__name__)
+def filter_explicit_decorator(language: Language, instance: pydsdl.Any, special_method: SpecialMethod) -> str:
+    """
+    Emit the constructor name, decorated with "explicit" if it has only one argument
+    """
+    name: str = language.filter_short_reference_name(instance)
+    arg_count: int = len(instance.fields_except_padding) + (
+        0 if language.get_option("allocator_is_default_constructible") else 1
+    )
+    if special_method == SpecialMethod.InitializingConstructorWithAllocator and arg_count == 1:
+        return f"explicit {name}"
+    else:
+        return f"{name}"
+
+
+@template_language_filter(__name__)
 def filter_default_value_initializer(language: Language, instance: pydsdl.Any) -> str:
     """
-    Emit a default initialization statement for the given instance if primitive or array.
+    Emit a default initialization expression for the given instance if primitive, array,
+    or composite.
     """
-    if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.ArrayType):
+    if (
+        isinstance(instance, pydsdl.PrimitiveType)
+        or isinstance(instance, pydsdl.ArrayType)
+        or isinstance(instance, pydsdl.CompositeType)
+    ):
         return "{}"
     return ""
+
+
+def needs_initializing_value(special_method: SpecialMethod) -> bool:
+    """Helper method used by filter_value_initializer()"""
+    return special_method == SpecialMethod.InitializingConstructorWithAllocator or needs_rhs(special_method)
 
 
 def needs_rhs(special_method: SpecialMethod) -> bool:
@@ -950,7 +975,7 @@ def needs_allocator(instance: pydsdl.Any) -> bool:
 
 def needs_vla_init_args(instance: pydsdl.Any, special_method: SpecialMethod) -> bool:
     """Helper method used by filter_value_initializer()"""
-    return special_method == SpecialMethod.DefaultConstructorWithOptionalAllocator and isinstance(
+    return special_method == SpecialMethod.AllocatorConstructor and isinstance(
         instance.data_type, pydsdl.VariableLengthArrayType
     )
 
@@ -960,6 +985,28 @@ def needs_move(special_method: SpecialMethod) -> bool:
     return special_method == SpecialMethod.MoveConstructorWithAllocator
 
 
+def requires_initialization(instance: pydsdl.Any) -> bool:
+    """Helper method used by filter_value_initializer()"""
+    return (
+        isinstance(instance.data_type, pydsdl.PrimitiveType)
+        or isinstance(instance.data_type, pydsdl.ArrayType)
+        or isinstance(instance.data_type, pydsdl.CompositeType)
+    )
+
+
+def assemble_initializer_expression(
+    wrap: str, rhs: str, leading_args: typing.List[str], trailing_args: typing.List[str]
+) -> str:
+    """Helper method used by filter_value_initializer()"""
+    if wrap:
+        rhs = "{}({})".format(wrap, rhs)
+    args = []
+    if rhs:
+        args.append(rhs)
+    args = leading_args + args + trailing_args
+    return "{" + ", ".join(args) + "}"
+
+
 @template_language_filter(__name__)
 def filter_value_initializer(language: Language, instance: pydsdl.Any, special_method: SpecialMethod) -> str:
     """
@@ -967,18 +1014,16 @@ def filter_value_initializer(language: Language, instance: pydsdl.Any, special_m
     """
 
     value_initializer: str = ""
-    if (
-        isinstance(instance.data_type, pydsdl.PrimitiveType)
-        or isinstance(instance.data_type, pydsdl.ArrayType)
-        or isinstance(instance.data_type, pydsdl.CompositeType)
-    ):
+    if requires_initialization(instance):
         wrap: str = ""
         rhs: str = ""
         leading_args: typing.List[str] = []
         trailing_args: typing.List[str] = []
 
-        if needs_rhs(special_method):
-            rhs = "rhs." + language.filter_id(instance)
+        if needs_initializing_value(special_method):
+            if needs_rhs(special_method):
+                rhs = "rhs."
+            rhs += language.filter_id(instance)
 
         if needs_vla_init_args(instance, special_method):
             constructor_args = language.get_option("variable_array_type_constructor_args")
@@ -994,15 +1039,20 @@ def filter_value_initializer(language: Language, instance: pydsdl.Any, special_m
         if needs_move(special_method):
             wrap = "std::move"
 
-        if wrap:
-            rhs = "{}({})".format(wrap, rhs)
-        args = []
-        if rhs:
-            args.append(rhs)
-        args = leading_args + args + trailing_args
-        value_initializer = "{" + ", ".join(args) + "}"
+        value_initializer = assemble_initializer_expression(wrap, rhs, leading_args, trailing_args)
 
     return value_initializer
+
+
+@template_language_filter(__name__)
+def filter_default_construction(language: Language, instance: pydsdl.Any, reference: str) -> str:
+    if (
+        isinstance(instance, pydsdl.CompositeType)
+        and language.get_option("ctor_convention") != ConstructorConvention.Default.value
+    ):
+        return f"{reference}.get_allocator()"
+    else:
+        return ""
 
 
 @template_language_filter(__name__)

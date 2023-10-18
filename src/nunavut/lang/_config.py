@@ -33,9 +33,21 @@ class ConstructorConvention(Enum):
 
 
 class SpecialMethod(Enum):
-    DefaultConstructorWithOptionalAllocator = auto()
+    """
+    Enum used in the Jinja templates to differentiate different kinds of constructrors
+    """
+
+    AllocatorConstructor = auto()
+    """ Constructor that takes an allocator as its single, required argument """
+
+    InitializingConstructorWithAllocator = auto()
+    """ Constructor that takes an initializing value for each field followed by the allocator argument """
+
     CopyConstructorWithAllocator = auto()
+    """ Copy constructor that also takes an allocator argument """
+
     MoveConstructorWithAllocator = auto()
+    """ Move constructor that also takes an allocator argument """
 
 
 class LanguageConfig:

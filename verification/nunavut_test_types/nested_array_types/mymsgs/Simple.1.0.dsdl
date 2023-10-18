@@ -1,0 +1,4 @@
+int32 a
+float16 b
+bool c
+@sealed
