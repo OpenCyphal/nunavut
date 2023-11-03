@@ -28,10 +28,10 @@
 // +-------------------------------------------------------------------------------------------------------------------+
 {% endifuses -%}
 {{ composite_type.doc | block_comment('cpp-doxygen', 0, 120) }}
-{% if composite_type.deprecated -%}
+struct {% if composite_type.deprecated -%}
 [[deprecated("{{ composite_type }} is reaching the end of its life; there may be a newer version available")]]
-{% endif -%}
-struct {{composite_type|short_reference_name}} final
+{%- endif -%}
+{{composite_type|short_reference_name}} final
 {
     struct _traits_  // The name is surrounded with underscores to avoid collisions with DSDL attributes.
     {
