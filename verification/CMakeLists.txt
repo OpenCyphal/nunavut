@@ -373,15 +373,20 @@ set(ALL_TESTS "")
 set(ALL_TESTS_WITH_LCOV "")
 set(ALL_TEST_COVERAGE "")
 
-foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
-    get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
+function(runTestCpp)
+    set(options "")
+    set(oneValueArgs TEST_FILE)
+    set(multiValueArgs LANGUAGE_FLAVORS)
+    cmake_parse_arguments(runTestCpp "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     # Skip tests not relevant to the specified language standard
-    if((NATIVE_TEST_NAME STREQUAL "test_array_cetl++14-17" AND NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++14-17")
-          OR
-       (NATIVE_TEST_NAME STREQUAL "test_array_c++17-pmr" AND NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr"))
-        continue()
+    if(NOT ${NUNAVUT_VERIFICATION_LANG_STANDARD} IN_LIST runTestCpp_LANGUAGE_FLAVORS)
+        message(STATUS "Skipping ${runTestCpp_TEST_FILE}")
+        return()
     endif()
+
+    set(NATIVE_TEST "${NUNAVUT_VERIFICATION_ROOT}/suite/${runTestCpp_TEST_FILE}")
+    get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
 
     set(${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS, "")
     list(APPEND ${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS})
@@ -421,7 +426,15 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
     list(APPEND ALL_TESTS_WITH_LCOV "run_${NATIVE_TEST_NAME}_with_lcov")
     list(APPEND ALL_TEST_COVERAGE "--add-tracefile")
     list(APPEND ALL_TEST_COVERAGE "${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.${NATIVE_TEST_NAME}.filtered.info")
-endforeach()
+endfunction()
+
+runTestCpp(TEST_FILE test_array_c++17-pmr.cpp      LANGUAGE_FLAVORS                         c++17-pmr      )
+runTestCpp(TEST_FILE test_array_cetl++14-17.cpp    LANGUAGE_FLAVORS       cetl++14-17                      )
+runTestCpp(TEST_FILE test_bitarray.cpp             LANGUAGE_FLAVORS c++14 cetl++14-17 c++17 c++17-pmr c++20)
+runTestCpp(TEST_FILE test_compiles.cpp             LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
+runTestCpp(TEST_FILE test_large_bitset.cpp         LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
+runTestCpp(TEST_FILE test_serialization.cpp        LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
+runTestCpp(TEST_FILE test_unionant.cpp             LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
 
 foreach(NATIVE_TEST ${NATIVE_TESTS_C})
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)

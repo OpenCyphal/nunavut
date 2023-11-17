@@ -332,7 +332,7 @@ nunavut.lang.cpp:
         variable_array_type_include: "<vector>"
         variable_array_type_template: "std::vector<{TYPE}, {REBIND_ALLOCATOR}>"
         variable_array_type_constructor_args: ""
-        allocator_include: "<memory>"
+        allocator_include: "<memory_resource>"
         allocator_type: "std::pmr::polymorphic_allocator"
         allocator_is_default_constructible: true
         ctor_convention: "uses-trailing-allocator"

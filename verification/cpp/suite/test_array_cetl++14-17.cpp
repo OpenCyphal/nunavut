@@ -126,3 +126,23 @@ TEST(CetlVlaPmrTests, SerializationRoundtrip) {
     ASSERT_EQ(outer2.inners[1].inner_primitive, true);
     ASSERT_EQ(outer2.outer_primitive, 777777);
 }
+
+/**
+ * Verify that cetl::pf17::pmr::polymorphic_allocator gets passed down to nested types
+ */
+TEST(CetlVlaPmrTests, TestAllocatorIsPassedDown) {
+
+    ASSERT_TRUE((std::uses_allocator<mymsgs::OuterMore_1_0, cetl::pf17::pmr::polymorphic_allocator<void>>::value));
+
+    std::array<cetl::pf17::byte, 500> buffer{};
+    cetl::pf17::pmr::monotonic_buffer_resource mbr{buffer.data(), buffer.size(), cetl::pf17::pmr::null_memory_resource()};
+    cetl::pf17::pmr::polymorphic_allocator<void> pa{&mbr};
+
+    mymsgs::OuterMore_1_0 outer{pa};
+    outer.outer_items.push_back(1.23456f);
+    outer.inners.resize(1);
+    outer.inners[0].inner_items.resize(1);
+
+    // Verify that the allocator got passed down from the OuterMore_1_0 to the InnerMore_1_0
+    ASSERT_EQ(outer.inners[0].inner_items.get_allocator().resource(), outer.outer_items.get_allocator().resource());
+}
