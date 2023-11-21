@@ -33,9 +33,9 @@ struct {% if composite_type.deprecated -%}
 {%- endif -%}
 {{composite_type|short_reference_name}} final
 {
-{% if options.ctor_convention != ConstructorConvention.Default.value %}
+{%- if options.ctor_convention != ConstructorConvention.Default.value %}
     using allocator_type = {{ options.allocator_type }}<void>;
-{% endif%}
+{%- endif %}
 
     struct _traits_  // The name is surrounded with underscores to avoid collisions with DSDL attributes.
     {

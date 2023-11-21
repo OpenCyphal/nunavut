@@ -82,7 +82,7 @@ def test_var_array_override_cpp(gen_paths):  # type: ignore
         gen_paths.find_outfile_in_namespace("radar.Phased", namespace),
         re.compile(r'^#include "scotec/alloc.hpp"$'),
         re.compile(r'^#include "scotec/array.hpp"$'),
-        re.compile(r".*\bconst _traits_::allocator_type& allocator = _traits_::allocator_type()"),
+        re.compile(r".*\bconst allocator_type& allocator = allocator_type()"),
         re.compile(r"\s*using *antennae_per_bank *= *scotec::TerribleArray<float, *2677, *std::allocator_traits<allocator_type>::rebind_alloc<float>>;\s*"),
         re.compile(r"\s*using *bank_normal_rads *= *std::array<float,3>;\s*"),
         re.compile(r"\s*antennae_per_bank{std::allocator_arg, *allocator, *2677},\s*"),
