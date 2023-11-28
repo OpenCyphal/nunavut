@@ -33,6 +33,10 @@ struct {% if composite_type.deprecated -%}
 {%- endif -%}
 {{composite_type|short_reference_name}} final
 {
+{%- if options.ctor_convention != ConstructorConvention.Default.value %}
+    using allocator_type = {{ options.allocator_type }}<void>;
+{%- endif %}
+
     struct _traits_  // The name is surrounded with underscores to avoid collisions with DSDL attributes.
     {
         _traits_() = delete;
@@ -68,9 +72,6 @@ struct {% if composite_type.deprecated -%}
         static_assert({# -#}
             ExtentBytes < (std::numeric_limits<{{ typename_unsigned_bit_length }}>::max() / 8U), {# -#}
             "This message is too large to be handled by the selected types");
-{% if options.ctor_convention != ConstructorConvention.Default.value %}
-        using allocator_type = {{ options.allocator_type }}<decltype(nullptr)>;
-{% endif %}
 {%- for field in composite_type.fields_except_padding %}
     {%- if loop.first %}
         struct TypeOf
@@ -86,6 +87,9 @@ struct {% if composite_type.deprecated -%}
 {% if options.ctor_convention != ConstructorConvention.Default.value %}
     {%- if options.allocator_is_default_constructible %}
     // Default constructor
+    {%- if composite_type.inner_type is UnionType %}
+    {{composite_type|short_reference_name}}() = default;
+    {%- else %}
     {{composite_type|short_reference_name}}()
     {%- if composite_type.fields_except_padding %} :{% endif %}
     {%- for field in composite_type.fields_except_padding %}
@@ -94,25 +98,31 @@ struct {% if composite_type.deprecated -%}
     {
     }
     {%- endif %}
+    {%- endif %}
 
     // Allocator constructor
-    explicit {{composite_type|short_reference_name}}(const _traits_::allocator_type& allocator)
+    explicit {{composite_type|short_reference_name}}(const allocator_type& allocator)
     {%- if composite_type.fields_except_padding %} :{% endif %}
+    {%- if composite_type.inner_type is UnionType %}
+        union_value{} // can't make use of the allocator with a union
+    {%- else %}
     {%- for field in composite_type.fields_except_padding %}
         {{ field | id }}{{ field | value_initializer(SpecialMethod.AllocatorConstructor) }}{%if not loop.last %},{%endif %}
     {%- endfor %}
+    {%- endif %}
     {
         (void)allocator; // avoid unused param warning
     }
 
+    {%- if composite_type.inner_type is not UnionType %}
     {% if composite_type.fields_except_padding %}
     // Initializing constructor
     {{ composite_type | explicit_decorator(SpecialMethod.InitializingConstructorWithAllocator)}}(
     {%- for field in composite_type.fields_except_padding %}
         const _traits_::TypeOf::{{ field | id }}& {{ field | id }},
     {%- endfor %}
-        const _traits_::allocator_type& allocator
-    {%- if options.allocator_is_default_constructible %} = _traits_::allocator_type(){% endif %})
+        const allocator_type& allocator
+    {%- if options.allocator_is_default_constructible %} = allocator_type(){% endif %})
     {%- if composite_type.fields_except_padding %} :{% endif %}
     {%- for field in composite_type.fields_except_padding %}
         {{ field | id }}{{ field | value_initializer(SpecialMethod.InitializingConstructorWithAllocator) }}{%if not loop.last %},{%endif %}
@@ -121,16 +131,21 @@ struct {% if composite_type.deprecated -%}
         (void)allocator; // avoid unused param warning
     }
     {%- endif %}
+    {%- endif %}
 
     // Copy constructor
     {{composite_type|short_reference_name}}(const {{composite_type|short_reference_name}}&) = default;
 
     // Copy constructor with allocator
-    {{composite_type|short_reference_name}}(const {{composite_type|short_reference_name}}& rhs, const _traits_::allocator_type& allocator)
+    {{composite_type|short_reference_name}}(const {{composite_type|short_reference_name}}& rhs, const allocator_type& allocator)
     {%- if composite_type.fields_except_padding %} :{% endif %}
+    {%- if composite_type.inner_type is UnionType %}
+        union_value{rhs.union_value}  // can't make use of the allocator with a union
+    {%- else %}
     {%- for field in composite_type.fields_except_padding %}
         {{ field | id }}{{ field | value_initializer(SpecialMethod.CopyConstructorWithAllocator) }}{%if not loop.last %},{%endif %}
     {%- endfor %}
+    {% endif %}
     {
         (void)rhs;       // avoid unused param warning
         (void)allocator; // avoid unused param warning
@@ -140,11 +155,15 @@ struct {% if composite_type.deprecated -%}
     {{composite_type|short_reference_name}}({{composite_type|short_reference_name}}&&) = default;
 
     // Move constructor with allocator
-    {{composite_type|short_reference_name}}({{composite_type|short_reference_name}}&& rhs, const _traits_::allocator_type& allocator)
+    {{composite_type|short_reference_name}}({{composite_type|short_reference_name}}&& rhs, const allocator_type& allocator)
     {%- if composite_type.fields_except_padding %} :{% endif %}
+    {%- if composite_type.inner_type is UnionType %}
+        union_value{} // can't make use of the allocator with a union
+    {%- else %}
     {%- for field in composite_type.fields_except_padding %}
         {{ field | id }}{{ field | value_initializer(SpecialMethod.MoveConstructorWithAllocator) }}{%if not loop.last %},{%endif %}
     {%- endfor %}
+    {%- endif %}
     {
         (void)rhs;       // avoid unused param warning
         (void)allocator; // avoid unused param warning

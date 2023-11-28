@@ -39,7 +39,11 @@ endif()
 set(NUNAVUT_SUBMODULES_ROOT "${NUNAVUT_PROJECT_ROOT}/submodules" CACHE STRING "The path to git submodules for the project.")
 
 if(NOT DEFINED NUNAVUT_VERIFICATION_LANG_STANDARD)
-     set(NUNAVUT_VERIFICATION_LANG_STANDARD "" CACHE STRING "A language standard for languages that support this concept.")
+     set(NUNAVUT_VERIFICATION_LANG_STANDARD "c++20" CACHE STRING "A language standard for languages that support this concept.")
+endif()
+# Ensure NUNAVUT_VERIFICATION_LANG_STANDARD has a default
+if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp" AND NOT NUNAVUT_VERIFICATION_LANG_STANDARD)
+     set(NUNAVUT_VERIFICATION_LANG_STANDARD "c++20")
 endif()
 
 if(NOT DEFINED NUNAVUT_VERIFICATION_TARGET_ENDIANNESS)
@@ -348,17 +352,6 @@ apply_flag_set("${NUNAVUT_FLAGSET}"
 #   We generate individual test binaires so we can record which test generated
 #   what coverage. We also allow test authors to generate coverage reports for
 #   just one test allowing for faster iteration.
-file(GLOB NATIVE_TESTS_CPP
-     LIST_DIRECTORIES false
-     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-     ${NUNAVUT_VERIFICATION_ROOT}/suite/test_*.cpp
-)
-
-file(GLOB NATIVE_TESTS_C
-     LIST_DIRECTORIES false
-     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-     ${NUNAVUT_VERIFICATION_ROOT}/suite/test_*.c
-)
 
 add_custom_target(
      lcov_zero
@@ -373,15 +366,21 @@ set(ALL_TESTS "")
 set(ALL_TESTS_WITH_LCOV "")
 set(ALL_TEST_COVERAGE "")
 
-foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
-    get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
+function(runTestCpp)
+    set(options "")
+    set(oneValueArgs TEST_FILE)
+    set(multiValueArgs LINK LANGUAGE_FLAVORS)
+    cmake_parse_arguments(runTestCpp "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     # Skip tests not relevant to the specified language standard
-    if((NATIVE_TEST_NAME STREQUAL "test_array_cetl++14-17" AND NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++14-17")
-          OR
-       (NATIVE_TEST_NAME STREQUAL "test_array_c++17-pmr" AND NOT NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr"))
-        continue()
+    list(FIND runTestCpp_LANGUAGE_FLAVORS "${NUNAVUT_VERIFICATION_LANG_STANDARD}" FIND_INDEX)
+    if (${FIND_INDEX} EQUAL -1)
+        message(STATUS "Skipping ${runTestCpp_TEST_FILE}")
+        return()
     endif()
+
+    set(NATIVE_TEST "${NUNAVUT_VERIFICATION_LANG}/suite/${runTestCpp_TEST_FILE}")
+    get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
 
     set(${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS, "")
     list(APPEND ${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS})
@@ -395,22 +394,12 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
           list(APPEND ${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS "-Wno-old-style-cast")
     endif()
 
-    # Link the library that was built for the specified language standard
-    set(TEST_LINK_LIBS "")
-    if((NATIVE_TEST_NAME STREQUAL "test_array_cetl++14-17" AND NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++14-17")
-        OR
-       (NATIVE_TEST_NAME STREQUAL "test_array_c++17-pmr" AND NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr"))
-          set(TEST_LINK_LIBS dsdl-test-array-with-allocator)
-    else()
-          set(TEST_LINK_LIBS dsdl-regulated dsdl-test)
-    endif()
-
     define_native_unit_test("gtest"
                             ${NATIVE_TEST_NAME}
                             ${NATIVE_TEST}
                             ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
                             "${${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS}"
-                            ${TEST_LINK_LIBS}
+                            ${runTestCpp_LINK}
                             ${LOCAL_ADDITIONAL_DSDL_LIBS}
                             o1heap)
     target_include_directories(${NATIVE_TEST_NAME} PUBLIC "${NUNAVUT_PROJECT_ROOT}/submodules/CETL/include")
@@ -421,9 +410,35 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_CPP})
     list(APPEND ALL_TESTS_WITH_LCOV "run_${NATIVE_TEST_NAME}_with_lcov")
     list(APPEND ALL_TEST_COVERAGE "--add-tracefile")
     list(APPEND ALL_TEST_COVERAGE "${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.${NATIVE_TEST_NAME}.filtered.info")
-endforeach()
+    set(ALL_TESTS ${ALL_TESTS} PARENT_SCOPE)
+    set(ALL_TESTS_WITH_LCOV ${ALL_TESTS_WITH_LCOV} PARENT_SCOPE)
+    set(ALL_TEST_COVERAGE ${ALL_TEST_COVERAGE} PARENT_SCOPE)
+endfunction()
 
-foreach(NATIVE_TEST ${NATIVE_TESTS_C})
+if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp")
+     runTestCpp(TEST_FILE test_array_c++17-pmr.cpp   LINK dsdl-test-array-with-allocator LANGUAGE_FLAVORS                         c++17-pmr      )
+     runTestCpp(TEST_FILE test_array_cetl++14-17.cpp LINK dsdl-test-array-with-allocator LANGUAGE_FLAVORS       cetl++14-17                      )
+     runTestCpp(TEST_FILE test_bitarray.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
+     runTestCpp(TEST_FILE test_compiles.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
+     runTestCpp(TEST_FILE test_large_bitset.cpp      LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
+     runTestCpp(TEST_FILE test_serialization.cpp     LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
+     runTestCpp(TEST_FILE test_unionant.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
+endif()
+
+function(runTestC)
+    set(options "")
+    set(oneValueArgs TEST_FILE)
+    set(multiValueArgs LINK LANGUAGE_FLAVORS)
+    cmake_parse_arguments(runTestC "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    # Skip tests not relevant to the specified language standard
+    list(FIND runTestC_LANGUAGE_FLAVORS "${NUNAVUT_VERIFICATION_LANG_STANDARD}" FIND_INDEX)
+    if (${FIND_INDEX} GREATER -1)
+        message(STATUS "Skipping ${runTestC_TEST_FILE}")
+        return()
+    endif()
+
+    set(NATIVE_TEST "${NUNAVUT_VERIFICATION_ROOT}/suite/${runTestC_TEST_FILE}")
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
     set(${NATIVE_TEST_NAME}_C_EXTRA_FLAGS, "")
     list(APPEND ${NATIVE_TEST_NAME}_C_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS})
@@ -433,8 +448,7 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_C})
                             ${NATIVE_TEST}
                             ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
                             "${${NATIVE_TEST_NAME}_C_EXTRA_FLAGS}"
-                            dsdl-regulated
-                            dsdl-test)
+                            ${runTestC_LINK})
     define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
     define_natve_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
@@ -442,7 +456,18 @@ foreach(NATIVE_TEST ${NATIVE_TESTS_C})
     list(APPEND ALL_TESTS_WITH_LCOV "run_${NATIVE_TEST_NAME}_with_lcov")
     list(APPEND ALL_TEST_COVERAGE "--add-tracefile")
     list(APPEND ALL_TEST_COVERAGE "${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.${NATIVE_TEST_NAME}.filtered.info")
-endforeach()
+    set(ALL_TESTS ${ALL_TESTS} PARENT_SCOPE)
+    set(ALL_TESTS_WITH_LCOV ${ALL_TESTS_WITH_LCOV} PARENT_SCOPE)
+    set(ALL_TEST_COVERAGE ${ALL_TEST_COVERAGE} PARENT_SCOPE)
+endfunction()
+
+if (NUNAVUT_VERIFICATION_LANG STREQUAL "c")
+     runTestCpp(TEST_FILE test_canard.cpp                         LINK dsdl-regulated dsdl-test LANGUAGE_FLAVORS c11)
+     runTestC(  TEST_FILE test_constant.c                         LINK dsdl-regulated dsdl-test LANGUAGE_FLAVORS c11)
+     runTestC(  TEST_FILE test_override_variable_array_capacity.c LINK dsdl-regulated dsdl-test LANGUAGE_FLAVORS c11)
+     runTestC(  TEST_FILE test_serialization.c                    LINK dsdl-regulated dsdl-test LANGUAGE_FLAVORS c11)
+     runTestC(  TEST_FILE test_support.c                          LINK dsdl-regulated dsdl-test LANGUAGE_FLAVORS c11)
+endif()
 
 # +---------------------------------------------------------------------------+
 #   Finally, we setup an overall report. the coverage.info should be uploaded
