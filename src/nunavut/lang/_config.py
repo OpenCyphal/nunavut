@@ -34,7 +34,7 @@ class ConstructorConvention(Enum):
 
 class SpecialMethod(Enum):
     """
-    Enum used in the Jinja templates to differentiate different kinds of constructrors
+    Enum used in the Jinja templates to differentiate different kinds of constructors
     """
 
     AllocatorConstructor = auto()
@@ -48,6 +48,18 @@ class SpecialMethod(Enum):
 
     MoveConstructorWithAllocator = auto()
     """ Move constructor that also takes an allocator argument """
+
+
+class CompositeSubType(Enum):
+    """
+    Enum used in the Jinja templates to designate how fields are contained in a composite type
+    """
+
+    Structure = auto()
+    """ Object contains a set of sequential fields """
+
+    Union = auto()
+    """ Object contains one field which may hold any value from a set of types """
 
 
 class LanguageConfig:

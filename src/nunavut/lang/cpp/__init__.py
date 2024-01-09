@@ -28,7 +28,7 @@ from nunavut._templates import (
 from nunavut._utilities import YesNoDefault
 from nunavut.jinja.environment import Environment
 from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
-from nunavut.lang._config import ConstructorConvention, SpecialMethod
+from nunavut.lang._config import ConstructorConvention, SpecialMethod, CompositeSubType
 from nunavut.lang._language import Language as BaseLanguage
 from nunavut.lang.c import _CFit
 from nunavut.lang.c import filter_literal as c_filter_literal
@@ -155,6 +155,7 @@ class Language(BaseLanguage):
         """
         globals_map["ConstructorConvention"] = ConstructorConvention
         globals_map["SpecialMethod"] = SpecialMethod
+        globals_map["CompositeSubType"] = CompositeSubType
 
     def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
         """
@@ -967,7 +968,7 @@ def needs_rhs(special_method: SpecialMethod) -> bool:
 
 
 def needs_allocator(instance: pydsdl.Any) -> bool:
-    """Helper method used by filter_value_initializer()"""
+    """Helper method used by filter_value_initializer() and filter_needs_allocator()"""
     return isinstance(instance.data_type, pydsdl.VariableLengthArrayType) or isinstance(
         instance.data_type, pydsdl.CompositeType
     )
@@ -978,6 +979,10 @@ def needs_vla_init_args(instance: pydsdl.Any, special_method: SpecialMethod) -> 
     return special_method == SpecialMethod.AllocatorConstructor and isinstance(
         instance.data_type, pydsdl.VariableLengthArrayType
     )
+
+
+def needs_variant_init_args(composite_subtype: CompositeSubType, language: Language) -> bool:
+    return composite_subtype == CompositeSubType.Union and language._has_variant()
 
 
 def needs_move(special_method: SpecialMethod) -> bool:
@@ -994,12 +999,43 @@ def requires_initialization(instance: pydsdl.Any) -> bool:
     )
 
 
-def assemble_initializer_expression(
-    wrap: str, rhs: str, leading_args: typing.List[str], trailing_args: typing.List[str]
-) -> str:
+def prepare_initializer_args(
+    language: Language,
+    instance: pydsdl.Any,
+    special_method: SpecialMethod,
+    composite_subtype: CompositeSubType,
+) -> typing.Tuple[typing.List[str], str, typing.List[str]]:
+    rhs: str = ""
+    leading_args: typing.List[str] = []
+    trailing_args: typing.List[str] = []
+    if needs_variant_init_args(composite_subtype, language):
+        leading_args.append(f"std::in_place_index_t<VariantType::IndexOf::{language.filter_id(instance)}>{{}}")
+
+    if needs_initializing_value(special_method):
+        id = language.filter_id(instance)
+        if needs_rhs(special_method):
+            rhs = "rhs."
+        rhs += f"get_{id}()" if composite_subtype is CompositeSubType.Union else id
+
+    if needs_vla_init_args(instance, special_method):
+        constructor_args = language.get_option("variable_array_type_constructor_args")
+        if isinstance(constructor_args, str) and len(constructor_args) > 0:
+            trailing_args.append(constructor_args.format(MAX_SIZE=instance.data_type.capacity))
+
+    if needs_allocator(instance):
+        if language.get_option("ctor_convention") == ConstructorConvention.UsesLeadingAllocator.value:
+            leading_args.extend(["std::allocator_arg", "allocator"])
+        else:
+            trailing_args.append("allocator")
+
+    if needs_move(special_method):
+        rhs = "std::move({})".format(rhs)
+
+    return (leading_args, rhs, trailing_args)
+
+
+def assemble_initializer_expression(rhs: str, leading_args: typing.List[str], trailing_args: typing.List[str]) -> str:
     """Helper method used by filter_value_initializer()"""
-    if wrap:
-        rhs = "{}({})".format(wrap, rhs)
     args = []
     if rhs:
         args.append(rhs)
@@ -1008,40 +1044,32 @@ def assemble_initializer_expression(
 
 
 @template_language_filter(__name__)
-def filter_value_initializer(language: Language, instance: pydsdl.Any, special_method: SpecialMethod) -> str:
+def filter_value_initializer(
+    language: Language,
+    instance: pydsdl.Any,
+    special_method: SpecialMethod,
+    composite_subtype: CompositeSubType = CompositeSubType.Structure,
+) -> str:
     """
     Emit an initialization expression for a C++ special method.
     """
 
     value_initializer: str = ""
     if requires_initialization(instance):
-        wrap: str = ""
         rhs: str = ""
         leading_args: typing.List[str] = []
         trailing_args: typing.List[str] = []
 
-        if needs_initializing_value(special_method):
-            if needs_rhs(special_method):
-                rhs = "rhs."
-            rhs += language.filter_id(instance)
-
-        if needs_vla_init_args(instance, special_method):
-            constructor_args = language.get_option("variable_array_type_constructor_args")
-            if isinstance(constructor_args, str) and len(constructor_args) > 0:
-                trailing_args.append(constructor_args.format(MAX_SIZE=instance.data_type.capacity))
-
-        if needs_allocator(instance):
-            if language.get_option("ctor_convention") == ConstructorConvention.UsesLeadingAllocator.value:
-                leading_args.extend(["std::allocator_arg", "allocator"])
-            else:
-                trailing_args.append("allocator")
-
-        if needs_move(special_method):
-            wrap = "std::move"
-
-        value_initializer = assemble_initializer_expression(wrap, rhs, leading_args, trailing_args)
+        leading_args, rhs, trailing_args = prepare_initializer_args(language, instance, special_method, composite_subtype)
+        value_initializer = assemble_initializer_expression(rhs, leading_args, trailing_args)
 
     return value_initializer
+
+
+@template_language_test(__name__)
+def filter_needs_allocator(language: Language, instance: pydsdl.Any) -> bool:
+    """Emit a boolean value for whether the instance's type needs an allocator or not"""
+    return needs_allocator(instance)
 
 
 @template_language_filter(__name__)

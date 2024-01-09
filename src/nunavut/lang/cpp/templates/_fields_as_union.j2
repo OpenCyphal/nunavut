@@ -18,6 +18,22 @@
     public:
         static const constexpr std::size_t variant_npos = std::numeric_limits<std::size_t>::max();
 
+        struct IndexOf final
+        {
+            IndexOf() = delete;
+{%- for field in composite_type.fields_except_padding %}
+            static constexpr const std::size_t {{ field.name | id }} = {{ loop.index0 }}U;
+{%- endfor %}
+        };
+
+        static constexpr const std::size_t MAX_INDEX = {{ composite_type.fields_except_padding  | length }}U;
+
+        template<std::size_t I>
+        using is_index = std::conditional_t<(I < MAX_INDEX), std::true_type, std::false_type>;
+
+        template<std::size_t I>
+        static constexpr const bool is_index_v = is_index<I>::value;
+
         VariantType()
             : tag_(0)
             , internal_union_value_()
@@ -31,9 +47,9 @@
             , internal_union_value_()
         {
 {%- for field in composite_type.fields_except_padding %}
-            {% if not loop.first %}else {% endif %}if(rhs.tag_ == {{ loop.index0 }})
+            {% if not loop.first %}else {% endif %}if(rhs.tag_ == IndexOf::{{ field | id }})
             {
-                do_copy<{{ loop.index0 }}>(
+                do_copy<IndexOf::{{ field | id }}>(
                     *reinterpret_cast<std::add_pointer<const {{ field.data_type | declaration }}>::type>(&rhs.internal_union_value_.{{ field.name | id }})
                 );
             }
@@ -46,9 +62,9 @@
             , internal_union_value_()
         {
 {%- for field in composite_type.fields_except_padding %}
-            {% if not loop.first %}else {% endif %}if(rhs.tag_ == {{ loop.index0 }})
+            {% if not loop.first %}else {% endif %}if(rhs.tag_ == IndexOf::{{ field | id }})
             {
-                do_emplace<{{ loop.index0 }}>(
+                do_emplace<IndexOf::{{ field | id }}>(
                     std::forward<{{ field.data_type | declaration }}>(
                         *reinterpret_cast<std::add_pointer<{{ field.data_type | declaration }}>::type>(&rhs.internal_union_value_.{{ field.name | id }})
                     )
@@ -61,9 +77,9 @@
         {
             destroy_current();
 {%- for field in composite_type.fields_except_padding %}
-            {% if not loop.first %}else {% endif %}if(rhs.tag_ == {{ loop.index0 }})
+            {% if not loop.first %}else {% endif %}if(rhs.tag_ == IndexOf::{{ field | id }})
             {
-                do_copy<{{ loop.index0 }}>(
+                do_copy<IndexOf::{{ field | id }}>(
                     *reinterpret_cast<std::add_pointer<const {{ field.data_type | declaration }}>::type>(&rhs.internal_union_value_.{{ field.name | id }})
                 );
             }
@@ -76,9 +92,9 @@
         {
             destroy_current();
 {%- for field in composite_type.fields_except_padding %}
-            {% if not loop.first %}else {% endif %}if(rhs.tag_ == {{ loop.index0 }})
+            {% if not loop.first %}else {% endif %}if(rhs.tag_ == IndexOf::{{ field | id }})
             {
-                do_emplace<{{ loop.index0 }}>(
+                do_emplace<IndexOf::{{ field | id }}>(
                     std::forward<{{ field.data_type | declaration }}>(
                         *reinterpret_cast<std::add_pointer<{{ field.data_type | declaration }}>::type>(&rhs.internal_union_value_.{{ field.name | id }})
                     )
@@ -98,19 +114,10 @@
             return tag_;
         }
 
-        struct IndexOf final
-        {
-            IndexOf() = delete;
-{%- for field in composite_type.fields_except_padding %}
-            static constexpr const std::size_t {{ field.name | id }} = {{ loop.index0 }}U;
-{%- endfor %}
-        };
-        static constexpr const std::size_t MAX_INDEX = {{ composite_type.fields_except_padding  | length }}U;
-
         template<std::size_t I, class...Types> struct alternative;
 
 {% for field in composite_type.fields_except_padding %}
-        template<class...Types> struct alternative<{{ loop.index0 }}U, Types...>
+        template<class...Types> struct alternative<IndexOf::{{ field | id }}, Types...>
         {
             using type = {{ field.data_type | declaration }};
             static constexpr auto pointer = &VariantType::internal_union_t::{{ field.name | id }};
@@ -120,7 +127,7 @@
         template<std::size_t I, class... Args> typename VariantType::alternative<I, VariantType>::type& emplace(Args&&... v)
         {
             destroy_current();
-            typename alternative<I>::type& result = do_emplace<I>(v...);
+            typename alternative<I>::type& result = do_emplace<I>(std::forward<Args>(v)...);
             tag_ = I;
             return result;
         }
@@ -171,7 +178,7 @@
         void destroy_current()
         {
 {%- for field in composite_type.fields_except_padding if field is not PrimitiveType %}
-            {% if not loop.first %}else {% endif %}if (tag_ == {{ loop.index0 }})
+            {% if not loop.first %}else {% endif %}if (tag_ == IndexOf::{{ field | id }})
             {
                 reinterpret_cast<{{ field.data_type | declaration }}*>(std::addressof(internal_union_value_.{{ field.name | id }}))->{{ field.data_type | destructor_name }}();
             }
@@ -179,5 +186,3 @@
         }
 
     };
-
-    VariantType union_value;
