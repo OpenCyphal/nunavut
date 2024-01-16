@@ -1060,7 +1060,9 @@ def filter_value_initializer(
         leading_args: typing.List[str] = []
         trailing_args: typing.List[str] = []
 
-        leading_args, rhs, trailing_args = prepare_initializer_args(language, instance, special_method, composite_subtype)
+        leading_args, rhs, trailing_args = prepare_initializer_args(
+            language, instance, special_method, composite_subtype
+        )
         value_initializer = assemble_initializer_expression(rhs, leading_args, trailing_args)
 
     return value_initializer
