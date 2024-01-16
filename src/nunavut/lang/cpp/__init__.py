@@ -1012,10 +1012,10 @@ def prepare_initializer_args(
         leading_args.append(f"std::in_place_index_t<VariantType::IndexOf::{language.filter_id(instance)}>{{}}")
 
     if needs_initializing_value(special_method):
-        id = language.filter_id(instance)
+        instance_id = language.filter_id(instance)
         if needs_rhs(special_method):
             rhs = "rhs."
-        rhs += f"get_{id}()" if composite_subtype is CompositeSubType.Union else id
+        rhs += f"get_{instance_id}()" if composite_subtype is CompositeSubType.Union else instance_id
 
     if needs_vla_init_args(instance, special_method):
         constructor_args = language.get_option("variable_array_type_constructor_args")
