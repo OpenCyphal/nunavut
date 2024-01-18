@@ -120,6 +120,7 @@ class GenTestPaths:
             search_dir = search_dir.parent
         self.root_dir = search_dir
         self.templates_dir = self.test_dir / pathlib.Path("templates")
+        self.support_templates_dir = self.test_dir / pathlib.Path("support")
         self.dsdl_dir = self.test_dir / pathlib.Path("dsdl")
         self.lang_src_dir = self.root_dir / pathlib.Path("src") / pathlib.Path("nunavut") / pathlib.Path("lang")
 
