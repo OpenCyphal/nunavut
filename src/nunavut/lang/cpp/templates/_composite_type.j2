@@ -112,7 +112,7 @@ struct {% if composite_type.deprecated -%}
     explicit {{composite_type|short_reference_name}}(const allocator_type& allocator)
     {%- if composite_type.fields_except_padding %} :
     {%- if composite_type.inner_type is UnionType %}
-        union_value{{ composite_type.fields_except_padding[0] | value_initializer(SpecialMethod.AllocatorConstructor, CompositeSubType.Structure) }}
+        union_value{{ composite_type.fields_except_padding[0] | value_initializer(SpecialMethod.AllocatorConstructor, CompositeSubType.Union) }}
     {%- else %}
     {%- for field in composite_type.fields_except_padding %}
         {{ field | id }}{{ field | value_initializer(SpecialMethod.AllocatorConstructor) }}{%if not loop.last %},{%endif %}
@@ -123,7 +123,13 @@ struct {% if composite_type.deprecated -%}
         (void)allocator; // avoid unused param warning
     }
 
-    {%- if composite_type.inner_type is not UnionType %}
+    {% if composite_type.inner_type is UnionType -%}
+    // Initializing constructor
+    template<std::size_t I, typename... Args>
+    {{composite_type|short_reference_name}}(std::in_place_index_t<I> i, Args&&... args)
+        : union_value{i, std::forward<Args>(args)...}
+    {}
+    {%- else %}
     {% if composite_type.fields_except_padding %}
     // Initializing constructor
     {{ composite_type | explicit_decorator(SpecialMethod.InitializingConstructorWithAllocator)}}(
