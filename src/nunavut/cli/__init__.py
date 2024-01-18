@@ -136,6 +136,20 @@ def _make_parser() -> argparse.ArgumentParser:
         ).lstrip(),
     )
 
+    parser.add_argument(
+        "--support-templates",
+        help=textwrap.dedent(
+            """
+
+        Paths to a directory containing templates to use when generating support code.
+
+        Templates found under these paths will override the built-in support templates for a
+        given language.
+
+    """
+        ).lstrip(),
+    )
+
     def extension_type(raw_arg: str) -> str:
         if len(raw_arg) > 0 and not raw_arg.startswith("."):
             return "." + raw_arg
