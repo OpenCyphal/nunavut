@@ -49,11 +49,11 @@ class CodeGenerator(nunavut._generators.AbstractGenerator):
                                            where the names are the same. See :class:`jinja2.ChoiceLoader` for rules
                                            on the lookup hierarchy.
     :type templates_dir: typing.Optional[typing.Union[pathlib.Path,typing.List[pathlib.Path]]]
-    :param support_templates_dir:          Directories containing jinja templates for the support files. These will be available along
-                                           with any built-in templates provided by the target language. The templates
-                                           at these paths will take precedence masking any built-in templates
-                                           where the names are the same. See :class:`jinja2.ChoiceLoader` for rules
-                                           on the lookup hierarchy.
+    :param support_templates_dir:          Directories containing jinja templates for the support files. These will be
+                                           available along with any built-in templates provided by the target language.
+                                           The templates at these paths will take precedence masking any built-in
+                                           templates where the names are the same. See :class:`jinja2.ChoiceLoader` for
+                                           rules on the lookup hierarchy.
     :type support_templates_dir: typing.Optional[typing.Union[pathlib.Path,typing.List[pathlib.Path]]]
     :param bool use_support_templates_dir: If True use the 'support_templates_dir' param for jinja templates, otherwise
                                            use the 'templates_dir' param. Defaults to False.
