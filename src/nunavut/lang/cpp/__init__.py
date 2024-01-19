@@ -981,7 +981,7 @@ def needs_vla_init_args(instance: pydsdl.Any, special_method: SpecialMethod) -> 
     )
 
 
-def needs_variant_init_args(composite_subtype: CompositeSubType, language: Language) -> bool:
+def needs_variant_init_args(composite_subtype: CompositeSubType) -> bool:
     return composite_subtype == CompositeSubType.Union
 
 
@@ -1008,7 +1008,7 @@ def prepare_initializer_args(
     rhs: str = ""
     leading_args: typing.List[str] = []
     trailing_args: typing.List[str] = []
-    if needs_variant_init_args(composite_subtype, language):
+    if needs_variant_init_args(composite_subtype):
         leading_args.append(
             f"nunavut::support::in_place_index_t<VariantType::IndexOf::{language.filter_id(instance)}>{{}}"
         )
