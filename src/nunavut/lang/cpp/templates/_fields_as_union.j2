@@ -49,6 +49,7 @@
             : tag_{I}
             , internal_union_value_{}
         {
+            (void)i; //avoid unused param warning
             do_emplace<I>(std::forward<Args>(args)...);
         }
 

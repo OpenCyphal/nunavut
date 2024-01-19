@@ -59,7 +59,7 @@
         VariantType(nunavut::support::in_place_index_t<I> i, Args&&... args) :
             Base{std::in_place_index_t<I>{}, std::forward<Args>(args)...}
         {
-            (void)i; // avoid unused param
+            (void)i; // avoid unused param warning
         }
 
         // Copy constructor
