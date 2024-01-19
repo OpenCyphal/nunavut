@@ -126,7 +126,7 @@ struct {% if composite_type.deprecated -%}
     {% if composite_type.inner_type is UnionType -%}
     // Initializing constructor
     template<std::size_t I, typename... Args>
-    {{composite_type|short_reference_name}}(std::in_place_index_t<I> i, Args&&... args)
+    {{composite_type|short_reference_name}}(nunavut::support::in_place_index_t<I> i, Args&&... args)
         : union_value{i, std::forward<Args>(args)...}
     {}
     {%- else %}

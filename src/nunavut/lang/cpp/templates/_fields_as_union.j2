@@ -34,17 +34,28 @@
         template<std::size_t I>
         static constexpr const bool is_index_v = is_index<I>::value;
 
+        // Default constructor
         VariantType()
-            : tag_(0)
-            , internal_union_value_()
+            : tag_{0U}
+            , internal_union_value_{}
         {
             // This is how the C++17 standard library does it; default initialization as the 0th index.
             emplace<0>();
         }
 
+        // Initializing constructor
+        template<std::size_t I, typename... Args, typename = std::enable_if_t<is_index_v<I>>>
+        VariantType(nunavut::support::in_place_index_t<I> i, Args&&... args)
+            : tag_{I}
+            , internal_union_value_{}
+        {
+            do_emplace<I>(std::forward<Args>(args)...);
+        }
+
+        // Copy constructor
         VariantType(const VariantType& rhs)
-            : tag_(variant_npos)
-            , internal_union_value_()
+            : tag_{variant_npos}
+            , internal_union_value_{}
         {
 {%- for field in composite_type.fields_except_padding %}
             {% if not loop.first %}else {% endif %}if(rhs.tag_ == IndexOf::{{ field | id }})
@@ -57,9 +68,10 @@
             tag_ = rhs.tag_;
         }
 
+        // Move constructor
         VariantType(VariantType&& rhs)
-            : tag_(variant_npos)
-            , internal_union_value_()
+            : tag_{variant_npos}
+            , internal_union_value_{}
         {
 {%- for field in composite_type.fields_except_padding %}
             {% if not loop.first %}else {% endif %}if(rhs.tag_ == IndexOf::{{ field | id }})
@@ -73,6 +85,8 @@
 {%- endfor %}
             tag_ = rhs.tag_;
         }
+
+        // Copy assignment
         VariantType& operator=(const VariantType& rhs)
         {
             destroy_current();
@@ -88,6 +102,7 @@
             return *this;
         }
 
+        // Move assignment
         VariantType& operator=(VariantType&& rhs)
         {
             destroy_current();
