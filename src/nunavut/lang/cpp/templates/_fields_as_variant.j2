@@ -56,11 +56,9 @@
 
         // Initializing constructor
         template<std::size_t I, typename... Args, typename = std::enable_if_t<is_index_v<I>>>
-        VariantType(nunavut::support::in_place_index_t<I> i, Args&&... args) :
+        VariantType(nunavut::support::in_place_index_t<I>, Args&&... args) :
             Base{std::in_place_index_t<I>{}, std::forward<Args>(args)...}
-        {
-            (void)i; // avoid unused param warning
-        }
+        {}
 
         // Copy constructor
         VariantType(const VariantType& rhs) :
