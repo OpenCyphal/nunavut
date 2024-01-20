@@ -66,22 +66,69 @@ TEST(UnionantTests, get_set_lvalue)
     }
 }
 
+/**
+ * Verify that the variant value can be fetched only as the type being held
+ */
 TEST(UnionantTests, get_if_const_variant)
 {
     using ValueType = uavcan::_register::Value_1_0;
-    const uavcan::_register::Value_1_0             a{};
-    const uavcan::primitive::array::Integer32_1_0* p =
+    const ValueType a{};
+
+    const uavcan::primitive::Empty_1_0* p_empty =
+        uavcan::_register::Value_1_0::VariantType::get_if<ValueType::VariantType::IndexOf::empty>(&a.union_value);
+    const uavcan::primitive::array::Integer32_1_0* p_int32 =
         uavcan::_register::Value_1_0::VariantType::get_if<ValueType::VariantType::IndexOf::integer32>(&a.union_value);
-    ASSERT_EQ(nullptr, p);
+
+    ASSERT_NE(nullptr, p_empty);
+    ASSERT_EQ(nullptr, p_int32);
 }
 
+/**
+ *  Verify that the variant value can be fetched only at the alternative index for the type being held
+ */
 TEST(UnionantTests, union_with_same_types)
 {
     using ValueType = regulated::basics::UnionWithSameTypes_0_1;
-    ValueType                                                 a{};
-    std::array<regulated::basics::DelimitedFixedSize_0_1, 2>* p =
+    ValueType a{};
+
+    regulated::basics::Struct__0_1* p_struct1 =
+        ValueType::VariantType::get_if<ValueType::VariantType::IndexOf::struct0>(&a.union_value);
+    regulated::basics::Struct__0_1* p_struct2 =
+        ValueType::VariantType::get_if<ValueType::VariantType::IndexOf::struct1>(&a.union_value);
+    std::array<regulated::basics::DelimitedFixedSize_0_1, 2>* p_delimited_fix_le2 =
         ValueType::VariantType::get_if<ValueType::VariantType::IndexOf::delimited_fix_le2>(&a.union_value);
-    ASSERT_EQ(nullptr, p);
+
+    ASSERT_NE(nullptr, p_struct1);
+    ASSERT_EQ(nullptr, p_struct2);
+    ASSERT_EQ(nullptr, p_delimited_fix_le2);
+}
+
+/**
+ * Verify the initializing constructor of the VariantType
+ */
+TEST(UnionantTests, union_value_init_ctor)
+{
+    using ValueType = uavcan::_register::Value_1_0;
+    uavcan::primitive::array::Integer32_1_0 v{{1, 2, 3}};
+    const ValueType::VariantType a{
+        nunavut::support::in_place_index_t<ValueType::VariantType::IndexOf::integer32>{},
+        v
+    };
+
+    const uavcan::primitive::Empty_1_0* p_empty =
+        uavcan::_register::Value_1_0::VariantType::get_if<ValueType::VariantType::IndexOf::empty>(&a);
+    const uavcan::primitive::array::Integer32_1_0* p_int32 =
+        uavcan::_register::Value_1_0::VariantType::get_if<ValueType::VariantType::IndexOf::integer32>(&a);
+
+    ASSERT_EQ(nullptr, p_empty);
+    ASSERT_NE(nullptr, p_int32);
+
+    if (p_int32 != nullptr)
+    {
+        ASSERT_EQ(p_int32->value[0], 1);
+        ASSERT_EQ(p_int32->value[1], 2);
+        ASSERT_EQ(p_int32->value[2], 3);
+    }
 }
 
 /**
