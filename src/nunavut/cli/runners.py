@@ -73,6 +73,9 @@ class ArgparseRunner:
                 YesNoDefault.YES if self._args.generate_namespace_types else YesNoDefault.DEFAULT
             ),
             "templates_dir": (pathlib.Path(self._args.templates) if self._args.templates is not None else None),
+            "support_templates_dir": (
+                pathlib.Path(self._args.support_templates) if self._args.support_templates is not None else None
+            ),
             "trim_blocks": self._args.trim_blocks,
             "lstrip_blocks": self._args.lstrip_blocks,
             "post_processors": self._build_post_processor_list_from_args(),

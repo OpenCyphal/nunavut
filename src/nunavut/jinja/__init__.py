@@ -49,6 +49,14 @@ class CodeGenerator(nunavut._generators.AbstractGenerator):
                                            where the names are the same. See :class:`jinja2.ChoiceLoader` for rules
                                            on the lookup hierarchy.
     :type templates_dir: typing.Optional[typing.Union[pathlib.Path,typing.List[pathlib.Path]]]
+    :param support_templates_dir:          Directories containing jinja templates for the support files. These will be
+                                           available along with any built-in templates provided by the target language.
+                                           The templates at these paths will take precedence masking any built-in
+                                           templates where the names are the same. See :class:`jinja2.ChoiceLoader` for
+                                           rules on the lookup hierarchy.
+    :type support_templates_dir: typing.Optional[typing.Union[pathlib.Path,typing.List[pathlib.Path]]]
+    :param bool use_support_templates_dir: If True use the 'support_templates_dir' param for jinja templates, otherwise
+                                           use the 'templates_dir' param. Defaults to False.
     :param bool followlinks:               If True then symbolic links will be followed when
                                            searching for templates.
     :param bool trim_blocks:               If this is set to True the first newline after a
@@ -148,6 +156,8 @@ class CodeGenerator(nunavut._generators.AbstractGenerator):
         namespace: nunavut.Namespace,
         generate_namespace_types: YesNoDefault = YesNoDefault.DEFAULT,
         templates_dir: typing.Optional[typing.Union[pathlib.Path, typing.List[pathlib.Path]]] = None,
+        support_templates_dir: typing.Optional[typing.Union[pathlib.Path, typing.List[pathlib.Path]]] = None,
+        use_support_templates_dir: bool = False,
         followlinks: bool = False,
         trim_blocks: bool = False,
         lstrip_blocks: bool = False,
@@ -164,6 +174,9 @@ class CodeGenerator(nunavut._generators.AbstractGenerator):
         if templates_dir is not None and not isinstance(templates_dir, list):
             templates_dir = [templates_dir]
 
+        if support_templates_dir is not None and not isinstance(support_templates_dir, list):
+            support_templates_dir = [support_templates_dir]
+
         language_context = self._namespace.get_language_context()
         target_language = language_context.get_target_language()
 
@@ -171,7 +184,7 @@ class CodeGenerator(nunavut._generators.AbstractGenerator):
             package_name_for_templates = target_language.get_templates_package_name()
 
         self._dsdl_template_loader = DSDLTemplateLoader(
-            templates_dirs=templates_dir,
+            templates_dirs=support_templates_dir if use_support_templates_dir else templates_dir,
             package_name_for_templates=package_name_for_templates,
             followlinks=followlinks,
             builtin_template_path=builtin_template_path,
@@ -783,7 +796,7 @@ class SupportGenerator(CodeGenerator):
     """
 
     def __init__(self, namespace: nunavut.Namespace, **kwargs: typing.Any):
-        kwargs.update(templates_dir=None)
+        kwargs.update(use_support_templates_dir=True)
         super().__init__(namespace, builtin_template_path="support", **kwargs)
 
         target_language = self.language_context.get_target_language()

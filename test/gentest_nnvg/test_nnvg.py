@@ -610,3 +610,22 @@ def test_list_configuration(gen_paths: typing.Any, run_nnvg: typing.Callable) ->
     )
     assert len(parsed_config[default_target_section_name]) > 0
     print(yaml.dump(parsed_config))
+
+def test_support_templates_dir(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
+    """
+    Use the --support-templates option to find templates for support generation
+    """
+    nnvg_args = [
+        "--templates",
+        gen_paths.templates_dir.as_posix(),
+        "--support-templates",
+        gen_paths.support_templates_dir.as_posix(),
+        "-O",
+        gen_paths.out_dir.as_posix(),
+        "-I",
+        (gen_paths.dsdl_dir / pathlib.Path("scotec")).as_posix(),
+        "--list-inputs",
+        (gen_paths.dsdl_dir / pathlib.Path("uavcan")).as_posix(),
+    ]
+
+    run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(";")
