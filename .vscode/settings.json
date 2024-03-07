@@ -1,20 +1,13 @@
 {
     "python.defaultInterpreterPath": "${workspaceFolder}/.tox/local",
-    "python.linting.flake8Enabled": true,
-    "python.linting.pylintEnabled": false,
-    "python.linting.mypyEnabled": true,
-    "python.linting.pycodestyleEnabled": false,
-    "python.linting.enabled": true,
-    "python.linting.pycodestyleArgs": [
-        "--ignore",
-        "E501,E251,E701"
-    ],
     "python.testing.cwd": "${workspaceFolder}",
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-    "python.formatting.provider": "black",
-    "python.formatting.blackArgs": [
+    "black-formatter.args": [
         "--line-length=120"
+    ],
+    "mypy-type-checker.args": [
+        "--config-file=${workspaceFolder}/tox.ini"
     ],
     "files.exclude": {
         "**/.git": true,
@@ -142,9 +135,6 @@
         "compare": "cpp",
         "concepts": "cpp"
     },
-    "python.linting.mypyArgs": [
-        "--config-file=${workspaceFolder}/tox.ini"
-    ],
     "editor.wordWrapColumn": 120,
     "editor.rulers": [
         120
@@ -153,15 +143,6 @@
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
     "files.trimTrailingWhitespace": true,
-    "spellright.language": [
-        "en"
-    ],
-    "spellright.documentTypes": [
-        "markdown",
-        "latex",
-        "plaintext",
-        "cpp"
-    ],
     "testMate.cpp.test.advancedExecutables": [
         {
             "pattern": "verification/build_vscode/**/suite/{test,Test,TEST}_*",
@@ -187,31 +168,6 @@
         "environment": "",
         "sourceFileMap": "${sourceFileMapObj}"
     },
-    "spellright.ignoreRegExps": [
-        "/DLCs/g",
-        "/rhs/ig",
-        "/_?rx_?/",
-        "/_?tx_?/",
-        "/Kirienko/g",
-        "/Pavel/g",
-        "/gtests/g",
-        "/(lib)?cyphal/g",
-        "/ovfl/g",
-        "/Cyphal/ig",
-        "/tparam/g",
-        "/\\.hpp/g",
-        "/endcode/g",
-        "/defgroup/",
-        "/dst/",
-        "/lvs/",
-        "/g(oogle)?mock/",
-        "/g(oogle)?test/",
-        "/(?:de?|con)struct(?:able?|or)/",
-        "/(lib)?uavcan/",
-        "/nunavut/i",
-        "/dsdl/i",
-        "/bitspan/"
-    ],
     "cSpell.words": [
         "allclose",
         "astype",
@@ -261,6 +217,7 @@
         "unpackbits",
         "unseparate",
         "unstropped",
-        "WKCV"
+        "WKCV",
+        "Unionant"
     ],
 }

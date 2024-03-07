@@ -5,6 +5,10 @@
         "uavcan.dsdl",
         "wholroyd.jinja",
         "streetsidesoftware.code-spell-checker",
-        "ms-python.python"
+        "ms-python.python",
+        "ms-python.mypy-type-checker",
+        "ms-python.black-formatter",
+        "ms-python.flake8",
+        "ms-python.autopep8"
     ]
 }

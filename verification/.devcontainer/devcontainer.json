@@ -1,6 +1,6 @@
 {
     "name": "C/C++ verification environment",
-    "image": "ghcr.io/opencyphal/toolshed:ts22.4.3",
+    "image": "ghcr.io/opencyphal/toolshed:ts22.4.5",
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspace,type=bind,consistency=delegated",
     "mounts": [
@@ -17,7 +17,11 @@
                 "xaver.clang-format",
                 "vadimcn.vscode-lldb",
                 "matepek.vscode-catch2-test-adapter",
-                "ms-python.python"
+                "ms-python.python",
+                "ms-python.mypy-type-checker",
+                "ms-python.black-formatter",
+                "ms-python.flake8",
+                "ms-python.autopep8"
             ]
         }
     },
