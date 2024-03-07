@@ -1,16 +1,15 @@
 #
-# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2020  OpenCyphal Development Team  <opencyphal.org>
+# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
 # This software is distributed under the terms of the MIT License.
 #
 
 import pathlib
+import re
 from pathlib import Path
 
 import pydsdl
-import pytest
 import yaml
-import re
 
 from nunavut import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
@@ -30,7 +29,7 @@ def test_issue_277(gen_paths):  # type: ignore
         "allocator_include": '"MyCrazyAllocator.hpp"',
         "allocator_type": "MyCrazyAllocator",
         "allocator_is_default_constructible": True,
-        "ctor_convention": "uses-leading-allocator"
+        "ctor_convention": "uses-leading-allocator",
     }
 
     vla_decl_pattern = re.compile(r"\b|^MyCrazyArray\B")
@@ -44,7 +43,7 @@ def test_issue_277(gen_paths):  # type: ignore
         LanguageClassLoader.to_language_module_name("cpp"): {Language.WKCV_LANGUAGE_OPTIONS: override_language_options}
     }
 
-    with open(overrides_file, "w") as overrides_handle:
+    with open(overrides_file, "w", encoding="utf-8") as overrides_handle:
         yaml.dump(overrides_data, overrides_handle)
 
     root_namespace = str(gen_paths.dsdl_dir / Path("proptest"))
@@ -52,7 +51,7 @@ def test_issue_277(gen_paths):  # type: ignore
     language_context = (
         LanguageContextBuilder(include_experimental_languages=True)
         .set_target_language("cpp")
-        .set_additional_config_files([overrides_file])
+        .add_config_files(overrides_file)
         .create()
     )
     namespace = build_namespace_tree(compound_types, root_namespace, gen_paths.out_dir, language_context)
@@ -64,12 +63,11 @@ def test_issue_277(gen_paths):  # type: ignore
 
     assert outfile is not None
 
-
     found_vla_decl = False
     found_vla_include = False
     found_alloc_include = False
     found_vla_constructor_args = False
-    with open(str(outfile), "r") as header_file:
+    with open(str(outfile), "r", encoding="utf-8") as header_file:
         for line in header_file:
             if not found_vla_decl and vla_decl_pattern.search(line):
                 found_vla_decl = True

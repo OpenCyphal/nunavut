@@ -1,7 +1,7 @@
 #
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
 Module containing types and utilities for building generator objects.
@@ -78,7 +78,11 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def generate_all(
-        self, is_dryrun: bool = False, allow_overwrite: bool = True, omit_serialization_support: bool = False
+        self,
+        is_dryrun: bool = False,
+        allow_overwrite: bool = True,
+        omit_serialization_support: bool = False,
+        embed_auditing_info: bool = False,
     ) -> typing.Iterable[pathlib.Path]:
         """
         Generates all output for a given :class:`nunavut.Namespace` and using
@@ -91,6 +95,9 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
                                 output file exists and the generation is not a dry-run.
         :param bool omit_serialization_support: If True then the generator will emit only types without additional
                                 serialization and deserialization support and logic.
+        :param embed_auditing_info: If True then additional information about the inputs and environment used to
+                                generate source will be embedded in the generated files at the cost of build
+                                reproducibility.
         :return: 0 for success. Non-zero for errors.
         :raises: PermissionError if :attr:`allow_overwrite` is False and the file exists.
         """
@@ -108,7 +115,7 @@ def create_default_generators(
     :return: Tuple with the first item being the code-generator and the second the support-library
         generator.
     """
-    from nunavut.jinja import DSDLCodeGenerator, SupportGenerator
+    from nunavut.jinja import DSDLCodeGenerator, SupportGenerator  # pylint: disable=import-outside-toplevel
 
     return (DSDLCodeGenerator(namespace, **kwargs), SupportGenerator(namespace, **kwargs))
 
@@ -127,8 +134,9 @@ def generate_types(
     allow_overwrite: bool = True,
     lookup_directories: typing.Optional[typing.Iterable[str]] = None,
     allow_unregulated_fixed_port_id: bool = False,
-    language_options: typing.Mapping[str, typing.Any] = {},
+    language_options: typing.Optional[typing.Mapping[str, typing.Any]] = None,
     include_experimental_languages: bool = False,
+    embed_auditing_info: bool = False,
 ) -> None:
     """
     Helper method that uses default settings and built-in templates to generate types for a given
@@ -153,7 +161,12 @@ def generate_types(
                 language objects. The supported arguments and valid values are different depending on the language
                 specified by the `language_key` parameter.
     :param bool include_experimental_languages: If true then experimental languages will also be available.
+    :param embed_auditing_info: If True then additional information about the inputs and environment used to
+                                generate source will be embedded in the generated files at the cost of build
+                                reproducibility.
     """
+    if language_options is None:
+        language_options = {}
 
     language_context = (
         LanguageContextBuilder(include_experimental_languages=include_experimental_languages)
@@ -172,5 +185,5 @@ def generate_types(
     namespace = build_namespace_tree(type_map, str(root_namespace_dir), str(out_dir), language_context)
 
     generator, support_generator = create_default_generators(namespace)
-    support_generator.generate_all(is_dryrun, allow_overwrite, omit_serialization_support)
-    generator.generate_all(is_dryrun, allow_overwrite, omit_serialization_support)
+    support_generator.generate_all(is_dryrun, allow_overwrite, omit_serialization_support, embed_auditing_info)
+    generator.generate_all(is_dryrun, allow_overwrite, omit_serialization_support, embed_auditing_info)

@@ -18,7 +18,7 @@ from nunavut import generate_types
         ("cpp", True, {"std": "c++17"}),
         ("c", False, {}),
         ("c", True, {}),
-        ("py", False, {}),
+        ("py", True, {}),
         ("html", False, {}),
     ],
 )

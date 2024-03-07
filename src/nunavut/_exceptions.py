@@ -1,7 +1,7 @@
 #
-# Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2023  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
 Exception types thrown by the core library.

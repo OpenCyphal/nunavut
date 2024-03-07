@@ -1,7 +1,7 @@
 #
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
     Filters for generating docs. All filters in this
@@ -24,20 +24,29 @@ logger = logging.getLogger(__name__)
 
 
 def filter_extent(instance: pydsdl.Any) -> int:
+    """
+    Filter that returns the dsdl extend property of a given type.
+    """
     try:
         return instance.extent or 0
     except TypeError as e:
-        raise TemplateAssertionError(e)
+        raise TemplateAssertionError(e) from None
 
 
 def filter_max_bit_length(instance: pydsdl.Any) -> int:
+    """
+    Filter that returns the dsdl max bit length property of a given type.
+    """
     try:
         return instance.bit_length_set.max or 0
     except TypeError as e:
-        raise TemplateAssertionError(e)
+        raise TemplateAssertionError(e) from None
 
 
 def filter_tag_id(instance: pydsdl.Any) -> str:
+    """
+    Emit a tag id for a given type.
+    """
     if isinstance(instance, pydsdl.ArrayType):
         return "{}_array".format(str(instance.element_type).replace(".", "_").replace(" ", "_"))
     else:
@@ -49,6 +58,9 @@ def filter_tag_id(instance: pydsdl.Any) -> str:
 
 
 def filter_url_from_type(instance: pydsdl.Any) -> str:
+    """
+    Emit a path to the documentation for a given type.
+    """
     root_ns = instance.root_namespace
     tag_id = "{}_{}_{}".format(instance.full_name.replace(".", "_"), instance.version[0], instance.version[1])
     return "../{}/#{}".format(root_ns, tag_id)
@@ -121,6 +133,9 @@ def filter_make_unique(_: typing.Any, base_token: str) -> str:
 
 
 def filter_namespace_doc(ns: nunavut.Namespace) -> str:
+    """
+    Generate HTML documentation for a namespace.
+    """
     result = ""
     for t, _ in ns.get_nested_types():
         if t.short_name == "_":
@@ -130,6 +145,9 @@ def filter_namespace_doc(ns: nunavut.Namespace) -> str:
 
 
 def filter_display_type(instance: pydsdl.Any) -> str:
+    """
+    Deprecated. Don't use this filter. Needs refactoring.
+    """
     # TODO: this whole thing needs to be in the template.
     if isinstance(instance, pydsdl.FixedLengthArrayType):
         capacity = '<span style="color: green">[{}]</span>'.format(instance.capacity)

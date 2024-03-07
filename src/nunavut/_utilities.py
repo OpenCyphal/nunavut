@@ -1,7 +1,7 @@
 #
-# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2021  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
 A small collection of common utilities.
@@ -17,7 +17,7 @@ import copy
 import enum
 import logging
 import pathlib
-from typing import Generator, MutableMapping, cast, TypeVar
+from typing import Any, Callable, Generator, MutableMapping, Optional, TypeVar, cast, Generic
 
 import importlib_resources
 
@@ -113,7 +113,7 @@ class ResourceType(enum.Enum):
 @enum.unique
 class ResourceSearchPolicy(enum.Enum):
     """
-    Generic policy type for controlling the behaviour of things that seach for resources.
+    Generic policy type for controlling the behaviour of things that search for resources.
     """
 
     FIND_ALL = 0
@@ -122,12 +122,24 @@ class ResourceSearchPolicy(enum.Enum):
 
 def iter_package_resources(pkg_name: str, *suffix_filters: str) -> Generator[pathlib.Path, None, None]:
     """
-    >>> from nunavut._utilities import iter_package_resources
-    >>> rs = [x for x in iter_package_resources("nunavut.lang", ".py") if x.name == "__init__.py"]
-    >>> len(rs)
-    1
-    >>> rs[0].name
-    '__init__.py'
+    A generator that yields all the resources in a package that match a given suffix filter.
+
+    Example usage:
+
+    .. invisible-code-block: python
+
+        from nunavut._utilities import iter_package_resources
+
+    .. code-block:: python
+
+        for x in iter_package_resources("nunavut.lang", ".py"):
+            print(x)
+
+    .. invisible-code-block: python
+
+        rs = [x for x in iter_package_resources("nunavut.lang", ".py") if x.name == "__init__.py"]
+        assert 1 == len(rs)
+        assert rs[0].name == '__init__.py'
 
     """
     for resource in importlib_resources.files(pkg_name).iterdir():
@@ -152,17 +164,158 @@ def empty_list_support_files() -> Generator[pathlib.Path, None, None]:
     yield from ()
 
 
-DeepUpdateType = TypeVar("DeepUpdateType", bound=MutableMapping)
+class DefaultValue:
+    """
+    Represents a default value in the language configuration. Use this to differentiate between explicit values and
+    default values when merging configuration. For example, given the following configuration:
+
+    .. invisible-code-block: python
+
+        from nunavut import DefaultValue
+
+    .. code-block:: python
+
+        collection = {
+            'a': DefaultValue(1),
+            'b': 2
+        }
+
+        overrides = [
+            {
+                'a': 3,
+                'b': DefaultValue(4)
+            },
+            {
+                'a': DefaultValue(5),
+                'b': 6
+            }
+        ]
+
+    Then the merged configuration should be:
+
+    .. code-block:: python
+
+        merged = {
+            'a': 3,
+            'b': 6
+        }
+
+    .. invisible-code-block: python
+
+        # let's try it
+        for override in overrides:
+            collection = deep_update(collection, override)
+
+        assert collection['a'] == merged['a']
+        assert collection['b'] == merged['b']
+
+    Other properties of DefaultValue:
+
+    .. code-block:: python
+
+        assert DefaultValue(1) == 1
+        assert DefaultValue(1) != 2
+        assert DefaultValue(1) == DefaultValue(1)
+        assert DefaultValue(1) != DefaultValue(2)
+        assert eval(repr(DefaultValue(1))) == DefaultValue(1)
+        assert hash(DefaultValue(1)) == hash(1)
+        assert bool(DefaultValue(1))
+        assert not bool(DefaultValue(None))
+        repred = eval(repr(DefaultValue(8)))
+        assert repred.value == 8
+
+    """
+
+    @classmethod
+    def assign_to_if_not_default(cls, target: MutableMapping[str, Any], key: str, value: Any) -> Any:
+        """
+        Assigns a value to a key in a dictionary unless the key already has a value and the value is not a
+        `DefaultValue`. The one exception to this is if the value is a `DefaultValue` and the value for the key is
+        already a `DefaultValue`. In this case the new `DefaultValue` value will be assigned to the key.
+
+        :param target: The dictionary to assign to.
+        :param key: The key to assign to.
+        :param value: The value to test and assign.
+        :return: The value assigned to the key. This is the value of the `value` parameter if it was assigned or the
+                    value of the key in the target dictionary if it was not assigned.
+        """
+        try:
+            if isinstance(value, DefaultValue) and not isinstance(target[key], DefaultValue):
+                return target[key]
+        except KeyError:
+            pass
+        target[key] = value
+        return value
+
+    def __init__(self, value: Any) -> None:
+        self._value = value
+
+    @property
+    def value(self) -> Any:
+        """
+        The default value.
+        """
+        return self._value
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, DefaultValue):
+            return bool(self._value == other.value)
+        return bool(self._value == other)
+
+    def __ne__(self, other: Any) -> bool:
+        return not self.__eq__(other)
+
+    def __repr__(self) -> str:
+        return f"DefaultValue({self.value})"
+
+    def __str__(self) -> str:
+        return f"DefaultValue({self.value})"
+
+    def __hash__(self) -> int:
+        return hash(self._value)
+
+    def __bool__(self) -> bool:
+        return bool(self._value)
 
 
-def deep_update(target: DeepUpdateType, source: DeepUpdateType) -> DeepUpdateType:
+def no_default_value(func: Callable[..., Any]) -> Callable[..., Any]:
+    """
+    Decorator to convert a function that may return `DefaultValue`s to a function that returns the value of the any
+    `DefaultValue`s found. For example:
+
+    .. invisible-code-block: python
+
+        from nunavut._utilities import DefaultValue, no_default_value
+
+    .. code-block:: python
+
+        @no_default_value
+        def some_function() -> DefaultValue:
+            return DefaultValue(1)
+
+        assert some_function() == 1
+        assert not isinstance(some_function(), DefaultValue)
+    """
+
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        result = func(*args, **kwargs)
+        if isinstance(result, DefaultValue):
+            return result.value
+        return result
+
+    return wrapper
+
+
+DeepUpdateT = TypeVar("DeepUpdateT", bound=MutableMapping)
+
+
+def deep_update(target: DeepUpdateT, source: DeepUpdateT) -> DeepUpdateT:
     """
     Helper method to do a recursive update of a map that may contain maps as values.
 
     .. invisible-code-block: python
 
         from nunavut._utilities import deep_update
-        import collections.abc
 
     .. code-block:: python
 
@@ -186,13 +339,106 @@ def deep_update(target: DeepUpdateType, source: DeepUpdateType) -> DeepUpdateTyp
         assert "c" in target_map
         assert target_map["c"] == "see"
 
+    Note that this method is `DefaultValue` aware. If a value in the target map is a `DefaultValue` then it will not
+    overwrite the value in the target map. If the value in the source map is a `DefaultValue` then it will not be
+    used to update existing values of any type in the target map but will be used to update the target map if the
+    target map does not have a value for the given key. In such cases the `DefaultValue` will be inserted into the
+    target map.
+
+    .. code-block:: python
+
+        from nunavut import DefaultValue
+        target_map   =  {
+                            "a": { "one": 1, "two": DefaultValue(2) },
+                            "b": "not a default",
+                            "c": DefaultValue("one default...")
+                        }
+        update_from  =  {
+                            "a": { "two": { "i": "this value" }, "three": DefaultValue("that value")},
+                            "b": DefaultValue("see"),
+                            "c": DefaultValue("...deserves another."),
+                            "d": DefaultValue("This happened.")
+                        }
+
+        target_map   = deep_update(target_map, update_from)
+
+        assert target_map["a"]["one"] == 1
+        assert target_map["a"]["two"]["i"] == "this value"
+        assert target_map["a"]["three"] == "that value"
+        assert target_map["b"] == "not a default"
+        assert target_map["c"] == "...deserves another."
+        assert target_map["d"] == "This happened."
+
     """
     if isinstance(target, collections.abc.Mapping):
         for key, value in source.items():
             if isinstance(value, collections.abc.Mapping):
-                target[key] = deep_update(target.get(key, {}), cast(DeepUpdateType, value))
+                target[key] = deep_update(target.get(key, {}), cast(DeepUpdateT, value))
             else:
-                target[key] = value
+                DefaultValue.assign_to_if_not_default(target, key, value)
     else:
         target = copy.copy(source)
     return target
+
+
+PropertyT = TypeVar("PropertyT")
+
+
+class cached_property(Generic[PropertyT]):
+    """
+    Based on `functools.cached_property` (Python Foundation License 2.0, SPDX: PSF-2.0) implementation in Python 3.11,
+    this is both a backport for older Python versions and a version that omits the problematic lock as documented for
+    Python 3.12. As such, this version is not thread safe.
+
+    :param func: The function to be wrapped by this decorator.
+
+    .. invisible-code-block: python
+
+        from nunavut._utilities import cached_property
+
+        class Test:
+
+            @classmethod
+            @cached_property
+            def cls_test(cls) -> int:
+                return 1
+
+            def __init__(self) -> None:
+                self.calls = 0
+
+            @cached_property
+            def test(self) -> int:
+                self.calls += 1
+                return self.calls
+
+        t = Test()
+        assert t.test == 1
+        assert t.test == 1
+        assert t.test == 1
+        try:
+            _ = t.cls_test
+            assert False
+        except TypeError:
+            pass
+
+    """
+
+    _NOT_FOUND = object()
+
+    def __init__(self, func: Callable[..., PropertyT]):
+        self._func = func
+        self._attr_name: Optional[str] = None
+        self.__doc__ = func.__doc__
+
+    def __set_name__(self, owner: Any, name: str) -> None:
+        self._attr_name = name
+
+    def __get__(self, instance: Any, owner: Optional[Any] = None) -> PropertyT:
+        if self._attr_name is None:
+            raise TypeError("Cannot use cached_property instance without calling __set_name__ on it.")
+        cache = instance.__dict__
+        val = cast(PropertyT, cache.get(self._attr_name, self._NOT_FOUND))
+        if val is self._NOT_FOUND:
+            val = self._func(instance)
+            cache[self._attr_name] = val
+        return val

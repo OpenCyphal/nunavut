@@ -1,12 +1,14 @@
 #
-# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
-
+"""
+Jinja2 extensions for use with the Nunavut code generator.
+"""
 import typing
 
-from nunavut.jinja.jinja2 import Environment, TemplateAssertionError, UndefinedError, nodes
+from nunavut.jinja.jinja2 import TemplateAssertionError, UndefinedError, nodes
 from nunavut.jinja.jinja2.ext import Extension
 from nunavut.jinja.jinja2.parser import Parser
 
@@ -23,14 +25,14 @@ class JinjaAssert(Extension):
         .. invisible-code-block: python
 
             from nunavut.jinja.jinja2.exceptions import TemplateAssertionError
-            from nunavut.jinja import CodeGenEnvironment
+            from nunavut.jinja import CodeGenEnvironmentBuilder
             from nunavut.jinja.jinja2 import DictLoader
             from nunavut.jinja.extensions import JinjaAssert
             from nunavut.lang import LanguageContextBuilder
 
-            e = CodeGenEnvironment(lctx=LanguageContextBuilder().create(),
-                                   loader=DictLoader({'test': template}),
-                                   extensions=[JinjaAssert])
+            e = CodeGenEnvironmentBuilder(DictLoader({'test': template}), LanguageContextBuilder().create()) \
+                .set_extensions(JinjaAssert) \
+                .create()
             try:
                 e.get_template('test').render()
                 # huh. This should have raised a TemplateAssertionError
@@ -38,7 +40,7 @@ class JinjaAssert(Extension):
             except TemplateAssertionError:
                 pass
 
-        This extension also support provding an assertion message:
+        This extension also support providing an assertion message:
 
         .. code-block:: python
 
@@ -46,9 +48,9 @@ class JinjaAssert(Extension):
 
         .. invisible-code-block: python
 
-            e = CodeGenEnvironment(lctx=LanguageContextBuilder().create(),
-                                   loader=DictLoader({'test': template}),
-                                   extensions=[JinjaAssert])
+            e = CodeGenEnvironmentBuilder(DictLoader({'test': template}), LanguageContextBuilder().create())\
+                .set_extensions(JinjaAssert)\
+                .create()
             try:
                 e.get_template('test').render()
                 # huh. This should have raised a TemplateAssertionError
@@ -59,9 +61,6 @@ class JinjaAssert(Extension):
     """
 
     tags = set(["assert"])
-
-    def __init__(self, environment: Environment):
-        super().__init__(environment)
 
     def parse(self, parser: Parser) -> nodes.Node:
         """
@@ -115,7 +114,7 @@ class UseQuery(Extension):
         .. invisible-code-block: python
 
             from nunavut.jinja.jinja2.exceptions import TemplateAssertionError
-            from nunavut.jinja import CodeGenEnvironment
+            from nunavut.jinja import CodeGenEnvironmentBuilder
             from nunavut.jinja.jinja2 import DictLoader
             from nunavut.jinja.extensions import UseQuery
             from nunavut.lang import LanguageClassLoader
@@ -129,9 +128,9 @@ class UseQuery(Extension):
             lctx.get_target_language = MagicMock(return_value = ln_c)
 
 
-            e = CodeGenEnvironment(lctx=lctx,
-                                   loader=DictLoader({'test': template}),
-                                   extensions=[UseQuery])
+            e = CodeGenEnvironmentBuilder(DictLoader({'test': template}), lctx) \
+                .set_extensions(UseQuery)\
+                .create()
 
             try:
                 result = e.get_template('test').render()
@@ -157,9 +156,6 @@ class UseQuery(Extension):
     """
 
     tags = set(["ifuses", "ifnuses"])
-
-    def __init__(self, environment: Environment):
-        super().__init__(environment)
 
     def parse(self, parser: Parser) -> nodes.Node:
         """
@@ -195,12 +191,12 @@ class UseQuery(Extension):
                 node = nodes.If(lineno=parser.stream.current.lineno)
                 result.elif_.append(node)
                 continue
-            elif token.test("name:elifnuses"):
+            if token.test("name:elifnuses"):
                 negate = True
                 node = nodes.If(lineno=parser.stream.current.lineno)
                 result.elif_.append(node)
                 continue
-            elif token.test("name:else"):
+            if token.test("name:else"):
                 result.else_ = parser.parse_statements(
                     (
                         "name:endifuses",
@@ -221,11 +217,11 @@ class UseQuery(Extension):
             uses_query = typing.cast(
                 typing.Callable[..., bool], getattr(self.environment.target_language_uses_queries, uses_query_name)
             )
-        except AttributeError:
+        except AttributeError as e:
             raise UndefinedError(
-                'use query "{}" for language "{}" is not defined '
-                "(line={}, name={}, filename={})".format(uses_query_name, target_language.name, lineno, name, filename)
-            )
+                f'use query "{uses_query_name}" for language "{target_language.name}" is not defined '
+                "(line={lineno}, name={name}, filename={filename})"
+            ) from e
 
         return uses_query()
 

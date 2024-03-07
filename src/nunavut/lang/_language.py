@@ -1,7 +1,7 @@
 #
-# Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2022  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
 Language-specific support in nunavut.
@@ -56,21 +56,21 @@ class Language(metaclass=abc.ABCMeta):
                 my_lang = _GenericLanguage("foo", mock_config)
                 # module must be within 'nunavut'
                 assert False
-            except RuntimeError:
+            except ValueError:
                 pass
 
             try:
                 my_lang = _GenericLanguage("nunavut.foo", mock_config)
                 # module must be within 'nunavut.lang'
                 assert False
-            except RuntimeError:
+            except ValueError:
                 pass
 
             try:
                 my_lang = _GenericLanguage("not.nunavut.foo", mock_config)
                 # module must be within 'nunavut.lang'
                 assert False
-            except RuntimeError:
+            except ValueError:
                 pass
 
             my_lang = _GenericLanguage("nunavut.lang.foo", mock_config)
@@ -88,6 +88,7 @@ class Language(metaclass=abc.ABCMeta):
     WKCV_NAMED_TYPES = "named_types"
     WKCV_NAMED_VALUES = "named_values"
     WKCV_LANGUAGE_OPTIONS = "options"
+    WKCV_LANGUAGE_OPTION_DEFAULTS = "defaults"
 
     @classmethod
     def default_filter_id_for_target(cls, instance: typing.Any) -> str:
@@ -106,17 +107,23 @@ class Language(metaclass=abc.ABCMeta):
     # | LIFECYCLE AND DATA MODEL
     # +-----------------------------------------------------------------------+
 
-    def __init__(self, language_module_name: str, config: LanguageConfig, **kwargs: typing.Any):
-        self._globals = None  # type: typing.Optional[typing.Mapping[str, typing.Any]]
+    def __init__(
+        self, language_module_name: str, config: LanguageConfig, **kwargs: typing.Any
+    ):  # pylint: disable=unused-argument
+        self._globals: typing.Optional[typing.Mapping[str, typing.Any]] = None
         self._section = language_module_name
         if not self._section.startswith(LanguageClassLoader.MODULE_PREFIX):
-            raise RuntimeError("Unknown module name for language: {}".format(self._section))
+            raise ValueError(f"Unknown module name for language: {self._section}")
         self._language_name = LanguageClassLoader.to_language_name(self._section)
         self._config = config
-        self._language_options = config.get_config_value_as_dict(self._section, self.WKCV_LANGUAGE_OPTIONS, dict())
-        self._filters = dict()  # type: typing.Dict[str, typing.Callable]
-        self._tests = dict()  # type: typing.Dict[str, typing.Callable]
-        self._uses = dict()  # type: typing.Dict[str, typing.Callable]
+        self._filters: typing.Dict[str, typing.Callable] = {}
+        self._tests: typing.Dict[str, typing.Callable] = {}
+        self._uses: typing.Dict[str, typing.Callable] = {}
+
+        self._language_options = self._validate_language_options(
+            config.get_config_value_as_dict(self._section, self.WKCV_LANGUAGE_OPTION_DEFAULTS, {}),
+            config.get_config_value_as_dict(self._section, self.WKCV_LANGUAGE_OPTIONS, {}),
+        )
 
     def __getattr__(self, name: str) -> typing.Any:
         """
@@ -128,7 +135,34 @@ class Language(metaclass=abc.ABCMeta):
         try:
             return self.get_globals()[name]
         except KeyError as e:
-            raise AttributeError(e)
+            raise AttributeError(e) from e
+
+    def __str__(self) -> str:
+        return self._language_name
+
+    def _validate_language_options(
+        self, defaults: typing.Dict[str, typing.Any], options: typing.Dict[str, typing.Any]
+    ) -> typing.Dict[str, typing.Any]:
+        # pylint: disable=unused-argument
+        """
+        Subclasses may override this method to validate language options. It will be invoked once
+        by the base class constructor before setting the language options property.
+        :param defaults: The a section of the language configuration that contains default values for options. The
+                         format of this section is language-specific
+        :param options: The options to validate.
+        :return: The validated or modified options.
+        :throws: ValueError if the options are invalid.
+        """
+        return options
+
+    def _validate_globals(self, globals_map: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
+        """
+        Subclasses may override this method to populate additional language-specific globals
+        :param globals_map: The globals map to validate.
+        :return: The validated or modified globals map.
+        :throws: ValueError if the globals are invalid.
+        """
+        return globals_map
 
     # +-----------------------------------------------------------------------+
     # | PROPERTIES
@@ -222,10 +256,6 @@ class Language(metaclass=abc.ABCMeta):
     # | METHODS
     # +-----------------------------------------------------------------------+
 
-    def _add_additional_globals(self, globals_map: typing.Dict[str, typing.Any]) -> None:
-        """Subclasses may override this method to populate additional language-specific globals"""
-        pass
-
     def get_support_module(self) -> typing.Tuple[str, typing.Tuple[int, int, int], typing.Optional["types.ModuleType"]]:
         """
         Returns the module object for the language support files.
@@ -247,7 +277,7 @@ class Language(metaclass=abc.ABCMeta):
             assert support_version[0] == 1
 
         """
-        module_name = "{}.support".format(self._section)
+        module_name = f"{self._section}.support"
 
         try:
             module = importlib.import_module(module_name)
@@ -261,6 +291,9 @@ class Language(metaclass=abc.ABCMeta):
 
     @functools.lru_cache()
     def get_dependency_builder(self, for_type: pydsdl.Any) -> DependencyBuilder:
+        """
+        Get a dependency builder for the given type.
+        """
         return DependencyBuilder(for_type)
 
     @abc.abstractmethod
@@ -270,9 +303,8 @@ class Language(metaclass=abc.ABCMeta):
         :param Dependencies dep_types: A description of the dependencies includes are needed for.
         :return: A list of include file paths. The list may be empty if no includes were needed.
         """
-        pass
 
-    def filter_id(self, instance: typing.Any, id_type: str = "any") -> str:
+    def filter_id(self, instance: typing.Any, id_type: str = "any") -> str:  # pylint: disable=unused-argument
         """
         Produces a valid identifier in the language for a given object. The encoding may not be reversible.
 
@@ -299,11 +331,10 @@ class Language(metaclass=abc.ABCMeta):
                                     value can be 'typedef', 'macro', 'function', or 'enum'.
                                     Use 'any' to apply stropping rules for all identifier types to the instance.
         """
-        short_name = "{short}_{major}_{minor}".format(short=t.short_name, major=t.version.major, minor=t.version.minor)
+        short_name = f"{t.short_name}_{t.version.major}_{t.version.minor}"
         if YesNoDefault.test_truth(stropping, self.enable_stropping):
             return self.filter_id(short_name, id_type)
-        else:
-            return short_name
+        return short_name
 
     def get_config_value(self, key: str, default_value: typing.Optional[str] = None) -> str:
         """
@@ -352,7 +383,7 @@ class Language(metaclass=abc.ABCMeta):
 
         :param str key:           The config value to retrieve.
         :param default_value:     The value to return if the key was not in the configuration. If provided this method
-            will not raise a KeyError nor a TypeError.
+                                  will not raise a KeyError nor a TypeError.
         :type default_value: typing.Optional[typing.Mapping[str, typing.Any]]
         :return:                  Either the value from the config or the default_value if provided.
         :rtype: typing.Mapping[str, typing.Any]
@@ -370,7 +401,7 @@ class Language(metaclass=abc.ABCMeta):
 
         :param str key:           The config value to retrieve.
         :param default_value:     The value to return if the key was not in the configuration. If provided this method
-            will not raise a KeyError nor a TypeError.
+                                  will not raise a KeyError nor a TypeError.
         :type default_value:      typing.Optional[typing.List[typing.Any]]
         :return:                  Either the value from the config or the default_value if provided.
         :rtype:                   typing.List[typing.Any]
@@ -408,9 +439,9 @@ class Language(metaclass=abc.ABCMeta):
         if module is not None:
             # All language support modules must provide a list_support_files method
             # to allow the copy generator access to the packaged support files.
-            list_support_files = getattr(
+            list_support_files: typing.Callable[[ResourceType], typing.Generator[pathlib.Path, None, None]] = getattr(
                 module, "list_support_files"
-            )  # type: typing.Callable[[ResourceType], typing.Generator[pathlib.Path, None, None]]
+            )
             return list_support_files(resource_type)
         else:
             return empty_list_support_files()
@@ -466,16 +497,14 @@ class Language(metaclass=abc.ABCMeta):
         :return: A mapping of global names to global values.
         """
         if self._globals is None:
-            globals_map = dict()  # type: typing.Dict[str, typing.Any]
+            globals_map: typing.Dict[str, typing.Any] = {}
 
             for key, value in self.named_types.items():
-                globals_map["typename_{}".format(key)] = value
+                globals_map[f"typename_{key}"] = value
             for key, value in self.named_values.items():
-                globals_map["valuetoken_{}".format(key)] = value
+                globals_map[f"valuetoken_{key}"] = value
 
-            self._add_additional_globals(globals_map)
-
-            self._globals = globals_map
+            self._globals = self._validate_globals(globals_map)
         return self._globals
 
     def get_options(self) -> typing.Mapping[str, typing.Any]:
@@ -537,7 +566,7 @@ class LanguageClassLoader:
     def to_language_name(cls, unknown_string: str) -> str:
         """
         Helper method to take a string that is either a language name or a language module name
-        and always return a langauge name.
+        and always return a language name.
 
         .. invisible-code-block: python
             from nunavut.lang import LanguageClassLoader
@@ -556,7 +585,7 @@ class LanguageClassLoader:
     def to_language_module_name(cls, unknown_string: str) -> str:
         """
         Helper method to take a string that is either a language name or a language module name
-        and always return a langauge module name.
+        and always return a language module name.
 
         .. invisible-code-block: python
             from nunavut.lang import LanguageClassLoader
@@ -578,14 +607,17 @@ class LanguageClassLoader:
         parser = LanguageConfig()
         for resource in iter_package_resources(cls.MODULE_NAME, ".yaml"):
             ini_string = resource.read_text()
-            parser.update_from_string(ini_string)
+            parser.update_from_yaml_string(ini_string)
         return parser
 
     def __init__(self) -> None:
-        self._config = None  # type: typing.Optional[LanguageConfig]
+        self._config: typing.Optional[LanguageConfig] = None
 
     @classmethod
-    def load_language_module(cls, language_name: str) -> "types.ModuleType":
+    def load_language_module(cls, language_name: str) -> types.ModuleType:
+        """
+        Load a language module by name.
+        """
         module_name = cls.to_language_module_name(language_name)
         return importlib.import_module(module_name)
 
@@ -621,9 +653,7 @@ class LanguageClassLoader:
             language_type = typing.cast(typing.Type["Language"], getattr(ln_module, "Language"))
         except AttributeError:
             logging.debug(
-                "Unable to find a Language object in nunavut.lang.{}. Using a Generic language object".format(
-                    language_name
-                )
+                "Unable to find a Language object in nunavut.lang.%s. Using a Generic language object", language_name
             )
             language_type = _GenericLanguage
 

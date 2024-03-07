@@ -68,7 +68,7 @@ Nunavut is invoked to generate code for the former.
 
 .. code-block:: shell
 
-    nnvg --target-language c --target-endianness=little --enable-serialization-asserts public_regulated_data_types/reg --lookup-dir public_regulated_data_types/uavcan
+    nnvg --target-language c --enable-serialization-asserts public_regulated_data_types/reg --lookup-dir public_regulated_data_types/uavcan
 
 Generate HTML documentation pages using the command-line tool
 -------------------------------------------------------------
