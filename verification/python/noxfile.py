@@ -4,6 +4,7 @@
 # type: ignore
 
 import os
+import sys
 import shutil
 from pathlib import Path
 import nox
@@ -46,6 +47,8 @@ def clean(session):
 
 @nox.session(python=PYTHONS)
 def test(session):
+    # Log the Python version
+    session.run("python", "--version")
     session.install("-e", str(NUNAVUT_DIR))
     session.install("-e", ".")
     session.install("-r", "generated_code_requirements.txt")
