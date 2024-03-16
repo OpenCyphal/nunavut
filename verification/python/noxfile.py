@@ -50,10 +50,10 @@ def test(session):
     session.install("-e", ".")
     session.install("-r", "generated_code_requirements.txt")
     session.install(
-        "pytest     ~= 7.3",
-        "coverage   ~= 7.2",
-        "mypy       ~= 1.2",
-        "pylint     ~= 2.17",
+        "pytest     ~= 8.1",
+        "coverage   ~= 7.4",
+        "mypy       ~= 1.9",
+        "pylint     ~= 3.1",
     )
 
     # The tmp dir will contain the DSDL-generated packages. We do not want to contaminate the source tree.
