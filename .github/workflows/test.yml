@@ -232,3 +232,5 @@ jobs:
       run: |
         cd verification/python
         nox
+      env:
+        FORCE_COLOR: 1
