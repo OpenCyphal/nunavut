@@ -1,7 +1,7 @@
 #
-# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2020  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
 Empty python package to ensure the support generator doesn't explode.
@@ -16,4 +16,9 @@ __version__ = "1.0.0"
 
 
 def list_support_files(resource_type: ResourceType = ResourceType.ANY) -> typing.Generator[pathlib.Path, None, None]:
+    """
+    Get a list of javascript support files embedded in this package.
+    :param resource_type: A type of support file to list.
+    """
+    # pylint: disable=unused-argument
     return empty_list_support_files()

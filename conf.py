@@ -24,13 +24,13 @@ author = "OpenCyphal Development Team"
 
 _version_tuple = nunavut_version.split(".")
 # The short X.Y version
-version = "{}.{}".format(_version_tuple[0], _version_tuple[1])
+version = f"{_version_tuple[0]}.{_version_tuple[1]}"
 # The full version, including alpha/beta/rc tags
 release = nunavut_version
 
-exclude_patterns = ["**/test", "**/.nox"]
+exclude_patterns = ["**/test", "verification"]
 
-with open(".gitignore", "r") as gif:
+with open(".gitignore", "r", encoding="utf-8") as gif:
     for line in gif:
         stripped = line.strip()
         if len(stripped) > 0 and not stripped.startswith("#"):
@@ -55,6 +55,7 @@ extensions = [
     "sphinxarg.ext",
     "sphinx.ext.intersphinx",
     "sphinxemoji.sphinxemoji",
+    "sphinx_rtd_theme"
 ]
 
 # Add any paths that contain templates here, relative to this directory.

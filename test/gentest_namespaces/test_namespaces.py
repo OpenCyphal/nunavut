@@ -9,24 +9,30 @@ import typing
 from pathlib import Path
 
 import pytest
+from pydsdl import Any, CompositeType, read_namespace
+
 from nunavut import Namespace, build_namespace_tree
 from nunavut._utilities import YesNoDefault
 from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import Language, LanguageContext, LanguageContextBuilder
-from pydsdl import Any, CompositeType, read_namespace
 
 
 class DummyType(Any):
     """Fake dsdl 'any' type for testing."""
 
     def __init__(self, namespace: str = "uavcan", name: str = "Dummy"):
-        self._full_name = "{}.{}".format(namespace, name)
+        self._full_name = f"{namespace}.{name}"
 
     # +-----------------------------------------------------------------------+
-    # | DUCK TYPEING: CompositeType
+    # | DUCK TYPING: CompositeType
     # +-----------------------------------------------------------------------+
     @property
     def full_name(self) -> str:
+        """
+        Returns the full name of the object.
+
+        :return: The full name as a string.
+        """
         return self._full_name
 
     # +-----------------------------------------------------------------------+
@@ -36,8 +42,7 @@ class DummyType(Any):
     def __eq__(self, other: object) -> bool:
         if isinstance(other, DummyType):
             return self._full_name == other._full_name
-        else:
-            return False
+        return False
 
     def __str__(self) -> str:
         return self.full_name
@@ -49,6 +54,17 @@ class DummyType(Any):
 def gen_test_namespace(
     gen_paths: typing.Any, language_context: LanguageContext
 ) -> typing.Tuple[Namespace, str, typing.List[CompositeType]]:
+    """
+    Generate a test namespace.
+
+    :param gen_paths (typing.Any): The paths for generating the namespace.
+    :param language_context (LanguageContext): The language context for generating the namespace.
+
+    :return (typing.Tuple[Namespace, str, typing.List[CompositeType]]):
+        A tuple containing the generated namespace,
+        the root namespace path, and a list of composite types.
+
+    """
     root_namespace_path = str(gen_paths.dsdl_dir / Path("scotec"))
     includes = [str(gen_paths.dsdl_dir / Path("uavcan"))]
     compound_types = read_namespace(root_namespace_path, includes, allow_unregulated_fixed_port_id=True)
@@ -85,7 +101,7 @@ def test_get_all_types(gen_paths):  # type: ignore
     """Verify the get_all_namespaces method in Namespace"""
     language_context = LanguageContextBuilder(include_experimental_languages=True).set_target_language("js").create()
     namespace, _, _ = gen_test_namespace(gen_paths, language_context)
-    index = dict()
+    index = {}
     for ns, path in namespace.get_all_types():
         index[path] = ns
 
@@ -140,7 +156,7 @@ def test_namespace_namespace_template(gen_paths):  # type: ignore
 
 
 def test_namespace_generation(gen_paths):  # type: ignore
-    """Test actually generating a namepace file."""
+    """Test actually generating a namespace file."""
     language_context = (
         LanguageContextBuilder(include_experimental_languages=True)
         .set_target_language("js")
@@ -162,7 +178,7 @@ def test_namespace_generation(gen_paths):  # type: ignore
 
     assert outfile is not None
 
-    with open(str(outfile), "r") as json_file:
+    with open(str(outfile), "r", encoding="utf-8") as json_file:
         json_blob = json.load(json_file)
 
     assert json_blob is not None
@@ -180,34 +196,38 @@ def test_build_namespace_tree_from_nothing(gen_paths):  # type: ignore
 
 
 @pytest.mark.parametrize(
-    "language_key,expected_file_ext,expected_stropp_part_0,expected_stropp_part_1",
+    "language_key,expected_file_ext,expected_strop_part_0,expected_strop_part_1",
     [("c", ".h", "_typedef", "str"), ("py", ".py", "typedef", "str_")],
 )  # type: ignore
 def test_namespace_stropping(
-    gen_paths, language_key, expected_file_ext, expected_stropp_part_0, expected_stropp_part_1
+    gen_paths,
+    language_key: str,
+    expected_file_ext: str,
+    expected_strop_part_0: str,
+    expected_strop_part_1: str,
 ):
     """Test generating a namespace that uses a reserved keyword for a given language."""
     language_context = (
         LanguageContextBuilder(include_experimental_languages=True).set_target_language(language_key).create()
     )
-    namespace, root_namespace_path, compound_types = gen_test_namespace(gen_paths, language_context)
+    namespace, _, compound_types = gen_test_namespace(gen_paths, language_context)
     assert len(compound_types) == 2
     generator = DSDLCodeGenerator(
         namespace, generate_namespace_types=YesNoDefault.YES, templates_dir=gen_paths.templates_dir / Path("default")
     )
     generator.generate_all()
 
-    expected_stropped_ns = "scotec.{}.{}".format(expected_stropp_part_0, expected_stropp_part_1)
+    expected_stropped_ns = f"scotec.{expected_strop_part_0}.{expected_strop_part_1}"
     outfile = gen_paths.find_outfile_in_namespace(expected_stropped_ns, namespace)
 
     assert outfile is not None
 
-    with open(str(outfile), "r") as json_file:
+    with open(str(outfile), "r", encoding="utf-8") as json_file:
         json_blob = json.load(json_file)
 
     assert json_blob is not None
 
     output_path_for_stropped = namespace.find_output_path_for_type(compound_types[1])
     expected_stable_path = gen_paths.out_dir / "scotec"
-    expected_path_and_file = expected_stable_path / expected_stropp_part_0 / expected_stropp_part_1 / "ATOMIC_TYPE_0_1"
+    expected_path_and_file = expected_stable_path / expected_strop_part_0 / expected_strop_part_1 / "ATOMIC_TYPE_0_1"
     assert expected_path_and_file.with_suffix(expected_file_ext) == output_path_for_stropped

@@ -1,8 +1,9 @@
 #
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
+# cSpell:ignore scotec, herringtec
 import json
 import os
 import pathlib
@@ -19,7 +20,7 @@ from nunavut.lang._language import LanguageClassLoader
 @pytest.mark.parametrize("env_var_name", ["DSDL_INCLUDE_PATH"])
 def test_DSDL_INCLUDE_PATH(gen_paths: typing.Any, run_nnvg: typing.Callable, env_var_name: str) -> None:
     """
-    Verify that supported environment variables are used by nnvg.
+    Verify that the DSDL_INCLUDE_PATH environment variable and any aliases are used by nnvg.
     """
 
     nnvg_args0 = [
@@ -38,7 +39,7 @@ def test_DSDL_INCLUDE_PATH(gen_paths: typing.Any, run_nnvg: typing.Callable, env
 
     scotec_path = (gen_paths.dsdl_dir / pathlib.Path("scotec")).as_posix()
     herringtec_path = (gen_paths.dsdl_dir / pathlib.Path("herringtec")).as_posix()
-    env = {env_var_name: "{}{}{}".format(herringtec_path, os.pathsep, scotec_path)}
+    env = {env_var_name: f"{herringtec_path}{os.pathsep}{scotec_path}"}
     run_nnvg(gen_paths, nnvg_args0, env=env)
 
 
@@ -94,7 +95,7 @@ def test_list_inputs(gen_paths: typing.Any, run_nnvg: typing.Callable, generate_
         (gen_paths.dsdl_dir / pathlib.Path("scotec")).as_posix(),
         "--list-inputs",
         (gen_paths.dsdl_dir / pathlib.Path("uavcan")).as_posix(),
-        "--generate-support={}".format(generate_support),
+        f"--generate-support={generate_support}",
     ]
 
     if generate_support == "only":

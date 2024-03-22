@@ -1,7 +1,7 @@
 #
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
     Filters for generating C. All filters in this
@@ -10,7 +10,6 @@
 
 import enum
 import fractions
-import functools
 import re
 import typing
 
@@ -24,7 +23,7 @@ from nunavut._templates import (
     template_language_test,
     template_volatile_filter,
 )
-from nunavut._utilities import YesNoDefault
+from nunavut._utilities import YesNoDefault, cached_property
 from nunavut.jinja.environment import Environment
 from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
 from nunavut.lang._language import Language as BaseLanguage
@@ -52,8 +51,8 @@ class Language(BaseLanguage):
         # we couldn't help after all. raise the pending error.
         raise pending_error
 
-    @functools.lru_cache(maxsize=None)
-    def _get_token_encoder(self) -> TokenEncoder:
+    @cached_property
+    def _token_encoder(self) -> TokenEncoder:
         """
         Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
         """
@@ -72,12 +71,12 @@ class Language(BaseLanguage):
             if dep_types.uses_primitive_static_array:
                 # We include this for memset.
                 std_includes.append("string.h")
-        return ["<{}>".format(include) for include in sorted(std_includes)]
+        return [f"<{include}>" for include in sorted(std_includes)]
 
     def filter_id(self, instance: typing.Any, id_type: str = "any") -> str:
         raw_name = self.default_filter_id_for_target(instance)
 
-        vne = self._get_token_encoder()
+        vne = self._token_encoder
         return vne.strop(raw_name, id_type)
 
 
@@ -286,7 +285,7 @@ class _CFit(enum.Enum):
         return intname
 
     def to_c_float(self) -> str:
-        if self.value == 8 or self.value == 16 or self.value == 32:
+        if self.value in (8, 16, 32):
             return "float"
         else:
             return "double"

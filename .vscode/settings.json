@@ -1,19 +1,18 @@
 {
     "python.defaultInterpreterPath": "${workspaceFolder}/.tox/local",
-    "python.linting.flake8Enabled": true,
-    "python.linting.pylintEnabled": false,
-    "python.linting.mypyEnabled": true,
-    "python.linting.pycodestyleEnabled": false,
-    "python.linting.enabled": true,
-    "python.linting.pycodestyleArgs": [
-        "--ignore",
-        "E501,E251,E701"
-    ],
     "python.testing.cwd": "${workspaceFolder}",
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-    "python.formatting.provider": "black",
-    "python.formatting.blackArgs": [
+    "pylint.args": [
+        "--rcfile=${workspaceFolder}/tox.ini"
+    ],
+    "black-formatter.args": [
+        "--line-length=120"
+    ],
+    "mypy-type-checker.args": [
+        "--config-file=${workspaceFolder}/tox.ini"
+    ],
+    "flake8.args": [
         "--line-length=120"
     ],
     "files.exclude": {
@@ -142,9 +141,6 @@
         "compare": "cpp",
         "concepts": "cpp"
     },
-    "python.linting.mypyArgs": [
-        "--config-file=${workspaceFolder}/tox.ini"
-    ],
     "editor.wordWrapColumn": 120,
     "editor.rulers": [
         120
@@ -153,15 +149,6 @@
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
     "files.trimTrailingWhitespace": true,
-    "spellright.language": [
-        "en"
-    ],
-    "spellright.documentTypes": [
-        "markdown",
-        "latex",
-        "plaintext",
-        "cpp"
-    ],
     "testMate.cpp.test.advancedExecutables": [
         {
             "pattern": "verification/build_vscode/**/suite/{test,Test,TEST}_*",
@@ -187,80 +174,20 @@
         "environment": "",
         "sourceFileMap": "${sourceFileMapObj}"
     },
-    "spellright.ignoreRegExps": [
-        "/DLCs/g",
-        "/rhs/ig",
-        "/_?rx_?/",
-        "/_?tx_?/",
-        "/Kirienko/g",
-        "/Pavel/g",
-        "/gtests/g",
-        "/(lib)?cyphal/g",
-        "/ovfl/g",
-        "/Cyphal/ig",
-        "/tparam/g",
-        "/\\.hpp/g",
-        "/endcode/g",
-        "/defgroup/",
-        "/dst/",
-        "/lvs/",
-        "/g(oogle)?mock/",
-        "/g(oogle)?test/",
-        "/(?:de?|con)struct(?:able?|or)/",
-        "/(lib)?uavcan/",
-        "/nunavut/i",
-        "/dsdl/i",
-        "/bitspan/"
-    ],
-    "cSpell.words": [
-        "allclose",
-        "astype",
-        "autouse",
-        "bitorder",
-        "bools",
-        "builtins",
-        "Bxxx",
-        "caplog",
-        "CDEF",
-        "codegen",
-        "Cyphal",
-        "doctests",
-        "DSDL",
-        "dtype",
-        "EDCB",
-        "elementwise",
-        "emptylines",
-        "endianness",
-        "errstate",
-        "fillvalue",
-        "fpid",
-        "frombuffer",
-        "htmlcov",
-        "itemsize",
-        "Kirienko",
-        "maxsplit",
-        "nbytes",
-        "ndarray",
-        "ndim",
-        "nnvg",
-        "noxfile",
-        "opencyphal",
-        "outdir",
-        "packbits",
-        "Pavel",
-        "postprocessor",
-        "postprocessors",
-        "pycyphal",
-        "pydsdl",
-        "roadmap",
-        "Sriram",
-        "tobytes",
-        "transcompilation",
-        "typecheck",
-        "uavcan",
-        "unpackbits",
-        "unseparate",
-        "unstropped",
-        "WKCV"
-    ],
+    "cSpell.allowCompoundWords": true,
+    "cSpell.caseSensitive": false,
+    "cSpell.customDictionaries": {
+        "cyphal" : {
+            "name": "Cyphal-words",
+            "path": "${workspaceRoot}/cyphal-words.txt",
+            "description": "Words used in Cyphal and UAVCAN to add to spell checker dictionaries.",
+            "addWords": true
+          },
+          "nunavut" : {
+            "name": "Nunavut-words",
+            "path": "${workspaceRoot}/.vscode/nunavut-words.txt",
+            "description": "Words used in in the Nunavut codebase to add to spell checker dictionaries.",
+            "addWords": true
+          }
+    }
 }

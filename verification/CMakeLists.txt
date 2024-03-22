@@ -285,7 +285,7 @@ endif()
 
 if(NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++14-17" OR NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr")
      #
-     # Generate serialization support headers with config matching the langauge standard
+     # Generate serialization support headers with config matching the language standard
      #
      create_dsdl_target(nunavut-support-array-with-allocator
                     ${NUNAVUT_VERIFICATION_LANG}
@@ -301,7 +301,7 @@ if(NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++14-17" OR NUNAVUT_VERIFICA
                     "only")
 
      #
-     # Generate additional types with config matching the langauge standard
+     # Generate additional types with config matching the language standard
      #
      create_dsdl_target(dsdl-test-array-with-allocator
                     ${NUNAVUT_VERIFICATION_LANG}

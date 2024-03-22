@@ -1,12 +1,13 @@
 #
-# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
     jinja-based :class:`~nunavut.generators.AbstractGenerator` implementation.
 """
 
+import abc
 import datetime
 import io
 import logging
@@ -15,15 +16,16 @@ import re
 import shutil
 import typing
 
-import nunavut._generators
-import nunavut.lang
-import nunavut._postprocessors
 import pydsdl
-from nunavut._utilities import ResourceType, YesNoDefault, ResourceSearchPolicy, TEMPLATE_SUFFIX
 from yaml import Dumper as YamlDumper
 from yaml import dump as yaml_dump
 
-from .environment import CodeGenEnvironment
+import nunavut._generators
+import nunavut._postprocessors
+import nunavut.lang
+from nunavut._utilities import TEMPLATE_SUFFIX, ResourceSearchPolicy, ResourceType, YesNoDefault
+
+from .environment import CodeGenEnvironmentBuilder
 from .jinja2 import Template
 from .loaders import DEFAULT_TEMPLATE_PATH, DSDLTemplateLoader
 
@@ -93,7 +95,7 @@ class CodeGenerator(nunavut._generators.AbstractGenerator):
         """
         Subroutine of _handle_post_processors method.
         """
-        from nunavut._postprocessors import LimitEmptyLines
+        from nunavut._postprocessors import LimitEmptyLines  # pylint: disable=import-outside-toplevel
 
         if post_processors is None:
             post_processors = [LimitEmptyLines(limit_empty_lines)]
@@ -114,7 +116,7 @@ class CodeGenerator(nunavut._generators.AbstractGenerator):
         """
         Subroutine of _handle_post_processors method.
         """
-        from nunavut._postprocessors import TrimTrailingWhitespace
+        from nunavut._postprocessors import TrimTrailingWhitespace  # pylint: disable=import-outside-toplevel
 
         if post_processors is None:
             post_processors = [TrimTrailingWhitespace()]
@@ -193,22 +195,32 @@ class CodeGenerator(nunavut._generators.AbstractGenerator):
 
         self._post_processors = self._handle_post_processors(target_language, post_processors)
 
-        self._env = CodeGenEnvironment(
-            lctx=language_context,
-            loader=self._dsdl_template_loader,
-            lstrip_blocks=lstrip_blocks,
-            trim_blocks=trim_blocks,
-            additional_filters=additional_filters,
-            additional_tests=additional_tests,
-            additional_globals=additional_globals,
+        env_builder = (
+            CodeGenEnvironmentBuilder(self._dsdl_template_loader, language_context)
+            .set_trim_blocks(trim_blocks)
+            .set_lstrip_blocks(lstrip_blocks)
         )
+        if additional_filters is not None:
+            env_builder.add_filters(**additional_filters)
+        if additional_tests is not None:
+            env_builder.add_tests(**additional_tests)
+        if additional_globals is not None:
+            env_builder.add_globals(**additional_globals)
+
+        self._env = env_builder.create()
 
     @property
     def dsdl_loader(self) -> DSDLTemplateLoader:
+        """
+        The template loader used by this generator.
+        """
         return self._dsdl_template_loader
 
     @property
     def language_context(self) -> nunavut.lang.LanguageContext:
+        """
+        The language context used by this generator.
+        """
         return self._namespace.get_language_context()
 
     # +-----------------------------------------------------------------------+
@@ -219,7 +231,7 @@ class CodeGenerator(nunavut._generators.AbstractGenerator):
             if allow_overwrite:
                 output_path.chmod(output_path.stat().st_mode | 0o220)
             else:
-                raise PermissionError("{} exists and allow_overwrite is False.".format(output_path))
+                raise PermissionError("{output_path} exists and allow_overwrite is False.")
 
     # +-----------------------------------------------------------------------+
     # | AbstractGenerator
@@ -233,6 +245,16 @@ class CodeGenerator(nunavut._generators.AbstractGenerator):
         :return: A list of paths to all templates found by this Generator object.
         """
         return self._dsdl_template_loader.get_templates()
+
+    @abc.abstractmethod
+    def generate_all(
+        self,
+        is_dryrun: bool = False,
+        allow_overwrite: bool = True,
+        omit_serialization_support: bool = False,
+        embed_auditing_info: bool = False,
+    ) -> typing.Iterable[pathlib.Path]:
+        raise NotImplementedError()
 
     # +-----------------------------------------------------------------------+
     # | PRIVATE
@@ -314,12 +336,12 @@ class CodeGenerator(nunavut._generators.AbstractGenerator):
                 elif isinstance(pp, nunavut._postprocessors.FilePostProcessor):
                     file_pps.append(pp)
                 else:
-                    raise ValueError("PostProcessor type {} is unknown.".format(type(pp)))
+                    raise ValueError(f"PostProcessor type {type(pp)} is unknown.")
         logger.debug("Using post-processors: %r %r", line_pps, file_pps)
 
         self._handle_overwrite(output_path, allow_overwrite)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(str(output_path), "w") as output_file:
+        with open(str(output_path), "w", encoding="utf-8") as output_file:
             if len(line_pps) > 0:
                 # The logic gets much more complex when doing line post-processing.
                 self._generate_with_line_buffer(output_file, template_gen, line_pps)
@@ -395,7 +417,7 @@ class DSDLCodeGenerator(CodeGenerator):
         """
         result = self.dsdl_loader.type_to_template(type(value))
         if result is None:
-            raise RuntimeError("No template found for type {}".format(type(value)))
+            raise RuntimeError(f"No template found for type {value}")
         return result.name
 
     def filter_type_to_include_path(self, value: typing.Any, resolve: bool = False) -> str:
@@ -462,7 +484,7 @@ class DSDLCodeGenerator(CodeGenerator):
             # and
             template = '{{ B | alignment_prefix }}'
 
-            # then ('str' is stropped to 'str_' before the version is suffixed)
+            # outputs
             rendered = 'aligned'
 
         .. invisible-code-block: python
@@ -479,7 +501,7 @@ class DSDLCodeGenerator(CodeGenerator):
             # and
             template = '{{ B | alignment_prefix }}'
 
-            # then ('str' is stropped to 'str_' before the version is suffixed)
+            # outputs
             rendered = 'unaligned'
 
         .. invisible-code-block: python
@@ -493,7 +515,7 @@ class DSDLCodeGenerator(CodeGenerator):
         if isinstance(offset, pydsdl.BitLengthSet):
             return "aligned" if offset.is_aligned_at_byte() else "unaligned"
         else:  # pragma: no cover
-            raise TypeError("Expected BitLengthSet, got {}".format(type(offset).__name__))
+            raise TypeError(f"Expected BitLengthSet, got {type(offset).__name__}")
 
     @staticmethod
     def filter_bit_length_set(values: typing.Optional[typing.Union[typing.Iterable[int], int]]) -> pydsdl.BitLengthSet:
@@ -521,7 +543,27 @@ class DSDLCodeGenerator(CodeGenerator):
             from nunavut.jinja import DSDLCodeGenerator
             import pydsdl
 
-            assert DSDLCodeGenerator.filter_remove_blank_lines('123\n  \n\n456\n\t\n\v\f\n789') == '123\n456\n789'
+        .. code-block:: python
+
+            # Given
+            text = '''123
+
+            456
+            \t
+            \v\f
+            789'''
+
+            # and
+            template = '{{ text | remove_blank_lines }}'
+
+            # then the black lines will be removed leaving...
+            rendered = '''123
+            456
+            789'''
+
+        .. invisible-code-block: python
+
+            jinja_filter_tester(DSDLCodeGenerator.filter_remove_blank_lines, template, rendered, 'c', text=text)
 
         """
         return re.sub(r"\n([ \t\f\v]*\n)+", r"\n", text)
@@ -545,12 +587,56 @@ class DSDLCodeGenerator(CodeGenerator):
             raise ValueError("The number of bits cannot be negative")
         return (int(n_bits) + 7) // 8
 
+    @staticmethod
+    def filter_text_table(
+        data: typing.Dict, start_each_line: str, column_sep: str = " : ", line_end: str = "\n"
+    ) -> str:
+        """
+        Create a text table from a dictionary of data.
+
+        .. invisible-code-block: python
+
+            from nunavut.jinja import DSDLCodeGenerator
+            import pydsdl
+
+        .. code-block:: python
+
+            # Given
+            table = {
+                "banana": "yellow",
+                "apple": "red",
+                "grape": "purple"
+            }
+
+            # and
+            template = '''
+            {{ table | text_table("//  ", " | ", "\\n") }}'''
+
+            # then
+            rendered = '''
+            //  banana | yellow
+            //  apple  | red
+            //  grape  | purple'''
+
+        .. invisible-code-block: python
+
+            jinja_filter_tester(DSDLCodeGenerator.filter_text_table, template, rendered, 'c', table=table)
+
+        """
+        # Find the longest key to set the width of the first column
+        key_width = max(len(key) for key in data.keys())
+
+        output = []
+        for key, value in data.items():
+            output.append(f"{start_each_line}{key:<{key_width}}{column_sep}{value}".rstrip())
+        return line_end.join(output)
+
     # +-----------------------------------------------------------------------+
     # | JINJA : tests
     # +-----------------------------------------------------------------------+
 
     @staticmethod
-    def is_None(value: typing.Any) -> bool:
+    def is_None(value: typing.Any) -> bool:  # pylint: disable=invalid-name
         """
         Tests if a value is ``None``
 
@@ -692,11 +778,17 @@ class DSDLCodeGenerator(CodeGenerator):
     # +-----------------------------------------------------------------------+
 
     def generate_all(
-        self, is_dryrun: bool = False, allow_overwrite: bool = True, omit_serialization_support: bool = False
+        self,
+        is_dryrun: bool = False,
+        allow_overwrite: bool = True,
+        omit_serialization_support: bool = False,
+        embed_auditing_info: bool = False,
     ) -> typing.Iterable[pathlib.Path]:
         generated = []  # type: typing.List[pathlib.Path]
         self._env.update_nunavut_globals(
-            *self.language_context.get_target_language().get_support_module(), is_dryrun, omit_serialization_support
+            *self.language_context.get_target_language().get_support_module(),
+            omit_serialization_support,
+            embed_auditing_info,
         )
         provider = self.namespace.get_all_types if self.generate_namespace_types else self.namespace.get_all_datatypes
         for parsed_type, output_path in provider():
@@ -820,10 +912,16 @@ class SupportGenerator(CodeGenerator):
         return files
 
     def generate_all(
-        self, is_dryrun: bool = False, allow_overwrite: bool = True, omit_serialization_support: bool = False
+        self,
+        is_dryrun: bool = False,
+        allow_overwrite: bool = True,
+        omit_serialization_support: bool = False,
+        embed_auditing_info: bool = False,
     ) -> typing.Iterable[pathlib.Path]:
         target_language = self.language_context.get_target_language()
-        self._env.update_nunavut_globals(*target_language.get_support_module(), is_dryrun, omit_serialization_support)
+        self._env.update_nunavut_globals(
+            *target_language.get_support_module(), omit_serialization_support, embed_auditing_info
+        )
         target_path = pathlib.Path(self.namespace.get_support_output_folder()) / self._sub_folders
 
         line_pps = []  # type: typing.List['nunavut._postprocessors.LinePostProcessor']
@@ -895,8 +993,8 @@ class SupportGenerator(CodeGenerator):
         target: pathlib.Path,
         line_pps: typing.List["nunavut._postprocessors.LinePostProcessor"],
     ) -> None:
-        with open(str(target), "w") as target_file:
-            with open(str(resource), "r") as resource_file:
+        with open(str(target), "w", encoding="utf-8") as target_file:
+            with open(str(resource), "r", encoding="utf-8") as resource_file:
                 for resource_line in resource_file:
                     if len(resource_line) > 1 and resource_line[-2] == "\r":
                         resource_line_tuple = (resource_line[0:-2], "\r\n")

@@ -1,7 +1,7 @@
 #
-# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
     Objects that utilize command-line inputs to run a program using Nunavut.
@@ -23,7 +23,7 @@ from nunavut._postprocessors import (
     SetFileMode,
     TrimTrailingWhitespace,
 )
-from nunavut._utilities import YesNoDefault
+from nunavut._utilities import DefaultValue, YesNoDefault
 from nunavut.lang import Language, LanguageContext, LanguageContextBuilder
 
 
@@ -31,12 +31,18 @@ class ArgparseRunner:
     """
     Runner that uses Python argparse arguments to define a run.
 
-    :param argparse.Namespace args: The commandline arguments.
+    :param root_namespace: The root namespace to generate code for.
+    :param argparse.Namespace args: The command line arguments.
     :param typing.Optional[typing.Union[str, typing.List[str]]] extra_includes: A list of paths to additional DSDL
         root folders.
     """
 
-    def __init__(self, args: argparse.Namespace, extra_includes: typing.Optional[typing.Union[str, typing.List[str]]]):
+    def __init__(
+        self,
+        root_namespace: pathlib.Path,
+        args: argparse.Namespace,
+        extra_includes: typing.Optional[typing.Union[str, typing.List[str]]],
+    ):
         self._args = args
 
         if extra_includes is None:
@@ -53,7 +59,7 @@ class ArgparseRunner:
 
         if self._args.generate_support != "only" and not self._args.list_configuration:
             type_map = read_dsdl_namespace(
-                self._args.root_namespace,
+                root_namespace,
                 self._extra_includes,
                 allow_unregulated_fixed_port_id=self._args.allow_unregulated_fixed_port_id,
             )
@@ -61,13 +67,12 @@ class ArgparseRunner:
             type_map = []
 
         self._root_namespace = build_namespace_tree(
-            type_map, self._args.root_namespace, self._args.outdir, self._language_context
+            type_map, str(root_namespace), self._args.outdir, self._language_context
         )
 
         #
         # nunavut : create generators
         #
-
         generator_args = {
             "generate_namespace_types": (
                 YesNoDefault.YES if self._args.generate_namespace_types else YesNoDefault.DEFAULT
@@ -112,8 +117,7 @@ class ArgparseRunner:
     def _should_generate_support(self) -> bool:
         if self._args.generate_support == "as-needed":
             return self._args.omit_serialization_support is None or not self._args.omit_serialization_support
-        else:
-            return bool(self._args.generate_support == "always" or self._args.generate_support == "only")
+        return bool(self._args.generate_support in ("always", "only"))
 
     def _build_ext_program_postprocessor(self, program: str) -> FilePostProcessor:
         subprocess_args = [program]
@@ -140,12 +144,18 @@ class ArgparseRunner:
         return post_processors
 
     def _create_language_context(self) -> LanguageContext:
-        language_options = dict()
+        language_options = {}
         if self._args.target_endianness is not None:
             language_options["target_endianness"] = self._args.target_endianness
-        language_options["omit_float_serialization_support"] = self._args.omit_float_serialization_support
-        language_options["enable_serialization_asserts"] = self._args.enable_serialization_asserts
-        language_options["enable_override_variable_array_capacity"] = self._args.enable_override_variable_array_capacity
+        language_options["omit_float_serialization_support"] = (
+            True if self._args.omit_float_serialization_support else DefaultValue(False)
+        )
+        language_options["enable_serialization_asserts"] = (
+            True if self._args.enable_serialization_asserts else DefaultValue(False)
+        )
+        language_options["enable_override_variable_array_capacity"] = (
+            True if self._args.enable_override_variable_array_capacity else DefaultValue(False)
+        )
         if self._args.language_standard is not None:
             language_options["std"] = self._args.language_standard
 
@@ -162,9 +172,7 @@ class ArgparseRunner:
             include_experimental_languages=self._args.experimental_languages
         )
         builder.set_target_language(target_language_name)
-        builder.load_default_config(self._args.language_standard)
-        builder.set_additional_config_files(additional_config_files)
-        builder.validate_langauge_options()
+        builder.add_config_files(*additional_config_files)
         builder.set_target_language_extension(self._args.output_extension)
         builder.set_target_language_configuration_override(
             Language.WKCV_NAMESPACE_FILE_STEM, self._args.namespace_output_stem
@@ -184,10 +192,10 @@ class ArgparseRunner:
 
     def _list_outputs_only(self) -> None:
         if self._args.generate_support != "only":
-            self._stdout_lister(self._generator.generate_all(is_dryrun=True), lambda p: str(p))
+            self._stdout_lister(self._generator.generate_all(is_dryrun=True), str)
 
         if self._should_generate_support():
-            self._stdout_lister(self._support_generator.generate_all(is_dryrun=True), lambda p: str(p))
+            self._stdout_lister(self._support_generator.generate_all(is_dryrun=True), str)
 
     def _list_inputs_only(self) -> None:
         if self._args.generate_support != "only":
@@ -216,7 +224,7 @@ class ArgparseRunner:
     def _list_configuration_only(self) -> None:
         lctx = self._language_context
 
-        import yaml
+        import yaml  # pylint: disable=import-outside-toplevel
 
         sys.stdout.write("target_language: '")
         sys.stdout.write(lctx.get_target_language().name)
@@ -230,6 +238,7 @@ class ArgparseRunner:
                 is_dryrun=self._args.dry_run,
                 allow_overwrite=not self._args.no_overwrite,
                 omit_serialization_support=self._args.omit_serialization_support,
+                embed_auditing_info=self._args.embed_auditing_info,
             )
 
         if self._args.generate_support != "only":
@@ -237,4 +246,5 @@ class ArgparseRunner:
                 is_dryrun=self._args.dry_run,
                 allow_overwrite=not self._args.no_overwrite,
                 omit_serialization_support=self._args.omit_serialization_support,
+                embed_auditing_info=self._args.embed_auditing_info,
             )

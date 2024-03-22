@@ -1,9 +1,10 @@
 #
-# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2020  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
-"""Language-specific support in nunavut.
+"""
+Language-specific support in nunavut.
 
 This package contains modules that provide specific support for generating
 source for various languages using templates.
@@ -13,9 +14,8 @@ import logging
 import pathlib
 import typing
 
-from ._config import LanguageConfig as LanguageConfig
-from ._language import Language as Language
-from ._language import LanguageClassLoader as LanguageClassLoader
+from ._config import LanguageConfig
+from ._language import Language, LanguageClassLoader
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +25,10 @@ class UnsupportedLanguageError(ValueError):
     Error type raised if an unsupported language type is used.
     """
 
-    pass
-
 
 class LanguageContextBuilder:
     """
-    Used to instatiate new :class:`LanguageContext` objects.
+    Used to instantiate new :class:`LanguageContext` objects.
 
     The simplest invocation will always work by using the :data:`LanguageContextBuilder.DEFAULT_TARGET_LANGUAGE`
     constant:
@@ -83,6 +81,9 @@ class LanguageContextBuilder:
 
     @property
     def config(self) -> LanguageConfig:
+        """
+        The configuration object that will be used to create the language context.
+        """
         return self._ln_loader.config
 
     # +-----------------------------------------------------------------------+
@@ -92,7 +93,7 @@ class LanguageContextBuilder:
     def set_target_language_configuration_override(self, key: str, value: typing.Any) -> "LanguageContextBuilder":
         """
         Stores a key and value to override in the configuration for a language target when a LanguageContext is crated.
-        These overrides are always set under the language section of the target langauge.
+        These overrides are always set under the language section of the target language.
 
         .. invisible-code-block: python
 
@@ -114,7 +115,7 @@ class LanguageContextBuilder:
 
             builder.set_target_language_configuration_override(Language.WKCV_DEFINITION_FILE_EXTENSION, ".foo")
 
-        ...but that value will not be overriden until you create the target language:
+        ...but that value will not be overridden until you create the target language:
 
         .. code-block:: python
 
@@ -132,7 +133,7 @@ class LanguageContextBuilder:
 
             assert overridden_c_file_extension == ".foo"
 
-        Note that the config is scoped by the builder but is then inherited by the langauge objects created by the
+        Note that the config is scoped by the builder but is then inherited by the language objects created by the
         builder:
 
         .. code-block:: python
@@ -220,15 +221,16 @@ class LanguageContextBuilder:
             self._target_language_name = LanguageClassLoader.to_language_name(target_language)
         return self
 
-    def load_default_config(self, language_standard: str) -> None:
-        self._ln_loader.config.apply_defaults(language_standard)
-
-    def validate_langauge_options(self) -> None:
-        self._ln_loader.config.validate_language_options()
-
     def set_additional_config_files(
         self, additional_config_files: typing.List[pathlib.Path]
     ) -> "LanguageContextBuilder":
+        """
+        Deprecated. Use :func:`add_config_files` instead.
+        """
+        logger.warning("set_additional_config_files is deprecated. Use add_config_files instead.")
+        return self.add_config_files(*additional_config_files)
+
+    def add_config_files(self, *additional_config_files: pathlib.Path) -> "LanguageContextBuilder":
         """
         A list of paths to additional yaml files to load as configuration.
         These will override any values found in the :file:`nunavut.lang.properties.yaml` file and files
@@ -241,13 +243,13 @@ class LanguageContextBuilder:
             import textwrap
             from nunavut.lang import LanguageContextBuilder, Language, LanguageClassLoader
 
-            overrides_file = gen_paths.out_dir / pathlib.Path("overrides1.yaml")
+            overrides_file = gen_paths_for_module.out_dir / pathlib.Path("overrides1.yaml")
 
             overrides_data = {LanguageClassLoader.to_language_module_name("c"):
                 {Language.WKCV_DEFINITION_FILE_EXTENSION: ".foo"}
             }
 
-            with open(overrides_file, "w") as overrides_handle:
+            with open(overrides_file, "w", encoding="utf-8") as overrides_handle:
                 yaml.dump(overrides_data, overrides_handle)
 
         .. code-block:: python
@@ -255,7 +257,7 @@ class LanguageContextBuilder:
             target_language_w_overrides = (
                 LanguageContextBuilder()
                     .set_target_language("c")
-                    .set_additional_config_files([overrides_file])
+                    .add_config_files(overrides_file)
                     .create()
                     .get_target_language()
             )
@@ -270,7 +272,7 @@ class LanguageContextBuilder:
             assert target_language_w_overrides.extension == ".foo"
             assert target_language_no_overrides.extension == ".h"
 
-        Overrides are applies as unions. For example, given this override data:
+        Overrides are applied as unions. For example, given this override data:
 
         .. code-block:: python
 
@@ -284,8 +286,8 @@ class LanguageContextBuilder:
 
         .. invisible-code-block: python
 
-            second_overrides_file = gen_paths.out_dir / pathlib.Path("overrides2.yaml")
-            with open(second_overrides_file, "w") as overrides_handle:
+            second_overrides_file = gen_paths_for_module.out_dir / pathlib.Path("overrides2.yaml")
+            with open(second_overrides_file, "w", encoding="utf-8") as overrides_handle:
                 overrides_handle.write(textwrap.dedent(overrides_data))
 
         .. code-block:: python
@@ -293,7 +295,7 @@ class LanguageContextBuilder:
             target_language_w_overrides = (
                 LanguageContextBuilder()
                     .set_target_language("c")
-                    .set_additional_config_files([second_overrides_file])
+                    .add_config_files(second_overrides_file)
                     .create()
                     .get_target_language()
             )
@@ -301,16 +303,69 @@ class LanguageContextBuilder:
             assert ".foo" == target_language_w_overrides.extension
             assert "bar" == target_language_w_overrides.get_config_value("non-standard")
 
+        .. invisible-code-block: python
+
+            from nunavut import DefaultValue
+
+            # verification of issue #329 fix
+            with_default = {"enable_serialization_asserts" : DefaultValue(False) }
+            without_default = {"enable_serialization_asserts" : False }
+
+            # verification of issue #329 fix
+            overrides_data = '''
+                nunavut.lang.c:
+                    options:
+                        enable_serialization_asserts: true
+            '''
+
+            issue_329_overrides = gen_paths_for_module.out_dir / pathlib.Path("overrides329.yaml")
+            with open(issue_329_overrides, "w", encoding="utf-8") as overrides_handle:
+                overrides_handle.write(textwrap.dedent(overrides_data))
+
+            target_language_329_no_file_overrides = (
+                LanguageContextBuilder()
+                    .set_target_language("c")
+                    .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, with_default)
+                    .create()
+                    .get_target_language()
+            )
+
+            target_language_329_file_override = (
+                LanguageContextBuilder()
+                    .set_target_language("c")
+                    .add_config_files(issue_329_overrides)
+                    .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, with_default)
+                    .create()
+                    .get_target_language()
+            )
+
+            target_language_329_file_override_overridden = (
+                LanguageContextBuilder()
+                    .set_target_language("c")
+                    .add_config_files(issue_329_overrides)
+                    .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, without_default)
+                    .create()
+                    .get_target_language()
+            )
+
+            # default from command line
+            assert not target_language_329_no_file_overrides.get_option("enable_serialization_asserts")
+
+            # default from command line overridden by file
+            assert target_language_329_file_override.get_option("enable_serialization_asserts")
+
+            # command-line overrides file
+            assert not target_language_329_file_override_overridden.get_option("enable_serialization_asserts")
         """
         for additional_path in additional_config_files:
-            with open(str(additional_path), "r") as additional_file:
-                self._ln_loader.config.update_from_file(additional_file)
+            with open(str(additional_path), "r", encoding="utf-8") as additional_file:
+                self.config.update_from_yaml_file(additional_file)
 
         return self
 
     def create(self) -> "LanguageContext":
         """
-        Applies all pending configuration overrides to the internal :class:`LanguageConfig` object and instatiates
+        Applies all pending configuration overrides to the internal :class:`LanguageConfig` object and instantiates
         a :class:`LanguageContext` object.
         """
         # First find the target language to use...
@@ -337,13 +392,11 @@ class LanguageContextBuilder:
         try:
             language = self._ln_loader.new_language(language_name)
         except ImportError as e:
-            logger.debug("Import Error {} when trying to load language {}".format(str(e), language_name))
-            raise KeyError("language {} is not a supported language".format(language_name))
+            logger.debug("Import Error %s when trying to load language %s", e, language_name)
+            raise KeyError(f"language {language_name} is not a supported language") from e
         if not (language.stable_support or self._include_experimental_languages):
             raise UnsupportedLanguageError(
-                "{} support is only experimental, but experimental language support is not enabled".format(
-                    language_name
-                )
+                f"{language_name} support is only experimental, but experimental language support is not enabled"
             )
         return language
 
@@ -377,9 +430,8 @@ class LanguageContextBuilder:
         if inferred_target_language_name is None:
             inferred_target_language_name = self.DEFAULT_TARGET_LANGUAGE
             logger.info(
-                "No target language specified and none could be inferred. Using default language, {}".format(
-                    self.DEFAULT_TARGET_LANGUAGE
-                )
+                "No target language specified and none could be inferred. Using default language, %s",
+                self.DEFAULT_TARGET_LANGUAGE,
             )
         else:
             logging.info(
@@ -472,4 +524,8 @@ class LanguageContext:
 
     @property
     def config(self) -> LanguageConfig:
+        """
+        Returns the :class:`nunavut.lang.LanguageConfig` object that contains the configuration for all
+        supported languages. This is the same object that is used to instantiate the :class:`nunavut.lang.Language`
+        """
         return self._config

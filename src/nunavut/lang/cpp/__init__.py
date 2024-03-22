@@ -1,7 +1,7 @@
 #
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2019  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
     Filters for generating C++. All filters in this
@@ -15,6 +15,7 @@ import io
 import re
 import textwrap
 import typing
+from enum import Enum, auto
 
 import pydsdl
 
@@ -25,13 +26,92 @@ from nunavut._templates import (
     template_language_list_filter,
     template_language_test,
 )
-from nunavut._utilities import YesNoDefault
+from nunavut._utilities import YesNoDefault, cached_property
 from nunavut.jinja.environment import Environment
 from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
-from nunavut.lang._config import ConstructorConvention, SpecialMethod
 from nunavut.lang._language import Language as BaseLanguage
 from nunavut.lang.c import _CFit
 from nunavut.lang.c import filter_literal as c_filter_literal
+
+# +-------------------------------------------------------------------------------------------------------------------+
+# | ENUMERATIONS
+# +-------------------------------------------------------------------------------------------------------------------+
+
+
+class ConstructorConvention(Enum):
+    """
+    Indicates the convention used for constructors in the target language.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import ConstructorConvention
+
+        assert "default" == ConstructorConvention.DEFAULT
+        assert ConstructorConvention.DEFAULT == ConstructorConvention.from_string("default")
+        assert ConstructorConvention.USES_LEADING_ALLOCATOR == \
+            ConstructorConvention.from_string("uses-leading-allocator")
+        assert "uses-trailing-allocator" == str(ConstructorConvention.USES_TRAILING_ALLOCATOR)
+
+        from pytest import raises as assert_raises
+        assert_raises(ValueError, ConstructorConvention.from_string, "not-a-convention")
+
+    """
+
+    DEFAULT = "default"
+    USES_LEADING_ALLOCATOR = "uses-leading-allocator"
+    USES_TRAILING_ALLOCATOR = "uses-trailing-allocator"
+
+    def __str__(self) -> str:
+        """
+        Return a string representation of the ConstructorConvention enum value.
+
+        :return: The string representation of the enum value.
+        :rtype: str
+        """
+        return self.value
+
+    def __eq__(self, value: object) -> bool:
+        if isinstance(value, str):
+            return super().__eq__(ConstructorConvention.from_string(value))
+        return super().__eq__(value)
+
+    @staticmethod
+    def from_string(s: str) -> "ConstructorConvention":
+        """
+        Parse a string into a ConstructorConvention enum value.
+
+        :param s: The string to parse.
+        :return: The enum value corresponding to the string.
+        :rtype: ConstructorConvention
+        :raises: ValueError if the string does not correspond to a valid enum value.
+        """
+        for e in ConstructorConvention:
+            if s.lower().replace("_", "-") == e.value:
+                return e
+        raise ValueError(f"Invalid ConstructorConvention string '{s}'")
+
+
+class SpecialMethod(Enum):
+    """
+    Enum used in the Jinja templates to differentiate different kinds of constructors
+    """
+
+    ALLOCATOR_CONSTRUCTOR = auto()
+    """ Constructor that takes an allocator as its single, required argument """
+
+    INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR = auto()
+    """ Constructor that takes an initializing value for each field followed by the allocator argument """
+
+    COPY_CONSTRUCTOR_WITH_ALLOCATOR = auto()
+    """ Copy constructor that also takes an allocator argument """
+
+    MOVE_CONSTRUCTOR_WITH_ALLOCATOR = auto()
+    """ Move constructor that also takes an allocator argument """
+
+
+# +-------------------------------------------------------------------------------------------------------------------+
+# | LANGUAGE SUPPORT
+# +-------------------------------------------------------------------------------------------------------------------+
 
 
 class Language(BaseLanguage):
@@ -41,10 +121,77 @@ class Language(BaseLanguage):
 
     CPP_STD_EXTRACT_NUMBER_PATTERN = re.compile(r"(?:gnu|c)\+\+(\d(?:\w))")
 
+    def _validate_language_options(
+        self, defaults: typing.Dict[str, typing.Any], options: typing.Dict[str, typing.Any]
+    ) -> typing.Dict[str, typing.Any]:
+        """
+        apply defaults based on language standard
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import LanguageContextBuilder
+            from pytest import raises as assert_raises
+
+            # test std
+            language = LanguageContextBuilder(include_experimental_languages=True)\
+               .set_target_language("cpp")\
+               .set_target_language_configuration_override("options", { "std_flavor":"std"})\
+               .create()\
+               .get_target_language()
+
+            assert language._validate_language_options(
+                {},
+                {
+                    "std":"c++17",
+                    "ctor_convention": "default"
+                }
+            ) == {
+                    "std":"c++17",
+                    "ctor_convention": "default"
+                 }
+
+            assert_raises(ValueError, \
+                language._validate_language_options, {}, {"ctor_convention": "default"})
+
+            assert_raises(ValueError, \
+                language._validate_language_options, {}, {"std":"c++17", "ctor_convention": "uses-leading-allocator"})
+
+            assert_raises(ValueError, \
+                language._validate_language_options, {}, \
+                    {"std":"c++17", "ctor_convention": "uses-leading-allocator", "allocator_type": ""})
+
+        """
+        try:
+            language_standard = options["std"]
+        except KeyError as e:
+            raise ValueError("The 'std' option must be in the language options for the C++ language.") from e
+
+        if language_standard in defaults:
+            options.update(defaults[language_standard])
+
+        try:
+            ctor_convention = ConstructorConvention.from_string(options["ctor_convention"])
+        except KeyError as e:
+            raise ValueError("No constructor convention option in C++ language options. This is required.") from e
+
+        if ctor_convention != ConstructorConvention.DEFAULT and (
+            "allocator_type" not in options or not options["allocator_type"]
+        ):
+            raise ValueError(
+                f"allocator_type property must be specified when ctor_convention is '{str(ctor_convention)}'"
+            )
+        return options
+
+    def _validate_globals(self, globals_map: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
+        globals_map["ConstructorConvention"] = ConstructorConvention
+        globals_map["SpecialMethod"] = SpecialMethod
+        return globals_map
+
     @staticmethod
     def _handle_stropping_or_encoding_failure(
         encoder: TokenEncoder, stropped: str, token_type: str, pending_error: RuntimeError
     ) -> str:
+        # pylint: disable=unused-argument
         """
         If the generic stropping fails we take one last look to see if there is something c++-specific we can do.
         """
@@ -57,15 +204,15 @@ class Language(BaseLanguage):
         if m:
             # Resolve the conflict between C's global identifier rules and our desire to use
             # '_' as a stropping prefix:
-            return "_{}{}".format(m.group(1).lower(), stropped[m.end() :])
+            return f"_{m.group(1).lower()}{stropped[m.end() :]}"
 
         # we couldn't help after all. raise the pending error.
         raise pending_error
 
-    @functools.lru_cache(maxsize=None)
-    def _get_token_encoder(self) -> TokenEncoder:
+    @cached_property
+    def _token_encoder(self) -> TokenEncoder:
         """
-        Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
+        Cached property to ensure we don't have to recompile TokenEncoders for each filter invocation.
         """
         return TokenEncoder(
             self,
@@ -73,8 +220,39 @@ class Language(BaseLanguage):
             encoding_failure_handler=self._handle_stropping_or_encoding_failure,
         )
 
-    def _standard_version(self) -> int:
+    @property
+    def standard_flavor(self) -> str:
         """
+        A flavor of the C++ language standard being targeted.
+
+        .. invisible-code-block: python
+
+           from nunavut.lang import LanguageContextBuilder
+
+           # test std
+           language = LanguageContextBuilder(include_experimental_languages=True)\
+               .set_target_language("cpp")\
+               .set_target_language_configuration_override("options", { "std_flavor":"std"})\
+               .create()\
+               .get_target_language()
+
+           assert language.standard_flavor == 'std'
+
+           # test cetl
+           language = LanguageContextBuilder(include_experimental_languages=True)\
+               .set_target_language("cpp")\
+               .set_target_language_configuration_override("options", { "std_flavor":"cetl"})\
+               .create()\
+               .get_target_language()
+           assert language.standard_flavor == 'cetl'
+        """
+        return str(self.get_option("std_flavor"))
+
+    @property
+    def standard_version(self) -> int:
+        """
+        The numeric version of the C++ language standard being targeted.
+
         .. invisible-code-block: python
 
            from nunavut.lang import LanguageContextBuilder
@@ -86,7 +264,7 @@ class Language(BaseLanguage):
                .create()\
                .get_target_language()
 
-           assert language._standard_version() == 17
+           assert language.standard_version == 17
 
            # test c++14
            language = LanguageContextBuilder(include_experimental_languages=True)\
@@ -94,7 +272,7 @@ class Language(BaseLanguage):
                .set_target_language_configuration_override("options", { "std":"c++14"})\
                .create()\
                .get_target_language()
-           assert language._standard_version() == 14
+           assert language.standard_version == 14
 
            # test gnu++20
            language = LanguageContextBuilder(include_experimental_languages=True)\
@@ -103,7 +281,7 @@ class Language(BaseLanguage):
                .create()\
                .get_target_language()
 
-           assert language._standard_version() == 20
+           assert language.standard_version == 20
         """
         std = str(self.get_option("std", ""))
 
@@ -111,50 +289,48 @@ class Language(BaseLanguage):
 
         if match is not None and len(match.groups()) >= 1:
             return int(match.group(1))
-        else:
-            return 0
+        return 0
 
-    def _has_variant(self) -> bool:
+    @property
+    def has_variant(self) -> bool:
         """
         .. invisible-code-block: python
 
            from nunavut.lang import LanguageClassLoader
 
            # test c++17
-           language = LanguageContextBuilder(include_experimental_languages=True)\
-               .set_target_language("cpp")\
-               .set_target_language_configuration_override("options", { "std":"c++17"})\
-               .create()\
-               .get_target_language()
+           language = (
+                LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language("cpp")
+                .set_target_language_configuration_override("options", { "std":"c++17"})
+                .create()
+                .get_target_language()
+           )
 
-           assert language._has_variant()
+           assert language.has_variant
 
            # test c++14
-           language = LanguageContextBuilder(include_experimental_languages=True)\
-               .set_target_language("cpp")\
-               .set_target_language_configuration_override("options", { "std":"c++14"})\
-               .create()\
+           language = (
+               LanguageContextBuilder(include_experimental_languages=True)
+               .set_target_language("cpp")
+               .set_target_language_configuration_override("options", { "std":"c++14"})
+               .create()
                .get_target_language()
-
-           assert not language._has_variant()
+           )
+           assert not language.has_variant
 
            # test gnu++20
-           language = LanguageContextBuilder(include_experimental_languages=True)\
-               .set_target_language("cpp")\
-               .set_target_language_configuration_override("options", { "std":"gnu++20"})\
-               .create()\
+           language = (
+               LanguageContextBuilder(include_experimental_languages=True)
+               .set_target_language("cpp")
+               .set_target_language_configuration_override("options", { "std":"gnu++20"})
+               .create()
                .get_target_language()
+           )
 
-           assert language._has_variant()
+           assert language.has_variant
         """
-        return self._standard_version() >= 17
-
-    def _add_additional_globals(self, globals_map: typing.Dict[str, typing.Any]) -> None:
-        """
-        Make additional globals available in the cpp jinja templates
-        """
-        globals_map["ConstructorConvention"] = ConstructorConvention
-        globals_map["SpecialMethod"] = SpecialMethod
+        return self.standard_version >= 17
 
     def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
         """
@@ -211,7 +387,7 @@ class Language(BaseLanguage):
             do_includes_test(False, False)
             do_includes_test(False, True)
         """
-        std_includes = []  # type: typing.List[str]
+        std_includes: typing.List[str] = []
         std_includes.append("limits")  # we always include limits to support static assertions
         if self.get_config_value_as_bool("use_standard_types"):
             if dep_types.uses_integer:
@@ -220,9 +396,9 @@ class Language(BaseLanguage):
                 std_includes.append("array")
             if dep_types.uses_boolean_static_array:
                 std_includes.append("bitset")
-        if dep_types.uses_union and self._has_variant():
+        if dep_types.uses_union and self.has_variant:
             std_includes.append("variant")
-        includes_formatted = ["<{}>".format(include) for include in sorted(std_includes)]
+        includes_formatted = [f"<{include}>" for include in sorted(std_includes)]
 
         allocator_include = str(self.get_option("allocator_include", ""))
         if len(allocator_include) > 0:
@@ -238,20 +414,20 @@ class Language(BaseLanguage):
     def filter_id(self, instance: typing.Any, id_type: str = "any") -> str:
         raw_name = self.default_filter_id_for_target(instance)
 
-        return self._get_token_encoder().strop(raw_name, id_type)
+        return self._token_encoder.strop(raw_name, id_type)
 
-    def create_bitset_decl(self, type: str, max_size: int) -> str:
-        return "std::bitset<{MAX_SIZE}>".format(MAX_SIZE=max_size)
+    def create_bitset_decl(self, max_size: int) -> str:
+        return f"std::bitset<{max_size}>"
 
-    def create_array_decl(self, type: str, max_size: int) -> str:
-        return "std::array<{TYPE},{MAX_SIZE}>".format(TYPE=type, MAX_SIZE=max_size)
+    def create_array_decl(self, data_type: str, max_size: int) -> str:
+        return f"std::array<{data_type},{max_size}>"
 
-    def create_vla_decl(self, type: str, max_size: int) -> str:
+    def create_vla_decl(self, data_type: str, max_size: int) -> str:
         variable_array_type_template = self.get_option("variable_array_type_template")
         if not isinstance(variable_array_type_template, str) or len(variable_array_type_template) == 0:
             raise RuntimeError("You must specify a value for the 'variable_array_type_template' option.")
-        rebind_allocator = "std::allocator_traits<allocator_type>::rebind_alloc<{TYPE}>".format(TYPE=type)
-        return variable_array_type_template.format(TYPE=type, MAX_SIZE=max_size, REBIND_ALLOCATOR=rebind_allocator)
+        rebind_allocator = f"std::allocator_traits<allocator_type>::rebind_alloc<{data_type}>"
+        return variable_array_type_template.format(TYPE=data_type, MAX_SIZE=max_size, REBIND_ALLOCATOR=rebind_allocator)
 
 
 @template_language_test(__name__)
@@ -301,7 +477,27 @@ def uses_std_variant(language: Language) -> bool:
             jinja_filter_tester(None, template, '#include "user_variant.h"', lctx)
 
     """
-    return language._has_variant()
+    return language.has_variant
+
+
+@template_language_test(__name__)
+def uses_cetl(language: Language) -> bool:
+    """
+    Uses query for Cyphal Embedded Template Library.
+
+    If this is true then CETL is used to ensure compatibility back to C++14.
+    """
+    return language.standard_flavor == "cetl"
+
+
+@template_language_test(__name__)
+def uses_pmr(language: Language) -> bool:
+    """
+    Uses query for C++17 Polymorphic Memory Resources.
+
+    If this is true then additional C++ code is generated to support the use of polymorphic memory resources.
+    """
+    return language.standard_flavor == "pmr"
 
 
 @template_language_filter(__name__)
@@ -815,8 +1011,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
     if isinstance(t, pydsdl.ServiceType):
         if YesNoDefault.test_truth(YesNoDefault.DEFAULT, language.enable_stropping):
             return language.filter_id(t.short_name)
-        else:
-            return str(t.short_name)
+        return str(t.short_name)
     return language.filter_short_reference_name(t)
 
 
@@ -932,14 +1127,14 @@ def filter_explicit_decorator(language: Language, instance: pydsdl.Any, special_
     arg_count: int = len(instance.fields_except_padding) + (
         0 if language.get_option("allocator_is_default_constructible") else 1
     )
-    if special_method == SpecialMethod.InitializingConstructorWithAllocator and arg_count == 1:
+    if special_method == SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR and arg_count == 1:
         return f"explicit {name}"
-    else:
-        return f"{name}"
+    return f"{name}"
 
 
 @template_language_filter(__name__)
 def filter_default_value_initializer(language: Language, instance: pydsdl.Any) -> str:
+    # pylint: disable=unused-argument
     """
     Emit a default initialization expression for the given instance if primitive, array,
     or composite.
@@ -955,14 +1150,14 @@ def filter_default_value_initializer(language: Language, instance: pydsdl.Any) -
 
 def needs_initializing_value(special_method: SpecialMethod) -> bool:
     """Helper method used by filter_value_initializer()"""
-    return special_method == SpecialMethod.InitializingConstructorWithAllocator or needs_rhs(special_method)
+    return special_method == SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR or needs_rhs(special_method)
 
 
 def needs_rhs(special_method: SpecialMethod) -> bool:
     """Helper method used by filter_value_initializer()"""
     return special_method in (
-        SpecialMethod.CopyConstructorWithAllocator,
-        SpecialMethod.MoveConstructorWithAllocator,
+        SpecialMethod.COPY_CONSTRUCTOR_WITH_ALLOCATOR,
+        SpecialMethod.MOVE_CONSTRUCTOR_WITH_ALLOCATOR,
     )
 
 
@@ -975,14 +1170,14 @@ def needs_allocator(instance: pydsdl.Any) -> bool:
 
 def needs_vla_init_args(instance: pydsdl.Any, special_method: SpecialMethod) -> bool:
     """Helper method used by filter_value_initializer()"""
-    return special_method == SpecialMethod.AllocatorConstructor and isinstance(
+    return special_method == SpecialMethod.ALLOCATOR_CONSTRUCTOR and isinstance(
         instance.data_type, pydsdl.VariableLengthArrayType
     )
 
 
 def needs_move(special_method: SpecialMethod) -> bool:
     """Helper method used by filter_value_initializer()"""
-    return special_method == SpecialMethod.MoveConstructorWithAllocator
+    return special_method == SpecialMethod.MOVE_CONSTRUCTOR_WITH_ALLOCATOR
 
 
 def requires_initialization(instance: pydsdl.Any) -> bool:
@@ -999,7 +1194,7 @@ def assemble_initializer_expression(
 ) -> str:
     """Helper method used by filter_value_initializer()"""
     if wrap:
-        rhs = "{}({})".format(wrap, rhs)
+        rhs = f"{wrap}({rhs})"
     args = []
     if rhs:
         args.append(rhs)
@@ -1031,7 +1226,7 @@ def filter_value_initializer(language: Language, instance: pydsdl.Any, special_m
                 trailing_args.append(constructor_args.format(MAX_SIZE=instance.data_type.capacity))
 
         if needs_allocator(instance):
-            if language.get_option("ctor_convention") == ConstructorConvention.UsesLeadingAllocator.value:
+            if language.get_option("ctor_convention") == ConstructorConvention.USES_LEADING_ALLOCATOR.value:
                 leading_args.extend(["std::allocator_arg", "allocator"])
             else:
                 trailing_args.append("allocator")
@@ -1046,13 +1241,15 @@ def filter_value_initializer(language: Language, instance: pydsdl.Any, special_m
 
 @template_language_filter(__name__)
 def filter_default_construction(language: Language, instance: pydsdl.Any, reference: str) -> str:
+    """
+    Emit a default construction expression for the given instance if it is a composite type.
+    """
     if (
         isinstance(instance, pydsdl.CompositeType)
-        and language.get_option("ctor_convention") != ConstructorConvention.Default.value
+        and language.get_option("ctor_convention") != ConstructorConvention.DEFAULT.value
     ):
         return f"{reference}.get_allocator()"
-    else:
-        return ""
+    return ""
 
 
 @template_language_filter(__name__)
@@ -1060,17 +1257,16 @@ def filter_declaration(language: Language, instance: pydsdl.Any) -> str:
     """
     Emit a declaration statement for the given instance.
     """
-    if isinstance(instance, pydsdl.PrimitiveType) or isinstance(instance, pydsdl.VoidType):
+    if isinstance(instance, (pydsdl.PrimitiveType, pydsdl.VoidType)):
         return filter_type_from_primitive(language, instance)
-    elif isinstance(instance, pydsdl.VariableLengthArrayType):
+    if isinstance(instance, pydsdl.VariableLengthArrayType):
         return language.create_vla_decl(filter_declaration(language, instance.element_type), instance.capacity)
-    elif isinstance(instance, pydsdl.ArrayType):
+    if isinstance(instance, pydsdl.ArrayType):
         if isinstance(instance.element_type, pydsdl.BooleanType):
-            return language.create_bitset_decl(filter_declaration(language, instance.element_type), instance.capacity)
-        else:
-            return language.create_array_decl(filter_declaration(language, instance.element_type), instance.capacity)
-    else:
-        return filter_full_reference_name(language, instance)
+            return language.create_bitset_decl(instance.capacity)
+        return language.create_array_decl(filter_declaration(language, instance.element_type), instance.capacity)
+
+    return filter_full_reference_name(language, instance)
 
 
 @template_language_filter(__name__)
@@ -1167,8 +1363,7 @@ def filter_to_namespace_qualifier(namespace_list: typing.List[str]) -> str:
     """
     if namespace_list is None or len(namespace_list) == 0:
         return ""
-    else:
-        return "::".join(namespace_list) + "::"
+    return "::".join(namespace_list) + "::"
 
 
 def filter_to_template_unique_name(base_token: str) -> str:
@@ -1232,7 +1427,7 @@ def filter_to_template_unique_name(base_token: str) -> str:
     else:
         adj_base_token = base_token
 
-    return UniqueNameGenerator.get_instance()("cpp", adj_base_token, "_", "_")
+    return UniqueNameGenerator.get_instance()("cpp", adj_base_token, "_", "_")  # pylint: disable=not-callable
 
 
 def filter_as_boolean_value(value: bool) -> str:
@@ -1337,7 +1532,7 @@ def filter_indent_if_not(language: Language, text: str, depth: int = 1) -> str:
     configured_indent = int(language.get_config_value("indent"))
     lines = text.splitlines(keepends=True)
     result = ""
-    for i in range(0, len(lines)):
+    for i, line in enumerate(lines):
         line = lines[i].lstrip()
         if len(line) == 0:
             # don't indent blank lines
@@ -1417,11 +1612,11 @@ def filter_minimum_required_capacity_bits(t: pydsdl.SerializableType) -> int:
 
 
 @functools.lru_cache(3)
-def _make_textwrap(width: int, initial_indent: str, subseqent_indent: str) -> textwrap.TextWrapper:
+def _make_textwrap(width: int, initial_indent: str, subsequent_indent: str) -> textwrap.TextWrapper:
     return textwrap.TextWrapper(
         width=width,
         initial_indent=initial_indent,
-        subsequent_indent=subseqent_indent,
+        subsequent_indent=subsequent_indent,
         break_on_hyphens=True,
         break_long_words=False,
         replace_whitespace=False,
@@ -1429,22 +1624,22 @@ def _make_textwrap(width: int, initial_indent: str, subseqent_indent: str) -> te
 
 
 def _make_block_comment(text: str, prefix: str, comment: str, suffix: str, indent: int, line_length: int) -> str:
-    doc_lines = text.splitlines()  # type: typing.List[str]
-    indented_comment = "{}{}".format(" " * indent, comment)
+    doc_lines: typing.List[str] = text.splitlines()
+    indented_comment = f"{' ' * indent}{comment}"
 
-    commented_doc_lines = []  # type: typing.List[str]
+    commented_doc_lines: typing.List[str] = []
 
     if len(doc_lines) > 0:
         if len(prefix) > 0:
             commented_doc_lines.append(prefix)
         else:
             commented_doc_lines.extend(
-                _make_textwrap(width=line_length, initial_indent=comment, subseqent_indent=indented_comment).wrap(
+                _make_textwrap(width=line_length, initial_indent=comment, subsequent_indent=indented_comment).wrap(
                     doc_lines.pop(0)
                 )
             )
 
-    tw = _make_textwrap(width=line_length, initial_indent=indented_comment, subseqent_indent=indented_comment)
+    tw = _make_textwrap(width=line_length, initial_indent=indented_comment, subsequent_indent=indented_comment)
 
     for docline in doc_lines:
         # The docs for textwrap.TextWrapper.wrap say:
@@ -1453,7 +1648,7 @@ def _make_block_comment(text: str, prefix: str, comment: str, suffix: str, inden
         commented_doc_lines.extend(tw.wrap(docline) if docline.strip() else [indented_comment])
 
     if len(suffix) > 0 and len(commented_doc_lines) > 0:
-        commented_doc_lines.append("{}{}".format(" " * indent, suffix))
+        commented_doc_lines.append(f"{' ' * indent}{suffix}")
 
     return "\n".join(commented_doc_lines)
 
@@ -1656,16 +1851,14 @@ def filter_block_comment(language: Language, text: str, style: str, indent: int 
 
     """
 
-    config_styles = language.get_config_value_as_dict(
-        "comment_styles"
-    )  # type: typing.Mapping[str, typing.Mapping[str, str]]
+    config_styles: typing.Mapping[str, typing.Mapping[str, str]] = language.get_config_value_as_dict("comment_styles")
 
     try:
         config_style = config_styles[style.lower()]
-    except KeyError:
+    except KeyError as ke:
         raise ValueError(
-            "{} is not a supported comment style. Supported is c, cpp, cpp-doxygen, and javadoc".format(style)
-        )
+            f"{style} is not a supported comment style. Supported is c, cpp, cpp-doxygen, and javadoc"
+        ) from ke
 
     return _make_block_comment(
         text=text,

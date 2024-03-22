@@ -1,21 +1,22 @@
 #
-# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
     Filters for generating python. All filters in this
     module will be available in the template's global namespace as ``py``.
 """
 from __future__ import annotations
+
+import base64
 import builtins
 import functools
-import keyword
-import base64
 import gzip
-import pickle
 import itertools
-from typing import Any, Iterable
+import keyword
+import pickle
+from typing import Any, Dict, Iterable
 
 import pydsdl
 
@@ -27,6 +28,7 @@ from nunavut._templates import (
     template_language_int_filter,
     template_language_list_filter,
 )
+from nunavut._utilities import cached_property
 from nunavut.lang import Language as BaseLanguage
 from nunavut.lang._common import TokenEncoder, UniqueNameGenerator
 
@@ -38,12 +40,13 @@ class Language(BaseLanguage):
 
     PYTHON_RESERVED_IDENTIFIERS: list[str] = sorted(list(map(str, list(keyword.kwlist) + dir(builtins))))
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self._language_options["enable_serialization_asserts"] = True
+    def _validate_language_options(self, defaults: Dict[str, Any], options: Dict[str, Any]) -> Dict[str, Any]:
+        # pylint: disable=unused-argument
+        options["enable_serialization_asserts"] = True  # always enable serialization asserts for python
+        return options
 
-    @functools.lru_cache(maxsize=None)
-    def _get_token_encoder(self) -> TokenEncoder:
+    @cached_property
+    def _token_encoder(self) -> TokenEncoder:
         """
         Caching getter to ensure we don't have to recompile TokenEncoders for each filter invocation.
         """
@@ -56,11 +59,12 @@ class Language(BaseLanguage):
     def filter_id(self, instance: Any, id_type: str = "any") -> str:
         raw_name = self.default_filter_id_for_target(instance)
 
-        return self._get_token_encoder().strop(raw_name, id_type)
+        return self._token_encoder.strop(raw_name, id_type)
 
 
 @template_context_filter
 def filter_to_template_unique_name(context: SupportsTemplateContext, base_token: str) -> str:
+    # pylint: disable=unused-argument
     """
     Filter that takes a base token and forms a name that is very
     likely to be unique within the template the filter is invoked. This
