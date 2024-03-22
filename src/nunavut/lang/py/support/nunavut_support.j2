@@ -18,6 +18,9 @@ To execute the tests, simply invoke PyTest on this file as follows::
     pytest --doctest-modules nunavut_support.py
 """
 
+# This is necessary to enable compatibility across different Python versions.
+# mypy: warn_unused_ignores=False
+
 from __future__ import annotations
 import abc
 import sys

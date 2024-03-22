@@ -4,12 +4,13 @@
 # type: ignore
 
 import os
+import sys
 import shutil
 from pathlib import Path
 import nox
 
 
-PYTHONS = ["3.8", "3.9", "3.10", "3.11"]
+PYTHONS = ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
 nox.options.error_on_external_run = True
 
@@ -46,14 +47,16 @@ def clean(session):
 
 @nox.session(python=PYTHONS)
 def test(session):
+    # Log the Python version
+    session.run("python", "--version")
     session.install("-e", str(NUNAVUT_DIR))
     session.install("-e", ".")
     session.install("-r", "generated_code_requirements.txt")
     session.install(
-        "pytest     ~= 7.3",
-        "coverage   ~= 7.2",
-        "mypy       ~= 1.2",
-        "pylint     ~= 2.17",
+        "pytest     ~= 8.1",
+        "coverage   ~= 7.4",
+        "mypy       ~= 1.9",
+        "pylint     ~= 3.1",
     )
 
     # The tmp dir will contain the DSDL-generated packages. We do not want to contaminate the source tree.
