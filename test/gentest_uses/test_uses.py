@@ -41,5 +41,5 @@ def test_ifuses(gen_paths, std, expect_uses_variant):  # type: ignore
 
     assert json_blob is not None
     assert not json_blob["never"]
-    assert json_blob["ifuses_std_variant"] is expect_uses_variant
-    assert json_blob["ifnuses_std_variant"] is not expect_uses_variant
+    assert json_blob["ifuses_variant"] is expect_uses_variant
+    assert json_blob["ifnuses_variant"] is not expect_uses_variant

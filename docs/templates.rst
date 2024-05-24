@@ -325,7 +325,7 @@ C++ Filters
 
 C++ Use Queries
 -------------------------------------------------
-.. autofunction:: nunavut.lang.cpp.uses_std_variant
+.. autofunction:: nunavut.lang.cpp.uses_variant
    :noindex:
 .. autofunction:: nunavut.lang.cpp.uses_cetl
    :noindex:

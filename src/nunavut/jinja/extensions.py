@@ -96,8 +96,8 @@ class JinjaAssert(Extension):
 
 class UseQuery(Extension):
     """
-    Jinja2 extension that allows conditional blocks like ``{% ifuses "std_variant" %}`` or
-    ``{% ifnuses "std_variant" %}``. These are defined by the :class:`nunavut.lang.Language` object based on the values
+    Jinja2 extension that allows conditional blocks like ``{% ifuses "variant" %}`` or
+    ``{% ifnuses "variant" %}``. These are defined by the :class:`nunavut.lang.Language` object based on the values
     returned from :meth:`nunavut.lang.Language.get_uses_queries`.
 
         .. code-block:: python

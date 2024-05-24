@@ -3,7 +3,14 @@
  # Copyright (C) 2021  OpenCyphal Development Team  <opencyphal.org>
  # This software is distributed under the terms of the MIT License.
 #}
-    class VariantType final : public std::variant<
+{%- set ns = namespace(utility = "") -%}
+{%- ifuses "cetl" -%}
+{%- set ns.utility = "cetl::pf17"%}
+{%- else -%}
+{%- set ns.utility = "std"%}
+{%- endifuses -%}
+
+    class VariantType final : public {{ns.utility}}::variant<
 {%- for field in composite_type.fields_except_padding %}
         {{ field.doc | block_comment('cpp-doxygen', 8, 120) }}
         _traits_::TypeOf::{{field.name|id}}{% if not loop.last %},{% endif %}
@@ -12,7 +19,15 @@
     {
     public:
 
-        static const constexpr std::size_t variant_npos = std::variant_npos;
+        static const constexpr std::size_t variant_npos = {{ns.utility}}::variant_npos;
+
+        using Base = {{ns.utility}}::variant<
+{%- for field in composite_type.fields_except_padding %}
+            _traits_::TypeOf::{{field.name|id}}{% if not loop.last %},{% endif %}
+{%- endfor %}
+        >;
+
+        using Base::Base;
 
         struct IndexOf final
         {
@@ -27,29 +42,27 @@
         struct alternative;
 
         template<size_t I, typename... Types>
-        struct alternative<I, std::variant<Types...>> final
+        struct alternative<I, {{ns.utility}}::variant<Types...>> final
         {
-            using type = typename std::variant_alternative<I, std::variant<Types...>>::type;
+            using type = typename {{ns.utility}}::variant_alternative<I, {{ns.utility}}::variant<Types...>>::type;
         };
 
         template<size_t I, typename T>
         struct alternative<I, const T> final
         {
-            using type = std::add_const_t<typename std::variant_alternative<I, T>::type>;
+            using type = std::add_const_t<typename {{ns.utility}}::variant_alternative<I, T>::type>;
         };
 
         template<std::size_t I, class... Types>
-        static constexpr typename alternative<I, std::variant<Types...>>::type* get_if(std::variant<Types...>* v) noexcept
+        static constexpr typename alternative<I, {{ns.utility}}::variant<Types...>>::type* get_if({{ns.utility}}::variant<Types...>* v) noexcept
         {
-            return std::get_if<I, Types...>(v);
+            return {{ns.utility}}::get_if<I, Types...>(v);
         }
 
         template<std::size_t I, class... Types>
-        static constexpr const typename alternative<I, std::variant<Types...>>::type* get_if(const std::variant<Types...>* v) noexcept
+        static constexpr const typename alternative<I, {{ns.utility}}::variant<Types...>>::type* get_if(const {{ns.utility}}::variant<Types...>* v) noexcept
         {
-            return std::get_if<I, Types...>(v);
+            return {{ns.utility}}::get_if<I, Types...>(v);
         }
 
     };
-
-    VariantType union_value;

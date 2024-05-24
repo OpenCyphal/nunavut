@@ -1,16 +1,16 @@
 {
-{%- ifuses "std_variant" %}
-    "ifuses_std_variant": true,
+{%- ifuses "variant" %}
+    "ifuses_variant": true,
     "never": false,
-{%- elifnuses "std_variant" %}
-    "ifuses_std_variant": false,
+{%- elifnuses "variant" %}
+    "ifuses_variant": false,
     "never": false,
 {%- else %}
     "never": true,
 {%- endifuses -%}
-{%- ifnuses "std_variant" %}
-    "ifnuses_std_variant": true
+{%- ifnuses "variant" %}
+    "ifnuses_variant": true
 {%- else %}
-    "ifnuses_std_variant": false
+    "ifnuses_variant": false
 {%- endifnuses %}
 }
