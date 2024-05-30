@@ -1,12 +1,8 @@
 {
     "name": "C/C++ verification environment",
-    "image": "ghcr.io/opencyphal/toolshed:ts22.4.5",
+    "image": "ghcr.io/opencyphal/toolshed:ts22.4.8",
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspace,type=bind,consistency=delegated",
-    "mounts": [
-        "source=root-vscode-server,target=/root/.vscode-server/extensions,type=volume",
-        "source=nunavut-tox,target=/workspace/.tox,type=volume"
-    ],
     "customizations": {
         "vscode": {
             "extensions": [
@@ -24,5 +20,5 @@
             ]
         }
     },
-    "postCreateCommand": "git submodule update --init --recursive && tox -e local"
+    "postCreateCommand": "git submodule update --init --recursive"
 }

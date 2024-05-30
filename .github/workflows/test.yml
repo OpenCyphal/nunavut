@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/opencyphal/toxic:tx22.4.2
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: lint
@@ -27,17 +27,17 @@ jobs:
     - name: package
       run: tox -e package
     - name: upload-coverage-reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-reports
         path: .tox/report/tmp/*
     - name: upload-xunit-results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: xunit-results
         path: .tox/py310-test/tmp/xunit-result.xml
     - name: upload-package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pypi-package
         path: .tox/package/dist/*
@@ -45,19 +45,18 @@ jobs:
   sonar:
     runs-on: ubuntu-latest
     needs: test
-    container: sonarsource/sonar-scanner-cli
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         # Disabling shallow clone is recommended for improving relevancy of reporting
         fetch-depth: 0
     - name: download-converage-reports
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: coverage-reports
         path: .tox/report/tmp/
     - name: download-xunit-results
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: xunit-results
         path: .tox/py310-test/tmp/
@@ -104,11 +103,11 @@ jobs:
     runs-on: ${{ matrix.python3-platform }}
     needs: test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: setup python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: 3.${{ matrix.python3-version }}
     - name: setup tox
@@ -124,7 +123,7 @@ jobs:
     container: ghcr.io/opencyphal/toxic:tx22.4.2
     needs: test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: python3.${{ matrix.python3-version }} test
@@ -133,7 +132,7 @@ jobs:
   language-verification-c:
     runs-on: ubuntu-latest
     needs: test
-    container: ghcr.io/opencyphal/toolshed:ts22.4.2
+    container: ghcr.io/opencyphal/toolshed:ts22.4.8
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
@@ -147,7 +146,7 @@ jobs:
           - build_type: Release
             flag: --disable-asserts
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: verify
@@ -163,7 +162,7 @@ jobs:
   language-verification-cpp-14:
     runs-on: ubuntu-latest
     needs: test
-    container: ghcr.io/opencyphal/toolshed:ts22.4.1
+    container: ghcr.io/opencyphal/toolshed:ts22.4.8
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
@@ -178,7 +177,7 @@ jobs:
             flag: --disable-asserts
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: verify
@@ -195,7 +194,7 @@ jobs:
   language-verification-cpp-17:
     runs-on: ubuntu-latest
     needs: test
-    container: ghcr.io/opencyphal/toolshed:ts22.4.1
+    container: ghcr.io/opencyphal/toolshed:ts22.4.8
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
@@ -210,7 +209,7 @@ jobs:
             flag: --disable-asserts
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: verify
@@ -229,7 +228,7 @@ jobs:
     needs: test
     container: ghcr.io/opencyphal/toxic:tx22.4.2
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: verify

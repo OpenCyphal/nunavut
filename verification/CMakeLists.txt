@@ -1,6 +1,7 @@
 #
-# Copyright (C) 2014 Pavel Kirienko <pavel.kirienko@gmail.com>
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 
 cmake_minimum_required(VERSION 3.10.0)
@@ -85,6 +86,7 @@ else()
     set(NUNAVUT_FLAGSET "${CMAKE_SOURCE_DIR}/cmake/compiler_flag_sets/native_w_cov.cmake")
     message(STATUS "Setting (default) NUNAVUT_FLAGSET = ${NUNAVUT_FLAGSET}")
 endif()
+include("${NUNAVUT_FLAGSET}")
 
 #
 # Tell cmake where to find our custom scripts.
@@ -107,22 +109,6 @@ set(NUNAVUT_VERIFICATIONS_BINARY_DIR ${CMAKE_BINARY_DIR}/suite)
 file(WRITE ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/README.txt
      "All test binaries and output will appear under here.")
 
-#
-# Handle other inputs that translate to compiler flags.
-#
-set(NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS "")
-
-if(DEFINED NUNAVUT_VERIFICATION_TARGET_PLATFORM)
-     if(${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "native32")
-          list(APPEND NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS "-m32")
-          message(STATUS "Configuring for native32 platform.")
-     elseif(${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "native64")
-          list(APPEND NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS "-m64")
-          message(STATUS "Configuring for native64 platform.")
-     else()
-          message(FATAL_ERROR "\"${NUNAVUT_VERIFICATION_TARGET_PLATFORM}\" is not a supported value.")
-     endif()
-endif()
 
 # +---------------------------------------------------------------------------+
 # | BUILD ENVIRONMENT
@@ -135,7 +121,7 @@ find_package(lcov REQUIRED)
 find_package(genhtml REQUIRED)
 
 #
-# We need tox to enable a reproducable python environment.
+# We need tox to enable a reproducible python environment.
 #
 find_package(tox REQUIRED)
 
@@ -338,14 +324,6 @@ else()
     list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS "")
 endif()
 
-#
-# Load all our compile flag sets into the appropriate places.
-#
-apply_flag_set("${NUNAVUT_FLAGSET}"
-               "${LOCAL_VERIFICATION_LANG_STANDARD_C}"
-               "${LOCAL_VERIFICATION_LANG_STANDARD_CXX}")
-
-
 # +---------------------------------------------------------------------------+
 # | VERIFICATION SUITE
 # +---------------------------------------------------------------------------+
@@ -382,28 +360,25 @@ function(runTestCpp)
     set(NATIVE_TEST "${NUNAVUT_VERIFICATION_LANG}/suite/${runTestCpp_TEST_FILE}")
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
 
-    set(${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS, "")
-    list(APPEND ${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS})
-
+    define_native_unit_test(FRAMEWORK "gtest"
+                            TEST_NAME ${NATIVE_TEST_NAME}
+                            TEST_SOURCE ${NATIVE_TEST}
+                            OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
+                            DSDL_TARGETS
+                                ${runTestCpp_LINK}
+                                ${LOCAL_ADDITIONAL_DSDL_LIBS}
+    )
     if(NUNAVUT_VERIFICATION_LANG STREQUAL "c")
-          #
-          # If we are testing C headers with C++ tests we have to disable
-          # certain checks to allow the inline code to compile without
-          # warnings.
-          #
-          list(APPEND ${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS "-Wno-old-style-cast")
+        #
+        # If we are testing C headers with C++ tests we have to disable
+        # certain checks to allow the inline code to compile without
+        # warnings.
+        #
+        target_compile_options(${NATIVE_TEST_NAME} PRIVATE "-Wno-old-style-cast")
     endif()
-
-    define_native_unit_test("gtest"
-                            ${NATIVE_TEST_NAME}
-                            ${NATIVE_TEST}
-                            ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
-                            "${${NATIVE_TEST_NAME}_CPP_EXTRA_FLAGS}"
-                            ${runTestCpp_LINK}
-                            ${LOCAL_ADDITIONAL_DSDL_LIBS}
-                            o1heap)
+    target_link_libraries(${NATIVE_TEST_NAME} PUBLIC o1heap)
     target_include_directories(${NATIVE_TEST_NAME} PUBLIC "${NUNAVUT_PROJECT_ROOT}/submodules/CETL/include")
-    define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
+    define_native_test_run(TEST_NAME ${NATIVE_TEST_NAME} OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
     define_natve_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     list(APPEND ALL_TESTS "run_${NATIVE_TEST_NAME}")
@@ -440,16 +415,15 @@ function(runTestC)
 
     set(NATIVE_TEST "${NUNAVUT_VERIFICATION_ROOT}/suite/${runTestC_TEST_FILE}")
     get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
-    set(${NATIVE_TEST_NAME}_C_EXTRA_FLAGS, "")
-    list(APPEND ${NATIVE_TEST_NAME}_C_EXTRA_FLAGS ${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS})
 
-    define_native_unit_test("unity"
-                            ${NATIVE_TEST_NAME}
-                            ${NATIVE_TEST}
-                            ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
-                            "${${NATIVE_TEST_NAME}_C_EXTRA_FLAGS}"
-                            ${runTestC_LINK})
-    define_native_test_run(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
+    define_native_unit_test(FRAMEWORK "unity"
+                            TEST_NAME ${NATIVE_TEST_NAME}
+                            TEST_SOURCE ${NATIVE_TEST}
+                            OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
+                            DSDL_TARGETS
+                                ${runTestC_LINK}
+    )
+    define_native_test_run(TEST_NAME ${NATIVE_TEST_NAME} OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
     define_natve_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
     list(APPEND ALL_TESTS "run_${NATIVE_TEST_NAME}")

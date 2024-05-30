@@ -12,7 +12,7 @@ __pycache__
 .pytest_cache
 *.egg-info
 *.patch
-.tox
+.tox*
 .nox
 .coverage*
 .venv
@@ -27,7 +27,7 @@ dist
 .DS_Store
 prof
 out
-venv
+venv*
 
 # Eclipse
 .metadata
