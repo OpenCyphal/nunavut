@@ -1,45 +1,53 @@
 {#-
- # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- # Copyright (C) 2021  OpenCyphal Development Team  <opencyphal.org>
- # This software is distributed under the terms of the MIT License.
+ # Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+ # Copyright Amazon.com Inc. or its affiliates.
+ # SPDX-License-Identifier: MIT
 -#}
 //
 // This is an AUTO-GENERATED Cyphal DSDL data type implementation. Curious? See https://opencyphal.org.
 // You shouldn't attempt to edit this file.
+{%- if nunavut.embed_auditing_info %}
 //
 // Checking this file under version control is not recommended since metadata in this header will change for each
-// build invocation. TODO: add --reproducible option to prevent any volatile metadata from being generated.
+// build invocation (do not use --embed-auditing-info option to remove this comment).
+{%- endif %}
 //
-// Generator:     nunavut-{{ nunavut.version }} (serialization was {{ 'not ' * nunavut.support.omit }}enabled)
-// Source file:   {{ T.source_file_path.as_posix() }}
-// Generated at:  {{ now_utc }} UTC
-// Is deprecated: {{ T.deprecated and 'yes' or 'no' }}
-// Fixed port-ID: {{ T.fixed_port_id }}
-// Full name:     {{ T.full_name }}
-// Type Version:  {{ T.version.major }}.{{ T.version.minor }}
+// Generator     : nunavut-{{ nunavut.version }} (serialization was {{ 'not ' * nunavut.support.omit }}enabled)
+{%- if nunavut.embed_auditing_info %}
+// Source file   : {{ T.source_file_path.as_posix() }}
+// Generated at  : {{ now_utc }} UTC
+{%- else %}
+// Source file   : {{ T.source_file_path.name }}
+{%- endif %}
+// Is deprecated : {{ T.deprecated and 'yes' or 'no' }}
+// Fixed port-ID : {{ T.fixed_port_id }}
+// Full name     : {{ T.full_name }}
+// Type Version  : {{ T.version.major }}.{{ T.version.minor }}
+//
 // Support
 {%- if nunavut.support.omit %}
 //     (support file generation disabled)
 {%- else %}
-//    Support Namespace: {{ nunavut.support.namespace }}
-//    Support Version:   {{ nunavut.support.version }}
+//    Support Namespace : {{ nunavut.support.namespace }}
+//    Support Version   : {{ nunavut.support.version }}
 {%- endif %}
 {%- for template_set in nunavut.template_sets %}
+//
 // Template Set ({{ template_set[0] }})
-//    priority: {{ loop.index0 }}
-//    package:  {{ template_set[1] }}
-//    version:  {{ template_set[2] }}
+//    priority   : {{ loop.index0 }}
+//    package    : {{ template_set[1] }}
+//    version    : {{ template_set[2] }}
 {%- endfor %}
+//
 // Platform
-{%- for key, value in nunavut.platform_version.items() %}
-//     {{ key }}:  {{ value }}
-{%- endfor %}
+{{ nunavut.platform_version | text_table("//     ") }}
+//
 // Language Options
-{%- for key, value in options.items() %}
-//     {{ key }}:  {{ value }}
-{%- endfor %}
+{{ options | text_table("//     ") }}
+//
 // Uses Language Features
 //     Uses std_variant: {%- ifuses "std_variant" -%}yes{%- else -%}no{%- endifuses -%}
+//
 {%- if T.deprecated and options.std | int < 14 %}
 {#- Courtesy http://patorjk.com/software/taag/#p=display&f=Big&t=DEPRECATED #}
 {#- [[deprecated]] becomes available in c++14 #}

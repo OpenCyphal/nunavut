@@ -8,7 +8,7 @@ jobs:
   release:
     if: ${{ github.event_name == 'release' && !github.event.release.prerelease }}
     runs-on: ubuntu-latest
-    container: ghcr.io/opencyphal/toxic:tx22.4.1
+    container: ghcr.io/opencyphal/toxic:tx22.4.2
     steps:
     - uses: actions/checkout@v3
       with:
@@ -19,7 +19,7 @@ jobs:
     - name: version-check
       # Fails the release if the release-tag doesn't match the Nunavut version at that tag.
       run: |
-        $(./.github/verify.py -vv --version-check-only "2.3.2.dev0")
+        $(./.github/verify.py -vv --version-check-only "2.3.3.dev0")
     - name: lint
       run: tox -e lint
     - name: test-nnvg

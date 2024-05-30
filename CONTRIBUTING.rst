@@ -24,7 +24,7 @@ your dev environment setup.
 Tools
 ************************************************
 
-tox -e local
+tox devenv -e local
 ================================================
 
 I highly recommend using the local tox environment when doing python development. It'll save you hours
@@ -33,8 +33,8 @@ global python environment. You can install tox from brew on osx or apt-get on GN
 recommend the following environment for vscode::
 
     git submodule update --init --recursive
-    tox -e local
-    source .tox/local/bin/activate
+    tox devenv -e local
+    source venv/bin/activate
 
 
 cmake
@@ -58,8 +58,8 @@ Do::
 
     cd path/to/nunavut
     git submodule update --init --recursive
-    tox -e local
-    source .tox/local/bin/activate
+    tox devenv -e local
+    source venv/bin/activate
     code .
 
 Then install recommended extensions.
@@ -72,16 +72,16 @@ To run the full suite of `tox`_ tests locally you'll need docker. Once you have 
 and running do::
 
     git submodule update --init --recursive
-    docker pull ghcr.io/opencyphal/toxic:tx22.4.1
-    docker run --rm -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.1 tox
+    docker pull ghcr.io/opencyphal/toxic:tx22.4.2
+    docker run --rm -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.2 tox
 
 To run a limited suite using only locally available interpreters directly on your host machine,
-skip the docker invocations and use ``tox -s``.
+skip the docker invocations and use ``tox run -s``.
 
 To run the language verification build you'll need to use a different docker container::
 
-    docker pull ghcr.io/opencyphal/toolshed:ts22.4.3
-    docker run --rm -it -v $PWD:/workspace ghcr.io/opencyphal/toolshed:ts22.4.3
+    docker pull ghcr.io/opencyphal/toolshed:ts22.4.5
+    docker run --rm -it -v $PWD:/workspace ghcr.io/opencyphal/toolshed:ts22.4.5
     cd /workspace
     ./.github/verify.py -l c
     ./.github/verify.py -l cpp
@@ -187,7 +187,7 @@ Building The Docs
 We rely on `read the docs`_ to build our documentation from github but we also verify this build
 as part of our tox build. This means you can view a local copy after completing a full, successful
 test run (See `Running The Tests`_) or do
-:code:`docker run --rm -t -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.1 /bin/sh -c "tox -e docs"` to build
+:code:`docker run --rm -t -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.2 /bin/sh -c "tox run -e docs"` to build
 the docs target. You can open the index.html under ``.tox/docs/tmp/index.html`` or run a local
 web-server::
 
@@ -197,15 +197,6 @@ web-server::
 Of course, you can just use `Visual Studio Code`_ to build and preview the docs using
 :code:`> reStructuredText: Open Preview`.
 
-
-apidoc
-================================================
-
-We manually generate the api doc using ``sphinx-apidoc``. To regenerate use ``tox -e gen-apidoc``.
-
-.. warning::
-
-    ``tox -e gen-apidoc`` will start by deleting the docs/api directory.
 
 ************************************************
 Coverage and Linting Reports

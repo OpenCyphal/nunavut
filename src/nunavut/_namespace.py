@@ -1,7 +1,7 @@
 #
-# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
 Namespace object and associated utilities. Nunavut namespaces provide an internal representation of dsdl namespaces
@@ -315,6 +315,7 @@ def build_namespace_tree(
     :param nunavut.LanguageContext language_context: The language context to use when building
             :class:`nunavut.Namespace` objects.
     :return: The root :class:`nunavut.Namespace`.
+    :rtype: nunavut.Namespace
 
     """
     namespace_index = set()  # type: typing.Set[str]

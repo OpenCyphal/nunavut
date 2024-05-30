@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: ghcr.io/opencyphal/toxic:tx22.4.1
+    container: ghcr.io/opencyphal/toxic:tx22.4.2
     steps:
     - uses: actions/checkout@v3
       with:
@@ -75,10 +75,12 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
       with:
         args: >
-          -Dsonar.login=${{ env.SONAR_TOKEN }}
+          -Dsonar.token=${{ env.SONAR_TOKEN }}
           -Dsonar.buildString=${{ env.GITHUB_RUN_ID }}
           -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }}
           -Dsonar.python.version=python3.10
+          -Dsonar.python.coverage.reportPaths=.tox/report/tmp/coverage.xml
+          -Dsonar.python.xunit.reportPath=.tox/py310-test/tmp/xunit-result.xml
     - name: report-pr
       if: ${{ github.event_name == 'pull_request' }}
       uses: sonarsource/sonarcloud-github-action@master
@@ -87,15 +89,17 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         args: >
-          -Dsonar.login=${{ env.SONAR_TOKEN }}
+          -Dsonar.token=${{ env.SONAR_TOKEN }}
           -Dsonar.buildString=${{ env.GITHUB_RUN_ID }}
           -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }}
           -Dsonar.python.version=python3.10
+          -Dsonar.python.coverage.reportPaths=.tox/report/tmp/coverage.xml
+          -Dsonar.python.xunit.reportPath=.tox/py310-test/tmp/xunit-result.xml
 
   compat-test-python3-windows-and-mac:
     strategy:
       matrix:
-        python3-version: ['10','11']
+        python3-version: ['11','12']
         python3-platform: ['windows-latest', 'macos-latest']
     runs-on: ${{ matrix.python3-platform }}
     needs: test
@@ -115,9 +119,9 @@ jobs:
   compat-test-python3-ubuntu:
     strategy:
       matrix:
-        python3-version: ['7', '8', '9', '10', '11']
+        python3-version: ['7', '8', '9', '10', '11', '12']
     runs-on: ubuntu-latest
-    container: ghcr.io/opencyphal/toxic:tx22.4.1
+    container: ghcr.io/opencyphal/toxic:tx22.4.2
     needs: test
     steps:
     - uses: actions/checkout@v3
@@ -129,7 +133,7 @@ jobs:
   language-verification-c:
     runs-on: ubuntu-latest
     needs: test
-    container: ghcr.io/opencyphal/toolshed:ts22.4.1
+    container: ghcr.io/opencyphal/toolshed:ts22.4.2
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
@@ -223,7 +227,7 @@ jobs:
   language-verification-python:
     runs-on: ubuntu-latest
     needs: test
-    container: ghcr.io/opencyphal/toxic:tx22.4.1
+    container: ghcr.io/opencyphal/toxic:tx22.4.2
     steps:
     - uses: actions/checkout@v3
       with:

@@ -9,15 +9,21 @@
 // This is an AUTO-GENERATED Cyphal DSDL data type implementation. Curious? See https://opencyphal.org.
 // You shouldn't attempt to edit this file.
 //
-// Checking this file under version control is not recommended unless it is used as part of a high-SIL
-// safety-critical codebase. The typical usage scenario is to generate it as part of the build process.
+{%- if nunavut.embed_auditing_info %}
+// Checking this file under version control is not recommended since metadata in this header will change for each
+// build invocation (do not use --embed-auditing-info option to remove this comment).
+{%- endif %}
 //
 // To avoid conflicts with definitions given in the source DSDL file, all entities created by the code generator
 // are named with an underscore at the end, like foo_bar_().
 //
 // Generator:     nunavut-{{ nunavut.version }} (serialization was {{ 'not ' * nunavut.support.omit }}enabled)
+{%- if nunavut.embed_auditing_info %}
 // Source file:   {{ T.source_file_path.as_posix() }}
 // Generated at:  {{ now_utc }} UTC
+{%- else %}
+// Source file:   {{ T.source_file_path.name }}
+{%- endif %}
 // Is deprecated: {{ T.deprecated and 'yes' or 'no' }}
 // Fixed port-ID: {{ T.fixed_port_id }}
 // Full name:     {{ T.full_name }}

@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Python: nnvg c++",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "nunavut",
             "cwd": "${workspaceFolder}/src",
@@ -18,22 +18,33 @@
         },
         {
             "name": "Pytest: current test",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "pytest",
             "args": [
                 "--keep-generated",
+                "--rootdir=${workspaceFolder}",
                 "${file}"
             ],
-            "console": "internalConsole",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Pytest: all doc tests",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "--keep-generated",
+                "--rootdir=${workspaceFolder}",
+                "${workspaceFolder}/src"
+            ],
             "cwd": "${workspaceFolder}"
         },
         {
             "name": "Pytest: all tests",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "pytest",
-            "console": "internalConsole",
             "cwd": "${workspaceFolder}"
         },
         {

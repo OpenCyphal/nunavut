@@ -1,8 +1,12 @@
 #
-# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2021  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
+"""
+Contains template loaders for Nunavut's Jinja2 environment.
+"""
+
 import collections
 import importlib
 import logging
@@ -55,7 +59,7 @@ class DSDLTemplateLoader(BaseLoader):
         package_name_for_templates: typing.Optional[str] = None,
         builtin_template_path: str = DEFAULT_TEMPLATE_PATH,
         search_policy: ResourceSearchPolicy = ResourceSearchPolicy.FIND_ALL,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ):
         super().__init__(**kwargs)
         self._type_to_template_lookup_cache: typing.Dict[pydsdl.Any, pathlib.Path] = dict()
@@ -63,8 +67,8 @@ class DSDLTemplateLoader(BaseLoader):
         if templates_dirs is not None:
             for templates_dir_item in templates_dirs:
                 if not templates_dir_item.exists():
-                    raise ValueError("Templates directory {} did not exist?".format(str(templates_dir_item)))
-            logger.info("Loading templates from file system at {}".format(templates_dirs))
+                    raise ValueError(f"Templates directory {str(templates_dir_item)} did not exist?")
+            logger.info("Loading templates from file system at %s", templates_dirs)
             self._fsloader = FileSystemLoader((str(d) for d in templates_dirs), followlinks=followlinks)
         else:
             self._fsloader = None
@@ -221,7 +225,7 @@ class DSDLTemplateLoader(BaseLoader):
     # +----------------------------------------------------------------------------------------------------------------+
     @staticmethod
     def _filter_template_list_by_suffix(files: typing.List[str]) -> typing.List[str]:
-        return [f for f in files if (pathlib.Path(f).suffix == TEMPLATE_SUFFIX)]
+        return [f for f in files if pathlib.Path(f).suffix == TEMPLATE_SUFFIX]
 
     def _type_to_template_internal(
         self, value_type: typing.Type, templates: typing.Mapping[str, pathlib.Path]
@@ -241,9 +245,9 @@ class DSDLTemplateLoader(BaseLoader):
 
             try:
                 logging.debug(
-                    "NunavutTemplateLoader.type_to_template for {}: considering {}...".format(
-                        value_type.__name__, current_search_type.__name__
-                    )
+                    "NunavutTemplateLoader.type_to_template for %s: considering %s...",
+                    value_type.__name__,
+                    current_search_type.__name__,
                 )
                 template_path = templates[current_search_type.__name__]
                 self._type_to_template_lookup_cache[current_search_type] = template_path

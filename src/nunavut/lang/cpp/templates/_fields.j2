@@ -10,7 +10,7 @@
     // +----------------------------------------------------------------------+
     {% endif -%}
     {{ field.doc | block_comment('cpp-doxygen', 4, 120) }}
-    {% if options.ctor_convention != ConstructorConvention.Default.value -%}
+    {% if options.ctor_convention != ConstructorConvention.DEFAULT -%}
     _traits_::TypeOf::{{field.name|id}} {{ field | id }};
     {%- else -%}
     _traits_::TypeOf::{{field.name|id}} {{ field | id }}{{ field.data_type | default_value_initializer }};

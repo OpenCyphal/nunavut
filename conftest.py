@@ -1,9 +1,10 @@
 #
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """
-Fixtures for our tests.
+Configuration for pytest tests including fixtures and hooks.
 """
 
 import logging
@@ -20,54 +21,9 @@ from doctest import ELLIPSIS
 import pydsdl
 import pytest
 from sybil import Sybil
-
-try:
-    from sybil.parsers.codeblock import PythonCodeBlockParser
-except ImportError:
-    from sybil.parsers.codeblock import CodeBlockParser as PythonCodeBlockParser
-
-from sybil.parsers.doctest import DocTestParser
+from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
 
 from nunavut import Namespace
-
-
-# +-------------------------------------------------------------------------------------------------------------------+
-# | PYTEST HOOKS
-# +-------------------------------------------------------------------------------------------------------------------+
-
-
-def pytest_configure(config: typing.Any) -> None:
-    """
-    See https://docs.pytest.org/en/6.2.x/reference.html#initialization-hooks
-    """
-    # pydsdl._dsdl_definition is reeeeeeealy verbose at the INFO level and below. Turn this down to reduce
-    # scroll-blindness.
-    logging.getLogger("pydsdl._dsdl_definition").setLevel(logging.WARNING)
-    # A lot of DEBUG noise in the other loggers so we'll tune this down to INFO and higher.
-    logging.getLogger("pydsdl._namespace").setLevel(logging.INFO)
-    logging.getLogger("pydsdl._data_type_builder").setLevel(logging.INFO)
-
-
-def pytest_addoption(parser):  # type: ignore
-    """
-    See https://docs.pytest.org/en/6.2.x/reference.html#initialization-hooks
-    """
-    parser.addoption(
-        "--keep-generated",
-        action="store_true",
-        help=textwrap.dedent(
-            """
-        If set then the temporary directory used to generate files for each test will be left after
-        the test has completed. Normally this directory is temporary and therefore cleaned up automatically.
-
-        :: WARNING ::
-        This will leave orphaned files on disk. They won't be big but there will be a lot of them.
-
-        :: WARNING ::
-        Do not run tests in parallel when using this option.
-    """
-        ),
-    )
 
 
 # +-------------------------------------------------------------------------------------------------------------------+
@@ -76,13 +32,13 @@ def pytest_addoption(parser):  # type: ignore
 
 
 @pytest.fixture
-def run_nnvg(request):  # type: ignore
+def run_nnvg(request: pytest.FixtureRequest) -> typing.Callable:  # pylint: disable=unused-argument
     """
-    Test helper for invoking the nnvg commandline script as part of a unit test.
+    Test helper for invoking the nnvg command-line script as part of a unit test.
     """
 
     def _run_nnvg(
-        gen_paths: typing.Any,
+        _: typing.Any,
         args: typing.List[str],
         check_result: bool = True,
         env: typing.Optional[typing.Dict[str, str]] = None,
@@ -102,8 +58,7 @@ def run_nnvg(request):  # type: ignore
         except subprocess.CalledProcessError as e:
             if raise_called_process_error:
                 raise e
-            else:
-                raise AssertionError(e.stderr.decode("utf-8"))
+            raise AssertionError(e.stderr.decode("utf-8")) from e
 
     return _run_nnvg
 
@@ -113,7 +68,7 @@ class GenTestPaths:
 
     def __init__(self, test_file: str, keep_temporaries: bool, node_name: str):
         test_file_path = pathlib.Path(test_file)
-        self.test_name = "{}_{}".format(test_file_path.parent.stem, node_name)
+        self.test_name = f"{test_file_path.parent.stem}_{node_name}"
         self.test_dir = test_file_path.parent
         search_dir = self.test_dir.resolve()
         while search_dir.is_dir() and not (search_dir / pathlib.Path("src")).is_dir():
@@ -125,19 +80,25 @@ class GenTestPaths:
         self.lang_src_dir = self.root_dir / pathlib.Path("src") / pathlib.Path("nunavut") / pathlib.Path("lang")
 
         self._keep_temp = keep_temporaries
-        self._out_dir = None  # type: typing.Optional[pathlib.Path]
-        self._build_dir = None  # type: typing.Optional[pathlib.Path]
-        self._dsdl_dir = None  # type: typing.Optional[pathlib.Path]
-        self._temp_dirs = []  # type: typing.List[tempfile.TemporaryDirectory]
-        print('Paths for test "{}" under dir {}'.format(self.test_name, self.test_dir))
-        print("(root directory: {})".format(self.root_dir))
+        self._out_dir: typing.Optional[pathlib.Path] = None
+        self._build_dir: typing.Optional[pathlib.Path] = None
+        self._dsdl_dir: typing.Optional[pathlib.Path] = None
+        self._temp_dirs: typing.List[tempfile.TemporaryDirectory] = []
+        print(f'Paths for test "{self.test_name}" under dir {self.test_dir}')
+        print(f"(root directory: {self.root_dir})")
 
     def test_path_finalizer(self) -> None:
+        """
+        Finalizer to clean up any temporary directories created during the test.
+        """
         for temporary_dir in self._temp_dirs:
             temporary_dir.cleanup()
         self._temp_dirs.clear()
 
     def create_new_temp_dir(self, dir_key: str) -> pathlib.Path:
+        """
+        Create a new temporary directory for the test case.
+        """
         if self._keep_temp:
             result = self._ensure_dir(self.build_dir / pathlib.Path(dir_key))
         else:
@@ -157,6 +118,9 @@ class GenTestPaths:
 
     @property
     def build_dir(self) -> pathlib.Path:
+        """
+        The directory to place build artifacts under for this test case.
+        """
         if self._build_dir is None:
             self._build_dir = self._ensure_dir(self.root_dir / pathlib.Path("build"))
         return self._build_dir
@@ -165,7 +129,10 @@ class GenTestPaths:
     def find_outfile_in_namespace(
         typename: str, namespace: Namespace, type_version: pydsdl.Version = None
     ) -> typing.Optional[str]:
-        found_outfile = None  # type: typing.Optional[str]
+        """
+        Find the output file for a given type in a namespace.
+        """
+        found_outfile: typing.Optional[str] = None
         for dsdl_type, outfile in namespace.get_all_types():
             if dsdl_type.full_name == typename:
                 if type_version is not None:
@@ -176,8 +143,8 @@ class GenTestPaths:
                     # of the type we're looking for.
                 elif found_outfile is not None:
                     raise RuntimeError(
-                        "Type {} had more than one version for this test but no type version argument"
-                        " was provided.".format(typename)
+                        f"Type {typename} had more than one version for this test but no type version argument"
+                        " was provided."
                     )
                 else:
                     found_outfile = str(outfile)
@@ -191,15 +158,29 @@ class GenTestPaths:
         except FileExistsError:
             pass
         if not path_dir.exists() or not path_dir.is_dir():
-            raise RuntimeWarning('Test directory "{}" was not setup properly. Tests may fail.'.format(path_dir))
+            raise RuntimeWarning(f'Test directory "{path_dir}" was not setup properly. Tests may fail.')
         return path_dir
 
 
 @pytest.fixture(scope="function")
-def gen_paths(request):  # type: ignore
+def gen_paths(request: pytest.FixtureRequest) -> GenTestPaths:
     """
-    Used by the "gentest" unittests in Nunavut to standardize output paths for generated code created as part of
+    Used by the "gentest" unit tests in Nunavut to standardize output paths for generated code created as part of
     the tests. Use the --keep-generated argument to disable the auto-clean behaviour this fixture provides by default.
+    """
+    g = GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
+    request.addfinalizer(g.test_path_finalizer)
+    return g
+
+
+@pytest.fixture(scope="module")
+def gen_paths_for_module(request: pytest.FixtureRequest) -> GenTestPaths:  # pylint: disable=unused-argument
+    """
+    Used by our Sybil doctests in Nunavut to standardize output paths for generated code created as part of
+    the tests. Use the --keep-generated argument to disable the auto-clean behaviour this fixture provides by default.
+
+    Note: this fixture is different than gen_paths because it is scoped to the module level. This is useful for
+    Sybil tests that share temporary files across different test blocks within the same document.
     """
     g = GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
     request.addfinalizer(g.test_path_finalizer)
@@ -208,7 +189,7 @@ def gen_paths(request):  # type: ignore
 
 class _UniqueNameEvaluator:
     def __init__(self) -> None:
-        self._found_names = set()  # type: typing.Set[str]
+        self._found_names: typing.Set[str] = set()
 
     def __call__(self, expected_pattern: str, actual_value: str) -> None:
         assert re.match(expected_pattern, actual_value) is not None
@@ -217,7 +198,7 @@ class _UniqueNameEvaluator:
 
 
 @pytest.fixture(scope="function")
-def unique_name_evaluator(request):  # type: ignore
+def unique_name_evaluator(request: pytest.FixtureRequest) -> _UniqueNameEvaluator:  # pylint: disable=unused-argument
     """
     Class that defined ``assert_is_expected_and_unique`` allowing assertion that a set of values
     in a single test adhere to a provided pattern and are unique values (compared to other values
@@ -240,11 +221,11 @@ def unique_name_evaluator(request):  # type: ignore
 
 
 @pytest.fixture
-def assert_language_config_value(request):  # type: ignore
+def assert_language_config_value(request: pytest.FixtureRequest) -> typing.Callable:  # pylint: disable=unused-argument
     """
     Assert that a given configuration value is set for the target language.
     """
-    from nunavut.lang import LanguageContext, LanguageContextBuilder
+    from nunavut.lang import LanguageContext, LanguageContextBuilder  # pylint: disable=import-outside-toplevel
 
     def _assert_language_config_value(
         target_language: typing.Union[str, LanguageContext],
@@ -271,7 +252,7 @@ def assert_language_config_value(request):  # type: ignore
 
 
 @pytest.fixture
-def jinja_filter_tester(request):  # type: ignore
+def jinja_filter_tester(request: pytest.FixtureRequest):  # pylint: disable=unused-argument
     """
     Use to create fluent but testable documentation for Jinja filters and tests
 
@@ -311,17 +292,17 @@ def jinja_filter_tester(request):  # type: ignore
 
             jinja_filter_tester(filter_dummy, template, rendered, lctx, I=I)
     """
-    from nunavut.jinja.jinja2 import DictLoader
-    from nunavut.lang import LanguageContext, LanguageContextBuilder
+    from nunavut.jinja.jinja2 import DictLoader  # pylint: disable=import-outside-toplevel
+    from nunavut.lang import LanguageContext, LanguageContextBuilder  # pylint: disable=import-outside-toplevel
 
     def _make_filter_test_template(
         filter_or_list_of_filters: typing.Union[None, typing.Callable, typing.List[typing.Callable]],
         body: str,
         expected: str,
         target_language_or_language_context: typing.Union[str, LanguageContext],
-        **globals: typing.Optional[typing.Dict[str, typing.Any]]
+        **additional_globals: typing.Optional[typing.Dict[str, typing.Any]],
     ) -> str:
-        from nunavut.jinja import CodeGenEnvironment
+        from nunavut.jinja import CodeGenEnvironmentBuilder  # pylint: disable=import-outside-toplevel
 
         if isinstance(target_language_or_language_context, LanguageContext):
             lctx = target_language_or_language_context
@@ -333,23 +314,23 @@ def jinja_filter_tester(request):  # type: ignore
             )
 
         if filter_or_list_of_filters is None:
-            additional_filters = dict()  # type: typing.Optional[typing.Dict[str, typing.Callable]]
+            additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = {}
         elif isinstance(filter_or_list_of_filters, list):
-            additional_filters = dict()
-            for filter in filter_or_list_of_filters:
-                additional_filters[filter.__name__] = filter
+            additional_filters = {}
+            for filter_method in filter_or_list_of_filters:
+                additional_filters[filter_method.__name__] = filter_method
         else:
             additional_filters = {filter_or_list_of_filters.__name__: filter_or_list_of_filters}
 
-        e = CodeGenEnvironment(
-            lctx=lctx,
-            loader=DictLoader({"test": body}),
-            allow_filter_test_or_use_query_overwrite=True,
-            additional_filters=additional_filters,
-            additional_globals=globals,
+        e = (
+            CodeGenEnvironmentBuilder(DictLoader({"test": body}), lctx)
+            .set_allow_filter_test_or_use_query_overwrite(True)
+            .add_filters(**additional_filters)
+            .add_globals(**additional_globals)
+            .create()
         )
         e.update_nunavut_globals(
-            *lctx.get_target_language().get_support_module(), is_dryrun=True, omit_serialization_support=True
+            *lctx.get_target_language().get_support_module(), omit_serialization_support=True, embed_auditing_info=True
         )
 
         rendered = str(e.get_template("test").render())
@@ -364,18 +345,57 @@ def jinja_filter_tester(request):  # type: ignore
 
 
 @pytest.fixture
-def mock_environment(request):  # type: ignore
+def mock_environment(request: pytest.FixtureRequest) -> typing.Any:  # pylint: disable=unused-argument
     """
     A MagicMock that can be used where a jinja environment is needed.
     """
-    from unittest.mock import MagicMock
+    from unittest.mock import MagicMock  # pylint: disable=import-outside-toplevel
 
-    mock_environment = MagicMock()
+    magic_mock_environment = MagicMock()
     support_mock = MagicMock()
-    mock_environment.globals = {"nunavut": support_mock}
+    magic_mock_environment.globals = {"nunavut": support_mock}
     support_mock.support = {"omit": True}
 
-    return mock_environment
+    return magic_mock_environment
+
+
+# +-------------------------------------------------------------------------------------------------------------------+
+# | PYTEST HOOKS
+# +-------------------------------------------------------------------------------------------------------------------+
+
+
+def pytest_configure(config: typing.Any) -> None:  # pylint: disable=unused-argument
+    """
+    See https://docs.pytest.org/en/6.2.x/reference.html#initialization-hooks
+    """
+    # pydsdl._dsdl_definition is reeeeeeealy verbose at the INFO level and below. Turn this down to reduce
+    # scroll-blindness.
+    logging.getLogger("pydsdl._dsdl_definition").setLevel(logging.WARNING)
+    # A lot of DEBUG noise in the other loggers so we'll tune this down to INFO and higher.
+    logging.getLogger("pydsdl._namespace").setLevel(logging.INFO)
+    logging.getLogger("pydsdl._data_type_builder").setLevel(logging.INFO)
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """
+    See https://docs.pytest.org/en/6.2.x/reference.html#initialization-hooks
+    """
+    parser.addoption(
+        "--keep-generated",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+        If set then the temporary directory used to generate files for each test will be left after
+        the test has completed. Normally this directory is temporary and therefore cleaned up automatically.
+
+        :: WARNING ::
+        This will leave orphaned files on disk. They won't be big but there will be a lot of them.
+
+        :: WARNING ::
+        Do not run tests in parallel when using this option.
+    """
+        ),
+    )
 
 
 # +-------------------------------------------------------------------------------------------------------------------+
@@ -383,7 +403,7 @@ def mock_environment(request):  # type: ignore
 # +-------------------------------------------------------------------------------------------------------------------+
 
 
-_sy = Sybil(
+pytest_collect_file = Sybil(
     parsers=[
         DocTestParser(optionflags=ELLIPSIS),
         PythonCodeBlockParser(),
@@ -404,9 +424,7 @@ _sy = Sybil(
     fixtures=[
         "jinja_filter_tester",
         "gen_paths",
+        "gen_paths_for_module",
         "assert_language_config_value",
     ],
-)
-
-
-pytest_collect_file = _sy.pytest()
+).pytest()

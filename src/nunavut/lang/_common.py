@@ -1,7 +1,7 @@
 #
-# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Copyright (C) 2018-2020  OpenCyphal Development Team  <opencyphal.org>
-# This software is distributed under the terms of the MIT License.
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
 #
 """Language-specific support in nunavut.
 
@@ -19,13 +19,28 @@ from nunavut._utilities import ResourceType
 from ._language import Language
 
 
+# +-------------------------------------------------------------------------------------------------------------------+
+# | GENERATORS
+# +-------------------------------------------------------------------------------------------------------------------+
+
+
 class IncludeGenerator:
+    """
+    Generates include file paths for a given language and datatype.
+    """
+
     def __init__(self, language: Language, t: pydsdl.CompositeType, omit_serialization_support: bool):
         self._type = t
         self._language = language
         self._omit_serialization_support = omit_serialization_support
 
     def generate_include_filepart_list(self, output_extension: str, sort: bool) -> typing.List[str]:
+        """
+        Generates a list of include file paths for a given datatype and language.
+        :param output_extension: The file extension to use for the include file paths.
+        :param sort: If True the list of include file paths will be sorted.
+        :return: A list of include file paths.
+        """
         dep_types = self._language.get_dependency_builder(self._type).direct()
 
         path_list = [
@@ -43,14 +58,14 @@ class IncludeGenerator:
 
         prefer_system_includes = self._language.get_config_value_as_bool("prefer_system_includes", False)
         if prefer_system_includes:
-            path_list_with_punctuation = ["<{}>".format(p) for p in path_list]
+            path_list_with_punctuation = [f"<{p}>" for p in path_list]
         else:
-            path_list_with_punctuation = ['"{}"'.format(p) for p in path_list]
+            path_list_with_punctuation = [f'"{p}"' for p in path_list]
 
         if sort:
             return sorted(path_list_with_punctuation + self._language.get_includes(dep_types))
-        else:
-            return path_list_with_punctuation + self._language.get_includes(dep_types)
+
+        return path_list_with_punctuation + self._language.get_includes(dep_types)
 
     @classmethod
     def make_path(
@@ -60,7 +75,7 @@ class IncludeGenerator:
         output_extension: typing.Optional[str] = None,
     ) -> pathlib.Path:
         """
-        Common method for createing a relative path to a datatype source file.
+        Common method for creating a relative path to a datatype source file.
 
         .. invisible-code-block: python
 
@@ -94,9 +109,7 @@ class IncludeGenerator:
 
         """
         if language is None:
-            short_name = "{short}_{major}_{minor}".format(
-                short=dt.short_name, major=dt.version.major, minor=dt.version.minor
-            )
+            short_name = f"{dt.short_name}_{dt.version.major}_{dt.version.minor}"
         else:
             short_name = language.filter_short_reference_name(dt, id_type="path")
 
@@ -116,8 +129,10 @@ class IncludeGenerator:
     def _make_ns_list(cls, language: typing.Optional[Language], dt: pydsdl.SerializableType) -> typing.List[str]:
         if language is not None and language.enable_stropping:
             return [language.filter_id(x, id_type="path") for x in dt.full_namespace.split(".")]
-        else:
-            return typing.cast(typing.List[str], dt.full_namespace.split("."))
+        return typing.cast(typing.List[str], dt.full_namespace.split("."))
+
+
+# +-------------------------------------------------------------------------------------------------------------------+
 
 
 class UniqueNameGenerator:
@@ -126,17 +141,23 @@ class UniqueNameGenerator:
     This should be made available as a private global within each template.
     """
 
-    _singleton = None  # type: typing.Optional['UniqueNameGenerator']
+    _singleton: typing.Optional["UniqueNameGenerator"] = None
 
     def __init__(self) -> None:
-        self._index_map = {}  # type: typing.Dict[str, typing.Dict[str, int]]
+        self._index_map: typing.Dict[str, typing.Dict[str, int]] = {}
 
     @classmethod
     def reset(cls) -> None:
+        """
+        Resets the singleton instance of the UniqueNameGenerator.
+        """
         cls._singleton = cls()
 
     @classmethod
     def get_instance(cls) -> "UniqueNameGenerator":
+        """
+        Returns the singleton instance of the UniqueNameGenerator.
+        """
         if cls._singleton is None:
             raise RuntimeError("No UniqueNameGenerator has been created. Please use reset to create.")
         return cls._singleton
@@ -159,9 +180,12 @@ class UniqueNameGenerator:
             next_index = 0
             keymap[base_token] = 1
 
-        return "{prefix}{base_token}{index}{suffix}".format(
-            prefix=prefix, base_token=base_token, index=next_index, suffix=suffix
-        )
+        return f"{prefix}{base_token}{next_index}{suffix}"
+
+
+# +-------------------------------------------------------------------------------------------------------------------+
+# | ENCODERS
+# +-------------------------------------------------------------------------------------------------------------------+
 
 
 class TokenEncoder:
@@ -329,9 +353,7 @@ class TokenEncoder:
         self._stropping_suffix = language.get_config_value("stropping_suffix", "")
         self._encoding_prefix = language.get_config_value("encoding_prefix", "")
         try:
-            self._whitespace_encoding_char = language.get_config_value(
-                "whitespace_encoding_char"
-            )  # type: typing.Optional[str]
+            self._whitespace_encoding_char: typing.Optional[str] = language.get_config_value("whitespace_encoding_char")
         except KeyError:
             self._whitespace_encoding_char = None
         self._collapse_whitespace_when_encoding = language.get_config_value_as_bool("collapse_whitespace_when_encoding")
@@ -370,9 +392,8 @@ class TokenEncoder:
                     encoded = token_pattern.sub(self._encoding_filter, encoded)
                 elif token_pattern.match(encoded):
                     raise RuntimeError(
-                        'Unstable encoding: using prefix "{}" partially encoded token: "{}"'.format(
-                            self._encoding_prefix, encoded
-                        )
+                        f'Unstable encoding: using prefix "{self._encoding_prefix}" partially encoded token: '
+                        '"{encoded}"'
                     )
         except KeyError:
             pass
@@ -386,8 +407,8 @@ class TokenEncoder:
                 stropped = self._stropping_prefix + stropped + self._stropping_suffix
             else:
                 raise RuntimeError(
-                    'input token "{}" of type "{}" yielded an illegal token after '
-                    "stropping: {}".format(stropped, token_type, stropped)
+                    f'input token "{stropped}" of type "{token_type}" yielded an illegal token after '
+                    "stropping: {stropped}"
                 )
 
         return stropped
@@ -402,8 +423,8 @@ class TokenEncoder:
                 stropped = self._stropping_prefix + stropped + self._stropping_suffix
             else:
                 raise RuntimeError(
-                    'input token "{}" of type "{}" yielded an illegal token after '
-                    "stropping: {}".format(stropped, token_type, stropped)
+                    f'input token "{stropped}" of type "{token_type}" yielded an illegal token after '
+                    "stropping: {stropped}"
                 )
 
         return stropped
@@ -431,13 +452,21 @@ class TokenEncoder:
     # +------------------------------------------------------------------------------------------------------------+
 
     def encode_character(self, c: str) -> str:
+        """
+        Encode a character into a string representation.
+
+        :param c: The character to encode.
+        :return: The string representation of the encoded character.
+        """
         if self._whitespace_encoding_char is not None and c.isspace():
             return self._whitespace_encoding_char
-        else:
-            return "{}{:04X}".format(self._encoding_prefix, ord(c))
+        return f"{self._encoding_prefix}{ord(c):04X}"
 
     @functools.lru_cache(maxsize=1024)
-    def strop(self, token: str, token_type: str = "any") -> str:  # noqa: C901
+    def strop(self, token: str, token_type: str = "any") -> str:
+        """
+        Strops a token such that it is a valid identifier for the given language.
+        """
         token_type_lower = token_type.lower()
         if token_type_lower == "all":
             raise ValueError(
@@ -461,8 +490,7 @@ class TokenEncoder:
         except RuntimeError as pending_error:
             if self._stropping_failure_handler is None:
                 raise pending_error
-            else:
-                stropped = self._stropping_failure_handler(self, stropped, token_type, pending_error)
+            stropped = self._stropping_failure_handler(self, stropped, token_type, pending_error)
 
         # and check that the stropping didn't result in a keyword
         try:
@@ -470,8 +498,7 @@ class TokenEncoder:
         except RuntimeError as pending_error:
             if self._stropping_failure_handler is None:
                 raise pending_error
-            else:
-                stropped = self._stropping_failure_handler(self, stropped, token_type, pending_error)
+            stropped = self._stropping_failure_handler(self, stropped, token_type, pending_error)
 
         # finally, we make sure stropping didn't result in encoding violations
         try:
@@ -479,8 +506,7 @@ class TokenEncoder:
         except RuntimeError as pending_error:
             if self._encoding_failure_handler is None:
                 raise pending_error
-            else:
-                stropped = self._encoding_failure_handler(self, stropped, token_type, pending_error)
+            stropped = self._encoding_failure_handler(self, stropped, token_type, pending_error)
 
         return stropped
 

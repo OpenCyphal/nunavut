@@ -237,6 +237,8 @@ Common Filters
    :noindex:
 .. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_bits2bytes_ceil
    :noindex:
+.. autofunction:: nunavut.jinja.DSDLCodeGenerator.filter_text_table
+   :noindex:
 
 Common Tests
 -------------------------------------------------
@@ -325,6 +327,10 @@ C++ Use Queries
 -------------------------------------------------
 .. autofunction:: nunavut.lang.cpp.uses_std_variant
    :noindex:
+.. autofunction:: nunavut.lang.cpp.uses_cetl
+   :noindex:
+.. autofunction:: nunavut.lang.cpp.uses_pmr
+   :noindex:
 
 
 Python Filters
@@ -341,6 +347,12 @@ Python Filters
 .. autofunction:: nunavut.lang.py.filter_imports
    :noindex:
 .. autofunction:: nunavut.lang.py.filter_longest_id_length
+   :noindex:
+.. autofunction:: nunavut.lang.py.filter_pickle
+   :noindex:
+.. autofunction:: nunavut.lang.py.filter_numpy_scalar_type
+   :noindex:
+.. autofunction:: nunavut.lang.py.filter_newest_minor_version_aliases
    :noindex:
 
 

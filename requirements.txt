@@ -1,5 +1,6 @@
 # This file provided for readthedocs.io only. Use tox.ini for all dependencies.
 
 .
+sphinx_rtd_theme
 sphinx-argparse
 sphinxemoji
