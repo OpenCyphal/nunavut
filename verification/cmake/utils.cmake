@@ -34,11 +34,6 @@ function(define_native_unit_test)
     )
 
     # +--[ BODY ]------------------------------------------------------------+
-    # TODO: we need to find a way to run this without googletest or unity. It they are orders of magnitude too complex
-    # to run on gtest or unity binaries (may take hours to run).
-    # target_compile_options(${ARG_TEST_NAME} PRIVATE "$<$<C_COMPILER_ID:GNU>:-fanalyzer>")
-    # target_compile_options(${ARG_TEST_NAME} PRIVATE "$<$<C_COMPILER_ID:GNU>:-fanalyzer-checker=taint>")
-
     add_executable(${ARG_TEST_NAME} ${ARG_TEST_SOURCE})
 
     if (ARG_DSDL_TARGETS)
@@ -50,6 +45,10 @@ function(define_native_unit_test)
         target_link_libraries(${ARG_TEST_NAME} PUBLIC gmock_main)
     elseif (${ARG_FRAMEWORK} STREQUAL "unity")
         target_link_libraries(${ARG_TEST_NAME} PUBLIC unity_core)
+    elseif (${ARG_FRAMEWORK} STREQUAL "none")
+        message(STATUS "${ARG_TEST_NAME}: No test framework")
+        target_compile_options(${ARG_TEST_NAME} PRIVATE "$<$<C_COMPILER_ID:GNU>:-fanalyzer>")
+        target_compile_options(${ARG_TEST_NAME} PRIVATE "$<$<C_COMPILER_ID:GNU>:-fanalyzer-checker=taint>")
     else()
         message(FATAL_ERROR "${ARG_FRAMEWORK} isn't a supported unit test framework. Currently we support gtest and unity.")
     endif()
@@ -57,11 +56,6 @@ function(define_native_unit_test)
     set_target_properties(${ARG_TEST_NAME}
                           PROPERTIES
                           RUNTIME_OUTPUT_DIRECTORY "${ARG_OUTDIR}"
-    )
-
-    target_link_options(${ARG_TEST_NAME} PUBLIC
-        "$<$<C_COMPILER_ID:GNU>:-Wl,-Map=${ARG_OUTDIR}/${ARG_TEST_NAME}.map,--cref>"
-        "$<$<C_COMPILER_ID:Clang>:-Wl,-Map,${ARG_OUTDIR}/${ARG_TEST_NAME}.map>"
     )
 
     add_custom_command(OUTPUT ${ARG_OUTDIR}/${ARG_TEST_NAME}-disassembly.S

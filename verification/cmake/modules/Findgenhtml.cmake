@@ -7,14 +7,14 @@ find_program(GENHTML genhtml)
 
 if(GENHTML)
     #
-    # function: define_natve_test_coverage - creates makefile targets to generate coverage
+    # function: define_native_test_coverage - creates makefile targets to generate coverage
     # data for an individual test.
     #
     # param: ARG_TEST_NAME string - The name of the test to generate coverage data for.
     # param: ARG_OUTDIR path - The path where the test binaries live and where the coverage
     #                          data will be stored.
     #
-    function(define_natve_test_coverage ARG_TEST_NAME ARG_OUTDIR)
+    function(define_native_test_coverage ARG_TEST_NAME ARG_OUTDIR)
 
         add_custom_target(
             cov_${ARG_TEST_NAME}

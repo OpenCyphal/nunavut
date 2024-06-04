@@ -194,10 +194,10 @@ static inline void nunavutCopyBits(void* const dst,
         {{ typename_unsigned_bit_length }}       dst_off  = dst_offset_bits;
         const {{ typename_unsigned_bit_length }} last_bit = src_off + length_bits;
         {{ assert(
-            '((psrc < pdst) ? ((uintptr_t)(psrc + ((src_offset_bits + length_bits + 8U) / 8U)) <= (uintptr_t)pdst) : 1)'
+            '((psrc < pdst) ? ((uintptr_t)(psrc + ((src_offset_bits + length_bits + 7U) / 8U)) <= (uintptr_t)pdst) : 1)'
         ) }}
         {{ assert(
-            '((psrc > pdst) ? ((uintptr_t)(pdst + ((dst_offset_bits + length_bits + 8U) / 8U)) <= (uintptr_t)psrc) : 1)'
+            '((psrc > pdst) ? ((uintptr_t)(pdst + ((dst_offset_bits + length_bits + 7U) / 8U)) <= (uintptr_t)psrc) : 1)'
         ) }}
         while (last_bit > src_off)
         {

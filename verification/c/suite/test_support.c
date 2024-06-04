@@ -21,6 +21,30 @@ static void testNunavutCopyBits(void)
     }
 }
 
+static void testNunavutCopyAdjacentBitsForward(void)
+{
+    uintptr_t data[2];
+    uintptr_t expected =  (1ul << ((sizeof(expected) * 8ul) - 1ul));
+    const size_t word_size_bytes = sizeof(uintptr_t);
+    const size_t word_size_bits = word_size_bytes * 8u;
+    memset(&data[0], 0xFF, sizeof(uintptr_t));
+    memset(&data[1], 0x00, sizeof(uintptr_t));
+    nunavutCopyBits(&data[1], word_size_bits - 1, 1, &data[0], 1);
+    TEST_ASSERT_EQUAL(expected, data[1]);
+}
+
+static void testNunavutCopyAdjacentBitsBackward(void)
+{
+    uintptr_t data[2];
+    uintptr_t expected =  (1ul << ((sizeof(expected) * 8ul) - 1ul));
+    const size_t word_size_bytes = sizeof(uintptr_t);
+    const size_t word_size_bits = word_size_bytes * 8u;
+    memset(&data[1], 0xFF, sizeof(uintptr_t));
+    memset(&data[0], 0x00, sizeof(uintptr_t));
+    nunavutCopyBits(&data[0], word_size_bits - 1, 1, &data[1], 1);
+    TEST_ASSERT_EQUAL(expected, data[0]);
+}
+
 static void testNunavutCopyBitsWithAlignedOffset(void)
 {
     const uint8_t src[] = { 1, 2, 3, 4, 5 };
@@ -502,7 +526,7 @@ static void helperPackUnpack(float source_value, uint16_t compare_mask, size_t i
     for(size_t i = 0; i < iterations; ++i)
     {
         repacked = nunavutFloat16Pack(nunavutFloat16Unpack(repacked));
-        snprintf(message_buffer, 128, "source_value=%f, compare_mask=%X, i=%zu", source_value, compare_mask, i);
+        snprintf(message_buffer, 128, "source_value=%f, compare_mask=%X, i=%zu", (double)source_value, compare_mask, i);
         TEST_ASSERT_EQUAL_HEX16_MESSAGE(packed & compare_mask, repacked & compare_mask, message_buffer);
     }
 }
@@ -727,20 +751,20 @@ static void testNunavutSetF64(void)
     helperAssertSerFloat64SameAsIEEE(-3.141592653589793, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF64(buffer, sizeof(buffer), 0, -NAN);
-    helperAssertSerFloat64SameAsIEEE(-NAN, buffer);
+    nunavutSetF64(buffer, sizeof(buffer), 0, -(double)NAN);
+    helperAssertSerFloat64SameAsIEEE(-(double)NAN, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF64(buffer, sizeof(buffer), 0, NAN);
-    helperAssertSerFloat64SameAsIEEE(NAN, buffer);
+    nunavutSetF64(buffer, sizeof(buffer), 0, (double)NAN);
+    helperAssertSerFloat64SameAsIEEE((double)NAN, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF64(buffer, sizeof(buffer), 0, INFINITY);
-    helperAssertSerFloat64SameAsIEEE(INFINITY, buffer);
+    nunavutSetF64(buffer, sizeof(buffer), 0, (double)INFINITY);
+    helperAssertSerFloat64SameAsIEEE((double)INFINITY, buffer);
 
     memset(buffer, 0, sizeof(buffer));
-    nunavutSetF64(buffer, sizeof(buffer), 0, -INFINITY);
-    helperAssertSerFloat64SameAsIEEE(-INFINITY, buffer);
+    nunavutSetF64(buffer, sizeof(buffer), 0, -(double)INFINITY);
+    helperAssertSerFloat64SameAsIEEE(-(double)INFINITY, buffer);
 }
 
 // +--------------------------------------------------------------------------+
@@ -762,6 +786,8 @@ int main(void)
     UNITY_BEGIN();
 
     RUN_TEST(testNunavutCopyBits);
+    RUN_TEST(testNunavutCopyAdjacentBitsForward);
+    RUN_TEST(testNunavutCopyAdjacentBitsBackward);
     RUN_TEST(testNunavutCopyBitsWithAlignedOffset);
     RUN_TEST(testNunavutCopyBitsWithUnalignedOffset);
     RUN_TEST(testNunavutSaturateBufferFragmentBitLength);
