@@ -168,7 +168,10 @@ static inline void nunavutCopyBits(void* const dst,
         // offsets be under 8 bits. Fewer constraints reduce the chance of API misuse.
         const uint8_t* const psrc = (src_offset_bits / 8U) + (const uint8_t*) src;  // NOSONAR NOLINT
         uint8_t*       const pdst = (dst_offset_bits / 8U) +       (uint8_t*) dst;  // NOSONAR NOLINT
-        (void) memmove(pdst, psrc, length_bytes);
+        if (length_bytes > 0U)  // issue #337 workaround
+        {
+            (void) memmove(pdst, psrc, length_bytes);
+        }
         const uint8_t length_mod = (uint8_t)(length_bits % 8U);
         if (0U != length_mod)  // If the length is unaligned, the last byte requires special treatment.
         {
