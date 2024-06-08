@@ -57,7 +57,7 @@ if(LCOV)
     # param: ARG_TEST_NAME string - The name of the test to run. A target will be created
     #                          with the name run_${ARG_TEST_NAME}_with_lcov
     # param: ARG_OUTDIR path - The path where the test binaries live.
-    # param: ARG_SOURCE_FILTER_DIR pattern - pattern for paths to include (exclusivly) in the coverage
+    # param: ARG_SOURCE_FILTER_DIR pattern - pattern for paths to include (exclusively) in the coverage
     #                                        data.
     #
     function(define_native_test_run_with_lcov ARG_TEST_NAME ARG_OUTDIR ARG_SOURCE_FILTER_DIR)

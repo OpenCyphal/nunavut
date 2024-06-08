@@ -4,8 +4,7 @@
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
     "mounts": [
-        "source=root-vscode-server,target=/root/.vscode-server/extensions,type=volume",
-        "source=nunavut-tox,target=/workspace/.tox,type=volume"
+        "source=root-vscode-server,target=/root/.vscode-server/extensions,type=volume"
     ],
     "customizations": {
         "vscode": {

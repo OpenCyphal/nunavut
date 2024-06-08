@@ -48,62 +48,16 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "Verification: test_var_len_arr",
-            "type": "cppdbg",
+            "type": "lldb",
             "request": "launch",
-            "program": "${workspaceRoot}/verification/build_vscode/native-gcc-cpp/suite/test_var_len_arr",
+            "program": "${command:cmake.launchTargetPath}",
+            "name": "lldb: cmake.launchTargetPath",
+            "args": [],
             "cwd": "${workspaceFolder}",
-            "osx": {
-                "MIMode": "lldb",
-                "externalConsole": false
-            }
-        },
-        {
-            "name": "Verification: test_support",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_support",
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "name": "Verification: test_serialization",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/verification/build_vscode/linux-gcc-c/suite/test_serialization",
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "name": "Verification(clang): test_constant",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/verification/build_vscode/native-clang-c/suite/test_constant",
-            "cwd": "${workspaceFolder}",
-            "osx": {
-                "MIMode": "lldb",
-                "externalConsole": false
-            }
-        },
-        {
-            "name": "Verification(clang): test_support",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/verification/build_vscode/native-clang-c/suite/test_support",
-            "cwd": "${workspaceFolder}",
-            "osx": {
-                "MIMode": "lldb",
-                "externalConsole": false
-            }
-        },
-        {
-            "name": "Verification (clang): test_serialization",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/verification/build_vscode/native-clang-c/suite/test_serialization",
-            "cwd": "${workspaceFolder}",
-            "osx": {
-                "MIMode": "lldb",
-                "externalConsole": false
-            }
+            "initCommands": ["settings set target.process.thread.step-avoid-regexp \"\""],
+            "env": {
+                "PATH": "$PATH:${command:cmake.launchTargetDirectory}",
+            },
         }
     ]
 }

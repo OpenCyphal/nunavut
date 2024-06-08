@@ -9,9 +9,8 @@ find_program(TOX tox)
 
 if(TOX)
 
-    set(TOX_LOCAL_OUTPUT ${NUNAVUT_PROJECT_ROOT}/.tox/local)
-
-    set(TOX_LOCAL_PYTHON_BIN ${TOX_LOCAL_OUTPUT}/bin)
+    set(TOX_LOCAL_VENV_PATH ${NUNAVUT_PROJECT_ROOT}/venv_${CMAKE_HOST_SYSTEM})
+    set(TOX_LOCAL_PYTHON_BIN ${TOX_LOCAL_VENV_PATH}/bin)
 
     execute_process(COMMAND ${TOX} --version
                     OUTPUT_VARIABLE TOX_VERSION
@@ -23,7 +22,8 @@ if(TOX)
         message(WARNING "${TOX} --version command failed.")
     endif()
 
-    execute_process(COMMAND ${TOX} -e local
+    execute_process(COMMAND ${TOX} d ${TOX_LOCAL_VENV_PATH}
+                        --workdir ${NUNAVUT_PROJECT_ROOT}/.tox_${CMAKE_HOST_SYSTEM}
                     WORKING_DIRECTORY ${NUNAVUT_PROJECT_ROOT}
                     RESULT_VARIABLE TOX_LOCAL_RESULT)
 

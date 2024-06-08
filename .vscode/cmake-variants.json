@@ -3,15 +3,37 @@
         "default": "debug",
         "description": "Variant for verification build kits.",
         "choices": {
+            "asan": {
+                "short": "Asan",
+                "long": "Address sanitizer builds.",
+                "buildType": "Debug",
+                "settings": {
+                    "NUNAVUT_FLAGSET": "${workspaceFolder}/verification/cmake/compiler_flag_sets/native_w_asan.cmake"
+                }
+            },
+            "coverage": {
+                "short": "Cov",
+                "long": "Coverage builds.",
+                "buildType": "Debug",
+                "settings": {
+                    "NUNAVUT_FLAGSET": "${workspaceFolder}/verification/cmake/compiler_flag_sets/native_w_cov.cmake"
+                }
+            },
             "debug": {
                 "short": "Debug",
                 "long": "Debug builds, no optimizations.",
-                "buildType": "Debug"
+                "buildType": "Debug",
+                "settings": {
+                    "NUNAVUT_FLAGSET": "${workspaceFolder}/verification/cmake/compiler_flag_sets/native.cmake"
+                }
             },
             "release": {
                 "short": "Release",
                 "long": "Release builds, some optimizations",
-                "buildType": "Release"
+                "buildType": "Release",
+                "settings": {
+                    "NUNAVUT_FLAGSET": "${workspaceFolder}/verification/cmake/compiler_flag_sets/native.cmake"
+                }
             }
         }
     },
@@ -38,11 +60,50 @@
             }
         }
     },
+    "endianness":{
+        "default": "any",
+        "choices": {
+            "any": {
+                "short": "any",
+                "long": "Generate code that works on either big or little endianness."
+            },
+            "little": {
+                "short": "little",
+                "long": "Generate code for little-endian targets.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_TARGET_ENDIANNESS": "little"
+                }
+            },
+            "big": {
+                "short": "big",
+                "long": "Generate code for big-endian targets.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_TARGET_ENDIANNESS": "big"
+                }
+            }
+        }
+    },
     "language":{
         "default": "C++14",
         "choices": {
             "C": {
-                "short": "--std=c11",
+                "short": "(c default)",
+                "long": "Compile and link using the C11 standard.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_LANG": "c",
+                    "NUNAVUT_VERIFICATION_LANG_STANDARD": ""
+                }
+            },
+            "C11": {
+                "short": "-std=c11",
+                "long": "Compile and link using the C11 standard.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_LANG": "c",
+                    "NUNAVUT_VERIFICATION_LANG_STANDARD": "c11"
+                }
+            },
+            "Cgnu17": {
+                "short": "-std=gnu17",
                 "long": "Compile and link using the C11 standard.",
                 "settings": {
                     "NUNAVUT_VERIFICATION_LANG": "c",
