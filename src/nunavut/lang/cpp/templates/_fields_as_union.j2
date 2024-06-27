@@ -16,76 +16,112 @@
         } internal_union_value_;
 
     public:
+
         static const constexpr std::size_t variant_npos = std::numeric_limits<std::size_t>::max();
 
+        struct IndexOf final
+        {
+            IndexOf() = delete;
+{%- for field in composite_type.fields_except_padding %}
+            static constexpr const std::size_t {{ field.name | id }} = {{ loop.index0 }}U;
+{%- endfor %}
+        };
+
+        // Alias maintains compatibility with the version of VariantType used in C++17
+        using Base = VariantType;
+
+        // Default constructor
         VariantType()
-            : tag_(0)
-            , internal_union_value_()
+            : tag_{0U}
+            , internal_union_value_{}
         {
             // This is how the C++17 standard library does it; default initialization as the 0th index.
             emplace<0>();
         }
 
-        VariantType(const VariantType& rhs)
-            : tag_(variant_npos)
-            , internal_union_value_()
+        // In-place-index constructor
+        template<std::size_t I, typename... Args>
+        VariantType(nunavut::support::in_place_index_t<I>, Args&&... args)
+            : tag_{I}
+            , internal_union_value_{}
+        {
+            do_emplace<I>(std::forward<Args>(args)...);
+        }
+
+        // In-place-index initializer list constructor
+        template<std::size_t I, typename U, typename... Args>
+        VariantType(nunavut::support::in_place_index_t<I>, std::initializer_list<U> il, Args&&... args)
+            : tag_{I}
+            , internal_union_value_{}
+        {
+            do_emplace<I>(il, std::forward<Args>(args)...);
+        }
+
+        // Copy constructor
+        VariantType(const VariantType& {{options.right_hand_token}})
+            : tag_{variant_npos}
+            , internal_union_value_{}
         {
 {%- for field in composite_type.fields_except_padding %}
-            {% if not loop.first %}else {% endif %}if(rhs.tag_ == {{ loop.index0 }})
+            {% if not loop.first %}else {% endif %}if({{options.right_hand_token}}.tag_ == {{loop.index0}})
             {
-                do_copy<{{ loop.index0 }}>(
-                    *reinterpret_cast<std::add_pointer<const {{ field.data_type | declaration }}>::type>(&rhs.internal_union_value_.{{ field.name | id }})
+                do_copy<{{loop.index0}}>(
+                    *reinterpret_cast<std::add_pointer<const {{ field.data_type | declaration }}>::type>(&{{options.right_hand_token}}.internal_union_value_.{{ field.name | id }})
                 );
             }
 {%- endfor %}
-            tag_ = rhs.tag_;
+            tag_ = {{options.right_hand_token}}.tag_;
         }
 
-        VariantType(VariantType&& rhs)
-            : tag_(variant_npos)
-            , internal_union_value_()
+        // Move constructor
+        VariantType(VariantType&& {{options.right_hand_token}})
+            : tag_{variant_npos}
+            , internal_union_value_{}
         {
 {%- for field in composite_type.fields_except_padding %}
-            {% if not loop.first %}else {% endif %}if(rhs.tag_ == {{ loop.index0 }})
+            {% if not loop.first %}else {% endif %}if({{options.right_hand_token}}.tag_ == {{loop.index0}})
             {
-                do_emplace<{{ loop.index0 }}>(
+                do_emplace<{{loop.index0}}>(
                     std::forward<{{ field.data_type | declaration }}>(
-                        *reinterpret_cast<std::add_pointer<{{ field.data_type | declaration }}>::type>(&rhs.internal_union_value_.{{ field.name | id }})
+                        *reinterpret_cast<std::add_pointer<{{ field.data_type | declaration }}>::type>(&{{options.right_hand_token}}.internal_union_value_.{{ field.name | id }})
                     )
                 );
             }
 {%- endfor %}
-            tag_ = rhs.tag_;
+            tag_ = {{options.right_hand_token}}.tag_;
         }
-        VariantType& operator=(const VariantType& rhs)
+
+        // Copy assignment
+        VariantType& operator=(const VariantType& {{options.right_hand_token}})
         {
             destroy_current();
 {%- for field in composite_type.fields_except_padding %}
-            {% if not loop.first %}else {% endif %}if(rhs.tag_ == {{ loop.index0 }})
+            {% if not loop.first %}else {% endif %}if({{options.right_hand_token}}.tag_ == {{loop.index0}})
             {
-                do_copy<{{ loop.index0 }}>(
-                    *reinterpret_cast<std::add_pointer<const {{ field.data_type | declaration }}>::type>(&rhs.internal_union_value_.{{ field.name | id }})
+                do_copy<{{loop.index0}}>(
+                    *reinterpret_cast<std::add_pointer<const {{ field.data_type | declaration }}>::type>(&{{options.right_hand_token}}.internal_union_value_.{{ field.name | id }})
                 );
             }
 {%- endfor %}
-            tag_ = rhs.tag_;
+            tag_ = {{options.right_hand_token}}.tag_;
             return *this;
         }
 
-        VariantType& operator=(VariantType&& rhs)
+        // Move assignment
+        VariantType& operator=(VariantType&& {{options.right_hand_token}})
         {
             destroy_current();
 {%- for field in composite_type.fields_except_padding %}
-            {% if not loop.first %}else {% endif %}if(rhs.tag_ == {{ loop.index0 }})
+            {% if not loop.first %}else {% endif %}if({{options.right_hand_token}}.tag_ == {{loop.index0}})
             {
-                do_emplace<{{ loop.index0 }}>(
+                do_emplace<{{loop.index0}}>(
                     std::forward<{{ field.data_type | declaration }}>(
-                        *reinterpret_cast<std::add_pointer<{{ field.data_type | declaration }}>::type>(&rhs.internal_union_value_.{{ field.name | id }})
+                        *reinterpret_cast<std::add_pointer<{{ field.data_type | declaration }}>::type>(&{{options.right_hand_token}}.internal_union_value_.{{ field.name | id }})
                     )
                 );
             }
 {%- endfor %}
-            tag_ = rhs.tag_;
+            tag_ = {{options.right_hand_token}}.tag_;
             return *this;
         }
 
@@ -98,19 +134,10 @@
             return tag_;
         }
 
-        struct IndexOf final
-        {
-            IndexOf() = delete;
-{%- for field in composite_type.fields_except_padding %}
-            static constexpr const std::size_t {{ field.name | id }} = {{ loop.index0 }}U;
-{%- endfor %}
-        };
-        static constexpr const std::size_t MAX_INDEX = {{ composite_type.fields_except_padding  | length }}U;
-
         template<std::size_t I, class...Types> struct alternative;
 
 {% for field in composite_type.fields_except_padding %}
-        template<class...Types> struct alternative<{{ loop.index0 }}U, Types...>
+        template<class...Types> struct alternative<{{loop.index0}}, Types...>
         {
             using type = {{ field.data_type | declaration }};
             static constexpr auto pointer = &VariantType::internal_union_t::{{ field.name | id }};
@@ -120,7 +147,7 @@
         template<std::size_t I, class... Args> typename VariantType::alternative<I, VariantType>::type& emplace(Args&&... v)
         {
             destroy_current();
-            typename alternative<I>::type& result = do_emplace<I>(v...);
+            typename alternative<I>::type& result = do_emplace<I>(std::forward<Args>(v)...);
             tag_ = I;
             return result;
         }
@@ -171,7 +198,7 @@
         void destroy_current()
         {
 {%- for field in composite_type.fields_except_padding if field is not PrimitiveType %}
-            {% if not loop.first %}else {% endif %}if (tag_ == {{ loop.index0 }})
+            {% if not loop.first %}else {% endif %}if (tag_ == IndexOf::{{ field | id }})
             {
                 reinterpret_cast<{{ field.data_type | declaration }}*>(std::addressof(internal_union_value_.{{ field.name | id }}))->{{ field.data_type | destructor_name }}();
             }
@@ -179,5 +206,3 @@
         }
 
     };
-
-    VariantType union_value;
