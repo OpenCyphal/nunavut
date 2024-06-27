@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 #
 
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.22.0)
 
 project(nunavut_verification C CXX)
 

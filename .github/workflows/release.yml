@@ -15,19 +15,19 @@ jobs:
         submodules: true
     - uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.11'
     - name: version-check
       # Fails the release if the release-tag doesn't match the Nunavut version at that tag.
       run: |
-        $(./.github/verify.py -vv --version-check-only "2.3.3.dev0")
+        $(./.github/verify.py -vv --version-check-only "2.3.4.dev0")
     - name: lint
       run: tox -e lint
     - name: test-nnvg
-      run: tox -e py310-nnvg
+      run: tox -e py311-nnvg
     - name: test-doctest
-      run: tox -e py310-doctest,py310-rstdoctest
+      run: tox -e py311-doctest,py310-rstdoctest
     - name: test-pytest
-      run: tox -e py310-test
+      run: tox -e py311-test
     - name: package
       run: tox -e package
     - name: upload
