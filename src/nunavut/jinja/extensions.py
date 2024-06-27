@@ -30,9 +30,11 @@ class JinjaAssert(Extension):
             from nunavut.jinja.extensions import JinjaAssert
             from nunavut.lang import LanguageContextBuilder
 
-            e = CodeGenEnvironmentBuilder(DictLoader({'test': template}), LanguageContextBuilder().create()) \
-                .set_extensions(JinjaAssert) \
-                .create()
+            e = (
+                CodeGenEnvironmentBuilder(DictLoader({'test': template}))
+                    .set_extensions(JinjaAssert)
+                    .create(LanguageContextBuilder().create())
+            )
             try:
                 e.get_template('test').render()
                 # huh. This should have raised a TemplateAssertionError
@@ -48,9 +50,11 @@ class JinjaAssert(Extension):
 
         .. invisible-code-block: python
 
-            e = CodeGenEnvironmentBuilder(DictLoader({'test': template}), LanguageContextBuilder().create())\
-                .set_extensions(JinjaAssert)\
-                .create()
+            e = (
+                CodeGenEnvironmentBuilder(DictLoader({'test': template}))
+                    .set_extensions(JinjaAssert)
+                    .create(LanguageContextBuilder().create())
+            )
             try:
                 e.get_template('test').render()
                 # huh. This should have raised a TemplateAssertionError
@@ -128,9 +132,11 @@ class UseQuery(Extension):
             lctx.get_target_language = MagicMock(return_value = ln_c)
 
 
-            e = CodeGenEnvironmentBuilder(DictLoader({'test': template}), lctx) \
-                .set_extensions(UseQuery)\
-                .create()
+            e = (
+                CodeGenEnvironmentBuilder(DictLoader({'test': template}))
+                    .set_extensions(UseQuery)
+                    .create(lctx)
+            )
 
             try:
                 result = e.get_template('test').render()

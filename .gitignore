@@ -15,6 +15,8 @@ __pycache__
 .tox*
 .nox
 .coverage*
+htmlcov
+*,cover
 .venv
 coverage.xml
 .out*
@@ -28,6 +30,7 @@ dist
 prof
 out
 venv*
+*.bkp
 
 # Eclipse
 .metadata

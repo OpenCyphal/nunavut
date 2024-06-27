@@ -15,7 +15,21 @@ import logging
 import platform
 import sys
 import types
-import typing
+from typing import (
+    AbstractSet,
+    Any,
+    Callable,
+    Dict,
+    ItemsView,
+    KeysView,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+    ValuesView,
+    cast,
+)
 
 from nunavut._templates import LanguageEnvironment
 from nunavut.lang import Language, LanguageClassLoader, LanguageContext
@@ -77,7 +91,7 @@ class LanguageTemplateNamespace:
 
     """
 
-    def __init__(self, **kwargs: typing.Any):
+    def __init__(self, **kwargs: Any):
         for name, value in kwargs.items():
             setattr(self, name, value)
 
@@ -94,10 +108,10 @@ class LanguageTemplateNamespace:
             arg_strings.append(f"**{repr(star_args)}")
         return f"{type_name}({','.join(arg_strings)})"
 
-    def _get_kwargs(self) -> typing.List[typing.Any]:
+    def _get_kwargs(self) -> List[Any]:
         return list(self.__dict__.items())
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, LanguageTemplateNamespace):
             return NotImplemented
         return vars(self) == vars(other)
@@ -105,26 +119,26 @@ class LanguageTemplateNamespace:
     def __contains__(self, key: str) -> bool:
         return key in self.__dict__
 
-    def update(self, update_from: typing.Mapping[str, typing.Any]) -> None:
+    def update(self, update_from: Mapping[str, Any]) -> None:
         """
         update the namespace with the given values.
         """
         for key, value in update_from.items():
             setattr(self, key, value)
 
-    def items(self) -> typing.ItemsView[str, typing.Any]:
+    def items(self) -> ItemsView[str, Any]:
         """
         The items in the namespace.
         """
         return self.__dict__.items()
 
-    def keys(self) -> typing.KeysView[typing.Any]:
+    def keys(self) -> KeysView[Any]:
         """
         The values in the namespace.
         """
         return self.__dict__.keys()
 
-    def values(self) -> typing.ValuesView[typing.Any]:
+    def values(self) -> ValuesView[Any]:
         """
         The values in the namespace.
         """
@@ -144,16 +158,16 @@ class CodeGenEnvironmentBuilder:
 
     DEFAULT_JINJA_EXTENSIONS = [jinja_do, loopcontrols, JinjaAssert, UseQuery]
 
-    def __init__(self, loader: BaseLoader, lctx: LanguageContext) -> None:
+    def __init__(self, loader: BaseLoader) -> None:
         self._loader = loader
-        self._lctx = lctx
         self._trim_blocks = False
         self._lstrip_blocks = False
-        self._additional_filters: typing.Optional[typing.Dict[str, typing.Callable]] = None
-        self._additional_tests: typing.Optional[typing.Dict[str, typing.Callable]] = None
-        self._additional_globals: typing.Optional[typing.Dict[str, typing.Any]] = None
+        self._additional_filters: Optional[Dict[str, Callable]] = None
+        self._additional_tests: Optional[Dict[str, Callable]] = None
+        self._additional_globals: Optional[Dict[str, Any]] = None
         self._extensions = self.DEFAULT_JINJA_EXTENSIONS[:]
         self._allow_filter_test_or_use_query_overwrite = False
+        self._embed_auditing_info = False
 
     @property
     def loader(self) -> BaseLoader:
@@ -164,16 +178,6 @@ class CodeGenEnvironmentBuilder:
         :rtype: BaseLoader
         """
         return self._loader
-
-    @property
-    def lctx(self) -> LanguageContext:
-        """
-        The language context.
-
-        :return: The language context.
-        :rtype: LanguageContext
-        """
-        return self._lctx
 
     def set_trim_blocks(self, trim_blocks: bool) -> "CodeGenEnvironmentBuilder":
         """
@@ -197,11 +201,11 @@ class CodeGenEnvironmentBuilder:
         self._lstrip_blocks = lstrip_blocks
         return self
 
-    def add_filters(self, **additional_filters: typing.Callable) -> "CodeGenEnvironmentBuilder":
+    def add_filters(self, **additional_filters: Callable) -> "CodeGenEnvironmentBuilder":
         """
         Add filters to the created environment.
 
-        :param typing.Dict[str, typing.Callable] additional_filters: The additional filters.
+        :param Dict[str, Callable] additional_filters: The additional filters.
         :return: The CodeGenEnvironmentBuilder object.
         :rtype: CodeGenEnvironmentBuilder
         """
@@ -211,11 +215,11 @@ class CodeGenEnvironmentBuilder:
             self._additional_filters.update(additional_filters)
         return self
 
-    def add_tests(self, **additional_tests: typing.Callable) -> "CodeGenEnvironmentBuilder":
+    def add_tests(self, **additional_tests: Callable) -> "CodeGenEnvironmentBuilder":
         """
         Add tests to the created environment.
 
-        :param typing.Dict[str, typing.Callable] additional_tests: The additional tests.
+        :param Dict[str, Callable] additional_tests: The additional tests.
         :return: The CodeGenEnvironmentBuilder object.
         :rtype: CodeGenEnvironmentBuilder
         """
@@ -225,11 +229,11 @@ class CodeGenEnvironmentBuilder:
             self._additional_tests.update(additional_tests)
         return self
 
-    def add_globals(self, **additional_globals: typing.Any) -> "CodeGenEnvironmentBuilder":
+    def add_globals(self, **additional_globals: Any) -> "CodeGenEnvironmentBuilder":
         """
         Add globals so the created environment.
 
-        :param typing.Dict[str, typing.Any] additional_globals: The additional globals.
+        :param Dict[str, Any] additional_globals: The additional globals.
         :return: The CodeGenEnvironmentBuilder object.
         :rtype: CodeGenEnvironmentBuilder
         """
@@ -243,7 +247,7 @@ class CodeGenEnvironmentBuilder:
         """
         Set the extensions.
 
-        :param typing.List[Extension] extensions: The extensions.
+        :param List[Extension] extensions: The extensions.
         :return: The CodeGenEnvironmentBuilder object.
         :rtype: CodeGenEnvironmentBuilder
         """
@@ -263,16 +267,26 @@ class CodeGenEnvironmentBuilder:
         self._allow_filter_test_or_use_query_overwrite = allow_filter_test_or_use_query_overwrite
         return self
 
-    def create(self) -> "CodeGenEnvironment":
+    def set_embed_auditing_info(self, embed_auditing_info: bool) -> "CodeGenEnvironmentBuilder":
+        """
+        Set whether to embed auditing information in generated files.
+
+        :param bool embed_auditing_info: Whether to embed auditing information.
+        :return: The CodeGenEnvironmentBuilder object.
+        :rtype: CodeGenEnvironmentBuilder
+        """
+        self._embed_auditing_info = embed_auditing_info
+        return self
+
+    def create(self, lctx: LanguageContext) -> "CodeGenEnvironment":
         """
         Create a CodeGenEnvironment object.
 
         :return: A CodeGenEnvironment object.
         :rtype: CodeGenEnvironment
         """
-        return CodeGenEnvironment(
+        env = CodeGenEnvironment(
             self.loader,
-            self.lctx,
             trim_blocks=self._trim_blocks,
             lstrip_blocks=self._lstrip_blocks,
             additional_filters=self._additional_filters,
@@ -280,7 +294,10 @@ class CodeGenEnvironmentBuilder:
             additional_globals=self._additional_globals,
             extensions=self._extensions,
             allow_filter_test_or_use_query_overwrite=self._allow_filter_test_or_use_query_overwrite,
+            embed_auditing_info=self._embed_auditing_info,
         )
+        env.set_language_context(lctx)
+        return env
 
 
 # +---------------------------------------------------------------------------+
@@ -291,7 +308,7 @@ class CodeGenEnvironment(Environment):
     Jinja Environment optimized for compile-time generation of source code
     (i.e. as opposed to dynamically generating webpages).
 
-    Do not insatiate directly. Use the :class:`CodeGenEnvironmentBuilder` to create an instance.
+    Do not instanceate directly. Use the :class:`CodeGenEnvironmentBuilder` to create an instance.
 
     .. invisible-code-block: python
 
@@ -306,7 +323,7 @@ class CodeGenEnvironment(Environment):
 
         template = 'Hello World'
 
-        e = CodeGenEnvironmentBuilder(DictLoader({'test': template}), lctx).create()
+        e = CodeGenEnvironmentBuilder(DictLoader({'test': template})).create(lctx)
         assert 'Hello World' ==  e.get_template('test').render()
 
     .. warning::
@@ -318,9 +335,9 @@ class CodeGenEnvironment(Environment):
 
         try:
             (
-                CodeGenEnvironmentBuilder(DictLoader({'test': template}), lctx)
+                CodeGenEnvironmentBuilder(DictLoader({'test': template}))
                 .add_globals(ln='bad_ln')
-                .create()
+                .create(lctx)
             )
             assert False
         except RuntimeError:
@@ -332,9 +349,9 @@ class CodeGenEnvironment(Environment):
 
         try:
             (
-                CodeGenEnvironmentBuilder(DictLoader({'test': template}), lctx)
+                CodeGenEnvironmentBuilder(DictLoader({'test': template}))
                 .add_filters(indent=lambda x: x)
-                .create()
+                .create(lctx)
             )
             assert False
         except RuntimeError:
@@ -343,10 +360,10 @@ class CodeGenEnvironment(Environment):
         # You can allow overwrite of built-ins using the ``allow_filter_test_or_use_query_overwrite``
         # argument.
         e = (
-                CodeGenEnvironmentBuilder(DictLoader({'test': template}), lctx)
+                CodeGenEnvironmentBuilder(DictLoader({'test': template}))
                 .add_filters(indent=lambda x: x)
                 .set_allow_filter_test_or_use_query_overwrite(True)
-                .create()
+                .create(lctx)
             )
         assert 'foo' == e.filters['indent']('foo')
 
@@ -361,9 +378,9 @@ class CodeGenEnvironment(Environment):
                 return name
 
         e = (
-                CodeGenEnvironmentBuilder(DictLoader({'test': template}), lctx)
+                CodeGenEnvironmentBuilder(DictLoader({'test': template}))
                 .add_filters(filter_misnamed=lambda x: x)
-                .create()
+                .create(lctx)
             )
 
         try:
@@ -386,14 +403,14 @@ class CodeGenEnvironment(Environment):
     def __init__(
         self,
         loader: BaseLoader,
-        lctx: LanguageContext,
         trim_blocks: bool,
         lstrip_blocks: bool,
-        additional_filters: typing.Optional[typing.Dict[str, typing.Callable]],
-        additional_tests: typing.Optional[typing.Dict[str, typing.Callable]],
-        additional_globals: typing.Optional[typing.Dict[str, typing.Any]],
-        extensions: typing.Optional[typing.List[Extension]],
+        additional_filters: Optional[Dict[str, Callable]],
+        additional_tests: Optional[Dict[str, Callable]],
+        additional_globals: Optional[Dict[str, Any]],
+        extensions: Optional[List[Extension]],
         allow_filter_test_or_use_query_overwrite: bool,
+        embed_auditing_info: bool = False,
     ):  # pylint: disable=too-many-arguments
         super().__init__(
             loader=loader,  # nosec
@@ -415,36 +432,80 @@ class CodeGenEnvironment(Environment):
                 self.globals[global_name] = global_value
 
         self._allow_replacements = allow_filter_test_or_use_query_overwrite
+        self._embed_auditing_info = embed_auditing_info
 
         for global_namespace in self.RESERVED_GLOBAL_NAMESPACES:
             self.globals[global_namespace] = LanguageTemplateNamespace()
 
         self.globals["now_utc"] = datetime.datetime(datetime.MINYEAR, 1, 1)
-        self._target_language = lctx.get_target_language()
 
-        # --------------------------------------------------
-        # After this point we do that most heinous act so common in dynamic languages;
-        # we expose the state of this partially constructed object so we can complete
-        # configuring it.
+        self._additional_filters = additional_filters
+        self._additional_tests = additional_tests
+        self._target_language: Optional[Language] = None
+
+    def set_language_context(self, lctx: LanguageContext) -> None:
+        """
+        Set the language context and update the environment with the supported languages.
+        This also takes the target language from the context and updates the environment with the target language's
+        globals, options, filters, and tests.
+        """
+        self._target_language = lctx.get_target_language()
 
         self._update_language_support(lctx)
 
-        supported_languages = (
-            lctx.get_supported_languages().values()
-        )  # type: typing.Optional[typing.ValuesView[Language]]
+        supported_languages = lctx.get_supported_languages().values()  # type: Optional[ValuesView[Language]]
 
-        self.update_nunavut_globals()
+        nunavut_namespace = self.nunavut_global
+        setattr(nunavut_namespace, "embed_auditing_info", self._embed_auditing_info)
+        setattr(nunavut_namespace, "platform_version", self._create_platform_version(self._embed_auditing_info))
+
+        if self._target_language is None:
+            omit_serialization = False
+            support_version = (0, 0, 0)
+            support_namespace = []
+            target_language_name = "(no target language)"
+            experimental = False
+        else:
+            omit_serialization = self._target_language.get_config_value_as_bool("omit_serialization_support", False)
+            support_version = self._target_language.get_support_module()[1]
+            support_namespace = self._target_language.support_namespace
+            target_language_name = self._target_language.name
+            experimental = not self._target_language.stable_support
+
+        setattr(
+            nunavut_namespace,
+            "support",
+            {
+                "omit": omit_serialization,  # deprecated. Use "options.omit_serialization_support".
+                "namespace": ".".join(support_namespace),
+                "version": f"{support_version[0]}.{support_version[1]}.{support_version[2]}",
+            },
+        )
+
+        setattr(
+            nunavut_namespace,
+            "target_language",
+            {"name": target_language_name, "experimental": experimental},
+        )
+
+        if "version" not in nunavut_namespace:
+            # pylint: disable=import-outside-toplevel
+            from nunavut import __version__ as nunavut_version
+
+            setattr(nunavut_namespace, "version", nunavut_version)
 
         self.add_conventional_methods_to_environment(self)
 
-        if additional_filters is not None:
+        if self._additional_filters is not None:
             self._add_each_to_environment(
-                additional_filters.items(), self.filters, supported_languages=supported_languages
+                self._additional_filters.items(), self.filters, supported_languages=supported_languages
             )
-        if additional_tests is not None:
-            self._add_each_to_environment(additional_tests.items(), self.tests, supported_languages=supported_languages)
+        if self._additional_tests is not None:
+            self._add_each_to_environment(
+                self._additional_tests.items(), self.tests, supported_languages=supported_languages
+            )
 
-    def add_conventional_methods_to_environment(self, obj: typing.Any) -> None:
+    def add_conventional_methods_to_environment(self, obj: Any) -> None:
         """
         Adds methods using specific naming conventions to the Jinja environment. For example, methods named `filter_*`
         are added to the Jinja environment as filters.
@@ -452,7 +513,7 @@ class CodeGenEnvironment(Environment):
         This method iterates over the methods of the given object and adds them to the Jinja environment.
         Only methods that are supported by the specified languages are added.
 
-        :param typing.Any obj: The object to add the methods from.
+        :param Any obj: The object to add the methods from.
 
         """
         for name, method in inspect.getmembers(obj, inspect.isroutine):
@@ -461,55 +522,13 @@ class CodeGenEnvironment(Environment):
             except TypeError:
                 pass
 
-    def update_nunavut_globals(
-        self,
-        support_namespace: str = "",
-        support_version: typing.Tuple[int, int, int] = (0, 0, 0),
-        support_module: typing.Optional["types.ModuleType"] = None,  # pylint: disable=unused-argument
-        omit_serialization_support: bool = False,
-        embed_auditing_info: bool = False,
-    ) -> None:
-        """
-        Update the global properties available to templates as `nunavut`.
-        :param support_namespace:           The name of a generated namespace for support code. Available as
-                                            `nunavut.support.namespace` in templates.
-        :param support_version:             The version to report for supporting code. Available as
-                                            `nunavut.support.version` in templates.
-        :param support_module:              The python module containing support for the selected language.
-        :param omit_serialization_support:  Boolean flag set on the support object. Available as
-                                            `nunavut.support.omit_serialization_support` in templates.
-        :param embed_auditing_info:         Boolean flag available as `nunavut.embed_auditing_info` in templates.
-        """
-        nunavut_namespace = self.nunavut_global
-        setattr(nunavut_namespace, "embed_auditing_info", embed_auditing_info)
-        setattr(nunavut_namespace, "platform_version", self._create_platform_version(embed_auditing_info))
-
-        setattr(
-            nunavut_namespace,
-            "support",
-            {"omit": omit_serialization_support, "namespace": support_namespace, "version": support_version},
-        )
-
-        if "template_sets" not in nunavut_namespace:
-            # pylint: disable=import-outside-toplevel
-            from nunavut.jinja.loaders import DSDLTemplateLoader
-
-            if isinstance(self.loader, DSDLTemplateLoader):
-                setattr(nunavut_namespace, "template_sets", self.loader.get_template_sets())
-
-        if "version" not in nunavut_namespace:
-            # pylint: disable=import-outside-toplevel
-            from nunavut import __version__ as nunavut_version
-
-            setattr(nunavut_namespace, "version", nunavut_version)
-
     @property
-    def supported_languages(self) -> typing.ValuesView[Language]:
+    def supported_languages(self) -> ValuesView[Language]:
         """
         The supported languages in the environment.
 
         :return: A view of the supported languages.
-        :rtype: typing.ValuesView[Language]
+        :rtype: ValuesView[Language]
         """
         ln_globals = self.globals["ln"]  # type: LanguageTemplateNamespace
         return ln_globals.values()
@@ -522,7 +541,7 @@ class CodeGenEnvironment(Environment):
         :return: The `nunavut` global namespace.
         :rtype: LanguageTemplateNamespace
         """
-        return typing.cast(LanguageTemplateNamespace, self.globals["nunavut"])
+        return cast(LanguageTemplateNamespace, self.globals["nunavut"])
 
     @property
     def target_language_uses_queries(self) -> LanguageTemplateNamespace:
@@ -532,7 +551,7 @@ class CodeGenEnvironment(Environment):
         :return: The uses queries for the target language.
         :rtype: LanguageTemplateNamespace
         """
-        return typing.cast(LanguageTemplateNamespace, self.globals["uses_queries"])
+        return cast(LanguageTemplateNamespace, self.globals["uses_queries"])
 
     @property
     def language_options(self) -> LanguageTemplateNamespace:
@@ -542,7 +561,7 @@ class CodeGenEnvironment(Environment):
         :return: The language options.
         :rtype: LanguageTemplateNamespace
         """
-        return typing.cast(LanguageTemplateNamespace, self.globals["options"])
+        return cast(LanguageTemplateNamespace, self.globals["options"])
 
     @property
     def language_support(self) -> LanguageTemplateNamespace:
@@ -552,7 +571,7 @@ class CodeGenEnvironment(Environment):
         :return: The language support.
         :rtype: LanguageTemplateNamespace
         """
-        return typing.cast(LanguageTemplateNamespace, self.globals["ln"])
+        return cast(LanguageTemplateNamespace, self.globals["ln"])
 
     @property
     def target_language(self) -> Language:
@@ -562,6 +581,8 @@ class CodeGenEnvironment(Environment):
         :return: The target language.
         :rtype: Language
         """
+        if self._target_language is None:
+            raise RuntimeError("No target language has been set.")
         return self._target_language
 
     @property
@@ -572,18 +593,28 @@ class CodeGenEnvironment(Environment):
         :return: The current UTC time.
         :rtype: datetime.datetime
         """
-        return typing.cast(datetime.datetime, self.globals["now_utc"])
+        return cast(datetime.datetime, self.globals["now_utc"])
 
     @now_utc.setter
     def now_utc(self, utc_time: datetime.datetime) -> None:
         self.globals["now_utc"] = utc_time
 
-    def add_test(self, test_name: str, test_callable: typing.Callable) -> None:
+    @property
+    def embed_auditing_info(self) -> bool:
+        """
+        Whether to embed auditing information in generated files.
+
+        :return: Whether to embed auditing information.
+        :rtype: bool
+        """
+        return self._embed_auditing_info
+
+    def add_test(self, test_name: str, test_callable: Callable) -> None:
         """
         Add a test to the environment.
 
         :param str test_name: The name of the test.
-        :param typing.Callable test_callable: The test.
+        :param Callable test_callable: The test.
         :return: None
         """
         self._add_to_environment(test_name, test_callable, self.tests)
@@ -593,10 +624,10 @@ class CodeGenEnvironment(Environment):
     # +----------------------------------------------------------------------------------------------------------------+
     def _resolve_collection(
         self,
-        conventional_method_prefix: typing.Optional[str],
+        conventional_method_prefix: Optional[str],
         method_name: str,
-        collection_maybe: typing.Optional[typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]],
-    ) -> typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]:
+        collection_maybe: Optional[Union[LanguageTemplateNamespace, Dict[str, Any]]],
+    ) -> Union[LanguageTemplateNamespace, Dict[str, Any]]:
         """
         Resolve the collection to add the item to. If collection_maybe is not None then it is returned otherwise the
         collection is resolved based on the method name.
@@ -605,12 +636,12 @@ class CodeGenEnvironment(Environment):
             return collection_maybe
 
         if LanguageEnvironment.is_test_name(conventional_method_prefix):
-            return typing.cast(typing.Dict[str, typing.Any], self.tests)
+            return cast(Dict[str, Any], self.tests)
         if LanguageEnvironment.is_filter_name(conventional_method_prefix):
-            return typing.cast(typing.Dict[str, typing.Any], self.filters)
+            return cast(Dict[str, Any], self.filters)
         if LanguageEnvironment.is_uses_query_name(conventional_method_prefix):
             uses_queries = self.globals["uses_queries"]
-            return typing.cast(LanguageTemplateNamespace, uses_queries)
+            return cast(LanguageTemplateNamespace, uses_queries)
         raise TypeError(
             f"Tried to add an item {method_name} to the template environment but we don't know what the item is."
         )
@@ -618,8 +649,8 @@ class CodeGenEnvironment(Environment):
     def _add_to_environment(
         self,
         item_name: str,
-        item: typing.Any,
-        collection: typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]],
+        item: Any,
+        collection: Union[LanguageTemplateNamespace, Dict[str, Any]],
     ) -> None:
         if item_name in collection:
             if not self._allow_replacements:
@@ -637,23 +668,23 @@ class CodeGenEnvironment(Environment):
 
     def _add_conventional_method_to_environment(
         self,
-        method: typing.Callable[..., bool],
+        method: Callable[..., bool],
         method_name: str,
-        collection_maybe: typing.Optional[typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]] = None,
-        supported_languages: typing.Optional[typing.ValuesView[Language]] = None,
-        method_language: typing.Optional[Language] = None,
+        collection_maybe: Optional[Union[LanguageTemplateNamespace, Dict[str, Any]]] = None,
+        supported_languages: Optional[ValuesView[Language]] = None,
+        method_language: Optional[Language] = None,
         is_target: bool = False,
     ) -> None:
         """
         Add a method using specific naming conventions to the Jinja environment. For example, methods named `filter_*`
         are added to the Jinja environment as filters.
 
-        :param typing.Callable[..., bool] method: The named method.
+        :param Callable[..., bool] method: The named method.
         :param str method_name: The name of the callable to use in a template.
-        :param typing.Optional[typing.Union[LanguageTemplateNamespace, typing.Dict[str, typing.Any]]] collection_maybe:
+        :param Optional[Union[LanguageTemplateNamespace, Dict[str, Any]]] collection_maybe:
             The collection to add the method to. If None then the collection is resolved based on the method name.
-        :param typing.Optional[typing.ValuesView[Language]] supported_languages: The supported languages.
-        :param typing.Optional[Language] method_language: The language of the method.
+        :param Optional[ValuesView[Language]] supported_languages: The supported languages.
+        :param Optional[Language] method_language: The language of the method.
         :param bool is_target: Whether the method is for the target language.
 
             .. invisible-code-block: python
@@ -675,9 +706,9 @@ class CodeGenEnvironment(Environment):
                     return True
 
                 e = (
-                    CodeGenEnvironmentBuilder(DictLoader({'test': 'hello world'}), lctx)
+                    CodeGenEnvironmentBuilder(DictLoader({'test': 'hello world'}))
                     .add_tests(foo=test_test)
-                    .create()
+                    .create(lctx)
                 )
                 assert test_test == e.tests['foo'].func
                 assert e.tests['foo']()
@@ -695,15 +726,15 @@ class CodeGenEnvironment(Environment):
 
     def _add_each_to_environment(
         self,
-        items: typing.AbstractSet[typing.Tuple[str, typing.Callable]],
-        collection: typing.Optional[
-            typing.Union[
+        items: AbstractSet[Tuple[str, Callable]],
+        collection: Optional[
+            Union[
                 LanguageTemplateNamespace,
-                typing.Dict[str, typing.Any],
+                Dict[str, Any],
             ]
         ] = None,
-        supported_languages: typing.Optional[typing.ValuesView[Language]] = None,
-        language: typing.Optional[Language] = None,
+        supported_languages: Optional[ValuesView[Language]] = None,
+        language: Optional[Language] = None,
         is_target: bool = False,
     ) -> None:
         for method_name, method in items:
@@ -712,9 +743,9 @@ class CodeGenEnvironment(Environment):
             )
 
     @classmethod
-    def _create_platform_version(cls, embed_auditing_info: bool) -> typing.Dict[str, typing.Any]:
+    def _create_platform_version(cls, embed_auditing_info: bool) -> Dict[str, Any]:
 
-        platform_version = {}  # type: typing.Dict[str, typing.Any]
+        platform_version = {}  # type: Dict[str, Any]
 
         platform_version["python_version"] = platform.python_version()
         if embed_auditing_info:

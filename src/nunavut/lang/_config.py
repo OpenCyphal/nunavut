@@ -627,6 +627,16 @@ class VersionReader:
     """
     Helper to read an "x.y.z" semantic version from python modules as a module variable `MODULE_VERSION_ATTRIBUTE_NAME`.
     :param module_name: The name of the module to read the version from.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang._config import VersionReader
+
+        version_reader = VersionReader("nunavut._version")
+
+        assert version_reader.version is not None  # read the version from the module.
+        assert version_reader.version is not None  # cover getting it from the cache.
+
     """
 
     MODULE_VERSION_ATTRIBUTE_NAME = "__version__"
@@ -638,8 +648,23 @@ class VersionReader:
         :param version_string: The version string to parse.
         :return: The version as a tuple of (major, minor, patch) or None if the version string is not in the expected
                  format.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang._config import VersionReader
+
+        .. code-block: python
+
+            assert VersionReader.parse_version("1.2.3") == (1, 2, 3)
+            assert VersionReader.parse_version("1.2") is None
+            assert VersionReader.parse_version("1.2.3.4") is None
+            assert VersionReader.parse_version("not a version string") is None
+
         """
-        version_array = [int(x) for x in version_string.split(".")]
+        try:
+            version_array = [int(x) for x in version_string.split(".")]
+        except ValueError:
+            return None
         if len(version_array) != 3:
             return None
         return (version_array[0], version_array[1], version_array[2])
@@ -652,6 +677,24 @@ class VersionReader:
         :param module: The module to read the version from.
         :return: The version as a tuple of (major, minor, patch).
         :raises: ValueError if the version is not in the expected format.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang._config import VersionReader
+            from unittest.mock import MagicMock
+            from pytest import raises
+
+            mock_module = MagicMock()
+            mock_module.__name__ = "mock_module"
+            mock_module.__version__ = "1.2.3"
+
+            assert VersionReader.read_version(mock_module) == (1, 2, 3)
+
+            mock_module.__version__ = "1.2"
+
+            with raises(ValueError):
+                VersionReader.read_version(mock_module)
+
         """
         version: str = getattr(module, cls.MODULE_VERSION_ATTRIBUTE_NAME, "0.0.0")
 
@@ -681,5 +724,5 @@ class VersionReader:
 
         try:
             return self.read_version(importlib.import_module(self._module_name))
-        except (ImportError, ValueError):
+        except (ImportError, ValueError):  # pragma: no cover
             return (0, 0, 0)

@@ -17,6 +17,7 @@ import pytest
 import nunavut
 import nunavut.jinja
 import nunavut._postprocessors
+from nunavut._namespace import build_namespace_tree
 from nunavut.lang import LanguageContextBuilder, Language
 
 
@@ -38,7 +39,7 @@ def _test_common_namespace(
         ln_package_name = "nunavut.lang.{}".format(target_language)
         for name, value in additional_config.items():
             lctx.config.set(ln_package_name, name, value)
-    return nunavut.build_namespace_tree(
+    return build_namespace_tree(
         pydsdl.read_namespace(root_namespace, []), root_namespace_dir, gen_paths.out_dir, lctx
     )
 

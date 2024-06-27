@@ -199,13 +199,13 @@ class LanguageEnvironment:
 
     @classmethod
     def _parse_callable_name(
-        cls, callable: typing.Callable, callable_name: typing.Optional[str] = None
+        cls, callable_obj: typing.Callable, callable_name: typing.Optional[str] = None
     ) -> typing.Tuple[typing.Optional[str], str]:
         if callable_name is None:
-            if isinstance(callable, functools.partial):
-                callable_name = callable.func.__name__
+            if isinstance(callable_obj, functools.partial):
+                callable_name = callable_obj.func.__name__
             else:
-                callable_name = callable.__name__
+                callable_name = callable_obj.__name__
 
         if cls.is_test_name(callable_name):
             prefix = cls.TEST_NAME_PREFIX  # type: typing.Optional[str]
@@ -225,7 +225,7 @@ class LanguageEnvironment:
     @classmethod
     def handle_conventional_methods(
         cls,
-        callable: typing.Callable,
+        callable_obj: typing.Callable,
         callable_name: typing.Optional[str] = None,
         supported_languages: typing.Optional[LanguageListT] = None,
     ) -> typing.Tuple[typing.Optional[str], str, typing.Callable]:
@@ -233,43 +233,42 @@ class LanguageEnvironment:
         Processes method objects that utilize the nunavut convention of ``is_``, ``filter_``, or ``uses_`` prefixes.
         Also wraps the method in a partial if it requested the language as the first argument.
 
-        :param str callable_name: If provided this is the name used to process the callable otherwise
-                                the ``__name__`` property is used from the callable itself.
+        :param callable callable_obj: The callable to process.
+        :param str callable_name: If provided this is the name used to process the callable_obj otherwise
+                                the ``__name__`` property is used from the callable_obj itself.
         :return: A 3-tuple with the prefix, method name without prefix, and the method or partial. If the first
-                                element is ``None`` then the callable was not a conventional method.
+                                element is ``None`` then the callable_obj was not a conventional method.
         """
 
-        prefix, method_name = cls._parse_callable_name(callable, callable_name)
+        prefix, method_name = cls._parse_callable_name(callable_obj, callable_name)
 
         resolved_callable = None  # type: typing.Optional[typing.Callable]
-        if hasattr(callable, LANGUAGE_FILTER_ATTRIBUTE_NAME):
-            callable_language_name = getattr(callable, LANGUAGE_FILTER_ATTRIBUTE_NAME)
+        if hasattr(callable_obj, LANGUAGE_FILTER_ATTRIBUTE_NAME):
+            callable_language_name = getattr(callable_obj, LANGUAGE_FILTER_ATTRIBUTE_NAME)
 
             if supported_languages is not None:
                 for language in supported_languages:
                     if language.get_templates_package_name() == callable_language_name:
-                        resolved_callable = functools.partial(callable, language)
-                        if hasattr(callable, ENVIRONMENT_FILTER_ATTRIBUTE_NAME):
+                        resolved_callable = functools.partial(callable_obj, language)
+                        if hasattr(callable_obj, ENVIRONMENT_FILTER_ATTRIBUTE_NAME):
                             setattr(
                                 resolved_callable,
                                 ENVIRONMENT_FILTER_ATTRIBUTE_NAME,
-                                getattr(callable, ENVIRONMENT_FILTER_ATTRIBUTE_NAME),
+                                getattr(callable_obj, ENVIRONMENT_FILTER_ATTRIBUTE_NAME),
                             )
-                        if hasattr(callable, CONTEXT_FILTER_ATTRIBUTE_NAME):
+                        if hasattr(callable_obj, CONTEXT_FILTER_ATTRIBUTE_NAME):
                             setattr(
                                 resolved_callable,
                                 CONTEXT_FILTER_ATTRIBUTE_NAME,
-                                getattr(callable, CONTEXT_FILTER_ATTRIBUTE_NAME),
+                                getattr(callable_obj, CONTEXT_FILTER_ATTRIBUTE_NAME),
                             )
                         break
             if resolved_callable is None:
                 raise RuntimeWarning(
-                    'Language callable "{}", required an unsupported language({})'.format(
-                        method_name, callable_language_name
-                    )
+                    f'Language callable "{method_name}", required an unsupported language({callable_language_name})'
                 )
         else:
-            resolved_callable = callable
+            resolved_callable = callable_obj
 
         return (prefix, method_name, resolved_callable)
 

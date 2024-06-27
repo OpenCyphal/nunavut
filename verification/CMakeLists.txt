@@ -159,6 +159,12 @@ find_package(nnvg REQUIRED)
 #
 find_package(o1heap REQUIRED)
 
+create_dsdl_library(
+     NAME public_regulated_data_types
+     LANGUAGE c
+     ASSERT_TYPE_GTEST
+     DSDL_FILES ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
+)
 #
 # Generate serialization support headers
 #

@@ -9,12 +9,10 @@
 """
 
 import argparse
-import logging
-import os
-import pathlib
 import sys
 import textwrap
-import typing
+from pathlib import Path
+from typing import Any, Optional, Type, TypeVar, cast
 
 
 class _LazyVersionAction(argparse._VersionAction):
@@ -29,8 +27,8 @@ class _LazyVersionAction(argparse._VersionAction):
         self,
         parser: argparse.ArgumentParser,
         namespace: argparse.Namespace,
-        values: typing.Any,
-        option_string: typing.Optional[str] = None,
+        values: Any,
+        option_string: Optional[str] = None,
     ) -> None:
         # pylint: disable=import-outside-toplevel
         from nunavut._version import __version__
@@ -39,60 +37,119 @@ class _LazyVersionAction(argparse._VersionAction):
         parser.exit()
 
 
-class _NunavutArgumentParser(argparse.ArgumentParser):
-    """
-    Specialization of argparse.ArgumentParser to encapsulate inter-argument rules.
-    """
-
-    def parse_known_args(self, args=None, namespace=None):  # type: ignore
-        parsed_args, argv = super().parse_known_args(args, namespace)
-        self._post_process_args(parsed_args)
-        return (parsed_args, argv)
-
-    def _post_process_args(self, args: argparse.Namespace) -> None:
-        """
-        Applies rules between different arguments and handles other special cases.
-        """
-
-        if args.omit_serialization_support and args.generate_support == "always":
-            self.error(
-                textwrap.dedent(
-                    """
-                Logic error: use of --omit-serialization-support and --generate-support=always
-
-                You cannot both omit serialization support and require generation of support code.
-            """
-                ).lstrip()
-            )
+ParserT = TypeVar("ParserT")
+"""
+Type variable for the concrete parser to create.
+"""
 
 
-def _make_parser() -> argparse.ArgumentParser:
+def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     """
     Defines the command-line interface. Provided as a separate factory method to
     support sphinx-argparse documentation.
+
+    :param parser_type: The type of parser to create. This should be a subclass of argparse.ArgumentParser
+    :return: A parser instance with the command-line interface defined.
+    :raises ValueError: If parser_type is not a subclass of argparse
+
+    .. invisible-code-block: python
+
+        from nunavut.cli import _make_parser
+        from pytest import raises
+
+        with raises(ValueError):
+            _make_parser(str)
+
     """
 
     epilog = textwrap.dedent(
         """
 
-        **Example Usage**::
+        Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+        Copyright Amazon.com Inc. or its affiliates.
+        Released under SPDX-License-Identifier: MIT
+
+        **Example Usage** ::
 
             # This would include j2 templates for a folder named 'c_jinja'
-            # and generate .h files into a directory named 'include' using
-            # dsdl root namespaces found under a folder named 'dsdl'.
+            # and generate .h files into a directory named 'include' for
+            # the uavcan.node.Heartbeat.1.0 data type and its dependencies
 
-            nnvg --outdir include --templates c_jinja -e .h dsdl
+            nnvg --outdir include --templates c_jinja -e .h dsdl/uavcan:node/7509.Heartbeat.1.0.dsdl
 
+        ᓄᓇᕗᑦ
     """
     )
 
-    parser = _NunavutArgumentParser(
+    if not issubclass(parser_type, argparse.ArgumentParser):
+        raise ValueError("parser_type must be a subclass of argparse.ArgumentParser")
+
+    parser = parser_type(
         description="Generate code from Cyphal DSDL using pydsdl and jinja2",
         epilog=epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
-    parser.add_argument("root_namespace", default=".", nargs="?", help="A source directory with DSDL definitions.")
+    parser.add_argument(
+        "target_files_or_root_namespace",
+        nargs="*",
+        help=textwrap.dedent(
+            """
+
+        One or more dsdl files to generate from.
+
+        All dependent types found in the target dsdl files will be generated and must be available
+        either as another target or as a dsdl file under one of the --lookup-dir directories.
+
+        A --lookup-dir argument for each unique root path among the list of files is required if
+        not using the colon syntax.
+
+        Colon Syntax
+        ------------
+
+            The standard syntax allows the path to the root to be specified at the same
+            time as the type ::
+
+                path/to/root:name/space/Type.1.0.dsdl
+
+            This also adds the path to a list of valid paths. You can continue to specify
+            it (duplicates are ignored) or you can specify it once ::
+
+                path/to/root:name/space/Type.1.0.dsdl name/space/Type.1.0.dsdl
+
+                ...is the same as...
+
+                path/to/root:name/space/Type.1.0.dsdl path/to/root:name/space/Type.1.0.dsdl
+
+        Globular Expansion
+        ------------------
+
+            Any target paths that are folders will be considered to be root namespaces. nnvg
+            will then search for all dsdl files under that folder and generate target paths
+            for all .dsdl files found. To disable this behavior use the --no-target-namespaces
+            argument which will cause an error if a folder is provided as a target.
+
+    """
+        ).lstrip(),
+    )
+
+    parser.add_argument(
+        "--no-target-namespaces",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+
+        If provided then all target paths must be to individual DSDL files and not folders. If
+        set and a folder is provided as a target an error will be raised.
+
+        Normally, if a folder is provided as a target path, nnvg will search for all dsdl files
+        under that folder and generate target paths for all .dsdl files found using the
+        path itself as the root namespace.
+
+        see target_files_or_root_namespace for more information.
+    """
+        ).lstrip(),
+    )
 
     parser.add_argument(
         "--lookup-dir",
@@ -101,29 +158,95 @@ def _make_parser() -> argparse.ArgumentParser:
         help=textwrap.dedent(
             """
 
-        List of other namespace directories containing data type definitions that are
-        referred to from the target root namespace. For example, if you are reading a
-        vendor-specific namespace, the list of lookup directories should always include
-        a path to the standard root namespace "uavcan", otherwise the types defined in
-        the vendor-specific namespace won't be able to use data types from the standard
-        namespace.
+        List of other namespace directories containing data type definitions that are referred to
+        from the target root namespace. For example, if you are reading a vendor-specific namespace,
+        the list of lookup directories should always include a path to the standard root namespace
+        "uavcan", otherwise the types defined in the vendor-specific namespace won't be able to use
+        data types from the standard namespace.
+
+        For a given target set of dsdl files this argument is required to specify a set of valid
+        paths to or folder names of root namespaces. For example ::
+
+            nnvg types/animals/felines/Tabby.1.0.dsdl types/animals/canines/Boxer.1.0.dsdl
+
+        will fail unless the path describing the root is provided ::
+
+            nnvg --lookup-dir types/animals types/animals/cats/Tabby.1.0.dsdl \\
+                                            types/animals/dogs/Boxer.1.0.dsdl
+
+        If multiple roots are targeted then each root path will need to be enabled ::
+
+            nnvg -I types/animals -I types/plants types/animals/cats/Tabby.1.0.dsdl \\
+                                                  types/plants/trees/Fir.1.0.dsdl
+
+
+        For target files this argument is required to specify a set of valid paths to or folder
+        names of root namespaces, however; an additional syntax is supported where the root for a
+        target file can be specified as part of the target path using a colon to separate the two ::
+
+            nnvg types/animals:cats/Tabby.1.0.dsdl types/plants:trees/Fir.1.0.dsdl
+
+
+        This is the recommended syntax as it allows all target files to be specified as relative
+        paths and reserves this argument to specify concrete lookup directories ::
+
+            nnvg --lookup-dir /path/to/types types/animals:mammals/cats/Tabby.1.0.dsdl \\
+                                             types/plants:trees/conifers/Fir.1.0.dsdl
 
         Additional directories can also be specified through an environment variable
-        DSDL_INCLUDE_PATH where the path entries are separated by colons ":" on
-        posix systems and ";" on Windows.
+        DSDL_INCLUDE_PATH where the path entries are separated by colons ":" on posix systems and
+        ";" on Windows ::
+
+            DSDL_INCLUDE_PATH=/path/to/types/animals:/path/to/types/plants \\
+                nnvg animals:mammals/cats/Tabby.1.0.dsdl \\
+                     plants:trees/conifers/Fir.1.0.dsdl
+
+        CYPHAL_PATH is similarly used (and formatted) but the paths in this variable are listed and
+        each folder under each path will be a lookup directory ::
+
+            CYPHAL_PATH=/path/to/types nnvg animals:mammals/cats/Tabby.1.0.dsdl \\
+                                            plants:trees/conifers/Fir.1.0.dsdl
 
     """
         ).lstrip(),
     )
 
-    parser.add_argument("--verbose", "-v", action="count", help="verbosity level (-v, -vv)")
-
-    parser.add_argument("--version", action=_LazyVersionAction)
-
     parser.add_argument("--outdir", "-O", default="nunavut_out", help="output directory")
 
     parser.add_argument(
+        "--target-language",
+        "-l",
+        help=textwrap.dedent(
+            """
+
+        Language support to install into the templates.
+
+        If provided then the output extension (-e) can be inferred otherwise the output
+        extension must be provided.
+
+    """
+        ).lstrip(),
+    )
+
+    # +-----------------------------------------------------------------------+
+    # | Extended Generation Options
+    # +-----------------------------------------------------------------------+
+
+    extended_group = parser.add_argument_group(
+        "extended options",
+        description=textwrap.dedent(
+            """
+
+        Additional options to control output generation.
+
+    """
+        ).lstrip(),
+    )
+
+    extended_group.add_argument(
+        "--templates-dir",
         "--templates",
+        type=Path,
         help=textwrap.dedent(
             """
 
@@ -136,8 +259,10 @@ def _make_parser() -> argparse.ArgumentParser:
         ).lstrip(),
     )
 
-    parser.add_argument(
+    extended_group.add_argument(
+        "--support-templates-dir",
         "--support-templates",
+        type=Path,
         help=textwrap.dedent(
             """
 
@@ -150,28 +275,57 @@ def _make_parser() -> argparse.ArgumentParser:
         ).lstrip(),
     )
 
-    def extension_type(raw_arg: str) -> str:
-        if len(raw_arg) > 0 and not raw_arg.startswith("."):
-            return "." + raw_arg
-        else:
-            return raw_arg
-
-    parser.add_argument(
-        "--target-language",
-        "-l",
+    extended_group.add_argument(
+        "--fallback-to-builtin-templates",
+        "-tfb",
+        action="store_true",
         help=textwrap.dedent(
             """
 
-        Language support to install into the templates.
-
-        If provided then the output extension (--e) can be inferred otherwise the output
-        extension must be provided.
+        Normally, if providing a custom templates directory, the built-in templates are not
+        searched for. This option will cause the built-in templates to be searched for if a
+        template is not found in the custom templates directory first.
 
     """
         ).lstrip(),
     )
 
-    parser.add_argument(
+    extended_group.add_argument(
+        "--index-file",
+        type=Path,
+        action="append",
+        help=textwrap.dedent(
+            """
+
+        Index-files are generated from special templates that are given access to all types in
+        all namespaces. This is useful for generating files that are not specific to a single
+        type like dependency files, manifests, or aggregate headers.
+
+        The template lookup paths are the same as for DSDL types but the template is selected
+        based on the filename of the all-file first and falls back to `index.j2` if no specific
+        template is found. Note that the DSDL type hierarchy will be searched first so you
+        cannot name your index-file the same as a DSDL data type like `StructureType.j2`.
+
+        Example ::
+
+            # looks for all_types.j2 in the c_jinja template directory and generates
+            # generated/include/all_types.h from all types in all DSDL namespaces.
+            nnvg --index-file all_types.h --outdir generated/include --templates c_jinja \
+                path/to/types/animal:cat.1.0.dsdl \
+                path/to/types/animal:dog.1.0.dsdl
+
+            # looks for manifest.j2 in the yaml_jinja template directory and generates
+            # generated/include/manifest.yaml from all types in all DSDL namespaces.
+            nnvg --index-file include/manifest.yaml --outdir generated --templates yaml_jinja \
+                path/to/types/animal:cat.1.0.dsdl \
+                path/to/types/animal:dog.1.0.dsdl
+
+    """
+        ).lstrip(),
+    )
+
+    extended_group.add_argument(
+        "--include-experimental-languages",
         "--experimental-languages",
         "-Xlang",
         action="store_true",
@@ -189,32 +343,33 @@ def _make_parser() -> argparse.ArgumentParser:
         ).lstrip(),
     )
 
-    parser.add_argument(
+    def extension_type(raw_arg: str) -> str:
+        if len(raw_arg) > 0 and not raw_arg.startswith("."):
+            return "." + raw_arg
+        else:
+            return raw_arg
+
+    extended_group.add_argument(
         "--output-extension",
         "-e",
         type=extension_type,
-        help="The extension to use for generated files.",
-    )
-
-    parser.add_argument("--dry-run", "-d", action="store_true", help="If True then no files will be generated.")
-
-    parser.add_argument(
-        "--list-outputs",
-        action="store_true",
         help=textwrap.dedent(
             """
-        Emit a semicolon-separated list of files.
-        (implies --dry-run)
-        Emits files that would be generated if invoked without --dry-run.
-        This command is useful for integrating with CMake and other build
-        systems that need a list of targets to determine if a rebuild is
-        necessary.
+        The output extension for generated files. If target language is provided an extension is
+        inferred based on language configuration. This option allows overriding this inference.
+
+        Note that, if --target-language is omitted and this argument is provided the program
+        will attempt to infer the language based on the file extension. This may lead to unexpected
+        results (e.g. `--output-extension .h` generating C instead of C++).
+
+        If a dot (.) is omitted one will be added, therefore; `-e h` and `-e .h` will both result
+        in an extension of `.h`.
 
     """
         ).lstrip(),
     )
 
-    parser.add_argument(
+    extended_group.add_argument(
         "--generate-support",
         choices=["always", "never", "as-needed", "only"],
         default="as-needed",
@@ -222,32 +377,20 @@ def _make_parser() -> argparse.ArgumentParser:
             """
         Change the criteria used to enable or disable support code generation.
 
-        as-needed (default) - generate support code if serialization is enabled.
+        as-needed (default) - generate support if it is needed.
         always - always generate support code.
         never - never generate support code.
         only - only generate support code.
 
-    """
-        ).lstrip(),
-    )
-
-    parser.add_argument(
-        "--list-inputs",
-        action="store_true",
-        help=textwrap.dedent(
-            """
-
-        Emit a semicolon-separated list of files.
-        (implies --dry-run)
-        A list of files that are resolved given input arguments like templates.
-        This command is useful for integrating with CMake and other build systems
-        that need a list of inputs to determine if a rebuild is necessary.
+        Note that serialization logic is only one type of support code. This option covers all
+        types of support code. Where `--omit-serialization-support` is set different types of
+        support code may still be generated unless this option is set to `never`.
 
     """
         ).lstrip(),
     )
 
-    parser.add_argument(
+    extended_group.add_argument(
         "--generate-namespace-types",
         action="store_true",
         help=textwrap.dedent(
@@ -264,7 +407,7 @@ def _make_parser() -> argparse.ArgumentParser:
         ).lstrip(),
     )
 
-    parser.add_argument(
+    extended_group.add_argument(
         "--omit-serialization-support",
         "-pod",
         action="store_true",
@@ -272,18 +415,19 @@ def _make_parser() -> argparse.ArgumentParser:
             """
         If provided then the types generated will be POD datatypes with no additional logic.
         By default types generated include serialization routines and additional support libraries,
-        headers, or methods.
+        headers, or methods as needed. These additional support artifacts can be suppressed using
+        the `--generate-support` option.
 
     """
         ).lstrip(),
     )
 
-    parser.add_argument(
+    extended_group.add_argument(
         "--namespace-output-stem",
         help="The name of the file generated when --generate-namespace-types is provided.",
     )
 
-    parser.add_argument(
+    extended_group.add_argument(
         "--no-overwrite",
         action="store_true",
         help=textwrap.dedent(
@@ -297,7 +441,7 @@ def _make_parser() -> argparse.ArgumentParser:
         ).lstrip(),
     )
 
-    parser.add_argument(
+    extended_group.add_argument(
         "--file-mode",
         default=0o444,
         type=lambda value: int(value, 0),
@@ -313,33 +457,7 @@ def _make_parser() -> argparse.ArgumentParser:
         ).lstrip(),
     )
 
-    parser.add_argument(
-        "--trim-blocks",
-        action="store_true",
-        help=textwrap.dedent(
-            """
-
-        If this is set to True the first newline after a block in a template
-        is removed (block, not variable tag!).
-
-    """
-        ).lstrip(),
-    )
-
-    parser.add_argument(
-        "--lstrip-blocks",
-        action="store_true",
-        help=textwrap.dedent(
-            """
-
-        If this is set to True leading spaces and tabs are stripped from the
-        start of a line to a block in templates.
-
-    """
-        ).lstrip(),
-    )
-
-    parser.add_argument(
+    extended_group.add_argument(
         "--allow-unregulated-fixed-port-id",
         action="store_true",
         help=textwrap.dedent(
@@ -353,7 +471,7 @@ def _make_parser() -> argparse.ArgumentParser:
         ).lstrip(),
     )
 
-    parser.add_argument(
+    extended_group.add_argument(
         "--embed-auditing-info",
         action="store_true",
         help=textwrap.dedent(
@@ -370,6 +488,113 @@ def _make_parser() -> argparse.ArgumentParser:
         ).lstrip(),
     )
 
+    extended_group.add_argument(
+        "--omit-dependencies",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+
+        Disables the generation of dependent types. This is useful when setting up build
+        rules for a project where the dependent types are generated separately.
+
+    """
+        ).lstrip(),
+    )
+
+    # +-----------------------------------------------------------------------+
+    # | Operation Options
+    # +-----------------------------------------------------------------------+
+
+    run_mode_group = parser.add_argument_group(
+        "run mode options",
+        description=textwrap.dedent(
+            """
+
+        Options that control the operation mode of the script.
+
+    """
+        ).lstrip(),
+    )
+
+    run_mode_group.add_argument("--verbose", "-v", action="count", help="verbosity level (-v, -vv)")
+
+    run_mode_group.add_argument("--version", action=_LazyVersionAction)
+
+    run_mode_group.add_argument("--dry-run", "-d", action="store_true", help="If True then no files will be generated.")
+
+    run_mode_group.add_argument(
+        "--omit-deprecated",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+        Disables deprecated types.
+
+    """
+        ).lstrip(),
+    )
+
+    run_mode_group.add_argument(
+        "-M",
+        "--depfile",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+        Emits a makefile compatible dependency file for the generated files. Use with --dry-run to
+        generate a list of dependencies for a build system.
+
+    """
+        ).lstrip(),
+    )
+
+    run_mode_ex_group = run_mode_group.add_mutually_exclusive_group()
+
+    run_mode_ex_group.add_argument(
+        "--list-outputs",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+        Emit a semicolon-separated list of files.
+        (implies --dry-run)
+        Emits files that would be generated if invoked without --dry-run.
+        This command is useful for integrating with CMake and other build
+        systems that need a list of targets to determine if a rebuild is
+        necessary.
+
+    """
+        ).lstrip(),
+    )
+
+    run_mode_ex_group.add_argument(
+        "--list-inputs",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+
+        Emit a semicolon-separated list of files.
+        (implies --dry-run)
+        A list of files that are resolved given input arguments like templates.
+        This command is useful for integrating with CMake and other build systems
+        that need a list of inputs to determine if a rebuild is necessary.
+
+    """
+        ).lstrip(),
+    )
+
+    run_mode_ex_group.add_argument(
+        "--list-configuration",
+        "-lc",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+
+        Lists all configuration values resolved for the given arguments. Unlike --list-inputs
+        and --list-outputs this command does *not* imply --dry-run but can be used in conjunction
+        with it.
+
+    """
+        ).lstrip(),
+    )
+
     # +-----------------------------------------------------------------------+
     # | Post-Processing Options
     # +-----------------------------------------------------------------------+
@@ -381,6 +606,32 @@ def _make_parser() -> argparse.ArgumentParser:
 
         Options that enable various post-generation steps because Pavel Kirienko doesn't
         like writing jinja templates.
+
+    """
+        ).lstrip(),
+    )
+
+    ln_pp_group.add_argument(
+        "--trim-blocks",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+
+        If this is set to True the first newline after a block in a template
+        is removed (block, not variable tag!).
+
+    """
+        ).lstrip(),
+    )
+
+    ln_pp_group.add_argument(
+        "--lstrip-blocks",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+
+        If this is set to True leading spaces and tabs are stripped from the
+        start of a line to a block in templates.
 
     """
         ).lstrip(),
@@ -464,9 +715,9 @@ def _make_parser() -> argparse.ArgumentParser:
 
         Options passed through to templates as `options` on the target language.
 
-        Note that these arguments are passed though without validation, have no effect on the Nunavut
-        library, and may or may not be appropriate based on the target language and generator templates
-        in use.
+        Note that these arguments are passed though without validation, have no effect on the
+        Nunavut library, and may or may not be appropriate based on the target language and
+        generator templates in use.
     """
         ).lstrip(),
     )
@@ -551,73 +802,24 @@ def _make_parser() -> argparse.ArgumentParser:
         "--configuration",
         "-c",
         nargs="*",
-        type=pathlib.Path,
+        type=Path,
         help=textwrap.dedent(
             """
 
         There is a set of built-in configuration for Nunavut that provides default values for known
         languages as documented `in the template guide
-        <https://nunavut.readthedocs.io/en/latest/docs/templates.html#language-options>`_. This argument lets you
-        specify override configuration yamls.
+        <https://nunavut.readthedocs.io/en/latest/docs/templates.html#language-options>`_. This
+        argument lets you specify override configuration yaml.
     """
         ).lstrip(),
     )
 
-    ln_opt_group.add_argument(
-        "--list-configuration",
-        "-lc",
-        action="store_true",
-        help=textwrap.dedent(
-            """
+    return cast(ParserT, parser)
 
-        Lists all configuration values resolved for the given arguments.
 
+def make_argparse_parser() -> argparse.ArgumentParser:
     """
-        ).lstrip(),
-    )
-
-    return parser
-
-
-def _extra_includes_from_env(env_var_name: str) -> typing.List[str]:
-    try:
-        extra_includes_from_env = os.environ[env_var_name].split(os.pathsep)
-        logging.info("Additional include directories from %s: %s", env_var_name, str(extra_includes_from_env))
-        return extra_includes_from_env
-    except KeyError:
-        return []
-
-
-def main() -> int:
+    Defines the command-line interface using generic argparse.ArgumentParser.
+    This should be used for documentation and tab-completion tools.
     """
-    Main entry point for this program.
-    """
-
-    #
-    # Parse the command-line arguments.
-    #
-    args = _make_parser().parse_args()
-
-    #
-    # Setup Python logging.
-    #
-    fmt = "%(message)s"
-    level = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}.get(args.verbose or 0, logging.DEBUG)
-    logging.basicConfig(stream=sys.stderr, level=level, format=fmt)
-
-    logging.info("Running %s using sys.prefix: %s", pathlib.Path(__file__).name, sys.prefix)
-
-    #
-    # Parse DSDL_INCLUDE_PATH
-    #
-    extra_includes: typing.List[str] = args.lookup_dir if args.lookup_dir is not None else []
-
-    extra_includes_from_env = _extra_includes_from_env("DSDL_INCLUDE_PATH")
-    extra_includes += sorted(extra_includes_from_env)
-
-    # pylint: disable=import-outside-toplevel
-    from nunavut.cli.runners import ArgparseRunner
-
-    runner = ArgparseRunner(args.root_namespace, args, extra_includes)
-    runner.run()
-    return 0
+    return _make_parser(argparse.ArgumentParser)

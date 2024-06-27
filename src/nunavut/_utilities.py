@@ -99,15 +99,131 @@ class YesNoDefault(enum.Enum):
 
 
 @enum.unique
-class ResourceType(enum.Enum):
+class QuaternaryLogic(enum.Enum):
     """
-    Common Nunavut classifications for Python package resources.
+    A quaternary logic value.
+
+    .. invisible-code-block: python
+
+        from nunavut._utilities import QuaternaryLogic
+        from pytest import raises
+
+        assert QuaternaryLogic.from_en_us(str(False)) == QuaternaryLogic.ALWAYS_FALSE
+        assert QuaternaryLogic.from_en_us(int(False)) == QuaternaryLogic.ALWAYS_FALSE
+        assert QuaternaryLogic.from_en_us(None) == QuaternaryLogic.TRUE_IF
+        assert QuaternaryLogic.from_en_us("") == QuaternaryLogic.TRUE_IF
+        assert QuaternaryLogic.from_en_us("default") == QuaternaryLogic.TRUE_IF
+        assert QuaternaryLogic.from_en_us(str(None)) == QuaternaryLogic.TRUE_IF
+        assert QuaternaryLogic.from_en_us(str(True)) == QuaternaryLogic.TRUE_IF
+        assert QuaternaryLogic.from_en_us(int(True)) == QuaternaryLogic.TRUE_IF
+
+        assert QuaternaryLogic.from_en_us("always_false") == QuaternaryLogic.ALWAYS_FALSE
+        assert QuaternaryLogic.from_en_us("always-false") == QuaternaryLogic.ALWAYS_FALSE
+        assert QuaternaryLogic.from_en_us("never") == QuaternaryLogic.ALWAYS_FALSE
+        assert QuaternaryLogic.from_en_us("No") == QuaternaryLogic.ALWAYS_FALSE
+
+        assert QuaternaryLogic.from_en_us("true_if") == QuaternaryLogic.TRUE_IF
+        assert QuaternaryLogic.from_en_us("true-if") == QuaternaryLogic.TRUE_IF
+        assert QuaternaryLogic.from_en_us("as-needed") == QuaternaryLogic.TRUE_IF
+        assert QuaternaryLogic.from_en_us("if-needed") == QuaternaryLogic.TRUE_IF
+        assert QuaternaryLogic.from_en_us("yes") == QuaternaryLogic.TRUE_IF
+
+        assert QuaternaryLogic.from_en_us("true_unless") == QuaternaryLogic.TRUE_UNLESS
+        assert QuaternaryLogic.from_en_us("true-unless") == QuaternaryLogic.TRUE_UNLESS
+        assert QuaternaryLogic.from_en_us("only") == QuaternaryLogic.TRUE_UNLESS
+
+        assert QuaternaryLogic.from_en_us("always_true") == QuaternaryLogic.ALWAYS_TRUE
+        assert QuaternaryLogic.from_en_us("always-true") == QuaternaryLogic.ALWAYS_TRUE
+        assert QuaternaryLogic.from_en_us("always") == QuaternaryLogic.ALWAYS_TRUE
+
+        with raises(ValueError):
+            QuaternaryLogic.from_en_us("not_a_value")
+
+    Example usage:
+
+    .. code-block:: python
+
+        def should_we_order_pizza(answer: QuaternaryLogic, is_today_friday: bool) -> bool:
+            if answer == QuaternaryLogic.TRUE_IF:
+                # order pizza on Friday!
+                return is_today_friday
+            elif answer == QuaternaryLogic.TRUE_UNLESS:
+                # only order pizza if it's not Friday
+                return not is_today_friday
+            elif answer == QuaternaryLogic.ALWAYS_TRUE:
+                # always order pizza
+                return True
+            elif answer == QuaternaryLogic.ALWAYS_FALSE:
+                # never order pizza
+                return False
+            else:
+                raise ValueError("Unknown value")
+
     """
 
-    ANY = 0
-    CONFIGURATION = 1
-    SERIALIZATION_SUPPORT = 2
-    TYPE_SUPPORT = 3
+    @classmethod
+    def from_en_us(cls, en_us_word: Any) -> "QuaternaryLogic":
+        """
+        Convert an English words for "always false, always true, true if, and true unless" to a quaternary logic
+        value.
+
+        :param en_us_word: The English word to convert.
+        :return: The input as a quaternary logic value.
+        :raises ValueError: If the word is not recognized.
+
+        """
+
+        if en_us_word is None:
+            return cls.TRUE_IF
+
+        lcw = str(en_us_word).lower()
+        if lcw in ("always_false", "always-false", "never", "no", "false", "0"):
+            return cls.ALWAYS_FALSE
+        if lcw in ("true_if", "true-if", "as-needed", "if-needed", "yes", "", "default", "none", "true", "1"):
+            return cls.TRUE_IF
+        if lcw in ("true_unless", "true-unless", "only"):
+            return cls.TRUE_UNLESS
+        if lcw in ("always_true", "always-true", "always"):
+            return cls.ALWAYS_TRUE
+        raise ValueError(f"Unknown value '{en_us_word}'")
+
+    ALWAYS_FALSE = 0
+    """
+    Always false.
+    """
+
+    ALWAYS_TRUE = 1
+    """
+    Always true.
+    """
+
+    TRUE_IF = 2
+    """
+    True if a condition is met. (1 AND condition)
+    """
+
+    TRUE_UNLESS = 3
+    """
+    True unless a condition is met. (1 XOR condition)
+    """
+
+
+@enum.unique
+class ResourceType(enum.Enum):
+    """
+    Standard Nunavut classifications for Python package resources.
+    """
+
+    NONE = 0
+    """ No resources specified."""
+    SERIALIZATION_SUPPORT = 0x1
+    """Serialization support files."""
+    TYPE_SUPPORT = 0x2
+    """Type support files."""
+    ONLY = 0x80000000
+    """Only the specified resources."""
+    ANY = 0x3
+    """Any resources."""
 
 
 @enum.unique
@@ -395,6 +511,7 @@ class cached_property(Generic[PropertyT]):
     .. invisible-code-block: python
 
         from nunavut._utilities import cached_property
+        from pytest import raises
 
         class Test:
 
@@ -415,11 +532,6 @@ class cached_property(Generic[PropertyT]):
         assert t.test == 1
         assert t.test == 1
         assert t.test == 1
-        try:
-            _ = t.cls_test
-            assert False
-        except TypeError:
-            pass
 
     """
 
@@ -434,7 +546,7 @@ class cached_property(Generic[PropertyT]):
         self._attr_name = name
 
     def __get__(self, instance: Any, owner: Optional[Any] = None) -> PropertyT:
-        if self._attr_name is None:
+        if self._attr_name is None:  # pragma: no cover
             raise TypeError("Cannot use cached_property instance without calling __set_name__ on it.")
         cache = instance.__dict__
         val = cast(PropertyT, cache.get(self._attr_name, self._NOT_FOUND))

@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 from pydsdl import FrontendError, read_namespace
 
-from nunavut import build_namespace_tree
+from nunavut._namespace import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import LanguageContextBuilder
 
@@ -42,9 +42,9 @@ def test_three_roots(gen_paths):  # type: ignore
     # Now read back in and verify
     outfile = gen_paths.find_outfile_in_namespace("scotec.FatherType", namespace)
 
-    assert (outfile is not None)
+    assert outfile is not None
 
-    with open(str(outfile), 'r') as json_file:
+    with open(str(outfile), 'r', encoding="utf-8") as json_file:
         json_blob = json.load(json_file)
 
     assert len(json_blob) > 0

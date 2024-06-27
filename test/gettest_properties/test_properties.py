@@ -11,7 +11,7 @@ from pathlib import Path
 import pydsdl
 import yaml
 
-from nunavut import build_namespace_tree
+from nunavut._namespace import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import Language, LanguageClassLoader, LanguageContextBuilder
 
@@ -56,7 +56,7 @@ def test_issue_277(gen_paths):  # type: ignore
     )
     namespace = build_namespace_tree(compound_types, root_namespace, gen_paths.out_dir, language_context)
     generator = DSDLCodeGenerator(namespace)
-    generator.generate_all(omit_serialization_support=True)
+    generator.generate_all()
 
     # Now read back in and verify
     outfile = gen_paths.find_outfile_in_namespace("proptest.hasvla", namespace)

@@ -227,7 +227,7 @@ struct {% if composite_type.deprecated -%}
 {%- endif %}
 };
 
-{% if not nunavut.support.omit %}
+{% if not options.omit_serialization_support %}
 inline nunavut::support::SerializeResult serialize(const {{composite_type|short_reference_name}}& obj,
                                                    nunavut::support::bitspan out_buffer)
 {

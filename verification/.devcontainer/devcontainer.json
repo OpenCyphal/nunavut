@@ -1,6 +1,6 @@
 {
     "name": "C/C++ verification environment",
-    "image": "ghcr.io/opencyphal/toolshed:ts22.4.8",
+    "image": "ghcr.io/opencyphal/toolshed:ts22.4.10",
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspace,type=bind,consistency=delegated",
     "customizations": {

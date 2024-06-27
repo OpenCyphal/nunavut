@@ -9,7 +9,7 @@ import typing
 from pathlib import Path
 
 import pydsdl
-from nunavut import build_namespace_tree
+from nunavut._namespace import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import LanguageContextBuilder, Language
 

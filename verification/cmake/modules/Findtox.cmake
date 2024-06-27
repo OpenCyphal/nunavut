@@ -3,7 +3,7 @@
 # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 
-set(PYTHON3_MINIMUM_VERSION 3.6)
+set(PYTHON3_MINIMUM_VERSION 3.8)
 
 find_program(TOX tox)
 

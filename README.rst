@@ -62,7 +62,7 @@ The examples do not replace the documentation, please do endeavor to read it.
 Generate C headers using the command-line tool
 ----------------------------------------------
 
-This example assumes that the public regulated namespace directories ``reg`` and ``uavcan`` reside under
+This example assumes that the public regulated namespace directories ``uavcan`` reside under
 ``public_regulated_data_types/``.
 Nunavut is invoked to generate code for the former.
 
@@ -75,14 +75,20 @@ Generate HTML documentation pages using the command-line tool
 
 See above assumptions. The below commands generate documentation
 for the ``reg`` namespace.
-Note that we have to generate documentation for the ``uavcan`` namespace
+
 as well, because there are types in ``reg`` that will link to ``uavcan``
 documentation sections.
 
 .. code-block:: shell
 
     nnvg --experimental-languages --target-language html public_regulated_data_types/reg --lookup-dir public_regulated_data_types/uavcan
-    nnvg --experimental-languages --target-language html public_regulated_data_types/uavcan
+
+Note that using the ``--lookup-dir`` option will only generate types under uavcan that are referenced by types in reg.
+To generate all types in both directories simply target each namespace.
+
+.. code-block:: shell
+
+    nnvg --experimental-languages --target-language html public_regulated_data_types/reg public_regulated_data_types/uavcan
 
 Generate Python packages using the command-line tool
 ----------------------------------------------------
@@ -148,6 +154,23 @@ Where to find more examples to get started:
 
 2. API usage examples can be found in the `Pycyphal`_ library.
 
+Extras
+------
+
+Support for shell autocomplete (see `argcomplete docs`_ for full details)
+
+.. code-block:: bash
+
+    pip install "nunavut[shell]"
+
+    # if you haven't setup argcomplete ever...
+    activate-global-python-argcomplete
+    source ~/.my_shell_rc_thingy_see_argcomplete_docs
+
+    # now register nnvg with argcomplete
+    eval "$(register-python-argcomplete nnvg)"
+
+
 ************************************************
 Bundled third-party software
 ************************************************
@@ -189,6 +212,7 @@ Nunavut is part of the OpenCyphal project:
 .. _`Jinja2`: https://palletsprojects.com/p/jinja
 .. _`markupsafe`: https://palletsprojects.com/p/markupsafe
 .. _`Canadian territory`: https://en.wikipedia.org/wiki/Nunavut
+.. _`argcomplete docs`: https://kislyuk.github.io/argcomplete/
 
 .. |badge_forum| image:: https://img.shields.io/discourse/https/forum.opencyphal.org/users.svg
     :alt: OpenCyphal forum

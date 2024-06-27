@@ -20,11 +20,11 @@ __version__ = "1.0.0"
 
 
 def list_support_files(
-    resource_type: ResourceType = ResourceType.ANY,
+    resource_type: int = ResourceType.ANY.value,
 ) -> typing.Generator[pathlib.Path, None, None]:
     """
     Get a list of Python support modules embedded in this package.
     """
-    if resource_type not in (ResourceType.ANY, ResourceType.SERIALIZATION_SUPPORT):
-        return empty_list_support_files()
-    return iter_package_resources(__name__, ".j2")
+    if resource_type & ResourceType.SERIALIZATION_SUPPORT.value:
+        return iter_package_resources(__name__, ".j2")
+    return empty_list_support_files()  # pragma: no cover

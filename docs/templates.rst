@@ -27,27 +27,72 @@ nunavut
 
 A global ``nunavut`` is available in the global namespace with the following properties:
 
-version
+nunavut.version
 -------------------------------------------------
 
 A `pep 440 <https://www.python.org/dev/peps/pep-0440/>`_ compatible version number for the
 version of Nunavut that the template is running within.
 
-support
+nunavut.embed_auditing_info
+-------------------------------------------------
+
+``bool`` that is True if the template was generated with auditing information embedded in the
+generated code. This is useful for tracking the origin of generated code but may embed ephemeral
+information will cause differences in generated code between runs.
+
+nunavut.support
 -------------------------------------------------
 
 Meta-data about built-in support for serialization.
 
-omit
+nunavut.support.omit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+
+      This property is deprecated. Use :code:`options.omit_serialization_support` from `Language Options`_ instead.
 
 ``bool`` that is True if serialization support was switched off for this template.
 
-namespace
+nunavut.support.namespace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 An array of identifiers under which Nunavut support files and types are namespaced.
 The use of this value by built-in templates and generators is language dependant.
+
+nunavut.support.version
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A `pep 440 <https://www.python.org/dev/peps/pep-0440/>`_ compatible version number for the
+version of the Nunavut language support for the target language.
+
+
+nunavut.target_language
+-------------------------------------------------
+
+Meta-data about the target language for the template.
+
+nunavut.target_language.name
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The name of the target language for the template.
+
+nunavut.target_language.experimental
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``bool`` that is True if the target language is experimental.
+
+nunavut.platform_version
+-------------------------------------------------
+
+Meta-data about the python platform used to generated the code.
+
+nunavut.platform_version.version
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A `pep 440 <https://www.python.org/dev/peps/pep-0440/>`_ compatible version number for the
+version of Python used to generate the code.
+
 
 T
 =================================================
@@ -57,6 +102,20 @@ The T global contains the type for the given template. For example::
     {{T.full_name}}
     {%- for attr in T.attributes %}
         {{ attr.data_type }}
+    {%- endfor %}
+
+N
+=================================================
+In `index files` ``N`` is provided instead of ``T``. ``N`` is a generator that yields each namespace in the for the
+current environment where each namespace is an iterable that returns each type in the namespace. For example::
+
+    {%- for namespace in N %}
+         {%- for T in namespace %}
+            {{ T.full_name }}
+            {%- for attr in T.attributes %}
+               {{ attr.data_type }}
+            {%- endfor %}
+         {%- endfor %}
     {%- endfor %}
 
 now_utc
@@ -91,7 +150,7 @@ means you can do::
         // stuff for integer fields
     {% endif %}
 
-Finally, for every pydsdl object that ends in "Type" or "Field" a lower-case name ommitting these suffixes is made
+Finally, for every pydsdl object that ends in "Type" or "Field" a lower-case name omitting these suffixes is made
 available. For example:
 
 .. code-block:: python
@@ -214,6 +273,13 @@ This option is currently defined for C and C++; the possible values are as follo
 .. invisible-code-block: python
 
    jinja_filter_tester([], template, rendered, 'c')
+
+options.omit_serialization_support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If true then the code generation should be Plain-Old-Data (POD) and not include any serialization
+support. This is a boolean value.
+
 
 Filters
 =================================================
@@ -453,10 +519,7 @@ If the :code:`generate_namespace_types` parameter of :class:`~nunavut.jinja.Gene
 nested namespaces regardless of language. :code:`NO` suppresses this behavior and :code:`DEFAULT`
 will choose the behavior based on the target language. For example::
 
-    root_namespace = build_namespace_tree(compound_types,
-                                          root_ns_folder,
-                                          out_dir,
-                                          language_context)
+    root_namespace = NamespaceContext(language_context, out_dir, root_ns_folder).add_types(compound_types)
 
     generator = Generator(root_namespace, YesNoDefault.DEFAULT)
 

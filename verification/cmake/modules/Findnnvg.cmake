@@ -2,10 +2,89 @@
 # Find nnvg and setup python environment to generate C++ from DSDL.
 # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
+# cSpell: words DNUNAVUT GTEST POSIX nnvg
 
 # +---------------------------------------------------------------------------+
 # | BUILD FUNCTIONS
 # +---------------------------------------------------------------------------+
+
+#
+# :function: create_dsdl_library
+# Creates a target to generate source and build object files from dsdl definitions.
+#
+# :param str NAME:               The name to give the target.
+# :param str LANGUAGE:           The language to generate for this target.
+# :param str LANGUAGE_STANDARD:  The language standard to use.
+# :param list DSDL_FILES:        A list of paths to dsdl files to generate code for.
+# :option ASSERT_TYPE_UNITY:     If set then the generated code will use the UNITY assert macro.
+# :option ASSERT_TYPE_GTEST:     If set then the generated code will use the GTEST assert macro.
+# :option ASSERT_TYPE_POSIX:     If set then the generated code will use the POSIX assert macro.
+function (create_dsdl_library)
+    #+-[input]----------------------------------------------------------------+
+    set(options ASSERT_TYPE_UNITY ASSERT_TYPE_GTEST ASSERT_TYPE_POSIX)
+    set(singleValueArgs NAME LANGUAGE LANGUAGE_STANDARD)
+    set(multiValueArgs DSDL_FILES)
+    cmake_parse_arguments(PARSE_ARGV 0 ARG "${options}" "${singleValueArgs}" "${multiValueArgs}")
+
+    if (
+            (ARG_ASSERT_TYPE_GTEST AND ARG_ASSERT_TYPE_POSIX) OR
+            (ARG_ASSERT_TYPE_GTEST AND ARG_ASSERT_TYPE_UNITY) OR
+            (ARG_ASSERT_TYPE_POSIX AND ARG_ASSERT_TYPE_UNITY)
+       )
+        message(FATAL_ERROR "Only one of ASSERT_TYPE_UNITY, ASSERT_TYPE_GTEST, or ASSERT_TYPE_POSIX can be set.")
+    endif()
+
+    #+-[body]-----------------------------------------------------------------+
+
+    set(LOCAL_TARGET_NAME lib${ARG_NAME})
+    set(LOCAL_OUTPUT_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/${LOCAL_TARGET_NAME})
+    set(LOCAL_OUTPUT_FOLDER_GENERATED ${LOCAL_OUTPUT_FOLDER}/generated)
+
+    list(APPEND LOCAL_NNVG_CMD_ARGS --target-language)
+    list(APPEND LOCAL_NNVG_CMD_ARGS ${ARG_LANGUAGE})
+    list(APPEND LOCAL_NNVG_CMD_ARGS --outdir)
+    list(APPEND LOCAL_NNVG_CMD_ARGS ${LOCAL_OUTPUT_FOLDER_GENERATED})
+    list(APPEND LOCAL_NNVG_CMD_ARGS ${ARG_DSDL_FILES})
+
+
+    execute_process(COMMAND ${NNVG} --list-outputs ${LOCAL_NNVG_CMD_ARGS}
+                    OUTPUT_VARIABLE LOCAL_OUTPUT_FILES
+                    RESULT_VARIABLE LOCAL_LIST_OUTPUTS_RESULT)
+
+    execute_process(COMMAND ${NNVG} --list-inputs ${LOCAL_NNVG_CMD_ARGS}
+                    OUTPUT_VARIABLE LOCAL_INPUT_FILES
+                    RESULT_VARIABLE LOCAL_LIST_INPUTS_RESULT)
+
+    add_custom_command(
+                    OUTPUT ${LOCAL_OUTPUT_FILES}
+                    COMMAND ${NNVG} ${LOCAL_NNVG_CMD_ARGS}
+                    DEPENDS ${LOCAL_INPUT_FILES}
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                    COMMENT "Running nnvg")
+
+    add_custom_target(${LOCAL_TARGET_NAME}-nnvg
+                    DEPENDS ${LOCAL_OUTPUT_FILES})
+
+    add_library(${LOCAL_TARGET_NAME} INTERFACE)
+
+    add_dependencies(${LOCAL_TARGET_NAME} INTERFACE ${LOCAL_OUTPUT_FILES})
+
+    target_include_directories(${LOCAL_TARGET_NAME} INTERFACE ${LOCAL_OUTPUT_FOLDER_GENERATED})
+
+    if(ARG_ASSERT_TYPE_UNITY)
+        target_compile_options(${LOCAL_TARGET_NAME} INTERFACE "-DNUNAVUT_ASSERT=TEST_ASSERT")
+    elseif(ARG_ASSERT_TYPE_GTEST)
+        target_compile_options(${LOCAL_TARGET_NAME} INTERFACE "-DNUNAVUT_ASSERT=ASSERT_TRUE")
+    elseif(ARG_ASSERT_TYPE_POSIX)
+        target_compile_options(${LOCAL_TARGET_NAME} INTERFACE "-DNUNAVUT_ASSERT=assert")
+    endif()
+
+    set(${ARG_TARGET_NAME}-OUTPUT ${OUTPUT_FILES} PARENT_SCOPE)
+
+    #+-[output]---------------------------------------------------------------+
+
+endfunction()
+
 #
 # :function: create_dsdl_target
 # Creates a target that will generate source code from dsdl definitions.
@@ -57,11 +136,21 @@ function (create_dsdl_target ARG_TARGET_NAME
         endforeach(ARG_N)
     endif()
 
+    list(APPEND NNVG_CMD_ARGS --omit-dependencies)
     list(APPEND NNVG_CMD_ARGS --target-language)
     list(APPEND NNVG_CMD_ARGS ${ARG_OUTPUT_LANGUAGE})
     list(APPEND NNVG_CMD_ARGS  -O)
     list(APPEND NNVG_CMD_ARGS ${ARG_OUTPUT_FOLDER})
-    list(APPEND NNVG_CMD_ARGS ${ARG_DSDL_ROOT_DIR})
+
+    if (ARG_DSDL_ROOT_DIR STREQUAL "")
+        set(LOCAL_DSDL_FILES "")
+    else()
+        list(APPEND NNVG_CMD_ARGS -I)
+        list(APPEND NNVG_CMD_ARGS ${ARG_DSDL_ROOT_DIR})
+        file(GLOB_RECURSE LOCAL_DSDL_FILES CONFIGURE_DEPENDS "${ARG_DSDL_ROOT_DIR}/*.dsdl")
+        list(APPEND NNVG_CMD_ARGS ${LOCAL_DSDL_FILES})
+    endif()
+
 
     if (NOT "${ARG_SER_ENDIANNESS}" STREQUAL "")
         list(APPEND NNVG_CMD_ARGS "--target-endianness")
@@ -77,12 +166,12 @@ function (create_dsdl_target ARG_TARGET_NAME
 
     if (ARG_ENABLE_SER_ASSERT)
         list(APPEND NNVG_CMD_ARGS "--enable-serialization-asserts")
-        message(STATUS "nnvg:Enabling seralization asserts in generated code.")
+        message(STATUS "nnvg:Enabling serialization asserts in generated code.")
     endif()
 
     if (ARG_DISABLE_SER_FP)
         list(APPEND NNVG_CMD_ARGS "--omit-float-serialization-support")
-        message(STATUS "nnvg:Disabling floating point seralization routines in generated support code.")
+        message(STATUS "nnvg:Disabling floating point serialization routines in generated support code.")
     endif()
 
     if (ARG_ENABLE_OVR_VAR_ARRAY)

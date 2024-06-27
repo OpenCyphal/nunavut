@@ -12,7 +12,7 @@
 // build invocation (do not use --embed-auditing-info option to remove this comment).
 {%- endif %}
 //
-// Generator     : nunavut-{{ nunavut.version }} (serialization was {{ 'not ' * nunavut.support.omit }}enabled)
+// Generator     : nunavut-{{ nunavut.version }} (serialization was {{ 'not ' * options.omit_serialization_support }}enabled)
 {%- if nunavut.embed_auditing_info %}
 // Source file   : {{ T.source_file_path.as_posix() }}
 // Generated at  : {{ now_utc }} UTC
@@ -24,29 +24,21 @@
 // Full name     : {{ T.full_name }}
 // Type Version  : {{ T.version.major }}.{{ T.version.minor }}
 //
-// Support
-{%- if nunavut.support.omit %}
-//     (support file generation disabled)
-{%- else %}
+// Resource Generation
 //    Support Namespace : {{ nunavut.support.namespace }}
 //    Support Version   : {{ nunavut.support.version }}
-{%- endif %}
-{%- for template_set in nunavut.template_sets %}
-//
-// Template Set ({{ template_set[0] }})
-//    priority   : {{ loop.index0 }}
-//    package    : {{ template_set[1] }}
-//    version    : {{ template_set[2] }}
-{%- endfor %}
 //
 // Platform
 {{ nunavut.platform_version | text_table("//     ") }}
+//
+// Language
+{{ nunavut.target_language | text_table("//     ") }}
 //
 // Language Options
 {{ options | text_table("//     ") }}
 //
 // Uses Language Features
-//     Uses std_variant: {%- ifuses "std_variant" -%}yes{%- else -%}no{%- endifuses -%}
+//     Uses std_variant: {%- ifuses "std_variant" -%}yes{%- else -%}no{%- endifuses %}
 //
 {%- if T.deprecated and options.std | int < 14 %}
 {#- Courtesy http://patorjk.com/software/taag/#p=display&f=Big&t=DEPRECATED #}
@@ -71,7 +63,7 @@
 {%- endfor %}
 
 {{T.full_namespace | open_namespace}}
-{%- if not nunavut.support.omit %}{% for key, value in options.items() %}
+{%- if not options.omit_serialization_support %}{% for key, value in options.items() %}
 {% if loop.first -%}
 // +-------------------------------------------------------------------------------------------------------------------+
 // | LANGUAGE OPTION ASSERTIONS
@@ -81,7 +73,11 @@
 // +-------------------------------------------------------------------------------------------------------------------+
 {% endif -%}
 static_assert( nunavut::support::options::{{ key | id }} == {{ value | ln.c.to_static_assertion_value }},
-              "{{ T.source_file_path.as_posix() }} "
+{%- if nunavut.embed_auditing_info %}
+              "{{ T.source_file_path.as_posix() }}"
+{%- else %}
+              "{{ T.full_name }}.{{T.version.major}}.{{T.version.minor}}"
+{%- endif %}
               "is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not "
               "allowed." );

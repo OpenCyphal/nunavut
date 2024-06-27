@@ -244,6 +244,7 @@ nunavut.lang.c:
     options:
         target_endianness: any
         omit_float_serialization_support: false
+        omit_serialization_support: false
         enable_serialization_asserts: false
         enable_override_variable_array_capacity: false
         cast_format: "(({type}) {value})"
@@ -309,6 +310,7 @@ nunavut.lang.cpp:
     options:
         target_endianness: any
         omit_float_serialization_support: false
+        omit_serialization_support: false
         enable_serialization_asserts: false
         enable_override_variable_array_capacity: false
         std: c++14

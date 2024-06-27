@@ -15,7 +15,7 @@ __version__ = "1.0.0"
 """Version of the c support headers."""
 
 
-def list_support_files(resource_type: ResourceType = ResourceType.ANY) -> typing.Generator[pathlib.Path, None, None]:
+def list_support_files(resource_type: int = ResourceType.ANY.value) -> typing.Generator[pathlib.Path, None, None]:
     """
     Get a list of C support headers embedded in this package.
     :param resource_type: A type of support file to list.
@@ -40,7 +40,7 @@ def list_support_files(resource_type: ResourceType = ResourceType.ANY) -> typing
     :return: A list of C support header resources.
     """
     # The c support only has serialization support resources
-    if resource_type not in (ResourceType.ANY, ResourceType.SERIALIZATION_SUPPORT):
+    if 0 == (resource_type & ResourceType.SERIALIZATION_SUPPORT.value):
         return empty_list_support_files()
     else:
         return iter_package_resources(__name__, ".h", ".j2")

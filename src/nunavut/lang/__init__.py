@@ -393,7 +393,7 @@ class LanguageContextBuilder:
             language = self._ln_loader.new_language(language_name)
         except ImportError as e:
             logger.debug("Import Error %s when trying to load language %s", e, language_name)
-            raise KeyError(f"language {language_name} is not a supported language") from e
+            raise UnsupportedLanguageError(f"language {language_name} is not a supported language") from e
         if not (language.stable_support or self._include_experimental_languages):
             raise UnsupportedLanguageError(
                 f"{language_name} support is only experimental, but experimental language support is not enabled"

@@ -1,0 +1,8 @@
+{% for T, out_file in N.get_all_datatypes() %}
+
+{
+  "full_name": "{{ T.full_name }}",
+  "source": "{{ T.source_file_path }}",
+  "file": "{{ out_file }}",
+}
+{% endfor %}

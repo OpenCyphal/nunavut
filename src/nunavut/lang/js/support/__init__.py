@@ -15,7 +15,7 @@ __version__ = "1.0.0"
 """Version of the js support headers."""
 
 
-def list_support_files(resource_type: ResourceType = ResourceType.ANY) -> typing.Generator[pathlib.Path, None, None]:
+def list_support_files(resource_type: int = ResourceType.ANY.value) -> typing.Generator[pathlib.Path, None, None]:
     """
     Get a list of javascript support files embedded in this package.
     :param resource_type: A type of support file to list.

@@ -10,11 +10,13 @@ import typing
 from pathlib import Path, PurePath
 
 import pytest
-from nunavut import Namespace, build_namespace_tree
+from pydsdl import read_namespace
+
+from nunavut import Namespace
+from nunavut._namespace import build_namespace_tree # deprecated
 from nunavut.jinja import DSDLCodeGenerator
 from nunavut.jinja.jinja2.exceptions import TemplateAssertionError
 from nunavut.lang import Language, LanguageClassLoader, LanguageContextBuilder
-from pydsdl import read_namespace
 
 
 def test_template_assert(gen_paths):  # type: ignore
@@ -36,9 +38,8 @@ def test_template_assert(gen_paths):  # type: ignore
         generator.generate_all()
         assert False
     except TemplateAssertionError as e:
-        e.filename == str(template_path / "Any.j2")
-        e.filename == 2
-        e.message == "Template assertion failed."
+        assert e.filename == str(template_path / "Any.j2")
+        assert e.message == "Template assertion failed."
 
 
 def test_type_to_include(gen_paths):  # type: ignore
@@ -59,7 +60,7 @@ def test_type_to_include(gen_paths):  # type: ignore
 
     assert outfile is not None
 
-    with open(str(outfile), "r") as json_file:
+    with open(str(outfile), "r", encoding="utf-8") as json_file:
         json_blob = json.load(json_file)
 
     assert json_blob is not None
@@ -89,7 +90,7 @@ def test_custom_filter_and_test(gen_paths):  # type: ignore
 
     assert outfile is not None
 
-    with open(str(outfile), "r") as json_file:
+    with open(str(outfile), "r", encoding="utf-8") as json_file:
         json_blob = json.load(json_file)
 
     assert json_blob is not None
@@ -97,13 +98,13 @@ def test_custom_filter_and_test(gen_paths):  # type: ignore
     assert json_blob["test_result"] == "yes"
 
 
-def test_custom_filter_and_test_redefinition(gen_paths):  # type: ignore
+def test_custom_filter_and_test_redefinition():  # type: ignore
     language_context = (
         LanguageContextBuilder()
         .set_target_language_configuration_override(Language.WKCV_DEFINITION_FILE_EXTENSION, ".json")
         .create()
     )
-    namespace = Namespace("", Path(), PurePath(), language_context)
+    namespace = Namespace.Identity(Path("uavcan"), language_context)
 
     with pytest.raises(RuntimeError):
         DSDLCodeGenerator(
@@ -209,21 +210,27 @@ def test_python_filter_imports_for_array_type(gen_paths, stropping, sort):  # ty
 
 
 @pytest.mark.parametrize("stropping,sort", [(True, False), (False, True)])
-def test_cpp_filter_includes(gen_paths, stropping, sort, mock_environment):  # type: ignore
+def test_cpp_filter_includes(gen_paths, stropping, sort):  # type: ignore
+    """
+    Test the include header generator for C++ jinja templates.
+    """
     lctx = (
         LanguageContextBuilder(include_experimental_languages=True)
         .set_target_language("cpp")
         .set_target_language_configuration_override(Language.WKCV_ENABLE_STROPPING, stropping)
         .set_target_language_configuration_override(Language.WKCV_DEFINITION_FILE_EXTENSION, ".h")
+        .set_target_language_configuration_override(
+            Language.WKCV_LANGUAGE_OPTIONS, {"omit_serialization_support": True}
+        )
         .create()
     )
 
     uavcan_dir = (gen_paths.dsdl_dir / pathlib.Path("uavcan")).as_posix()
     type_map = read_namespace((gen_paths.dsdl_dir / pathlib.Path("new")).as_posix(), [uavcan_dir])
-    from nunavut.lang.cpp import filter_includes
+    from nunavut.lang.cpp import filter_includes  # pylint: disable=import-outside-toplevel
 
     test_subject = next(filter(lambda type: (type.short_name == "hotness"), type_map))
-    imports = filter_includes(lctx.get_target_language(), mock_environment, test_subject, sort=sort)
+    imports = filter_includes(lctx.get_target_language(), test_subject, sort=sort)
     assert len(imports) == 6
 
     def assert_path_in_imports(path: str) -> None:
@@ -276,7 +283,10 @@ def test_cpp_filter_includes(gen_paths, stropping, sort, mock_environment):  # t
         )
 
 
-def test_filter_includes_cpp_vla(gen_paths, mock_environment):  # type: ignore
+def test_filter_includes_cpp_vla(gen_paths):  # type: ignore
+    """
+    Test the include header generator for C++ jinja templates when using the vla.
+    """
     lctx = (
         LanguageContextBuilder(include_experimental_languages=True)
         .set_target_language("cpp")
@@ -284,10 +294,10 @@ def test_filter_includes_cpp_vla(gen_paths, mock_environment):  # type: ignore
         .create()
     )
     type_map = read_namespace((gen_paths.dsdl_dir / pathlib.Path("vla")).as_posix())
-    from nunavut.lang.cpp import filter_includes
+    from nunavut.lang.cpp import filter_includes # pylint: disable=import-outside-toplevel
 
     test_subject = next(filter(lambda type: (type.short_name == "uses_vla"), type_map))
-    imports = filter_includes(lctx.get_target_language(), mock_environment, test_subject)
+    imports = filter_includes(lctx.get_target_language(), test_subject)
     assert "<vector>" in imports
 
 
@@ -309,7 +319,7 @@ def test_filter_full_reference_name_via_template(gen_paths, language_name, names
 
     assert outfile is not None
 
-    with open(str(outfile), "r") as json_file:
+    with open(str(outfile), "r", encoding="utf-8") as json_file:
         json_blob = json.load(json_file)
 
     assert json_blob is not None
@@ -330,7 +340,7 @@ def test_filter_full_reference_name_via_template(gen_paths, language_name, names
     "language_name,stropping,namespace_separator",
     [("c", False, "_"), ("c", True, "_"), ("cpp", False, "::"), ("cpp", True, "::")],
 )
-def test_filter_full_reference_name(gen_paths, language_name, stropping, namespace_separator):
+def test_filter_full_reference_name(language_name, stropping, namespace_separator):
     """
     Cover issue #153
     """
@@ -343,28 +353,32 @@ def test_filter_full_reference_name(gen_paths, language_name, stropping, namespa
     ln_package_name = LanguageClassLoader.to_language_module_name(language_name)
     ln = lctx.get_language(ln_package_name)
 
+    # pylint: disable=import-outside-toplevel
     import importlib
 
     from pydsdl import ServiceType, StructureType, Version
 
     test_subject_module = importlib.import_module(ln_package_name)
 
+    namespace_parts = ["register", "getting", "tired", "of"]
+    stem = "Python"
+    source_file = Path(*namespace_parts) / Path(f"{stem}_0_1").with_suffix(".dsdl")
     service_request_type = StructureType(
-        name="register.getting.tired.of.Python",
+        name=f"{'.'.join(namespace_parts)}.{stem}.Request",
         version=Version(0, 1),
         attributes=[],
         deprecated=False,
         fixed_port_id=None,
-        source_file_path=Path(),
+        source_file_path=source_file,
         has_parent_service=True,
     )
     service_response_type = StructureType(
-        name="register.getting.tired.of.Python",
+        name=f"{'.'.join(namespace_parts)}.{stem}.Response",
         version=Version(0, 1),
         attributes=[],
         deprecated=False,
         fixed_port_id=None,
-        source_file_path=Path(),
+        source_file_path=source_file,
         has_parent_service=True,
     )
 
@@ -373,16 +387,15 @@ def test_filter_full_reference_name(gen_paths, language_name, stropping, namespa
     # C++ is special because namespaces are part of the language and therefore each namespace
     # name must be stropped
     top_level_name = "_register" if stropping and language_name == "cpp" else "register"
+    result_format = f"{top_level_name}.getting.tired.of.Python{{}}_0_1".replace(".", namespace_separator)
 
-    assert test_subject_module.filter_full_reference_name(ln, service_type) == "{}.getting.tired.of_0_1".format(
-        top_level_name
-    ).replace(".", namespace_separator)
-    assert test_subject_module.filter_full_reference_name(
-        ln, service_request_type
-    ) == "{}.getting.tired.of.Python_0_1".format(top_level_name).replace(".", namespace_separator)
-    assert test_subject_module.filter_full_reference_name(
-        ln, service_response_type
-    ) == "{}.getting.tired.of.Python_0_1".format(top_level_name).replace(".", namespace_separator)
+    assert test_subject_module.filter_full_reference_name(ln, service_type) == result_format.format("")
+    assert test_subject_module.filter_full_reference_name(ln, service_request_type) == result_format.format(
+        ".Request".replace(".", namespace_separator)
+    )
+    assert test_subject_module.filter_full_reference_name(ln, service_response_type) == result_format.format(
+        ".Response".replace(".", namespace_separator)
+    )
 
 
 @typing.no_type_check
@@ -404,7 +417,7 @@ def test_filter_to_template_unique(gen_paths):
 
     expected = "_f0_\n_f1_\n_f2_\n_f3_\n\n_f4_\n_f5_\n_f6_\n_f7_\n\n_f8_\n_f9_\n_f10_\n_f11_\n"
 
-    with open(str(outfile), "r") as foo_file:
+    with open(str(outfile), "r", encoding="utf-8") as foo_file:
         actual = foo_file.read()
 
     assert expected == actual

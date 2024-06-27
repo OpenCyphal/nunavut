@@ -85,23 +85,6 @@ class LinePostProcessor(PostProcessor):
         line oriented. For such implementations nunavut will have to create
         an intermediate line buffer which may impact performance.
 
-    Example Usage::
-
-        class CommentItAllOut(nunavut.postprocessors.LinePostProcessor):
-
-            def __init__(self, open_line_comment: str, close_line_comment: str):
-                self._line_comment_pattern = open_line_comment + ' {} ' + close_line_comment
-
-            def __call__(self, line_and_lineend: typing.Tuple[str, str]) -> typing.Tuple[str, str]:
-                if len(line_and_lineend[0]) > 0:
-                    return (self._line_comment_pattern.format(line_and_lineend[0]), line_and_lineend[1])
-                else:
-                    return ('', '')
-
-        ...
-
-        c_style = CommentItAllOut('/*', '*/')
-        my_generator.generate_all(False, True, True, [c_style])
     """
 
     @abc.abstractmethod

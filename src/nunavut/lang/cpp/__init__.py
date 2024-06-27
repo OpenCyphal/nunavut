@@ -26,7 +26,7 @@ from nunavut._templates import (
     template_language_list_filter,
     template_language_test,
 )
-from nunavut._utilities import YesNoDefault, cached_property
+from nunavut._utilities import YesNoDefault, cached_property, ResourceType
 from nunavut.jinja.environment import Environment
 from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
 from nunavut.lang._language import Language as BaseLanguage
@@ -1016,10 +1016,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
 
 @template_language_list_filter(__name__)
-@template_environment_list_filter
-def filter_includes(
-    language: Language, env: Environment, t: pydsdl.CompositeType, sort: bool = True
-) -> typing.List[str]:
+def filter_includes(language: Language, t: pydsdl.CompositeType, sort: bool = True) -> typing.List[str]:
     """
     Returns a list of all include paths for a given type.
 
@@ -1062,17 +1059,15 @@ def filter_includes(
             LanguageContextBuilder(include_experimental_languages=True)
                 .set_target_language("cpp")
                 .set_target_language_configuration_override("use_standard_types", False)
+                .set_target_language_configuration_override(
+                    Language.WKCV_LANGUAGE_OPTIONS,
+                    {"omit_serialization_support": True}
+                )
                 .create()
         )
         jinja_filter_tester(filter_includes, template, rendered, lctx, my_type=my_type)
     """
-    try:
-        omit_serialization_support = env.globals["nunavut"].support["omit"]
-    except KeyError:
-        omit_serialization_support = False
-    return IncludeGenerator(language, t, omit_serialization_support).generate_include_filepart_list(
-        language.extension, sort
-    )
+    return IncludeGenerator(language, t).generate_include_filepart_list(language.extension, sort)
 
 
 @template_language_filter(__name__)
@@ -1587,7 +1582,7 @@ def filter_minimum_required_capacity_bits(t: pydsdl.SerializableType) -> int:
             attributes=[field_one, field_two],
             deprecated=False,
             fixed_port_id=None,
-            source_file_path='',
+            source_file_path='uavcan/foo.0.1.dsdl',
             has_parent_service = False
         )
 
@@ -1597,7 +1592,7 @@ def filter_minimum_required_capacity_bits(t: pydsdl.SerializableType) -> int:
             attributes=[field_one, field_two],
             deprecated=False,
             fixed_port_id=None,
-            source_file_path='',
+            source_file_path='uavcan/foo.0.1.dsdl',
             has_parent_service = False
         )
 

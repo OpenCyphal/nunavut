@@ -23,7 +23,7 @@ from nunavut._templates import (
     template_language_test,
     template_volatile_filter,
 )
-from nunavut._utilities import YesNoDefault, cached_property
+from nunavut._utilities import YesNoDefault, cached_property, ResourceType
 from nunavut.jinja.environment import Environment
 from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
 from nunavut.lang._language import Language as BaseLanguage
@@ -630,10 +630,7 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
 
 
 @template_language_list_filter(__name__)
-@template_environment_list_filter
-def filter_includes(
-    language: Language, env: Environment, t: pydsdl.CompositeType, sort: bool = True
-) -> typing.List[str]:
+def filter_includes(language: Language, t: pydsdl.CompositeType, sort: bool = True) -> typing.List[str]:
     """
     Returns a list of all include paths for a given type.
 
@@ -676,6 +673,10 @@ def filter_includes(
             LanguageContextBuilder()
                 .set_target_language("c")
                 .set_target_language_configuration_override("use_standard_types", False)
+                .set_target_language_configuration_override(
+                    Language.WKCV_LANGUAGE_OPTIONS,
+                    {"omit_serialization_support": True}
+                )
                 .create()
         )
         jinja_filter_tester(filter_includes, template, rendered, lctx, my_type=my_type)
@@ -684,13 +685,7 @@ def filter_includes(
     :param bool sort: If true the returned list will be sorted.
     :return: a list of include headers needed for a given type.
     """
-    try:
-        omit_serialization_support = env.globals["nunavut"].support["omit"]
-    except KeyError:
-        omit_serialization_support = False
-    return IncludeGenerator(language, t, omit_serialization_support).generate_include_filepart_list(
-        language.extension, sort
-    )
+    return IncludeGenerator(language, t).generate_include_filepart_list(language.extension, sort)
 
 
 def filter_to_static_assertion_value(obj: typing.Any) -> int:
@@ -764,11 +759,11 @@ def filter_to_static_assertion_value(obj: typing.Any) -> int:
     if isinstance(obj, int):
         return obj
     if isinstance(obj, str):
-        from zlib import crc32
+        from zlib import crc32  # pylint: disable=import-outside-toplevel
 
         return crc32(bytearray(obj, "utf-8"))
 
-    raise ValueError("Cannot convert object of type {} into an integer in a stable manner.".format(type(obj)))
+    raise ValueError(f"Cannot convert object of type {type(obj)} into an integer in a stable manner.")
 
 
 @template_language_filter(__name__)

@@ -1,0 +1,8 @@
+{% for T, out_file in AllT() %}
+
+{
+  "full_name": "{{ T.full_name }}",
+  "source": "{{ T.source_file_path }}",
+  "file": "{{ T | to_include_path }}",
+}
+{% endfor %}

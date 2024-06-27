@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List
 from unittest.mock import MagicMock
 
 import pytest
-from nunavut import build_namespace_tree
+from nunavut._namespace import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
 from nunavut._dependencies import Dependencies
 from nunavut.lang import Language, LanguageContext, LanguageClassLoader, LanguageContextBuilder

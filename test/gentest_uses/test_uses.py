@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
-from nunavut import build_namespace_tree
+from nunavut._namespace import build_namespace_tree
 from nunavut.lang import LanguageContextBuilder, Language
 from nunavut.jinja import DSDLCodeGenerator
 from pydsdl import read_namespace

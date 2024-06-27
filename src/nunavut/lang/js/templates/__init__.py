@@ -4,12 +4,8 @@
 # SPDX-License-Identifier: MIT
 #
 """
-    Command line script.
+Contains the Jinja templates to generate javascript.
 """
 
-import sys
-
-from .cli.runners import main as cli_main
-
-
-sys.exit(cli_main())
+__version__ = "1.0.0"
+"""Version of the js template set."""

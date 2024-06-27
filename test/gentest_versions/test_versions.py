@@ -10,7 +10,7 @@ from pathlib import Path
 import pydsdl
 import re
 
-from nunavut import build_namespace_tree
+from nunavut._namespace import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import LanguageContextBuilder
 
@@ -36,7 +36,7 @@ def test_issue_136(gen_paths, lang_key: str, include_format: str):  # type: igno
     )
     namespace = build_namespace_tree(compound_types, root_namespace, gen_paths.out_dir, language_context)
     generator = DSDLCodeGenerator(namespace)
-    generator.generate_all(omit_serialization_support=True)
+    generator.generate_all()
 
     for covid_version in covid_versions:
 
@@ -55,7 +55,7 @@ def test_issue_136(gen_paths, lang_key: str, include_format: str):  # type: igno
 
         found_open_line = 0
         found_def_line = 0
-        with open(str(outfile), "r") as header_file:
+        with open(str(outfile), "r", encoding="utf-8") as header_file:
             line_no = 1
             for line in header_file:
                 if include_guard_start.match(line):

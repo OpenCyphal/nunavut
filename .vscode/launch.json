@@ -22,6 +22,37 @@
             "request": "launch",
             "module": "pytest",
             "args": [
+                "--no-cov",
+                "--keep-generated",
+                "--rootdir=${workspaceFolder}",
+                "${file}"
+            ],
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Pytest: current test with coverage",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "--cov=${workspaceFolder}/src",
+                "--cov-report=html",
+                "--keep-generated",
+                "--rootdir=${workspaceFolder}",
+                "${file}"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Pytest: current test with profiling",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "--no-cov",
+                "--profile",
+                "--profile-svg",
                 "--keep-generated",
                 "--rootdir=${workspaceFolder}",
                 "${file}"
