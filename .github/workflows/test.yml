@@ -77,7 +77,7 @@ jobs:
           -Dsonar.token=${{ env.SONAR_TOKEN }}
           -Dsonar.buildString=${{ env.GITHUB_RUN_ID }}
           -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }}
-          -Dsonar.python.version=python3.10
+          -Dsonar.python.version=python3.11
           -Dsonar.python.coverage.reportPaths=.tox/report/tmp/coverage.xml
           -Dsonar.python.xunit.reportPath=.tox/py310-test/tmp/xunit-result.xml
     - name: report-pr
@@ -91,7 +91,7 @@ jobs:
           -Dsonar.token=${{ env.SONAR_TOKEN }}
           -Dsonar.buildString=${{ env.GITHUB_RUN_ID }}
           -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }}
-          -Dsonar.python.version=python3.10
+          -Dsonar.python.version=python3.11
           -Dsonar.python.coverage.reportPaths=.tox/report/tmp/coverage.xml
           -Dsonar.python.xunit.reportPath=.tox/py310-test/tmp/xunit-result.xml
 
@@ -118,7 +118,7 @@ jobs:
   compat-test-python3-ubuntu:
     strategy:
       matrix:
-        python3-version: ['7', '8', '9', '10', '11', '12']
+        python3-version: ['8', '9', '10', '11', '12']
     runs-on: ubuntu-latest
     container: ghcr.io/opencyphal/toxic:tx22.4.2
     needs: test
