@@ -1,0 +1,13 @@
+{#-
+ # Copyright (c) 2024 OpenCyphal
+ # This software is distributed under the terms of the MIT License.
+ # Author: Erik Rainey <erik.rainey@gmail.com>
+-#}
+
+-- Generated at:  {{ now_utc }} UTC
+-- Namespace:     {{ T.full_name }}
+
+{#- Namespace file -#}
+{% if T.get_nested_types() %}
+local {{ t|full_reference_name }} = nil
+{%- endif %}

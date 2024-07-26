@@ -1,0 +1,90 @@
+{#
+type - the current Type
+field - the ProtoField of the Type
+offset - the current offset
+_delimiter_ - if a delimiter is used, this will be set to the extent of the field.
+field_size - used to store either the extent or the delimited size
+payload - The tvb
+pinfo - The packet info
+subtree - The current level of the tree structure
+#}
+{%- if field is PrimitiveType %}
+    -- primitive type
+    offset = offset + nunavut_support.as_{{ field.data_type | to_protofield_type }}(
+            {{ type | full_reference_name }}_{{ field.name }},
+            payload(offset, {{ field.data_type | to_serialized_length }}),
+            pinfo, subtree, "{{ field.name }}")
+{%- elif field is ArrayType %}
+    -- array type
+{%- if field is FixedLengthArrayType %}
+    -- Fixed Length Array of {{field.data_type.capacity}} elemenets
+{%- if field.data_type.element_type is BooleanType %}
+    -- bool mask!
+    local mask = payload(offset, {{field.data_type.capacity}}):bytes()
+    local functor = function(proto, payload, pinfo, tree, index)
+        -- index X is set or not! what does that mean to you?
+        -- subtree:add(proto, )
+    end
+    nunavut_support.as_bool_array(proto, payload, pinfo, subtree, functor, "{{field.name}}")
+{%- elif field.data_type.element_type is PrimitiveType %}
+    field_size = {{ field.data_type.element_type | to_serialized_length }}
+    for i = 1, field.data_type.capacity
+        -- element is primitive type {{ field.data_type.element_type }}
+        subtree:add_le(proto, payload(offset, field_size), string.format("{{field.name}}[%u]", i))
+        offset = offset + field_size
+    end
+{%- else %}
+    for i = 1, field.data_type.capacity
+        -- composite type {{ field.data_type.element_type }}
+        local data = payload(offset, {{ field.data_type.element_type | full_reference_name }}.extent)
+        offset = offset + {{ field.data_type.element_type | full_reference_name}}.decode(proto, data, pinfo, subtree, string.format("{{field.name}}[%u]", i))
+    end
+{%- endif %}
+{%- elif field is VariableLengthArrayType %}
+    -- Variable Length Array has a length field of {{ field.data_type.length_field_type | to_serialized_length }} bytes
+    _length_ = payload(offset, {{ field.data_type.length_field_type | to_serialized_length }}):le_uint()
+    offset = offset + {{ field.data_type.length_field_type | to_serialized_length }}
+{%- if field.data_type.element_type is BooleanType %}
+    -- bool mask!
+    local mask = payload(offset, _length_):bytes()
+    local functor = function(proto, payload, pinfo, tree, index)
+        -- index X is set or not! what does that mean to you?
+        -- subtree:add(proto, )
+    end
+    nunavut_support.as_bool_array(proto, payload, pinfo, subtree, functor, "{{field.name}}")
+{%- elif field.data_type.element_type is PrimitiveType %}
+    field_size = {{ field.data_type.element_type | to_serialized_length }}
+    for i = 1, _length_ do
+        -- element is primitive type {{ field.data_type.element_type }}
+        subtree:add_le(proto, payload(offset, field_size), string.format("{{field.name}}[%u]", i))
+        offset = offset + field_size
+        {#
+        offset = offset + nunavut_support.as_{{ field.data_type.element_type | to_protofield_type }}(
+                {{ field.data_type.element_type | full_reference_name }}_{{ field.name }},
+                payload(offset, {{ field.data_type.element_type | to_serialized_length }}),
+                pinfo, subtree, "{{ field.name }}")
+        #}
+    end
+{%- else %}
+    for i = 1, _length_ do
+        -- composite type {{ field.data_type.element_type }}
+        local data = payload(offset, {{ field.data_type.element_type | full_reference_name }}.extent)
+        offset = offset + {{ field.data_type.element_type | full_reference_name}}.decode(proto, data, pinfo, subtree, string.format("{{field.name}}[%u]", i))
+    end
+    {%- endif %}
+{%- else %}
+    -- Unknown Array Type?
+{%- endif %}
+{%- elif field is CompositeType %}
+    -- composite type
+    if _delimiter_ > 0 then
+        field_size = _delimiter_
+    else
+        field_size = {{ field.data_type | full_reference_name }}.extent
+    end
+    offset = offset + {{ field.data_type | full_reference_name }}.decode(
+            proto, payload(offset, field_size),
+            pinfo, subtree, "{{field.name}}")
+{%- else %}
+    -- Unknown type {{field.name}} of type {{field.data_type}}
+{%- endif %}

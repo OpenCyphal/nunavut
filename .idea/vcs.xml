@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/CETL" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/googletest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/o1heap" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/public_regulated_data_types" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/unity" vcs="Git" />
+  </component>
+</project>

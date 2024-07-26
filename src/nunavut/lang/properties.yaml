@@ -374,3 +374,46 @@ nunavut.lang.html:
     has_standard_namespace_files: true
     namespace_is_composite_type: false
     namespace_file_stem: index
+
+nunavut.lang.lua:
+    extension: .lua
+    has_standard_namespace_files: false
+    namespace_is_composite_type: false
+    namespace_file_stem: _namespace_
+    trim_trailing_whitespace: true
+    enable_stropping: false
+    stropping_suffix: _
+    reserved_identifiers:
+        - and
+        - break
+        - do
+        - else
+        - elseif
+        - end
+        - "false"
+        - for
+        - function
+        - if
+        - in
+        - local
+        - nil
+        - not
+        - or
+        - repeat
+        - return
+        - then
+        - "true"
+        - until
+        - while
+    named_types:
+        'saturated int8': 'int8'
+        'saturated int16': 'int16'
+        'saturated int32': 'int32'
+        'saturated int64': 'int64'
+        'saturated uint8': 'uint8'
+        'saturated uint16': 'uint16'
+        'saturated uint32': 'uint32'
+        'saturated uint64': 'uint64'
+    named_values:
+        'true': 'true'
+        'false': 'false'

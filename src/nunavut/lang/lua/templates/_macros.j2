@@ -1,0 +1,139 @@
+{# Declares the Message Field #}
+{%- macro declare_primitive_field(structure_type, field_name, field_type) -%}
+local {{ structure_type | full_reference_name }}_{{ field_name }} = ProtoField.new(
+    '{{field_name}}', -- name in the shown fields
+    '{{ structure_type | string_reference_name }}.{{field_name}}', -- abbr named used by filters
+     {{field_type | to_field_type }}) -- field type
+{%- endmacro %}
+
+{# Declares the Request Field #}
+{%- macro declare_primitive_field_request(structure_type, field_name, field_type) -%}
+local {{ structure_type | full_reference_name }}_Request_{{ field_name }} = ProtoField.new(
+    '{{field_name}}', -- name in the shown fields
+    '{{ structure_type | string_reference_name }}.Request.{{field_name}}', -- abbr named used by filters
+     {{field_type | to_field_type }}) -- field type
+{%- endmacro %}
+
+{# Declares the Response Field #}
+{%- macro declare_primitive_field_response(structure_type, field_name, field_type) -%}
+local {{ structure_type | full_reference_name }}_Response_{{ field_name }} = ProtoField.new(
+    '{{field_name}}', -- name in the shown fields
+    '{{ structure_type | string_reference_name }}.Response.{{field_name}}', -- abbr named used by filters
+     {{field_type | to_field_type }}) -- field type
+{%- endmacro %}
+
+{# The Inner part of the decode function #}
+{%- macro decode_function(type) -%}
+    local offset = 0 -- used to track the current byte offset through the decoded packet
+    local _delimiter_ = 0 -- this may not be used in all circumstances, check for zero!
+    local _length_ = 0 -- used for the length of variable length array
+    local field_size = 0 -- used to track the extent of a field or it's _delimiter_ size.
+    local extent = 0 -- used to track the current of this type
+    if payload:len() <= EXTENT then
+        extent = payload:len()
+    else
+        error("Payload is too large for {{ type | string_reference_name }}")
+        extent = EXTENT
+    end
+    local subtree = payload_tree:add(proto, payload(0, extent), "{{ type | string_reference_name }}")
+    subtree:prepend_text(string.format("%s of type ", label))
+
+{%- if type is UnionType %}
+{# START UNION TYPES #}
+    local _tag_ = payload(offset, 1):le_uint()
+    offset = offset + 1
+{%- set ns = namespace(_tag_=1) %}
+{%- for field in type.fields %}
+{%- if ns._tag_ == 1 %}
+    if _tag_ == {{ns._tag_}} then
+{%- else %}
+    elseif _tag_ == {{ns._tag_}} then
+{%- endif %}
+    {%- include '_decode_field.j2' %}
+    {%- set ns._tag_ = ns._tag_ + 1 %}
+{%- endfor %}
+    end
+{# END UNION TYPES #}
+{%- else %}
+{# START NON UNION TYPES #}
+{%- for field in type.fields %}
+{%- if type.inner_type is DelimitedType %}
+    _delimiter_ = payload(offset, 4):le_uint()
+    offset = offset + 4
+{%- endif %}
+{% include '_decode_field.j2' %}
+{%- endfor %}
+{# END NON UNION TYPES #}
+{%- endif %}
+    return offset
+{%- endmacro %}
+
+{# Constant Declaration #}
+{%- macro declare_constants(type) %}
+{%- for c in type.constants %}
+local {{ c.name }} = {{ c.value }}
+{%- endfor %}
+{%- endmacro %}
+
+{# Field Declarations #}
+{%- macro declare_fields(type) %}
+{%- for field in type.fields %}
+{%- if field.doc %}
+--[[
+{{ field.doc }}
+]]--
+{%- endif %}
+{%- if field is PrimitiveType %}
+{{ declare_primitive_field(type, field.name, field.data_type) }}
+{%- elif field is ArrayType %}
+-- Some debug...
+-- array type {{ field.name }}
+-- {{type.full_name}}
+-- {{field.data_type}}
+-- {{field.data_type.element_type}}
+{%- if field is FixedLengthArrayType %}
+{%- if field.data_type.element_type is PrimitiveType %}
+{{ declare_primitive_field(type, field.name, field.data_type.element_type) }}
+{%- else %}
+-- CompositeTypes are required above ^
+{%- endif %}
+{%- elif field is VariableLengthArrayType %}
+{%- if field.data_type.element_type is PrimitiveType %}
+{{ declare_primitive_field(type, field.name, field.data_type.element_type) }}
+{%- else %}
+-- CompositeTypes are required above ^
+{%- endif %}
+{%- else %}
+--???
+{%- endif %}
+{%- elif field is CompositeType %}
+-- CompositeTypes are required above ^
+{%- else %}
+-- FIXME {{ field.name }} is a {{ field.data_type }} and we don't know about that yet!
+{%- endif %}
+{%- endfor %}
+{%- endmacro %}
+
+{# Register Fields Inner function #}
+{%- macro register_fields(type) %}
+{# this is intended twice #}
+        {%- for field in type.fields %}
+        {%- if field is PrimitiveType %}
+        table.insert(cyphal_proto.fields, {{ type | full_reference_name }}_{{field.name}})
+        {%- elif field is ArrayType %}
+        -- FIXME register {{ type | full_reference_name }}_{{field.name}} as a single entry which will be repeated?
+        table.insert(cyphal_proto.fields, {{ type | full_reference_name }}_{{field.name}})
+        {%- elif field is CompositeType %}
+        -- composite types are registered as types below
+        {%- else %}
+        {%- endif %}
+        {%- endfor %}
+{%- endmacro %}
+
+{# Register Types #}
+{%- macro register_subtypes(type) %}
+{# this is intended twice #}
+        {%- for n in type | requires %}
+        {{ n | full_reference_name }}.register(cyphal_proto)
+        {%- endfor %}
+{%- endmacro %}

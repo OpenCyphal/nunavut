@@ -379,6 +379,15 @@ HTML Filters
    :noindex:
 
 
+Lua Filters
+-------------------------------------------------
+
+.. autofunction:: nunavut.lang.lua.filter_full_reference_name
+   :noindex:
+.. autofunction:: nunavut.lang.lua.filter_short_reference_name
+   :noindex:
+
+
 *************************************************
 Template Mapping and Use
 *************************************************

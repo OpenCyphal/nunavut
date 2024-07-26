@@ -18,6 +18,35 @@ from nunavut._utilities import ResourceType
 
 from ._language import Language
 
+class RequireGenerator:
+    def __init__(self, language: Language, t: pydsdl.CompositeType):
+        self._type = t
+        self._language = language
+
+    def generate_require_list(self, sort: bool) -> typing.List[pydsdl.CompositeType]:
+        """
+        Generates the list of unique types a Lua module needs to require as types, not strings
+        Lua requires this format in order to bring an "object" into the plugin system.
+        .. code-block:: lua
+
+            local uavcan_node_Heartbeat_1_0 = require('uavcan.node.Heartbeat_1_0')
+
+        The jinja will try to cycle over all T types pipeing through this generator to remove things which are not
+        needed to be required.
+
+        .. code-block:: jinja
+
+        {%- for n in T | requires %}
+        local {{n | full_reference_name }} = require('{{ n.full_namespace }}.{{ n | short_reference_name }}')
+        {%- endfor %}
+
+        """
+        dep_types = self._language.get_dependency_builder(self._type).direct()
+        if sort:
+            return sorted(dep_types.composite_types, key=lambda x: x.full_name)
+        else:
+            return dep_types.composite_types
+
 
 # +-------------------------------------------------------------------------------------------------------------------+
 # | GENERATORS

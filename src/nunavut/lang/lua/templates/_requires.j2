@@ -1,0 +1,11 @@
+-- We always use the generated nunavut support
+local nunavut_support = require('nunavut_support')
+
+{%- for n in T | requires %}
+{%- if n.doc %}
+--[[
+{{ n.doc }}
+]]--
+{%- endif %}
+local {{n | full_reference_name}} = require('{{n.full_namespace}}.{{n | short_reference_name}}')
+{%- endfor %}

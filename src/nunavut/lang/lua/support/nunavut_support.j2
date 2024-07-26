@@ -1,0 +1,112 @@
+{#-
+ # Copyright (c) 2024 OpenCyphal
+ # This software is distributed under the terms of the MIT License.
+ # Author: Erik Rainey <erik.rainey@gmail.com>
+-#}
+
+-- Nunavut Support Library Function for Decoding Primitives in Lua
+
+local function as_little_endian(field, payload, pinfo, tree, bit_depth)
+    local offset = 0
+    local field_size = bit_depth / 8
+    tree:add_le(field, payload(offset, field_size))
+    return offset
+end
+
+local function decode_payload_uint8(field, payload, pinfo, tree)
+    return as_little_endian(field, payload, pinfo, tree, 8)
+end
+
+local function decode_payload_uint16(field, payload, pinfo, tree)
+    return as_little_endian(field, payload, pinfo, tree, 16)
+end
+
+local function decode_payload_uint24(field, payload, pinfo, tree)
+    return as_little_endian(field, payload, pinfo, tree, 24)
+end
+
+local function decode_payload_uint32(field, payload, pinfo, tree)
+    return as_little_endian(field, payload, pinfo, tree, 32)
+end
+
+local function decode_payload_uint64(field, payload, pinfo, tree)
+    return as_little_endian(field, payload, pinfo, tree, 64)
+end
+
+local function decode_payload_int8(field, payload, pinfo, tree)
+    return as_little_endian(field, payload, pinfo, tree, 8)
+end
+
+local function decode_payload_int16(field, payload, pinfo, tree)
+    return as_little_endian(field, payload, pinfo, tree, 16)
+end
+
+local function decode_payload_int24(field, payload, pinfo, tree)
+    return as_little_endian(field, payload, pinfo, tree, 24)
+end
+
+local function decode_payload_int32(field, payload, pinfo, tree)
+    return as_little_endian(field, payload, pinfo, tree, 32)
+end
+
+local function decode_payload_int64(field, payload, pinfo, tree)
+    return as_little_endian(field, payload, pinfo, tree, 64)
+end
+
+local function decode_payload_float(field, payload, pinfo, tree)
+    return as_little_endian(field, payload, pinfo, tree, 32)
+end
+
+local function decode_payload_double(field, payload, pinfo, tree)
+    return as_little_endian(field, payload, pinfo, tree, 64)
+end
+
+local function decode_payload_bool(field, payload, pinfo, tree)
+    local offset = 0
+    local field_size = 1
+    local bits = payload(offset, 1):le_uint()
+    local value = bit.band(bits, 0x1)
+    tree:add_le(field, value)
+    return offset
+end
+
+function uint16_to_bytes_le(value)
+    local arr = ByteArray.new("0000")
+    arr:set_index(0, bit.band(value, 0xFF))     -- low byte
+    arr:set_index(1, bit.rshift(value, 8))      -- high byte
+    return arr
+end
+
+local function decode_payload_mask(field, bytes_array, pinfo, tree, functor)
+    -- we assume the payload has be narrowed to the right value for the mask array
+    -- the functor must be of the form function(field, pinfo, tree, index)
+    -- only set mask bits will be called.
+    for i = 1, bytes_array:len() do
+        for j = 1, 8 do
+            local mask = bit.lshift(1, j - 1)
+            local value = byte_array:get_index(i - 1)
+            local bit = bit.band(value, mask)
+            if bit > 0 then -- if any bit set
+                local index = (8 * (i - 1)) + (j - 1)
+                functor(field, pinfo, tree, index)
+            end
+        end
+    end
+end
+
+return {
+    as_uint8 = decode_payload_uint8,
+    as_uint16 = decode_payload_uint16,
+    as_uint24 = decode_payload_uint24,
+    as_uint32 = decode_payload_uint32,
+    as_uint64 = decode_payload_uint64,
+    as_int8 = decode_payload_int8,
+    as_int16 = decode_payload_int16,
+    as_int24 = decode_payload_int24,
+    as_int32 = decode_payload_int32,
+    as_int64 = decode_payload_int64,
+    as_float = decode_payload_float,
+    as_double = decode_payload_double,
+    as_bool = decode_payload_bool,
+    as_bool_array = decode_payload_mask,
+}

@@ -1,0 +1,18 @@
+--
+-- Type Information: Is {{ T.full_name }} a ?
+-- Void:          {{ T is VoidType and 'yes' or 'no' }}
+-- Boolean:       {{ T is BooleanType and 'yes' or 'no' }}
+-- Primitive:     {{ T is PrimitiveType and 'yes' or 'no' }}
+-- Integer:       {{ T is IntegerType and 'yes' or 'no' }}
+-- Float:         {{ T is FloatType and 'yes' or 'no' }}
+-- ArrayType:     {{ T is ArrayType and 'yes' or 'no' }}
+-- FixedLengthArray: {{ T is FixedLengthArrayType and 'yes' or 'no' }}
+-- VariableLengthArray: {{ T is VariableLengthArrayType and 'yes' or 'no' }}
+-- Composite:     {{ T is CompositeType and 'yes' or 'no' }}
+{%- if T is CompositeType %}
+-- Delimited:     {{ T is DelimitedType and 'yes' or 'no' }}
+-- Inner Delimited:     {{ T.inner_type is DelimitedType and 'yes' or 'no' }}
+-- Union:         {{ T is UnionType and 'yes' or 'no' }}
+-- Inner Union:     {{ T.inner_type is UnionType and 'yes' or 'no' }}
+{%- endif %}
+-- Service:       {{ T is ServiceType and 'yes' or 'no' }}

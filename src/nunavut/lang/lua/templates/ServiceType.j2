@@ -1,0 +1,96 @@
+{#-
+ # Copyright (c) 2024 OpenCyphal
+ # This software is distributed under the terms of the MIT License.
+ # Author: Erik Rainey <erik.rainey@gmail.com>
+-#}
+
+{# Require Request #}
+{# register #}
+{# decode #}
+
+{# Require Response #}
+{# register #}
+{# decode #}
+
+{%- include '_header.j2' %}
+
+{%- include '_requires.j2' %}
+
+{%- import '_macros.j2' as macros with context %}
+
+{%- set type = T %}
+{%- set name = T | short_reference_name %}
+
+-- constants
+{{ macros.declare_constants(type.request_type) }}
+{{ macros.declare_constants(type.response_type) }}
+
+{%- if type.has_fixed_port_id %}
+local PORT_ID = {{ type.fixed_port_id }}
+{%- endif %}
+
+local BIT_REQUEST_EXTENT = {{ type.request_type.extent }}
+local REQUEST_EXTENT = BIT_REQUEST_EXTENT / 8
+local BIT_RESPONSE_EXTENT = {{ type.response_type.extent }}
+local RESPONSE_EXTENT = BIT_RESPONSE_EXTENT / 8
+
+-- constituent fields
+{{ macros.declare_fields(type.request_type) }}
+{{ macros.declare_fields(type.response_type) }}
+
+-- local flag to prevent multiple inclusion
+local {{ type | full_reference_name }}_registered = false
+
+-- Registers the fields of the message to the Proto
+-- @param cyphal_proto The Proto to add the fields to
+local function register_{{ type | full_reference_name }}(cyphal_proto)
+    if not {{ type | full_reference_name }}_registered then
+        {{ macros.register_fields(type.request_type) }}
+        {{ macros.register_subtypes(type.request_type) }}
+        {{ macros.register_fields(type.response_type) }}
+        {{ macros.register_subtypes(type.response_type) }}
+        {{ type | full_reference_name }}_registered = true
+    end
+end
+
+-- Decodes a {{ type | full_reference_name }}
+-- Returns the number of bytes decoded
+local function decode_{{ type | full_reference_name }}(proto, payload, pinfo, payload_tree, label, request_not_response)
+    if request_not_response == 1 then -- Request
+        return decode_{{ type | full_reference_name }}_Request(proto, payload, pinfo, payload_tree, label)
+    else -- Response
+        return decode_{{ type | full_reference_name }}_Response(proto, payload, pinfo, payload_tree, label)
+    end
+end
+
+
+-- Decodes a {{ type | full_reference_name }} Request
+-- Returns the number of bytes decoded
+local function decode_{{ type | full_reference_name }}_Request(proto, payload, pinfo, payload_tree, label)
+    {{ macros.decode_function(type.request_type) }}
+end
+
+-- Decodes a {{ type | full_reference_name }} Response
+-- Returns the number of bytes decoded
+local function decode_{{ type | full_reference_name }}_Response(proto, payload, pinfo, payload_tree, label)
+    {{ macros.decode_function(type.response_type) }}
+end
+
+-- Return the decode, register and the option port id
+return {
+    register = register_{{ type | full_reference_name }}
+    , decode = decode_{{ type | full_reference_name }}
+    , response = {
+        extent = RESPONSE_EXTENT
+    },
+    , request = {
+        extent = REQUEST_EXTENT
+    }
+{%- if type.has_fixed_port_id %}
+{%- if type.has_parent_service %}
+    , service_id = {{ type.fixed_port_id }}
+{%- else %}
+    , subject_id = {{ type.fixed_port_id }}
+{%- endif %}
+{%- endif %}
+}

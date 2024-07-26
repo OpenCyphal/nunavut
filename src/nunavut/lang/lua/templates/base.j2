@@ -1,0 +1,63 @@
+{#-
+ # Copyright (c) 2024 OpenCyphal
+ # This software is distributed under the terms of the MIT License.
+ # Author: Erik Rainey <erik.rainey@gmail.com>
+-#}
+
+{%- include '_header.j2' %}
+
+{%- include '_requires.j2' %}
+
+{%- import '_macros.j2' as macros with context %}
+
+{%- macro data_schema(name, type, parent_class_name=None) -%}
+
+-- constants
+{{ macros.declare_constants(type) }}
+
+{%- if type.has_fixed_port_id %}
+local PORT_ID = {{ type.fixed_port_id }}
+{%- endif %}
+
+local BIT_EXTENT = {{ type.extent }}
+local EXTENT = BIT_EXTENT / 8
+
+-- constituent fields
+{{ macros.declare_fields(type) }}
+
+-- local flag to prevent multiple inclusion
+local {{ type | full_reference_name }}_registered = false
+
+-- Registers the fields of the message to the Proto
+-- @param cyphal_proto The Proto to add the fields to
+local function register_{{ type | full_reference_name }}(cyphal_proto)
+    if not {{ type | full_reference_name }}_registered then
+        {{ macros.register_fields(type) }}
+        {{ macros.register_subtypes(type) }}
+        {{ type | full_reference_name }}_registered = true
+    end
+end
+
+-- Decodes a {{ type | full_reference_name }}
+-- Returns the number of bytes decoded
+local function decode_{{ type | full_reference_name }}(proto, payload, pinfo, payload_tree, label)
+    {{ macros.decode_function(type) }}
+end
+
+-- Return the decode, register and the option port id
+return {
+    register = register_{{ type | full_reference_name }}
+    , decode = decode_{{ type | full_reference_name }}
+    , extent = EXTENT
+{%- if type.has_fixed_port_id %}
+{%- if type.has_parent_service %}
+    , service_id = {{ type.fixed_port_id }}
+{%- else %}
+    , subject_id = {{ type.fixed_port_id }}
+{%- endif %}
+{%- endif %}
+}
+
+{%- endmacro -%}
+
+{% block contents %}{% endblock %}
