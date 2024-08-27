@@ -52,10 +52,11 @@ struct {% if composite_type.deprecated -%}
         static constexpr bool IsService      = false;
         static constexpr bool IsRequest      = {{ (composite_type == T.request_type) | string | lower }};
         static constexpr bool IsResponse     = {{ (composite_type == T.response_type) | string | lower }};
-{%- else %}
+{% else %}
         static constexpr bool IsServiceType = false;
-{% endif -%}
-    {%- assert composite_type.extent % 8 == 0 %}
+{% endif %}
+        static constexpr char FullNameAndVersion[] = "{{ composite_type }}";
+    {%  assert composite_type.extent % 8 == 0 %}
     {%- assert composite_type.inner_type.extent % 8 == 0 %}
         /// Extent is the minimum amount of memory required to hold any serialized representation of any compatible
         /// version of the data type; or, on other words, it is the the maximum possible size of received objects of this type.

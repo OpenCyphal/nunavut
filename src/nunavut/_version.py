@@ -8,7 +8,7 @@
 .. autodata:: __version__
 """
 
-__version__ = "2.3.4.dev0"
+__version__ = "2.3.5.dev0"
 __license__ = "MIT"
 __author__ = "OpenCyphal"
 __copyright__ = "Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. Copyright (c) 2023 OpenCyphal."
