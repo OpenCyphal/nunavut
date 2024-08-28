@@ -534,13 +534,18 @@ def _create_build_dir_name(args: argparse.Namespace) -> str:
 
 
 @functools.lru_cache(maxsize=None)
-def _get_version_string() -> typing.Tuple[str, str, str]:
+def _get_version_string() -> typing.Tuple[str, str, str, str]:
     with open("src/nunavut/_version.py", "r", encoding="UTF-8") as version_py:
         exec(version_py.read())  # pylint: disable=exec-used
 
     version_string = typing.cast(str, eval("__version__"))  # pylint: disable=eval-used
     version_array = version_string.split(".")
-    return (version_array[0], version_array[1], version_array[2])
+    if len(version_array) not in (3, 4):
+        raise RuntimeError(f"Invalid version string: {version_string}")
+    if len(version_array) == 3:
+        return (version_array[0], version_array[1], version_array[2], "")
+    else:
+        return (version_array[0], version_array[1], version_array[2], version_array[3])
 
 
 def main() -> int:

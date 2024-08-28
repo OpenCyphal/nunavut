@@ -758,19 +758,15 @@ def test_list_configuration(gen_paths: Any, run_nnvg_main: Callable) -> None:
     """
     Verifies nnvg's --list-configuration option
     """
-    import yaml  # pylint: disable=import-outside-toplevel
+    nnvg_args = ["--list-configuration"]
 
-    nnvg_args = ["--no-target-namespaces", "--list-configuration"]
-
-    result = run_nnvg_main(gen_paths, nnvg_args)
-    assert 0 == result.returncode
-    completed = result.stdout.decode("utf-8").split(";")
-    parsed_config = yaml.load("\n".join(completed), yaml.Loader)
+    completed = run_nnvg_main(gen_paths, nnvg_args).stdout.decode("utf-8")
+    parsed_config = json.loads(completed)
     default_target_section_name = LanguageClassLoader.to_language_module_name(
         LanguageContextBuilder.DEFAULT_TARGET_LANGUAGE
     )
-    assert len(parsed_config[default_target_section_name]) > 0
-    print(yaml.dump(parsed_config))
+    assert len(parsed_config["sections"][default_target_section_name]) > 0
+    print(json.dumps(parsed_config))
 
 
 def test_colon_syntax(gen_paths: Any, run_nnvg_main: Callable) -> None:

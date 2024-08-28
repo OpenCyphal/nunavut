@@ -314,9 +314,9 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
                 path/to/types/animal:cat.1.0.dsdl \
                 path/to/types/animal:dog.1.0.dsdl
 
-            # looks for manifest.j2 in the yaml_jinja template directory and generates
-            # generated/include/manifest.yaml from all types in all DSDL namespaces.
-            nnvg --index-file include/manifest.yaml --outdir generated --templates yaml_jinja \
+            # looks for manifest.j2 in the json_jinja template directory and generates
+            # generated/include/manifest.json from all types in all DSDL namespaces.
+            nnvg --index-file include/manifest.json --outdir generated --templates json_jinja \
                 path/to/types/animal:cat.1.0.dsdl \
                 path/to/types/animal:dog.1.0.dsdl
 
@@ -809,7 +809,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         There is a set of built-in configuration for Nunavut that provides default values for known
         languages as documented `in the template guide
         <https://nunavut.readthedocs.io/en/latest/docs/templates.html#language-options>`_. This
-        argument lets you specify override configuration yaml.
+        argument lets you specify override configuration json.
     """
         ).lstrip(),
     )

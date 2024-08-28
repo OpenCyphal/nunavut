@@ -5,6 +5,7 @@ lib*.so
 lib*.so.*
 *.a
 build/
+build_*/
 .dep
 __pycache__
 *.pyc

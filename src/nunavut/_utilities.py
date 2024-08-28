@@ -17,9 +17,13 @@ import copy
 import enum
 import logging
 import pathlib
-from typing import Any, Callable, Generator, MutableMapping, Optional, TypeVar, cast, Generic
+import sys
+from typing import Any, Callable, Generator, Generic, MutableMapping, Optional, TypeVar, cast
 
-import importlib_resources
+if sys.version_info < (3, 9):
+    import importlib_resources
+else:
+    from importlib import resources as importlib_resources
 
 _logger = logging.getLogger(__name__)
 

@@ -4,12 +4,12 @@
 # This software is distributed under the terms of the MIT License.
 #
 
+import json
 import pathlib
 import re
 from pathlib import Path
 
 import pydsdl
-import yaml
 
 from nunavut._namespace import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
@@ -18,7 +18,7 @@ from nunavut.lang import Language, LanguageClassLoader, LanguageContextBuilder
 
 def test_issue_277(gen_paths):  # type: ignore
     """
-    Writes a temporary yaml file to override configuration and verifies the values made it through to the generated
+    Writes a temporary json file to override configuration and verifies the values made it through to the generated
     C++ output.
     """
 
@@ -37,14 +37,14 @@ def test_issue_277(gen_paths):  # type: ignore
     alloc_include_pattern = re.compile(r"^#include\s+\"MyCrazyAllocator\.hpp\"$")
     vla_constructor_args_pattern = re.compile(r".*\bstd::allocator_arg, allocator, g_bad_global_thing\b")
 
-    overrides_file = gen_paths.out_dir / pathlib.Path("overrides_test_issue_277.yaml")
+    overrides_file = gen_paths.out_dir / pathlib.Path("overrides_test_issue_277.json")
 
     overrides_data = {
         LanguageClassLoader.to_language_module_name("cpp"): {Language.WKCV_LANGUAGE_OPTIONS: override_language_options}
     }
 
     with open(overrides_file, "w", encoding="utf-8") as overrides_handle:
-        yaml.dump(overrides_data, overrides_handle)
+        json.dump(overrides_data, overrides_handle, ensure_ascii=False)
 
     root_namespace = str(gen_paths.dsdl_dir / Path("proptest"))
     compound_types = pydsdl.read_namespace(root_namespace, [], allow_unregulated_fixed_port_id=True)

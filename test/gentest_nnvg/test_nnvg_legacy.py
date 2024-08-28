@@ -10,8 +10,8 @@ import subprocess
 import typing
 from pathlib import Path
 
-import pytest
 import pydsdl
+import pytest
 
 import nunavut._version
 from nunavut.lang import LanguageContextBuilder
@@ -586,9 +586,7 @@ def test_language_allow_unregulated_fixed_portid(gen_paths: typing.Any, run_nnvg
     """
     Covers nnvg --allow-unregulated-fixed-port-id switch
     """
-    expected_output = [
-        gen_paths.out_dir / Path("fixedid") / Path("Timer_1_0.hpp")
-    ]
+    expected_output = [gen_paths.out_dir / Path("fixedid") / Path("Timer_1_0.hpp")]
 
     nnvg_args = [
         "--templates",
@@ -609,23 +607,6 @@ def test_language_allow_unregulated_fixed_portid(gen_paths: typing.Any, run_nnvg
     completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(";")
     completed_wo_empty = sorted([Path(i) for i in completed if len(i) > 0])
     assert expected_output == sorted(completed_wo_empty)
-
-
-def test_list_configuration(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:
-    """
-    Verifies nnvg's --list-configuration option
-    """
-    import yaml  # pylint: disable=import-outside-toplevel
-
-    nnvg_args = ["--list-configuration"]
-
-    completed = run_nnvg(gen_paths, nnvg_args).stdout.decode("utf-8").split(";")
-    parsed_config = yaml.load("\n".join(completed), yaml.Loader)
-    default_target_section_name = LanguageClassLoader.to_language_module_name(
-        LanguageContextBuilder.DEFAULT_TARGET_LANGUAGE
-    )
-    assert len(parsed_config[default_target_section_name]) > 0
-    print(yaml.dump(parsed_config))
 
 
 def test_support_templates_dir(gen_paths: typing.Any, run_nnvg: typing.Callable) -> None:

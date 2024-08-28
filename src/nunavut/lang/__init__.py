@@ -232,25 +232,25 @@ class LanguageContextBuilder:
 
     def add_config_files(self, *additional_config_files: pathlib.Path) -> "LanguageContextBuilder":
         """
-        A list of paths to additional yaml files to load as configuration.
-        These will override any values found in the :file:`nunavut.lang.properties.yaml` file and files
+        A list of paths to additional json files to load as configuration.
+        These will override any values found in the :file:`nunavut.lang.properties.json` file and files
         appearing later in this list will override value found in earlier entries.
 
         .. invisible-code-block: python
 
             import pathlib
-            import yaml
+            import json
             import textwrap
             from nunavut.lang import LanguageContextBuilder, Language, LanguageClassLoader
 
-            overrides_file = gen_paths_for_module.out_dir / pathlib.Path("overrides1.yaml")
+            overrides_file = gen_paths_for_module.out_dir / pathlib.Path("overrides1.json")
 
-            overrides_data = {LanguageClassLoader.to_language_module_name("c"):
-                {Language.WKCV_DEFINITION_FILE_EXTENSION: ".foo"}
+            overrides_data = {
+                LanguageClassLoader.to_language_module_name("c"): {Language.WKCV_DEFINITION_FILE_EXTENSION: ".foo"}
             }
 
             with open(overrides_file, "w", encoding="utf-8") as overrides_handle:
-                yaml.dump(overrides_data, overrides_handle)
+                json.dump(overrides_data, overrides_handle)
 
         .. code-block:: python
 
@@ -277,16 +277,20 @@ class LanguageContextBuilder:
         .. code-block:: python
 
             overrides_data = '''
-                nunavut.lang.c:
-                    extension: .foo
-                    non-standard: bar
+                {
+                    "nunavut.lang.c" :
+                        {
+                            "extension": ".foo",
+                            "non-standard": "bar"
+                        }
+                }
             '''
 
         ...the standard "extension" property will be overridden and the "non-standard" property will be added.
 
         .. invisible-code-block: python
 
-            second_overrides_file = gen_paths_for_module.out_dir / pathlib.Path("overrides2.yaml")
+            second_overrides_file = gen_paths_for_module.out_dir / pathlib.Path("overrides2.json")
             with open(second_overrides_file, "w", encoding="utf-8") as overrides_handle:
                 overrides_handle.write(textwrap.dedent(overrides_data))
 
@@ -358,8 +362,13 @@ class LanguageContextBuilder:
             assert not target_language_329_file_override_overridden.get_option("enable_serialization_asserts")
         """
         for additional_path in additional_config_files:
-            with open(str(additional_path), "r", encoding="utf-8") as additional_file:
-                self.config.update_from_yaml_file(additional_file)
+            if additional_path.suffix not in (".json", ".yaml", ".yml"):
+                raise ValueError(f"Unsupported file type {additional_path.suffix} for configuration file.")
+            with additional_path.open("r", encoding="utf-8") as additional_file:
+                if additional_path.suffix == ".json":
+                    self.config.update_from_json_file(additional_file)
+                else:
+                    self.config.update_from_yaml_file(additional_file)
 
         return self
 
@@ -446,7 +455,7 @@ class LanguageContext:
     """
     Context object containing the current target language and all supported :class:`nunavut.lang.Language` objects.
 
-    :param language_configuration: The configuration for all languages as defined by the properties.yaml schema.
+    :param language_configuration: The configuration for all languages as defined by the properties.json schema.
     :param target_language: The target language.
     :param supported_language_builder: factory closure that will create :class:`nunavut.lang.Language` objects for
                                        all supported languages when :func:`LanguageContext.get_target_languages`

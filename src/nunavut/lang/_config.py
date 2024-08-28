@@ -6,12 +6,10 @@
 """
 Logic for parsing language configuration.
 """
+import json
 import re
 import types
 import typing
-
-from yaml import SafeLoader as YamlLoader
-from yaml import load as yaml_loader
 
 from nunavut._utilities import deep_update, no_default_value
 
@@ -24,21 +22,26 @@ class LanguageConfig:
     """
     Configuration storage encapsulating parsers and other configuration format details. For any configuration type used
     the concept of "sections" must be maintained which requires that the top-level configuration be structured as
-    key/value pairs with the keys using the form "nunavut.lang.[language name]". For example, yaml configuration must
+    key/value pairs with the keys using the form "nunavut.lang.[language name]". For example, json configuration must
     have a top-level structure like this:
 
     .. code-block:: python
 
-        example_yaml = '''
-            nunavut.lang.a:
-                key_one: value_one
-                key_two: value_two
-            nunavut.lang.b:
-                key_one: value_one
-                key_two: value_two
-            nunavut.lang.c:
-                key_one: value_one
-                key_two: value_two
+        example_json = '''
+            {
+              "nunavut.lang.a": {
+                "key_one": "value_one",
+                "key_two": "value_two"
+              },
+              "nunavut.lang.b": {
+                "key_one": "value_one",
+                "key_two": "value_two"
+              },
+              "nunavut.lang.c": {
+                "key_one": "value_one",
+                "key_two": "value_two"
+              }
+            }
         '''
 
     .. invisible-code-block: python
@@ -46,7 +49,7 @@ class LanguageConfig:
         from nunavut.lang import LanguageConfig
 
         config = LanguageConfig()
-        config.update_from_yaml_string(example_yaml)
+        config.update_from_json_string(example_json)
 
         data = config.sections()
         assert len(data) == 3
@@ -62,19 +65,26 @@ class LanguageConfig:
 
     .. code-block:: python
 
-        example_yaml = '''
-            nunavut.lang.d:
-                key_one:
-                    - is
-                    - a
-                    - list:
-                        where: index2
-                        is: a_dictionary
+        example_json = '''
+            {
+                "nunavut.lang.d": {
+                    "key_one": [
+                    "is",
+                    "a",
+                    {
+                        "list": {
+                        "where": "index2",
+                        "is": "a_dictionary"
+                        }
+                    }
+                    ]
+                }
+            }
         '''
 
     .. invisible-code-block: python
 
-        config.update_from_yaml_string(example_yaml)
+        config.update_from_json_string(example_json)
         assert 'a_dictionary' == config.sections()['nunavut.lang.d']['key_one'][2]['list']['is']
 
     """
@@ -232,20 +242,31 @@ class LanguageConfig:
         """
         return self._sections
 
-    def update_from_yaml_string(self, string: str) -> None:
-        """
-        Update the configuration from a yaml string.
-        Calls :meth:`update` with the parsed yaml data and will raise the same exceptions.
-        """
-        configuration = yaml_loader(string, Loader=YamlLoader)
-        self.update(configuration)
-
     def update_from_yaml_file(self, f: typing.TextIO) -> None:
         """
         Update the configuration from a yaml file.
         Calls :meth:`update` with the parsed yaml data and will raise the same exceptions.
         """
+        from yaml import SafeLoader as YamlLoader  # pylint: disable=import-outside-toplevel
+        from yaml import load as yaml_loader  # pylint: disable=import-outside-toplevel
+
         configuration = yaml_loader(f, Loader=YamlLoader)
+        self.update(configuration)
+
+    def update_from_json_file(self, f: typing.TextIO) -> None:
+        """
+        Update the configuration from a json file.
+        Calls :meth:`update` with the parsed json data and will raise the same exceptions.
+        """
+        configuration = json.load(f)
+        self.update(configuration)
+
+    def update_from_json_string(self, string: str) -> None:
+        """
+        Update the configuration from a json string.
+        Calls :meth:`update` with the parsed json data and will raise the same exceptions.
+        """
+        configuration = json.loads(string)
         self.update(configuration)
 
     def set(self, section: str, option: str, value: typing.Any) -> None:

@@ -39,7 +39,7 @@ class Language(metaclass=abc.ABCMeta):
 
     :param str module_name:                  The name of the :mod:`nunavut.lang` module that contains the concrete
                                              language type and its resources.
-    :param LanguageConfig config:            All configuration as defined by the properties.yaml schema.
+    :param LanguageConfig config:            All configuration as defined by the properties.json schema.
     :param kwargs:                           Opaque arguments passed through to the target
                                              :class:`nunavut.lang.Language` object. See all "WKLA" constants
                                              on this class for well-known keyword arguments.
@@ -475,7 +475,7 @@ class Language(metaclass=abc.ABCMeta):
             assert lang_cpp.get_option('foobar', 'sane_default') == 'sane_default'
 
         :return: Either the value provided to the :class:`nunavut.lang.Language` instance, the value from
-            properties.yaml or the :code:`default_value`.
+            properties.json or the :code:`default_value`.
 
         """
         try:
@@ -544,7 +544,7 @@ class LanguageClassLoader:
     Class loader to resolve concrete :class:`nunavut.lang.Language` types.
 
     :param additional_config_files: A list of paths to additional configuration files to load as configuration.
-        These will override any values found in the :file:`nunavut.lang.properties.yaml` file and files
+        These will override any values found in the :file:`nunavut.lang.properties.json` file and files
         appearing later in this list will override value found in earlier entries.
 
         .. invisible-code-block: python
@@ -605,9 +605,9 @@ class LanguageClassLoader:
     @classmethod
     def _load_config(cls) -> LanguageConfig:
         parser = LanguageConfig()
-        for resource in iter_package_resources(cls.MODULE_NAME, ".yaml"):
+        for resource in iter_package_resources(cls.MODULE_NAME, ".json"):
             ini_string = resource.read_text()
-            parser.update_from_yaml_string(ini_string)
+            parser.update_from_json_string(ini_string)
         return parser
 
     def __init__(self) -> None:

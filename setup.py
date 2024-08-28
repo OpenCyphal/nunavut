@@ -20,7 +20,16 @@ version = {}  # type: Dict
 with open("src/nunavut/_version.py", encoding="utf-8") as fp:
     exec(fp.read(), version)  # pylint: disable=W0122
 
-setuptools.setup(
-    version=version["__version__"],
-    package_data={"": ["*.j2", "**/*.css", "**/*.js", "*.ini", "*.yaml", "*.hpp", "*.h"]},
-)
+package_data = {"": ["*.j2", "**/*.css", "**/*.js", "*.ini", "*.json", "*.hpp", "*.h"]}
+
+if sys.version_info < (3, 9):
+    # For version 3.8 we need to add importlib_resources as a dependency. This seems to blow away the values
+    # in setup.cfg so we need to specify them here.
+    setuptools.setup(
+        version=version["__version__"],
+        package_data=package_data,
+        install_requires=["importlib_resources", "pydsdl >= 1.22.0"],
+    )
+else:
+    # For version 3.9 and later we can use the install_requires configuration in setup.cfg.
+    setuptools.setup(version=version["__version__"], package_data=package_data)

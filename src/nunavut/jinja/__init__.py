@@ -17,8 +17,6 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Iterable, List, Mapping, Optional, TextIO, Tuple, Type, Union
 
 import pydsdl
-from yaml import Dumper as YamlDumper
-from yaml import dump as yaml_dump
 
 import nunavut.lang
 
@@ -404,6 +402,9 @@ class DSDLCodeGenerator(CodeGenerator):
         :return: If a yaml parser is available, a pretty dump of the given value as yaml.
                   If a yaml parser is not available then an empty string is returned.
         """
+        from yaml import Dumper as YamlDumper  # pylint: disable=import-outside-toplevel
+        from yaml import dump as yaml_dump  # pylint: disable=import-outside-toplevel
+
         return str(yaml_dump(value, Dumper=YamlDumper))
 
     def filter_type_to_template(self, value: Any) -> str:

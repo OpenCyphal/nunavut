@@ -48,7 +48,7 @@ The one Namespace type can play three roles:
 """
 
 import collections
-import platform
+import sys
 from functools import singledispatchmethod
 from os import PathLike
 from pathlib import Path
@@ -73,8 +73,7 @@ import pydsdl
 from .lang import Language, LanguageContext
 from .lang._common import IncludeGenerator
 
-assert int(platform.python_version_tuple()[0]) == 3
-if int(platform.python_version_tuple()[1]) < 9:
+if sys.version_info < (3, 9):
     # Python 3.8 has a bug. This is a workaround per https://stackoverflow.com/a/66518591/310659
     def _register(self, cls, method=None):  # type: ignore
         if hasattr(cls, "__func__"):
@@ -93,8 +92,8 @@ class Generatable(type(Path())):  # type: ignore
     :param kwargs: Keyword arguments to pass to the Path constructor.
     """
 
-    def __new__(mcs, *args: Any, **kwargs: Any) -> "Generatable":
-        if mcs is not Generatable:
+    def __new__(cls, *args: Any, **kwargs: Any) -> "Generatable":
+        if cls is not Generatable:
             raise TypeError("Unknown type passed to Generatable constructor.")
         try:
             definition = cast(pydsdl.CompositeType, kwargs.pop("definition"))
@@ -112,7 +111,7 @@ class Generatable(type(Path())):  # type: ignore
         if not isinstance(input_types, list):
             raise ValueError("Generatable requires an 'input_types' argument of type List[pydsdl.CompositeType].")
 
-        new_pure_path = cast(Generatable, super().__new__(mcs, *args, **kwargs))
+        new_pure_path = cast(Generatable, super().__new__(cls, *args, **kwargs))
         new_pure_path._definition = definition
         new_pure_path._input_types = input_types
         return new_pure_path

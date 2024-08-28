@@ -9,10 +9,11 @@
 
 import argparse
 import itertools
+import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Callable, Iterable, Optional
+from typing import Any, Callable, Dict, Iterable, Optional
 
 from .._generators import basic_language_context_builder_from_args, generate_all
 from .._utilities import ResourceType
@@ -66,16 +67,14 @@ class StandardArgparseRunner:
 
     def list_configuration(self, lctx: LanguageContext) -> None:
         """
-        List the configuration of the language context to a yaml file.
+        List the configuration of the language context to a json file.
         """
 
-        import yaml  # pylint: disable=import-outside-toplevel
+        config: Dict[str, Any] = {}
+        config["target_language"] = lctx.get_target_language().name
+        config["sections"] = lctx.config.sections()
 
-        sys.stdout.write("target_language: '")
-        sys.stdout.write(lctx.get_target_language().name)
-        sys.stdout.write("'\n")
-
-        yaml.dump(lctx.config.sections(), sys.stdout, allow_unicode=True)
+        json.dump(config, sys.stdout, ensure_ascii=False)
 
     def stdout_lister(
         self,
