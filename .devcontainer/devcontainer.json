@@ -1,6 +1,6 @@
 {
     "name": "Python dev environment",
-    "image": "ghcr.io/opencyphal/toxic:tx22.4.10",
+    "image": "ghcr.io/opencyphal/toxic:tx22.4.2",
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
     "mounts": [
