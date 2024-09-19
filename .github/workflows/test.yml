@@ -223,6 +223,38 @@ jobs:
                           --endianness ${{ matrix.endianness }} \
                           ${{ matrix.flag }}
 
+  language-verification-cpp-20:
+    runs-on: ubuntu-latest
+    needs: test
+    container: ghcr.io/opencyphal/toolshed:ts22.4.10
+    strategy:
+      matrix:
+        build_type: [Debug, Release, MinSizeRel]
+        architecture: [native32, native64]
+        compiler: [gcc, clang]
+        endianness: [any, little]
+        flag: [--none, --enable-ovr-var-array, --disable-asserts]
+        exclude:
+          - build_type: Debug
+            flag: --disable-asserts
+          - build_type: Release
+            flag: --disable-asserts
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: verify
+      run: |
+        .github/verify.py --override .github/verify_global.ini \
+                          --build-type ${{ matrix.build_type }} \
+                          --language-standard c++20 \
+                          --language cpp \
+                          --platform ${{ matrix.architecture }} \
+                          --toolchain-family ${{ matrix.compiler }} \
+                          --endianness ${{ matrix.endianness }} \
+                          ${{ matrix.flag }}
+
   language-verification-python:
     runs-on: ubuntu-latest
     needs: test

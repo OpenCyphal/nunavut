@@ -281,7 +281,9 @@ if(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
 endif()
 
 
-if(NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++14-17" OR NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr")
+if(NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++14-17"
+OR NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr"
+OR NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++20-pmr")
      #
      # Generate serialization support headers with config matching the language standard
      #
@@ -403,13 +405,13 @@ function(runTestCpp)
 endfunction()
 
 if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp")
-     runTestCpp(TEST_FILE test_array_c++17-pmr.cpp   LINK dsdl-test-array-with-allocator LANGUAGE_FLAVORS                         c++17-pmr      )
-     runTestCpp(TEST_FILE test_array_cetl++14-17.cpp LINK dsdl-test-array-with-allocator LANGUAGE_FLAVORS       cetl++14-17                      )
-     runTestCpp(TEST_FILE test_bitarray.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
-     runTestCpp(TEST_FILE test_compiles.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
-     runTestCpp(TEST_FILE test_large_bitset.cpp      LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
-     runTestCpp(TEST_FILE test_serialization.cpp     LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
-     runTestCpp(TEST_FILE test_unionant.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20)
+     runTestCpp(TEST_FILE test_array_c++17-pmr.cpp   LINK dsdl-test-array-with-allocator LANGUAGE_FLAVORS                         c++17-pmr       c++20-pmr)
+     runTestCpp(TEST_FILE test_array_cetl++14-17.cpp LINK dsdl-test-array-with-allocator LANGUAGE_FLAVORS       cetl++14-17                                )
+     runTestCpp(TEST_FILE test_bitarray.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+     runTestCpp(TEST_FILE test_compiles.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+     runTestCpp(TEST_FILE test_large_bitset.cpp      LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+     runTestCpp(TEST_FILE test_serialization.cpp     LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+     runTestCpp(TEST_FILE test_unionant.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
 endif()
 
 function(runTestC)

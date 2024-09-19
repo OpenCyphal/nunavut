@@ -149,6 +149,14 @@
                     "NUNAVUT_VERIFICATION_LANG": "cpp",
                     "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++20"
                 }
+            },
+            "C++20 PMR": {
+                "short": "--std=c++20-pmr",
+                "long": "Compile and link using the C++20 standard and use std polymorphic allocator.",
+                "settings": {
+                    "NUNAVUT_VERIFICATION_LANG": "cpp",
+                    "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++20-pmr"
+                }
             }
         }
     }
