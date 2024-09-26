@@ -2,9 +2,13 @@ name: test and release CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - *.preview
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - *.preview
 
 jobs:
   test:
