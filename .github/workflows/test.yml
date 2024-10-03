@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - *.preview
+      - '*.preview'
   pull_request:
     branches:
       - main
-      - *.preview
+      - '*.preview'
 
 jobs:
   test:
