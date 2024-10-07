@@ -404,6 +404,10 @@ class Language(BaseLanguage):
         if len(allocator_include) > 0:
             includes_formatted.append(allocator_include)
 
+        variant_include = str(self.get_option("variant_include", ""))
+        if len(variant_include) > 0:
+            includes_formatted.append(variant_include)
+
         if dep_types.uses_variable_length_array:
             variable_array_include = str(self.get_option("variable_array_type_include", ""))
             if len(variable_array_include) > 0:

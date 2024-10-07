@@ -930,6 +930,15 @@ inline {{typename_float_64}} const_bitspan::getF64()
     return tmp.fl;
 }
 
+template <typename T>
+void copyAssignInplace(T& dst, const T& src)
+{
+    // Intentional violation of MISRA cpp:M23_329: "Advanced memory management shall not be used".
+    // This method is used to copy-assign objects in-place (like PMR allocators). It is safe and efficient.
+    dst.~T();  // NOLINT NOSONAR
+    new (&dst) T(src);
+}
+
 {% endif -%}
 
 

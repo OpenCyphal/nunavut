@@ -12,6 +12,14 @@
 // | your code will not be backwards compatible with the C++14 version of this object.
 // +-------------------------------------------------------------------------------------------------------------------+
 {% else %}
+{%- ifuses "cetl" %}
+// +-------------------------------------------------------------------------------------------------------------------+
+// | This implementation uses the CETL library C++17 polyfill variant type with wrappers for the emplace and
+// | get_if methods to support backwards-compatibility with the C++14 version of this object. The union_value type
+// | extends cetl::pf17::variant and can be used with the entire set of variant methods. Using cetl::pf17::variant
+// | directly does mean your code will not be backwards compatible with the C++14 version of this object.
+// +-------------------------------------------------------------------------------------------------------------------+
+{% else %}
 // +-------------------------------------------------------------------------------------------------------------------+
 // | This implementation uses a minimal variant implementation that is forward-compatible with the same types generated
 // | using the C++17 variant type in the standard library. This minimal variant implementation is limited in the
@@ -26,6 +34,7 @@
 // | version will be fully-forward compatible, but the C++17 version exposes the variant type directly allowing full
 // | use of that standard library feature – it is therefore not backwards-compatible.
 // +-------------------------------------------------------------------------------------------------------------------+
+{% endifuses -%}
 {% endifuses -%}
 {{ composite_type.doc | block_comment('cpp-doxygen', 0, 120) }}
 struct {% if composite_type.deprecated -%}
@@ -85,15 +94,15 @@ struct {% if composite_type.deprecated -%}
 {%- endfor %}
     };
 {% if options.ctor_convention != ConstructorConvention.DEFAULT %}
-    {%- if options.allocator_is_default_constructible %}
+    {%- if options.allocator_is_default_constructible or composite_type.bit_length_set.fixed_length %}
     // Default constructor
     {%- if composite_type.inner_type is UnionType %}
     {{composite_type|short_reference_name}}() = default;
     {%- else %}
     {{composite_type|short_reference_name}}()
-    {%- if composite_type.fields_except_padding %} :{% endif %}
     {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }}{{ field.data_type | default_value_initializer }}{%if not loop.last %},{%endif %}
+        {%if loop.first %}: {%else%}, {%endif-%}
+        {{ field | id }}{{ field.data_type | default_value_initializer }}
     {%- endfor %}
     {
     }
@@ -102,12 +111,15 @@ struct {% if composite_type.deprecated -%}
 
     // Allocator constructor
     explicit {{composite_type|short_reference_name}}(const allocator_type& allocator)
-    {%- if composite_type.fields_except_padding %} :{% endif %}
     {%- if composite_type.inner_type is UnionType %}
-        union_value{} // can't make use of the allocator with a union
+        : union_value{}
+        {%- if not composite_type.bit_length_set.fixed_length %}
+        , allocator_{allocator}
+        {%- endif %}
     {%- else %}
     {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }}{{ field | value_initializer(SpecialMethod.ALLOCATOR_CONSTRUCTOR) }}{%if not loop.last %},{%endif %}
+        {%if loop.first %}: {%else%}, {%endif-%}
+        {{ field | id }}{{ field | value_initializer(SpecialMethod.ALLOCATOR_CONSTRUCTOR) }}
     {%- endfor %}
     {%- endif %}
     {
@@ -123,9 +135,9 @@ struct {% if composite_type.deprecated -%}
     {%- endfor %}
         const allocator_type& allocator
     {%- if options.allocator_is_default_constructible %} = allocator_type(){% endif %})
-    {%- if composite_type.fields_except_padding %} :{% endif %}
     {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }}{{ field | value_initializer(SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR) }}{%if not loop.last %},{%endif %}
+        {%if loop.first %}: {%else%}, {%endif-%}
+        {{ field | id }}{{ field | value_initializer(SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR) }}
     {%- endfor %}
     {
         (void)allocator; // avoid unused param warning
@@ -138,14 +150,17 @@ struct {% if composite_type.deprecated -%}
 
     // Copy constructor with allocator
     {{composite_type|short_reference_name}}(const {{composite_type|short_reference_name}}& rhs, const allocator_type& allocator)
-    {%- if composite_type.fields_except_padding %} :{% endif %}
     {%- if composite_type.inner_type is UnionType %}
-        union_value{rhs.union_value}  // can't make use of the allocator with a union
+        : union_value{rhs.union_value}
+        {%- if not composite_type.bit_length_set.fixed_length %}
+        , allocator_{allocator}
+        {%- endif %}
     {%- else %}
     {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }}{{ field | value_initializer(SpecialMethod.COPY_CONSTRUCTOR_WITH_ALLOCATOR) }}{%if not loop.last %},{%endif %}
+        {%if loop.first %}: {%else%}, {%endif-%}
+        {{ field | id }}{{ field | value_initializer(SpecialMethod.COPY_CONSTRUCTOR_WITH_ALLOCATOR) }}
     {%- endfor %}
-    {% endif %}
+    {%- endif %}
     {
         (void)rhs;       // avoid unused param warning
         (void)allocator; // avoid unused param warning
@@ -156,12 +171,15 @@ struct {% if composite_type.deprecated -%}
 
     // Move constructor with allocator
     {{composite_type|short_reference_name}}({{composite_type|short_reference_name}}&& rhs, const allocator_type& allocator)
-    {%- if composite_type.fields_except_padding %} :{% endif %}
     {%- if composite_type.inner_type is UnionType %}
-        union_value{} // can't make use of the allocator with a union
+        : union_value{}
+        {%- if not composite_type.bit_length_set.fixed_length %}
+        , allocator_{allocator}
+        {%- endif %}
     {%- else %}
     {%- for field in composite_type.fields_except_padding %}
-        {{ field | id }}{{ field | value_initializer(SpecialMethod.MOVE_CONSTRUCTOR_WITH_ALLOCATOR) }}{%if not loop.last %},{%endif %}
+        {%if loop.first %}: {%else%}, {%endif-%}
+        {{ field | id }}{{ field | value_initializer(SpecialMethod.MOVE_CONSTRUCTOR_WITH_ALLOCATOR) }}
     {%- endfor %}
     {%- endif %}
     {
@@ -169,14 +187,36 @@ struct {% if composite_type.deprecated -%}
         (void)allocator; // avoid unused param warning
     }
 
+    {% if composite_type.inner_type is UnionType and not composite_type.bit_length_set.fixed_length %}
+    // Copy assignment
+    {{composite_type|short_reference_name}}& operator=(const {{composite_type|short_reference_name}}& rhs)
+    {
+        if (this != &rhs)
+        {
+            nunavut::support::copyAssignInplace(allocator_, rhs.allocator_);
+            union_value = rhs.union_value;
+        }
+        return *this;
+    }
+
+    // Move assignment
+    {{composite_type|short_reference_name}}& operator=({{composite_type|short_reference_name}}&& rhs)
+    {
+        nunavut::support::copyAssignInplace(allocator_, rhs.allocator_);
+        union_value = std::move(rhs.union_value);
+        return *this;
+    }
+    {% else %}
     // Copy assignment
     {{composite_type|short_reference_name}}& operator=(const {{composite_type|short_reference_name}}&) = default;
 
     // Move assignment
     {{composite_type|short_reference_name}}& operator=({{composite_type|short_reference_name}}&&) = default;
+    {%- endif %}
 
     // Destructor
     ~{{composite_type|short_reference_name}}() = default;
+
 {%- endif %}
 
 {%- for constant in composite_type.constants %}
@@ -190,36 +230,51 @@ struct {% if composite_type.deprecated -%}
 {%- endfor -%}
 {%- if composite_type.inner_type is UnionType -%}
 {%- ifuses "std_variant" -%}
-{% include '_fields_as_variant.j2' %}
+{% include '_fields_as_std_variant.j2' %}
+{%- else -%}
+{%- ifuses "cetl" -%}
+{% include '_fields_as_cetl_variant.j2' %}
 {%- else -%}
 {% include '_fields_as_union.j2' %}
 {%- endifuses -%}
+{%- endifuses -%}
+{%- if options.ctor_convention != ConstructorConvention.DEFAULT %}
+{%- if composite_type.inner_type is UnionType and not composite_type.bit_length_set.fixed_length %}
+    allocator_type allocator_;
+{%- endif %}
+{%- endif %}
 {%- for field in composite_type.fields_except_padding %}
-    bool is_{{field.name|id}}() const {
+
+    bool is_{{field.name|id}}() const
+    {
         return VariantType::IndexOf::{{field.name|id}} == union_value.index();
     }
-
-    typename std::add_pointer<_traits_::TypeOf::{{field.name|id}}>::type get_{{field.name|id}}_if(){
+    typename std::add_pointer<_traits_::TypeOf::{{field.name|id}}>::type get_{{field.name|id}}_if()
+    {
         return VariantType::get_if<VariantType::IndexOf::{{field.name|id}}>(&union_value);
     }
-
-    typename std::add_pointer<const _traits_::TypeOf::{{field.name|id}}>::type get_{{field.name|id}}_if() const{
+    typename std::add_pointer<const _traits_::TypeOf::{{field.name|id}}>::type get_{{field.name|id}}_if() const
+    {
         return VariantType::get_if<VariantType::IndexOf::{{field.name|id}}>(&union_value);
     }
-
-    typename std::add_lvalue_reference<_traits_::TypeOf::{{field.name|id}}>::type get_{{field.name|id}}(){
-        {{ assert('is_%s()' | format(field.name | id)) }}
+    typename std::add_lvalue_reference<_traits_::TypeOf::{{field.name|id}}>::type get_{{field.name|id}}()
+    {
+        {{ assert('is_%s()' | format(field.name|id)) }}
         return *VariantType::get_if<VariantType::IndexOf::{{field.name|id}}>(&union_value);
     }
-
-    typename std::add_lvalue_reference<const _traits_::TypeOf::{{field.name|id}}>::type get_{{field.name|id}}() const{
-        {{ assert('is_%s()' | format(field.name | id)) }}
+    typename std::add_lvalue_reference<const _traits_::TypeOf::{{field.name|id}}>::type get_{{field.name|id}}() const
+    {
+        {{ assert('is_%s()' | format(field.name|id)) }}
         return *VariantType::get_if<VariantType::IndexOf::{{field.name|id}}>(&union_value);
     }
-
     template<class... Args> typename std::add_lvalue_reference<_traits_::TypeOf::{{field.name|id}}>::type
-    set_{{field.name|id}}(Args&&...v){
+    set_{{field.name|id}}(Args&&...v)
+    {
+        {%- if composite_type.inner_type is UnionType and not composite_type.bit_length_set.fixed_length %}
+        return union_value.emplace<VariantType::IndexOf::{{field.name|id}}>(v..., allocator_);
+        {%- else -%}
         return union_value.emplace<VariantType::IndexOf::{{field.name|id}}>(v...);
+        {% endif %}
     }
 {%- endfor %}
 {%- else -%}

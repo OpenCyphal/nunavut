@@ -77,7 +77,8 @@ cetl++14-17.json
           "allocator_include": "\"cetl/pf17/sys/memory_resource.hpp\"",
           "allocator_type": "cetl::pf17::pmr::polymorphic_allocator",
           "allocator_is_default_constructible": false,
-          "ctor_convention": "uses-trailing-allocator"
+          "ctor_convention": "uses-trailing-allocator",
+          "variant_include": "\"cetl/pf17/variant.hpp\"",
         }
       }
     }
