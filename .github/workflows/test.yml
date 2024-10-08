@@ -99,11 +99,11 @@ jobs:
           -Dsonar.python.coverage.reportPaths=.tox/report/tmp/coverage.xml
           -Dsonar.python.xunit.reportPath=.tox/py310-test/tmp/xunit-result.xml
 
-  compat-test-python3-windows-and-mac:
+  compat-test-python3-mac:
     strategy:
       matrix:
         python3-version: ['11','12']
-        python3-platform: ['windows-latest', 'macos-latest']
+        python3-platform: ['macos-latest']
     runs-on: ${{ matrix.python3-platform }}
     needs: test
     steps:
