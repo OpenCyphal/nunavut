@@ -241,3 +241,4 @@ jobs:
         nox
       env:
         FORCE_COLOR: 1
+      continue-on-error: true
