@@ -212,7 +212,7 @@ class TokenEncoder:
             token_encoding_rules_by_identifier_type = {
                 'all':
                     [
-                        '(^\\d{1})|([^a-zA-Z0-9_]+)'
+                        '(^\\\\d{1})|([^a-zA-Z0-9_]+)'
                     ]
             }
             whitespace_encoding_char = '_'
@@ -272,7 +272,7 @@ class TokenEncoder:
         token_encoding_rules_by_identifier_type = {
             'all':
                 [
-                    '(^\\d{1})|([^a-zA-Z0-9_]+)',
+                    '(^\\\\d{1})|([^a-zA-Z0-9_]+)',
                     '^(__)|(^(_)[A-Z])'
                 ]
         }
