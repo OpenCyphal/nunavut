@@ -270,11 +270,12 @@ struct {% if composite_type.deprecated -%}
     template<class... Args> typename std::add_lvalue_reference<_traits_::TypeOf::{{field.name|id}}>::type
     set_{{field.name|id}}(Args&&...v)
     {
-        {%- if composite_type.inner_type is UnionType and not composite_type.bit_length_set.fixed_length %}
+        {% if options.ctor_convention != ConstructorConvention.DEFAULT
+          and composite_type.inner_type is UnionType and not composite_type.bit_length_set.fixed_length %}
         return union_value.emplace<VariantType::IndexOf::{{field.name|id}}>(v..., allocator_);
         {%- else -%}
         return union_value.emplace<VariantType::IndexOf::{{field.name|id}}>(v...);
-        {% endif %}
+        {%- endif %}
     }
 {%- endfor %}
 {%- else -%}
