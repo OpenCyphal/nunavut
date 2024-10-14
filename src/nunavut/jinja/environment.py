@@ -478,7 +478,7 @@ class CodeGenEnvironment(Environment):
             {
                 "omit": omit_serialization,  # deprecated. Use "options.omit_serialization_support".
                 "namespace": ".".join(support_namespace),
-                "version": f"{support_version[0]}.{support_version[1]}.{support_version[2]}",
+                "version": (support_version[0], support_version[1], support_version[2]),
             },
         )
 

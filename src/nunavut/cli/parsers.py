@@ -208,7 +208,7 @@ class NunavutArgumentParser(argparse.ArgumentParser):
                     "/two/to/file.dsdl",
                     "three/path/four:to/file.dsdl",
                     "/five/path/six:to/file.dsdl",
-                    "seven/path/eight\\:to/file.dsdl",
+                    "seven/path/eight\\\\:to/file.dsdl",
                     "/nine/path/ten/:to/file.dsdl",
                 ],
                 False,
@@ -225,7 +225,7 @@ class NunavutArgumentParser(argparse.ArgumentParser):
             assert Path("/two/to/file.dsdl") in target_files
             assert Path("four/to/file.dsdl") in target_files
             assert Path("six/to/file.dsdl") in target_files
-            assert Path("seven/path/eight\\:to/file.dsdl") in target_files
+            assert Path("seven/path/eight\\\\:to/file.dsdl") in target_files
             assert Path("ten/to/file.dsdl") in target_files
 
             # Happy path: default root path, no dependencies
