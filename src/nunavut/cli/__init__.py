@@ -784,7 +784,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     ln_opt_group.add_argument(
         "--language-standard",
         "-std",
-        choices=["c11", "c++14", "cetl++14-17", "c++17", "c++17-pmr", "c++20"],
+        choices=["c11", "c++14", "cetl++14-17", "c++17", "c++17-pmr", "c++20", "c++20-pmr"],
         help=textwrap.dedent(
             """
 

@@ -341,13 +341,15 @@ class Language(BaseLanguage):
             from nunavut.lang import Language, LanguageContextBuilder
             from nunavut._dependencies import Dependencies
 
-            def do_includes_test(override_vla_include, override_allocator_include):
+            def do_includes_test(override_vla_include, override_allocator_include, override_variant_include):
 
                 foobar_vla_header_name = "foobar_vla.hpp"
                 foobar_allocator_header_name = "foobar_allocator.hpp"
+                foobar_variant_header_name = "foobar_variant.hpp"
                 language_options = {
                     "variable_array_type_include": '' if not override_vla_include else foobar_vla_header_name,
-                    "allocator_include": '' if not override_allocator_include else foobar_allocator_header_name
+                    "allocator_include": '' if not override_allocator_include else foobar_allocator_header_name,
+                    "variant_include": '' if not override_variant_include else foobar_variant_header_name
                 }
 
                 lang_cpp = (
@@ -366,11 +368,14 @@ class Language(BaseLanguage):
 
                 found_foobar_vla_header_name = False
                 found_foobar_allocator_header_name = False
+                found_foobar_variant_header_name = False
                 for include in lang_cpp.get_includes(test_dependencies):
                     if foobar_vla_header_name in include:
                         found_foobar_vla_header_name = True
                     if foobar_allocator_header_name in include:
                         found_foobar_allocator_header_name = True
+                    if foobar_variant_header_name in include:
+                        found_foobar_variant_header_name = True
 
                 if override_vla_include:
                     assert found_foobar_vla_header_name
@@ -382,10 +387,19 @@ class Language(BaseLanguage):
                 else:
                     assert not found_foobar_allocator_header_name
 
-            do_includes_test(True, True)
-            do_includes_test(True, False)
-            do_includes_test(False, False)
-            do_includes_test(False, True)
+                if override_variant_include:
+                    assert found_foobar_variant_header_name
+                else:
+                    assert not found_foobar_variant_header_name
+
+            do_includes_test(True, True, True)
+            do_includes_test(True, False, True)
+            do_includes_test(False, False, True)
+            do_includes_test(False, True, True)
+            do_includes_test(True, True, False)
+            do_includes_test(True, False, False)
+            do_includes_test(False, False, False)
+            do_includes_test(False, True, False)
         """
         std_includes: typing.List[str] = []
         std_includes.append("limits")  # we always include limits to support static assertions
@@ -403,6 +417,10 @@ class Language(BaseLanguage):
         allocator_include = str(self.get_option("allocator_include", ""))
         if len(allocator_include) > 0:
             includes_formatted.append(allocator_include)
+
+        variant_include = str(self.get_option("variant_include", ""))
+        if len(variant_include) > 0:
+            includes_formatted.append(variant_include)
 
         if dep_types.uses_variable_length_array:
             variable_array_include = str(self.get_option("variable_array_type_include", ""))

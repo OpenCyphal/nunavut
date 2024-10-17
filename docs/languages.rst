@@ -21,9 +21,28 @@ implementation to use, create a properties override json file and pass it to nnv
 allocator is optional (If ctor_convention is set to "default" then the allocator_include and allocator_type
 properties don't need to be set.)
 
-Alternatively, you may specify the language standard argument as -std=c++17-pmr or -std=cetl++14-17 as short-hand for
-the following configurations shown below.  Note that "cetl++14-17" means target C++14 but use the CETL C++17 polyfill
-types.
+Alternatively, you may specify the language standard argument as -std=c++20-pmr, -std=c++17-pmr or -std=cetl++14-17
+as short-hand for the following configurations shown below.  Note that "cetl++14-17" means target C++14 but use
+the CETL C++17 polyfill types.
+
+c++20-pmr.json
+"""""""""""""""""
+
+.. code-block :: json
+
+    {
+      "nunavut.lang.cpp": {
+        "options": {
+          "variable_array_type_include": "<vector>",
+          "variable_array_type_template": "std::vector<{TYPE}, {REBIND_ALLOCATOR}>",
+          "variable_array_type_constructor_args": "",
+          "allocator_include": "<memory>",
+          "allocator_type": "std::pmr::polymorphic_allocator",
+          "allocator_is_default_constructible": true,
+          "ctor_convention": "uses-trailing-allocator"
+        }
+      }
+    }
 
 c++17-pmr.json
 """""""""""""""""
@@ -58,7 +77,8 @@ cetl++14-17.json
           "allocator_include": "\"cetl/pf17/sys/memory_resource.hpp\"",
           "allocator_type": "cetl::pf17::pmr::polymorphic_allocator",
           "allocator_is_default_constructible": false,
-          "ctor_convention": "uses-trailing-allocator"
+          "ctor_convention": "uses-trailing-allocator",
+          "variant_include": "\"cetl/pf17/variant.hpp\"",
         }
       }
     }
