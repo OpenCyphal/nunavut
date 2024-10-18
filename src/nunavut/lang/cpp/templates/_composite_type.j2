@@ -114,7 +114,7 @@ struct {% if composite_type.deprecated -%}
     {%- if composite_type.inner_type is UnionType %}
         : union_value{}
         {%- if not composite_type.bit_length_set.fixed_length %}
-        , allocator_{allocator.select_on_container_copy_construction()}
+        , allocator_{allocator}
         {%- endif %}
     {%- else %}
     {%- for field in composite_type.fields_except_padding %}
@@ -153,7 +153,7 @@ struct {% if composite_type.deprecated -%}
     {%- if composite_type.inner_type is UnionType %}
         : union_value{rhs.union_value}
         {%- if not composite_type.bit_length_set.fixed_length %}
-        , allocator_{allocator.select_on_container_copy_construction()}
+        , allocator_{allocator}
         {%- endif %}
     {%- else %}
     {%- for field in composite_type.fields_except_padding %}
@@ -174,7 +174,7 @@ struct {% if composite_type.deprecated -%}
     {%- if composite_type.inner_type is UnionType %}
         : union_value{}
         {%- if not composite_type.bit_length_set.fixed_length %}
-        , allocator_{allocator.select_on_container_copy_construction()}
+        , allocator_{allocator}
         {%- endif %}
     {%- else %}
     {%- for field in composite_type.fields_except_padding %}
@@ -193,7 +193,7 @@ struct {% if composite_type.deprecated -%}
     {
         if (this != &rhs)
         {
-            nunavut::support::assignInplace(allocator_, rhs.allocator_.select_on_container_copy_construction());
+            nunavut::support::assignInplace(allocator_, rhs.allocator_);
             union_value = rhs.union_value;
         }
         return *this;
@@ -202,7 +202,7 @@ struct {% if composite_type.deprecated -%}
     // Move assignment
     {{composite_type|short_reference_name}}& operator=({{composite_type|short_reference_name}}&& rhs)
     {
-        nunavut::support::assignInplace(allocator_, rhs.allocator_.select_on_container_copy_construction());
+        nunavut::support::assignInplace(allocator_, std::move(rhs.allocator_));
         union_value = std::move(rhs.union_value);
         return *this;
     }
