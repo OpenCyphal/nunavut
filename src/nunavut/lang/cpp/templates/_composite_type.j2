@@ -64,7 +64,7 @@ struct {% if composite_type.deprecated -%}
 {% else %}
         static constexpr bool IsServiceType = false;
 {% endif %}
-        static constexpr char FullNameAndVersion[] = "{{ composite_type }}";
+        static constexpr const char* FullNameAndVersion() { return "{{ composite_type }}"; }
     {%  assert composite_type.extent % 8 == 0 %}
     {%- assert composite_type.inner_type.extent % 8 == 0 %}
         /// Extent is the minimum amount of memory required to hold any serialized representation of any compatible
