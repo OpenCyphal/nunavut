@@ -390,6 +390,8 @@ function(runTestCpp)
         #
         target_compile_options(${NATIVE_TEST_NAME} PRIVATE "-Wno-old-style-cast")
     endif()
+    # Some tests use deprecated DSDLs
+    target_compile_options(${NATIVE_TEST_NAME} PRIVATE "-Wno-deprecated-declarations")
     target_link_libraries(${NATIVE_TEST_NAME} PUBLIC o1heap)
     target_include_directories(${NATIVE_TEST_NAME} PUBLIC "${NUNAVUT_PROJECT_ROOT}/submodules/CETL/include")
     define_native_test_run(TEST_NAME ${NATIVE_TEST_NAME} OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
