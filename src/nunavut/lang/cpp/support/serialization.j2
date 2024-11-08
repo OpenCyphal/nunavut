@@ -41,12 +41,13 @@ static_assert(__cplusplus >= 201402L,
 #ifndef NUNAVUT_ASSERT
 // By default Nunavut does not generate assert statements since the logic to halt a program is platform
 // dependent and because this header requires an absolute minimum from a platform and from the C standard library.
-// Most platforms can simply define "NUNAVUT_ASSERT(x)=assert(x)" (<assert.h> is always included by Nunavut).
+// Most platforms can simply define "NUNAVUT_ASSERT(x)=assert(x)" (<cassert> is always included by Nunavut).
 #   error "You must either define NUNAVUT_ASSERT or you need to disable assertions" \
           " when generating serialization support code using Nunavut language options"
 #endif
 {% endif -%}
 
+#include <cassert> // for assert
 #include <cstring> // for std::size_t
 {% if not options.omit_float_serialization_support -%}
 #include <cmath>  // For isfinite().
