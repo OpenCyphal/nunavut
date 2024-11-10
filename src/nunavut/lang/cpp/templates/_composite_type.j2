@@ -93,6 +93,17 @@ struct {% if composite_type.deprecated -%}
         };
     {%- endif %}
 {%- endfor %}
+{%- for field in composite_type.fields_except_padding if field.data_type is ArrayType %}
+    {%- if loop.first %}
+        struct ArrayCapacity
+        {
+            ArrayCapacity() = delete;
+    {%- endif %}
+            static constexpr std::size_t {{field.name|id}} = {{ field.data_type.capacity }}UL;
+    {%- if loop.last %}
+        };
+    {%- endif %}
+{%- endfor %}
     };
 {% if options.ctor_convention != ConstructorConvention.DEFAULT %}
     {%- if options.allocator_is_default_constructible or composite_type.bit_length_set.fixed_length %}

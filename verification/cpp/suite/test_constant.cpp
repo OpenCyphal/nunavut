@@ -30,45 +30,19 @@ TEST(ConstantTests, Struct)
                 Le(regulated::basics::Struct__0_1::_traits_::SerializationBufferSizeBytes * 8U));
     EXPECT_TRUE(regulated::basics::Struct__0_1::CONSTANT_TRUTH);
 
-// TODO: Uncomment when some form of "ARRAY_CAPACITY" is generated.
-/*
     // Field metadata. Expected values encoded in the field names.
-    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::i10_4_ARRAY_CAPACITY_, 4);
-    EXPECT_FALSE(regulated::basics::Struct__0_1::_traits_::i10_4_ARRAY_IS_VARIABLE_LENGTH_);
-
-    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::f16_le2_ARRAY_CAPACITY_, 2);
-    EXPECT_TRUE(regulated::basics::Struct__0_1::_traits_::f16_le2_ARRAY_IS_VARIABLE_LENGTH_);
-
-    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::unaligned_bitpacked_3_ARRAY_CAPACITY_, 3);
-    EXPECT_FALSE(regulated::basics::Struct__0_1::_traits_::unaligned_bitpacked_3_ARRAY_IS_VARIABLE_LENGTH_);
-
-    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::bytes_lt3_ARRAY_CAPACITY_, 2);
-    EXPECT_TRUE(regulated::basics::Struct__0_1::_traits_::bytes_lt3_ARRAY_IS_VARIABLE_LENGTH_);
-
-    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::bytes_3_ARRAY_CAPACITY_, 3);
-    EXPECT_FALSE(regulated::basics::Struct__0_1::_traits_::bytes_3_ARRAY_IS_VARIABLE_LENGTH_);
-
-    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::u2_le4_ARRAY_CAPACITY_, 4);
-    EXPECT_TRUE(regulated::basics::Struct__0_1::_traits_::u2_le4_ARRAY_IS_VARIABLE_LENGTH_);
-
-    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::delimited_fix_le2_ARRAY_CAPACITY_, 2);
-    EXPECT_TRUE(regulated::basics::Struct__0_1::_traits_::delimited_fix_le2_ARRAY_IS_VARIABLE_LENGTH_);
-
-    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::u16_2_ARRAY_CAPACITY_, 2);
-    EXPECT_FALSE(regulated::basics::Struct__0_1::_traits_::u16_2_ARRAY_IS_VARIABLE_LENGTH_);
-
-    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::aligned_bitpacked_3_ARRAY_CAPACITY_, 3);
-    EXPECT_FALSE(regulated::basics::Struct__0_1::_traits_::aligned_bitpacked_3_ARRAY_IS_VARIABLE_LENGTH_);
-
-    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::unaligned_bitpacked_lt3_ARRAY_CAPACITY_, 2);
-    EXPECT_TRUE(regulated::basics::Struct__0_1::_traits_::unaligned_bitpacked_lt3_ARRAY_IS_VARIABLE_LENGTH_);
-
-    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::delimited_var_2_ARRAY_CAPACITY_, 2);
-    EXPECT_FALSE(regulated::basics::Struct__0_1::_traits_::delimited_var_2_ARRAY_IS_VARIABLE_LENGTH_);
-
-    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::aligned_bitpacked_le3_ARRAY_CAPACITY_, 3);
-    EXPECT_TRUE(regulated::basics::Struct__0_1::_traits_::aligned_bitpacked_le3_ARRAY_IS_VARIABLE_LENGTH_);
-*/
+    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::ArrayCapacity::i10_4, 4);
+    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::ArrayCapacity::f16_le2, 2);
+    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::ArrayCapacity::unaligned_bitpacked_3, 3);
+    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::ArrayCapacity::bytes_lt3, 2);
+    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::ArrayCapacity::bytes_3, 3);
+    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::ArrayCapacity::u2_le4, 4);
+    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::ArrayCapacity::delimited_fix_le2, 2);
+    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::ArrayCapacity::u16_2, 2);
+    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::ArrayCapacity::aligned_bitpacked_3, 3);
+    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::ArrayCapacity::unaligned_bitpacked_lt3, 2);
+    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::ArrayCapacity::delimited_var_2, 2);
+    EXPECT_THAT(regulated::basics::Struct__0_1::_traits_::ArrayCapacity::aligned_bitpacked_le3, 3);
 }
 
 TEST(ConstantTests, Union)
@@ -80,15 +54,9 @@ TEST(ConstantTests, Union)
                 1U + regulated::basics::Struct__0_1::_traits_::ExtentBytes);  // Largest option + union tag field
     EXPECT_THAT(regulated::basics::Union_0_1::VariantType::MAX_INDEX, 3);
 
-// TODO: Uncomment when some form of "ARRAY_CAPACITY" is generated.
-/*
     // Field metadata. Expected values encoded in the field names.
-    EXPECT_THAT(regulated::basics::Union_0_1::_traits__delimited_fix_le2_ARRAY_CAPACITY_, 2);
-    EXPECT_FALSE(regulated::basics::Union_0_1::_traits__delimited_fix_le2_ARRAY_IS_VARIABLE_LENGTH_);
-
-    EXPECT_THAT(regulated::basics::Union_0_1::_traits__delimited_var_le2_ARRAY_CAPACITY_, 2);
-    EXPECT_TRUE(regulated::basics::Union_0_1::_traits__delimited_var_le2_ARRAY_IS_VARIABLE_LENGTH_);
-*/
+    EXPECT_THAT(regulated::basics::Union_0_1::_traits_::ArrayCapacity::delimited_fix_le2, 2);
+    EXPECT_THAT(regulated::basics::Union_0_1::_traits_::ArrayCapacity::delimited_var_le2, 2);
 }
 
 TEST(ConstantTests, Service)
