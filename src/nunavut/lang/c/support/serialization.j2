@@ -182,7 +182,8 @@ static inline void nunavutCopyBits(void* const dst,
             const uint8_t mask = (uint8_t)((1U << length_mod) - 1U);
             // No lint for "The left operand of '&' is a garbage value" because
             // these so called "garbage" bits of `*last_dst` won't be used during deserialization.
-            *last_dst = (*last_dst & (uint8_t)~mask) | (*last_src & mask);  // NOLINT
+            // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
+            *last_dst = (*last_dst & (uint8_t)~mask) | (*last_src & mask);
         }
     }
     else
