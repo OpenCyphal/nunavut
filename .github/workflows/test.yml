@@ -13,7 +13,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: ghcr.io/opencyphal/toxic:tx22.4.2
+    container: ghcr.io/opencyphal/toxic:tx22.4.3
     steps:
     - uses: actions/checkout@v4
       with:
@@ -21,11 +21,11 @@ jobs:
     - name: lint
       run: tox -e lint
     - name: test-nnvg
-      run: tox -e py310-nnvg
+      run: tox -e py311-nnvg
     - name: test-doctest
-      run: tox -e py310-doctest,py310-rstdoctest
+      run: tox -e py311-doctest,py311-rstdoctest
     - name: test-pytest
-      run: tox -e py310-test
+      run: tox -e py311-test
     - name: test-report
       run: tox -e report
     - name: package
@@ -39,7 +39,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: xunit-results
-        path: .tox/py310-test/tmp/xunit-result.xml
+        path: .tox/py311-test/tmp/xunit-result.xml
     - name: upload-package
       uses: actions/upload-artifact@v4
       with:
@@ -54,7 +54,7 @@ jobs:
       with:
         # Disabling shallow clone is recommended for improving relevancy of reporting
         fetch-depth: 0
-    - name: download-converage-reports
+    - name: download-coverage-reports
       uses: actions/download-artifact@v4
       with:
         name: coverage-reports
@@ -63,7 +63,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: xunit-results
-        path: .tox/py310-test/tmp/
+        path: .tox/py311-test/tmp/
     - name: set-environment
       run: |
         echo NUNAVUT_MAJOR_MINOR_VERSION=$(./.github/verify.py --major-minor-version-only) >> $GITHUB_ENV
@@ -83,7 +83,7 @@ jobs:
           -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }}
           -Dsonar.python.version=python3.11
           -Dsonar.python.coverage.reportPaths=.tox/report/tmp/coverage.xml
-          -Dsonar.python.xunit.reportPath=.tox/py310-test/tmp/xunit-result.xml
+          -Dsonar.python.xunit.reportPath=.tox/py311-test/tmp/xunit-result.xml
     - name: report-pr
       if: ${{ github.event_name == 'pull_request' }}
       uses: sonarsource/sonarcloud-github-action@master
@@ -97,12 +97,12 @@ jobs:
           -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }}
           -Dsonar.python.version=python3.11
           -Dsonar.python.coverage.reportPaths=.tox/report/tmp/coverage.xml
-          -Dsonar.python.xunit.reportPath=.tox/py310-test/tmp/xunit-result.xml
+          -Dsonar.python.xunit.reportPath=.tox/py311-test/tmp/xunit-result.xml
 
   compat-test-python3-mac:
     strategy:
       matrix:
-        python3-version: ['11','12']
+        python3-version: ['11','12', '13']
         python3-platform: ['macos-latest']
     runs-on: ${{ matrix.python3-platform }}
     needs: test
@@ -122,9 +122,9 @@ jobs:
   compat-test-python3-ubuntu:
     strategy:
       matrix:
-        python3-version: ['8', '9', '10', '11', '12']
+        python3-version: ['8', '9', '10', '11', '12', '13']
     runs-on: ubuntu-latest
-    container: ghcr.io/opencyphal/toxic:tx22.4.2
+    container: ghcr.io/opencyphal/toxic:tx22.4.3
     needs: test
     steps:
     - uses: actions/checkout@v4
@@ -262,7 +262,7 @@ jobs:
   language-verification-python:
     runs-on: ubuntu-latest
     needs: test
-    container: ghcr.io/opencyphal/toxic:tx22.4.2
+    container: ghcr.io/opencyphal/toxic:tx22.4.3
     steps:
     - uses: actions/checkout@v4
       with:

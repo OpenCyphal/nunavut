@@ -8,7 +8,7 @@ jobs:
   release:
     if: ${{ github.event_name == 'release' && !github.event.release.prerelease }}
     runs-on: ubuntu-latest
-    container: ghcr.io/opencyphal/toxic:tx22.4.2
+    container: ghcr.io/opencyphal/toxic:tx22.4.3
     steps:
     - uses: actions/checkout@v4
       with:
@@ -25,7 +25,7 @@ jobs:
     - name: test-nnvg
       run: tox -e py311-nnvg
     - name: test-doctest
-      run: tox -e py311-doctest,py310-rstdoctest
+      run: tox -e py311-doctest,py311-rstdoctest
     - name: test-pytest
       run: tox -e py311-test
     - name: package

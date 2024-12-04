@@ -253,6 +253,124 @@ def test_list_outputs(gen_paths: Any, run_nnvg_main: Callable) -> None:
     assert expected_output == completed_wo_empty
 
 
+@pytest.mark.parametrize("list_format", ["csv", "scsv"])
+def test_list_inputs_and_outputs(gen_paths: Any, run_nnvg_main: Callable, list_format: str) -> None:
+    """
+    Verifies nnvg --list-output --list-input --list-format [format].
+    """
+    expected_inputs_result = sorted(
+        [
+            str(gen_paths.templates_dir / Path("Any.j2")),
+            str(gen_paths.dsdl_dir / Path("uavcan", "test", "TestType.0.8.dsdl")),
+            str(gen_paths.dsdl_dir / Path("scotec", "Timer.1.0.dsdl")),
+        ]
+    )
+
+    expected_outputs_result = sorted(
+        [
+            str(gen_paths.out_dir / Path("uavcan", "test", "TestType_0_8.json")),
+            str(gen_paths.out_dir / Path("scotec", "Timer_1_0.json")),
+        ]
+    )
+
+    nnvg_args = [
+        "--no-target-namespaces",
+        "--templates",
+        gen_paths.templates_dir.as_posix(),
+        "--outdir",
+        gen_paths.out_dir.as_posix(),
+        "--output-extension",
+        ".json",
+        "-l",
+        "js",
+        "-Xlang",
+        "--omit-serialization-support",
+        "--lookup-dir",
+        (gen_paths.dsdl_dir / Path("scotec")).as_posix(),
+        "--list-outputs",
+        "--list-inputs",
+        "--list-format",
+        list_format,
+        f"{(gen_paths.dsdl_dir / Path('uavcan')).as_posix()}:{Path('test', 'TestType.0.8.dsdl').as_posix()}",
+    ]
+
+    expected_separator = ";" if list_format == "scsv" else ","
+    result = run_nnvg_main(gen_paths, nnvg_args)
+    assert 0 == result.returncode
+    raw_result = result.stdout.decode("utf-8")
+    completed = raw_result.split(2 * expected_separator)
+    assert 2 == len(completed)
+    completed_inputs = sorted(completed[0].split(expected_separator))
+    completed_outputs = sorted(completed[1].split(expected_separator))
+    assert expected_inputs_result == completed_inputs
+    assert expected_outputs_result == completed_outputs
+
+
+@pytest.mark.parametrize("list_format", ["csv", "scsv"])
+def test_list_config_w_scsv(gen_paths: Any, run_nnvg_main: Callable, list_format: str) -> None:
+    """
+    Covers failure when using --list-configuration with unsupported list formats.
+    """
+    nnvg_args = [
+        "--no-target-namespaces",
+        "--templates",
+        gen_paths.templates_dir.as_posix(),
+        "--outdir",
+        gen_paths.out_dir.as_posix(),
+        "--output-extension",
+        ".json",
+        "-l",
+        "js",
+        "-Xlang",
+        "--omit-serialization-support",
+        "--lookup-dir",
+        (gen_paths.dsdl_dir / Path("scotec")).as_posix(),
+        "--list-configuration",
+        "--list-format",
+        list_format,
+        f"{(gen_paths.dsdl_dir / Path('uavcan')).as_posix()}:{Path('test', 'TestType.0.8.dsdl').as_posix()}",
+    ]
+
+    with pytest.raises(
+        AssertionError, match=rf".*--list-format {list_format} is not supported for --list-configuration.*"
+    ):
+        assert 0 == run_nnvg_main(gen_paths, nnvg_args, raise_argument_error=True)
+
+
+@pytest.mark.parametrize("json_format", ["json", "json-pretty"])
+def test_list_config_w_json(gen_paths: Any, run_nnvg_main: Callable, json_format: str) -> None:
+    """
+    Covers using --list-configuration with --list-format json and variations.
+    """
+    nnvg_args = [
+        "--no-target-namespaces",
+        "--templates",
+        gen_paths.templates_dir.as_posix(),
+        "--outdir",
+        gen_paths.out_dir.as_posix(),
+        "--output-extension",
+        ".json",
+        "-l",
+        "js",
+        "-Xlang",
+        "--omit-serialization-support",
+        "--lookup-dir",
+        (gen_paths.dsdl_dir / Path("scotec")).as_posix(),
+        "--list-configuration",
+        "--list-format",
+        json_format,
+        f"{(gen_paths.dsdl_dir / Path('uavcan')).as_posix()}:{Path('test', 'TestType.0.8.dsdl').as_posix()}",
+    ]
+
+    result = run_nnvg_main(gen_paths, nnvg_args)
+    assert 0 == result.returncode
+    raw_result = result.stdout.decode("utf-8")
+    result_obj = json.loads(raw_result)
+    assert isinstance(result_obj, dict)
+    assert "configuration" in result_obj
+    assert isinstance(result_obj["configuration"], dict)
+
+
 def test_list_support_outputs_builtin(gen_paths: Any, run_nnvg_main: Callable) -> None:
     """
     Verifies nnvg's --list-output mode for internal language support.
@@ -754,19 +872,24 @@ def test_language_allow_unregulated_fixed_port_id(gen_paths: Any, run_nnvg_main:
     assert expected_output == completed_wo_empty
 
 
-def test_list_configuration(gen_paths: Any, run_nnvg_main: Callable) -> None:
+@pytest.mark.parametrize("json_format", ["json", "json-pretty"])
+def test_list_configuration(gen_paths: Any, run_nnvg_main: Callable, json_format: str) -> None:
     """
     Verifies nnvg's --list-configuration option
     """
-    nnvg_args = ["--list-configuration"]
+    nnvg_args = ["--list-configuration", "--list-format", json_format]
 
-    completed = run_nnvg_main(gen_paths, nnvg_args).stdout.decode("utf-8")
+    result = run_nnvg_main(gen_paths, nnvg_args)
+    completed = result.stdout.decode("utf-8")
+    assert completed
     parsed_config = json.loads(completed)
     default_target_section_name = LanguageClassLoader.to_language_module_name(
         LanguageContextBuilder.DEFAULT_TARGET_LANGUAGE
     )
-    assert len(parsed_config["sections"][default_target_section_name]) > 0
-    print(json.dumps(parsed_config))
+    assert "configuration" in parsed_config
+    config = parsed_config["configuration"]
+    assert len(config["sections"][default_target_section_name]) > 0
+    print(json.dumps(config))
 
 
 def test_colon_syntax(gen_paths: Any, run_nnvg_main: Callable) -> None:

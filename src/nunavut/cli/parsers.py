@@ -12,6 +12,7 @@ import itertools
 import os
 import re
 import sys
+import textwrap
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -181,6 +182,19 @@ class NunavutArgumentParser(argparse.ArgumentParser):
 
         # Generator arguments
         args.generate_namespace_types = YesNoDefault.YES if args.generate_namespace_types else YesNoDefault.DEFAULT
+
+        # Can't list configuration as csv. Has to be a structured return format.
+        if args.list_configuration and args.list_format in ("scsv", "csv"):
+            self.error(
+                textwrap.dedent(
+                    f"""
+
+            --list-format {args.list_format} is not supported for --list-configuration. Use a structured format like
+            --list-format json to list configuration information.
+
+            """
+                )
+            )
 
     def _parse_target_paths(
         self, target_files_or_root_namespace: Optional[List[str]], greedy: bool, error_if_folder: bool = False

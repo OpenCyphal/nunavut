@@ -72,8 +72,8 @@ To run the full suite of `tox`_ tests locally you'll need docker. Once you have 
 and running do::
 
     git submodule update --init --recursive
-    docker pull ghcr.io/opencyphal/toxic:tx22.4.2
-    docker run --rm -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.2 tox
+    docker pull ghcr.io/opencyphal/toxic:tx22.4.3
+    docker run --rm -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.3 tox
 
 To run a limited suite using only locally available interpreters directly on your host machine,
 skip the docker invocations and use ``tox run -s``.
@@ -198,7 +198,7 @@ Building The Docs
 We rely on `read the docs`_ to build our documentation from github but we also verify this build
 as part of our tox build. This means you can view a local copy after completing a full, successful
 test run (See `Running The Tests`_) or do
-:code:`docker run --rm -t -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.2 /bin/sh -c "tox run -e docs"` to build
+:code:`docker run --rm -t -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.3 /bin/sh -c "tox run -e docs"` to build
 the docs target. You can open the index.html under ``.tox_{host platform}/docs/tmp/index.html`` or run a local
 web-server::
 

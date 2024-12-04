@@ -48,6 +48,8 @@ The one Namespace type can play three roles:
 """
 
 import collections
+import multiprocessing
+import multiprocessing.pool
 import sys
 from functools import singledispatchmethod
 from os import PathLike
@@ -86,49 +88,102 @@ if sys.version_info < (3, 9):
 # +--------------------------------------------------------------------------------------------------------------------+
 class Generatable(type(Path())):  # type: ignore
     """
-    A file that can be generated from a pydsdl type. The override of the __new__ operator is required until python 3.12.
+    A file that can be generated from a pydsdl type.
 
+    .. invisible-code-block: python
+
+        from nunavut._namespace import Generatable
+        from pathlib import Path
+        from unittest.mock import MagicMock
+        import pydsdl
+
+        dsdl_definition = MagicMock(spec=pydsdl.CompositeType)
+        dependent_types = [MagicMock(spec=pydsdl.CompositeType)]
+
+    .. code-block:: python
+
+        # Generatables combine a Path to the generated file with the pydsdl type that can be reified into the file
+        # and the types that are required to generate the file. This is useful for tracking dependencies and
+        # generating files in the correct order. It also provides a representation of the generated file before it
+        # is actually generated.
+
+        generatable = Generatable(dsdl_definition, dependent_types, "test.h")
+
+        # This is a Generatable object.
+        assert isinstance(generatable, Generatable)
+        assert generatable.definition == dsdl_definition
+        assert generatable.input_types == dependent_types
+
+        # But it is also a Path object.
+        assert isinstance(generatable, Path)
+        assert Path("test.h") == generatable
+
+    :param pydsdl.Any definition: The pydsdl type that can be reified into a generated file.
+    :param List[pydsdl.Any] input_types: The types that are required to generate the file.
     :param args: Arguments to pass to the Path constructor.
     :param kwargs: Keyword arguments to pass to the Path constructor.
     """
 
-    def __new__(cls, *args: Any, **kwargs: Any) -> "Generatable":
-        if cls is not Generatable:
-            raise TypeError("Unknown type passed to Generatable constructor.")
-        try:
-            definition = cast(pydsdl.CompositeType, kwargs.pop("definition"))
-        except KeyError as ex:
-            raise ValueError("Generatable requires a 'definition' argument.") from ex
+    @classmethod
+    def _check_arguments(
+        cls, definition: pydsdl.CompositeType, input_types: List[pydsdl.CompositeType]
+    ) -> Tuple[pydsdl.CompositeType, List[pydsdl.CompositeType]]:
+        """
+        Check the arguments for the Generatable constructor.
 
+        :param pydsdl.Any definition: The pydsdl type that can be reified into a generated file.
+        :param List[pydsdl.Any] input_types: The types that are required to generate the file.
+        :raises TypeError: If the arguments are not of the correct types.
+        :return: The definition and input types.
+        """
         if not isinstance(definition, pydsdl.CompositeType):
-            raise ValueError("Generatable requires a 'definition' argument of type pydsdl.CompositeType.")
-
-        try:
-            input_types = cast(List[pydsdl.CompositeType], kwargs.pop("input_types"))
-        except KeyError:
-            input_types = []
-
+            raise TypeError("Generatable requires a 'definition' argument of type pydsdl.CompositeType.")
         if not isinstance(input_types, list):
-            raise ValueError("Generatable requires an 'input_types' argument of type List[pydsdl.CompositeType].")
+            raise TypeError("Generatable requires an 'input_types' argument of type List[pydsdl.CompositeType].")
+        return definition, input_types
 
-        new_pure_path = cast(Generatable, super().__new__(cls, *args, **kwargs))
-        new_pure_path._definition = definition
-        new_pure_path._input_types = input_types
-        return new_pure_path
+    if sys.version_info < (3, 12):
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> "Generatable":
+            """
+            The override of the __new__ operator is required until python 3.12.
+            After that, the __init__ operator can be used.
+            """
+            if cls is not Generatable:
+                raise TypeError("Unknown type passed to Generatable constructor.")
+
+            if len(args) < 3:
+                raise TypeError("Generatable requires 'definition', 'input_types', and 'path' arguments.")
+
+            definition, input_types = cls._check_arguments(*args[:2])
+            new_pure_path = cast(Generatable, super().__new__(cls, *args[2:], **kwargs))
+            new_pure_path._definition = definition
+            new_pure_path._input_types = input_types
+            return new_pure_path
+
+    else:
+
+        def __init__(
+            self, definition: pydsdl.CompositeType, input_types: List[pydsdl.CompositeType], *args: Any, **kwargs: Any
+        ):
+            super().__init__(*args, **kwargs)
+            self._definition, self._input_types = self._check_arguments(definition, input_types)
 
     @classmethod
     def wrap(
         cls, path: Path, definition: pydsdl.CompositeType, input_types: List[pydsdl.CompositeType]
     ) -> "Generatable":
         """
-        Wrap a Path object with the Generatable interface.
+        Create a Generatable object from a Path, a pydsdl type, and a list of pydsdl types in a Python-version agnostic
+        way. This is useful for deferred construction of Generatable objects since __init__ is not available in
+        the python 3.11 and earlier versions.
 
         :param Path path: The path to the generated file.
         :param pydsdl.Any definition: The pydsdl type that can be reified into a generated file.
         :param List[pydsdl.Any] input_types: The types that are required to generate the file.
         :return: A Generatable object.
         """
-        return Generatable(path, definition=definition, input_types=input_types)
+        return Generatable(definition, input_types, path)
 
     def with_segments(self, *pathsegments: Union[str, PathLike]) -> Path:
         """
@@ -152,6 +207,11 @@ class Generatable(type(Path())):  # type: ignore
         return self._input_types.copy()  # type: ignore # pylint: disable=no-member,
 
     # --[DATA MODEL]-------------------------------------------------------------------------------------------------
+    def __reduce__(self) -> Tuple[Callable, Tuple[Path, pydsdl.CompositeType, List[pydsdl.CompositeType]]]:
+        super_reduction = super().__reduce__()
+        reduced_path = Path(*super_reduction[1]) if isinstance(super_reduction, tuple) else Path(super_reduction)
+        return (self.wrap, (reduced_path, self.definition, self.input_types))
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Generatable):
             return bool(
@@ -163,17 +223,17 @@ class Generatable(type(Path())):  # type: ignore
             return super().__eq__(other)  # type: ignore
 
     def __hash__(self) -> int:
-        return hash((super().__hash__(), self.definition))
+        return hash((super().__hash__(), self._definition))  # pylint: disable=no-member
 
     def __repr__(self) -> str:
         return (
             f"{super().__repr__()}, "  # pylint: disable=no-member
-            f"definition={repr(self._definition)}, "
-            f"input_types={repr(self._input_types)}"
+            f"definition={repr(self._definition)}, "  # pylint: disable=no-member
+            f"input_types={repr(self._input_types)}"  # pylint: disable=no-member
         )
 
     def __copy__(self) -> "Generatable":
-        return Generatable(self, definition=self.definition, input_types=self.input_types)
+        return Generatable(self.definition, self.input_types, *self.parts)
 
 
 # +--------------------------------------------------------------------------------------------------------------------+
@@ -421,22 +481,32 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
 
         already_read: set[Path] = set()
 
-        # TODO: parallelize fileset processing using a map-reduce pattern and threads
-        while fileset:
-            next_file = fileset.pop()
-            target_type, dependent_types = pydsdl.read_files(
-                next_file,
-                root_namespace_directories_or_names,
-                lookup_directories,
-                print_output_handler,
-                allow_unregulated_fixed_port_id,
-            )
-            already_read.add(next_file)  # TODO: canonical paths for keying here?
-            Namespace.add_types(index, (target_type[0], dependent_types))
-            if not omit_dependencies:
-                for dependent_type in dependent_types:
-                    if dependent_type.source_file_path not in already_read:
-                        fileset.add(dependent_type.source_file_path)
+        running_lookups: list[multiprocessing.pool.AsyncResult] = []
+        with multiprocessing.pool.Pool() as pool:
+            while fileset:
+                next_file = fileset.pop()
+                running_lookups.append(
+                    pool.apply_async(
+                        pydsdl.read_files,
+                        args=(
+                            next_file,
+                            root_namespace_directories_or_names,
+                            lookup_directories,
+                            print_output_handler,
+                            allow_unregulated_fixed_port_id,
+                        ),
+                    )
+                )
+                already_read.add(next_file)  # TODO: canonical paths for keying here?
+                if not fileset:
+                    for lookup in running_lookups:
+                        target_type, dependent_types = lookup.get()
+                        Namespace.add_types(index, (target_type[0], dependent_types))
+                        if not omit_dependencies:
+                            for dependent_type in dependent_types:
+                                if dependent_type.source_file_path not in already_read:
+                                    fileset.add(dependent_type.source_file_path)
+                    running_lookups.clear()
 
         return index
 
@@ -823,7 +893,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         if extension is None:
             extension = language.get_config_value(Language.WKCV_DEFINITION_FILE_EXTENSION)
         output_file = Path(self._base_output_path) / IncludeGenerator.make_path(dsdl_type, language, extension)
-        output_generatable = Generatable.wrap(output_file, dsdl_type, input_types)
+        output_generatable = Generatable(dsdl_type, input_types, output_file)
         self._data_type_to_outputs[dsdl_type] = output_generatable
         return output_generatable
 

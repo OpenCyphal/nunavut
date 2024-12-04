@@ -10,6 +10,8 @@ pydsdl AST into source code.
 """
 
 import abc
+import multiprocessing
+import multiprocessing.pool
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Type, Union
@@ -47,6 +49,64 @@ class GenerationResult:
     The set of template files used to generate the `generated_files`.
     """
 
+    def __add__(self, other: Any) -> "GenerationResult":
+        """
+        If there exists an isomorphism between this object and other, return a union of the two as a new result.
+
+        .. invisible-code-block: python
+
+            from nunavut._generators import GenerationResult, basic_language_context_builder_from_args
+            from pathlib import Path
+            from pytest import raises
+
+            c_lang = basic_language_context_builder_from_args(target_language="c").create()
+            js_lang = basic_language_context_builder_from_args(
+                target_language="js",
+                include_experimental_languages=True).create()
+
+            with raises(RuntimeError):
+                GenerationResult(c_lang, {}, [], [], []) + 1
+
+            with raises(RuntimeError):
+                GenerationResult(c_lang, {}, [], [], []) + GenerationResult(js_lang, {}, [], [], [])
+
+        .. code-block:: python
+
+            ursine = GenerationResult(c_lang,
+                                      {Path("bears/grizzly.c"): Path("bears/grizzly.dsdl")},
+                                      [Path("bears/grizzly.c")],
+                                      [Path("include/support.h")],
+                                      [Path("templates/code.j2")])
+            bovine = GenerationResult(c_lang,
+                                      {Path("cows/jersey.c"): Path("cows/jersey.dsdl")},
+                                      [Path("cows/jersey.c")],
+                                      [Path("include/support.h")],
+                                      [Path("templates/code.j2")])
+
+            mammals = ursine + bovine
+
+            assert(mammals.generator_targets[Path("bears/grizzly.c")] == Path("bears/grizzly.dsdl"))
+            assert(mammals.generator_targets[Path("cows/jersey.c")] == Path("cows/jersey.dsdl"))
+            assert(len(mammals.support_files) == 1)
+            assert(len(mammals.template_files) == 1)
+
+        """
+        if not isinstance(other, self.__class__):
+            raise RuntimeError(f"Cannot add {type(other)} type to a GenerationResult.")
+        if other.lctx != self.lctx:
+            raise RuntimeError(
+                f"Result with language {str(other.lctx)} is not isomorphic with this result for "
+                f"language {str(self.lctx)}."
+            )
+
+        return GenerationResult(
+            self.lctx,
+            {**self.generator_targets, **other.generator_targets},
+            self.generated_files + other.generated_files,
+            [*{*(self.support_files + other.support_files)}],
+            [*{*(self.template_files + other.template_files)}],
+        )
+
 
 class AbstractGenerator(metaclass=abc.ABCMeta):
     """
@@ -78,20 +138,31 @@ class AbstractGenerator(metaclass=abc.ABCMeta):
     ):  # pylint: disable=unused-argument
         self._namespace = namespace
         self._resource_types = resource_types
-        if generate_namespace_types == YesNoDefault.YES:
-            self._generate_namespace_types = True
-        elif generate_namespace_types == YesNoDefault.NO:
-            self._generate_namespace_types = False
-        else:
-            target_language = self._namespace.get_language_context().get_target_language()
-            if target_language.has_standard_namespace_files:
-                self._generate_namespace_types = True
-            else:
-                self._generate_namespace_types = False
+        self._generate_namespace_types = self.generate_namespace_types_from_trinary(
+            self._namespace.get_language_context().get_target_language(), generate_namespace_types
+        )
         if index_file is not None:
             self._index_files = [Path(p) for p in index_file]
         else:
             self._index_files = []
+
+    @classmethod
+    def generate_namespace_types_from_trinary(
+        cls, target_language: Language, generate_namespace_types: YesNoDefault
+    ) -> bool:
+        """
+        Given the target language and a trinary value, returns a binary result for "should namespace types be generated"
+        as a parameter.
+        """
+        if generate_namespace_types == YesNoDefault.YES:
+            return True
+        elif generate_namespace_types == YesNoDefault.NO:
+            return False
+        else:
+            if target_language.has_standard_namespace_files:
+                return True
+            else:
+                return False
 
     @property
     def namespace(self) -> Namespace:
@@ -242,36 +313,24 @@ def generate_all(
 
     .. code-block:: none
 
-        ┌─────────────────────────────────────────┐
-        │                                         │
-        │ 1. Language Context Construction        │ generate_all
-        │                                         │
-        └───────────────────┬─────────────────────┘
-                            │
-                            │
-                            ▼
-        ┌─────────────────────────────────────────┐
-        │                                         │
-        │ 2. Parsing (pydsdl) and constructing    │ generate_all_for_language
-        │    Namespace Trees from results         │
-        │                                         │
-        └───────────────────┬─────────────────────┘
-                            │
-                            │
-                            ▼
-        ┌─────────────────────────────────────────┐
-        │                                         │
-        │ 3. Generator Construction               │ generate_all_from_namespace
-        │                                         │
-        └───────────────────┬─────────────────────┘
-                            │
-                            │
-                            ▼
-        ┌──────────────────────────────────────────┐
-        │                                          │
-        │ 4. Code Generation                       │ generate_all_from_namespace_with_generators
-        │                                          │
-        └──────────────────────────────────────────┘
+        ┌───────────────────────────────────────────────────┐ 1. generate_all
+        │           Language context construction           │
+        │                                                   │
+        │  ┌─────────────────────────────────────────────┐  │ 2. generate_all_for_language
+        │  │ Parsing (pydsdl) and constructing Namespace │  │
+        │  │             trees from results              │  │
+        │  │                                             │  │
+        │  │  ┌───────────────────────────────────────┐  │  │ 3. generate_all_from_namespace
+        │  │  │        Generator construction         │  │  │
+        │  │  │                                       │  │  │
+        │  │  │  ┌─────────────────────────────────┐  │  │  │ 4. generate_all_from_namespace_with_generators
+        │  │  │  │        code generation          │  │  │  │
+        │  │  │  │                                 │  │  │  │
+        │  │  │  │                                 │  │  │  │
+        │  │  │  └─────────────────────────────────┘  │  │  │
+        │  │  └───────────────────────────────────────┘  │  │
+        │  └─────────────────────────────────────────────┘  │
+        └───────────────────────────────────────────────────┘
 
     At each stage the number of options are reduced as objects are constructed based on their values.
 
@@ -346,6 +405,8 @@ def generate_all(
         on supported arguments.
 
     :returns GenerationResult: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
+    :raises pydsdl.FrontendError: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
+        raise this exception.
     """
 
     language_context = basic_language_context_builder_from_args(
@@ -416,6 +477,8 @@ def generate_all_for_language(
     :param generator_args: Additional arguments to pass into the generator constructors. See the documentation for
         specific generator types for details on supported arguments.
     :return: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
+    :raises pydsdl.FrontendError: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
+        raise this exception.
     """
     index = Namespace.read_files(
         outdir,
@@ -467,10 +530,16 @@ def generate_all_from_namespace(
     :param generator_args: Additional arguments to pass into the generator constructors. See the documentation for
         specific generator types for details on supported arguments.
     :return: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
+    :raises pydsdl.FrontendError: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
+        raise this exception.
     """
 
     support_generator_args = generator_args.copy()
     support_generator_args["templates_dir"] = generator_args.get("support_templates_dir", [])
+
+    # if ResourceType.INDEX.value() | resource_types != 0:
+    #     For implementing issue #334 or other features requiring an index template, add an index_generator_type
+    #     here to the generators we create and run
 
     if code_generator_type is None:
         # load default code generator
@@ -513,9 +582,10 @@ def generate_all_from_namespace_with_generators(
     :param no_overwrite: If True then generated files will not be allowed to overwrite existing files under the `outdir`
         path causing errors.
     :return: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
+    :raises pydsdl.FrontendError: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
+        raise this exception.
     """
 
-    # TODO: create code generators per-root and run them in parallel
     template_files = list(set(support_generator.get_templates()).union(set(code_generator.get_templates())))
     support_files = list(support_generator.generate_all(dry_run, not no_overwrite))
     generated_files = list(code_generator.generate_all(dry_run, not no_overwrite))

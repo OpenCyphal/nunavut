@@ -8,7 +8,10 @@
             "extensions": [
                 "uavcan.dsdl",
                 "wholroyd.jinja",
-                "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.cpptools",
+                "ms-vscode.cpptools-themes",
+                "ms-vscode.cmake-tools",
+                "josetr.cmake-language-support-vscode",
                 "streetsidesoftware.code-spell-checker",
                 "xaver.clang-format",
                 "vadimcn.vscode-lldb",

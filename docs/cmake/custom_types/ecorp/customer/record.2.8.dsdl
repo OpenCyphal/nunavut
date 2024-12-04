@@ -1,0 +1,32 @@
+#           _____          
+#          /\    \         
+#         /::\    \        
+#        /::::\    \       
+#       /::::::\    \      
+#      /:::/\:::\    \     
+#     /:::/__\:::\    \    
+#    /::::\   \:::\    \   
+#   /::::::\   \:::\    \  
+#  /:::/\:::\   \:::\    \ 
+# /:::/__\:::\   \:::\____\
+# \:::\   \:::\   \::/    /
+#  \:::\   \:::\   \/____/ 
+#   \:::\   \:::\    \     
+#    \:::\   \:::\____\    
+#     \:::\   \::/    /    
+#      \:::\   \/____/     
+#       \:::\    \         
+#        \:::\____\        
+#         \::/    /        
+#          \/____/         
+#                          
+# ECORP Customer Record Type
+
+uavcan.primitive.String.1.0 full_name
+uavcan.primitive.String.1.0 address1
+uavcan.primitive.String.1.0 address2
+uint8[2] country_code
+uavcan.primitive.String.1.0 city
+uint8[<=64] postal_code
+
+@extent 2048 * 8

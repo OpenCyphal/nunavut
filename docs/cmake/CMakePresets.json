@@ -1,0 +1,53 @@
+{
+    "version": 7,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 27,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "config-common",
+            "hidden": true,
+            "description": "Common configuration",
+            "generator": "Ninja",
+            "warnings": {
+                "deprecated": true,
+                "uninitialized": true
+            }
+        },
+        {
+            "name": "config-connected",
+            "hidden": true,
+            "cacheVariables": {
+                "FETCHCONTENT_FULLY_DISCONNECTED": "OFF",
+                "FETCHCONTENT_QUIET": "OFF"
+            }
+        },
+        {
+            "name": "config-disconnected",
+            "hidden": true,
+            "cacheVariables": {
+                "FETCHCONTENT_FULLY_DISCONNECTED": "ON"
+            }
+        },
+        {
+            "name": "Connected",
+            "displayName": "Connected Config",
+            "description": "FetchContent will go online to look for updates when configured.",
+            "inherits": [
+                "config-common",
+                "config-connected"
+            ]
+        },
+        {
+            "name": "Disconnected",
+            "displayName": "Disconnected Config",
+            "description": "FetchContent will not go online but will use any available local content to configure.",
+            "inherits": [
+                "config-common",
+                "config-disconnected"
+            ]
+        }
+    ]
+}

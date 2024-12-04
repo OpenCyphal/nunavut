@@ -21,7 +21,6 @@ import pydsdl
 
 from nunavut._dependencies import Dependencies
 from nunavut._templates import (
-    template_environment_list_filter,
     template_language_filter,
     template_language_list_filter,
     template_language_test,

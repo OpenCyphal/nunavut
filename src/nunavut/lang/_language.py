@@ -496,6 +496,11 @@ class Language(metaclass=abc.ABCMeta):
 
         :return: A mapping of global names to global values.
         """
+
+        # If this method is called before init (see __getattr__) then we raise an AttributeError to avoid
+        # infinite recursion
+        _ = object.__getattribute__(self, "_globals")
+
         if self._globals is None:
             globals_map: typing.Dict[str, typing.Any] = {}
 

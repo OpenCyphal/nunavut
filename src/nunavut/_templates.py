@@ -42,16 +42,6 @@ class SupportsTemplateContext:
     """
 
 
-def template_environment_list_filter(filter_func: typing.Callable) -> typing.Callable[..., typing.List[str]]:
-    """
-    Decorator for marking environment dependent filters.
-    An object supporting the :class:`SupportsTemplateEnv` protocol
-    will be passed to the filter as the first argument.
-    """
-    setattr(filter_func, ENVIRONMENT_FILTER_ATTRIBUTE_NAME, True)
-    return filter_func
-
-
 def template_context_filter(filter_func: typing.Callable) -> typing.Callable[..., str]:
     """
     Decorator for marking context dependent filters.

@@ -22,7 +22,6 @@
             "request": "launch",
             "module": "pytest",
             "args": [
-                "--no-cov",
                 "--keep-generated",
                 "--rootdir=${workspaceFolder}",
                 "${file}"

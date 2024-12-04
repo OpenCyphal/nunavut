@@ -14,6 +14,8 @@
 #
 from nunavut._version import __version__ as nunavut_version
 from nunavut._version import __copyright__ as nunavut_copyright
+import os
+import subprocess
 
 # -- Project information -----------------------------------------------------
 
@@ -36,6 +38,12 @@ with open(".gitignore", "r", encoding="utf-8") as gif:
         if len(stripped) > 0 and not stripped.startswith("#"):
             exclude_patterns.append(stripped)
 
+rtd_version = os.environ.get('READTHEDOCS_VERSION')
+if rtd_version is not None:
+    git_hash = subprocess.check_output(["git", "rev-parse", rtd_version]).decode().strip()
+else:
+    git_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
+
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -52,10 +60,12 @@ extensions = [
     "sphinx.ext.imgmath",
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
+    "sphinx.ext.extlinks",
     "sphinxarg.ext",
     "sphinx.ext.intersphinx",
     "sphinxemoji.sphinxemoji",
-    "sphinx_rtd_theme"
+    "sphinx_rtd_theme",
+    "sphinxcontrib.moderncmakedomain",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -107,6 +117,8 @@ html_context = {
     "github_version": "main",
     "conf_py_path": "",
 }
+
+extlinks = {"github_link": (f"https://github.com/OpenCyphal/nunavut/blob/{git_hash}/%s", "%s")}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

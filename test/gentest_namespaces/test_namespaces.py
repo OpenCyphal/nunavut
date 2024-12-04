@@ -266,27 +266,20 @@ def test_generatable_constructor():  # type: ignore
     input_types = [MagicMock(spec=CompositeType)]
     input_types[0].__hash__ = MagicMock(return_value=1)  # type: ignore
 
-    gen = Generatable.wrap(path, definition, input_types)
+    gen = Generatable(definition, input_types, path)
 
     assert gen.definition == definition
     assert gen.input_types == input_types
+    assert gen == path
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         Generatable(path)
 
-    with pytest.raises(ValueError):
-        Generatable(path, definition=None)
+    with pytest.raises(TypeError):
+        Generatable(None, path)
 
-    with pytest.raises(ValueError):
-        Generatable(path, input_types=None)
-
-    with pytest.raises(ValueError):
-        Generatable(path, definition="a string", input_types=input_types)
-
-    with pytest.raises(ValueError):
-        Generatable(path, definition=definition, input_types="not a list")
-
-    _ = Generatable(path, definition=definition, input_types=input_types)
+    with pytest.raises(TypeError):
+        Generatable(None, None, path)
 
 
 def test_generatable_copy():  # type: ignore
@@ -314,21 +307,35 @@ def test_generatable_copy():  # type: ignore
 
 def test_generatable_as_path_like():  # type: ignore
     """Test Generatable objects as Path-like objects."""
-    gen = Generatable("test", definition=MagicMock(spec=CompositeType))
+    gen = Generatable(MagicMock(spec=CompositeType), [MagicMock(spec=CompositeType)], Path("test"))
 
     assert Path("path", "to", "test") == Path("path", "to") / gen
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         Generatable("foo")
 
     print(f"{str(gen)}:{repr(gen)}")
 
-    assert str(Path("foo")) == str(Generatable("foo", definition=MagicMock(spec=CompositeType)))
-    assert Path("foo") == Generatable("foo/bar", definition=MagicMock(spec=CompositeType)).parent
-    assert Path("foo/bar").name == Generatable("foo/bar", definition=MagicMock(spec=CompositeType)).name
-    assert Path("foo/bar") == Generatable("foo/bar", definition=MagicMock(spec=CompositeType))
-    assert Generatable("foo/bar", definition=MagicMock(spec=CompositeType)) == Path("foo/bar")
-    assert repr(Generatable("foo/bar", definition=MagicMock(spec=CompositeType))) != repr(Path("foo/bar"))
+    assert str(Path("foo")) == str(
+        Generatable(MagicMock(spec=CompositeType), [MagicMock(spec=CompositeType)], Path("foo"))
+    )
+    assert (
+        Path("foo")
+        == Generatable(MagicMock(spec=CompositeType), [MagicMock(spec=CompositeType)], Path("foo/bar")).parent
+    )
+    assert (
+        Path("foo/bar").name
+        == Generatable(MagicMock(spec=CompositeType), [MagicMock(spec=CompositeType)], Path("foo/bar")).name
+    )
+    assert Path("foo/bar") == Generatable(
+        MagicMock(spec=CompositeType), [MagicMock(spec=CompositeType)], Path("foo/bar")
+    )
+    assert Generatable(MagicMock(spec=CompositeType), [MagicMock(spec=CompositeType)], Path("foo/bar")) == Path(
+        "foo/bar"
+    )
+    assert repr(Generatable(MagicMock(spec=CompositeType), [MagicMock(spec=CompositeType)], Path("foo/bar"))) != repr(
+        Path("foo/bar")
+    )
 
 
 def test_namespace_constructor(gen_paths):  # type: ignore
@@ -452,8 +459,9 @@ def test_identity_namespace(gen_paths):  # type: ignore
     with pytest.raises(KeyError):
         namespace.find_output_path_for_type(aves)
 
+
 @pytest.mark.parametrize("read_method", [gen_test_namespace_folder, gen_test_namespace_files])
-@pytest.mark.parametrize("templates_subdir",["default", "namespace"])
+@pytest.mark.parametrize("templates_subdir", ["default", "namespace"])
 def test_namespace_any_template(gen_paths, read_method, templates_subdir):  # type: ignore
     """Basic test of a non-empty namespace using the Any.j2 then Namespace.j2 templates."""
     language_context = LanguageContextBuilder(include_experimental_languages=True).set_target_language("js").create()
@@ -542,6 +550,7 @@ def test_namespace_generation(gen_paths, read_method):  # type: ignore
             assert json_blob[data_type.full_name]["namespace"] == data_type.full_namespace
 
     assert data_type_count == test_params.total_namespace_count + 1  # +1 for the index itself
+
 
 @pytest.mark.parametrize("read_method", [gen_test_namespace_folder, gen_test_namespace_files])
 @pytest.mark.parametrize(

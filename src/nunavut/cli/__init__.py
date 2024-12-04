@@ -546,9 +546,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         ).lstrip(),
     )
 
-    run_mode_ex_group = run_mode_group.add_mutually_exclusive_group()
-
-    run_mode_ex_group.add_argument(
+    run_mode_group.add_argument(
         "--list-outputs",
         action="store_true",
         help=textwrap.dedent(
@@ -560,11 +558,16 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         systems that need a list of targets to determine if a rebuild is
         necessary.
 
+        If used with --list-inputs the list of inputs will be emitted first followed
+        by the list of outputs. A single empty value will separate the two lists when
+        using value-delimited formats. Use --list-format to control the output format
+        including using json to avoid the need for an empty-value delimiter.
+
     """
         ).lstrip(),
     )
 
-    run_mode_ex_group.add_argument(
+    run_mode_group.add_argument(
         "--list-inputs",
         action="store_true",
         help=textwrap.dedent(
@@ -576,11 +579,16 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         This command is useful for integrating with CMake and other build systems
         that need a list of inputs to determine if a rebuild is necessary.
 
+        If used with --list-outputs the list of inputs will be emitted first followed
+        by the list of outputs. A single empty value will separate the two lists. Use
+        --list-format to control the output format including using json to avoid the
+        need for an empty-value delimiter.
+
     """
         ).lstrip(),
     )
 
-    run_mode_ex_group.add_argument(
+    run_mode_group.add_argument(
         "--list-configuration",
         "-lc",
         action="store_true",
@@ -590,6 +598,26 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         Lists all configuration values resolved for the given arguments. Unlike --list-inputs
         and --list-outputs this command does *not* imply --dry-run but can be used in conjunction
         with it.
+
+        This option is only available if --list-format is set to json.
+
+    """
+        ).lstrip(),
+    )
+
+    run_mode_group.add_argument(
+        "--list-format",
+        default="scsv",
+        choices=["csv", "scsv", "json", "json-pretty"],
+        help=textwrap.dedent(
+            """
+
+        For commands that emit lists of files this option controls the format of the output.
+
+        csv         - comma separated values
+        scsv        - semicolon separated values
+        json        - json formatted results
+        json-pretty - json formatted results with indentation
 
     """
         ).lstrip(),

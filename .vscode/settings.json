@@ -155,6 +155,7 @@
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
     "files.trimTrailingWhitespace": true,
+    "reflow.preferredLineLength": 120,
     "testMate.cpp.test.advancedExecutables": [
         {
             "pattern": "verification/build_vscode/**/suite/{test,Test,TEST}_*",

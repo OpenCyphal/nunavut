@@ -24,7 +24,6 @@ from .._generators import AbstractGenerator
 from .._postprocessors import FilePostProcessor, LinePostProcessor, PostProcessor
 from .._utilities import TEMPLATE_SUFFIX, ResourceSearchPolicy, ResourceType, YesNoDefault
 from .environment import CodeGenEnvironment, CodeGenEnvironmentBuilder
-from .jinja2 import TemplateNotFound
 from .loaders import DEFAULT_TEMPLATE_PATH, DSDLSupportTemplateLoader, DSDLTemplateLoader
 
 logger = logging.getLogger(__name__)

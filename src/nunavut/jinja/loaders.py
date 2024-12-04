@@ -380,7 +380,7 @@ class DSDLSupportTemplateLoader(DSDLTemplateLoader):
 
         mtime = support_file.stat().st_mtime
 
-        def is_modified() -> bool:
+        def is_modified() -> bool:  # pragma: no cover
             try:
                 return support_file.stat().st_mtime == mtime
             except OSError:

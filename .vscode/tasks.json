@@ -25,6 +25,19 @@
             }
         },
         {
+            "label": "doc build (tox)",
+            "type": "shell",
+            "command": "tox",
+            "args": [
+                "-e",
+                "docs"
+            ],
+            "group": {
+                "kind": "build",
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "verify c native32",
             "type": "shell",
             "command": "${workspaceFolder}/.github/verify.py",
