@@ -27,11 +27,11 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_impl(t) %}
+    const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
 {%- if not options.disable_serialization_buffer_check %}
 {%- if options.enable_override_variable_array_capacity %}
 #ifndef {{ t | full_reference_name }}_DISABLE_SERIALIZATION_BUFFER_CHECK_
 {% endif %}
-    const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
     if ((8U * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.inner_type.bit_length_set.max }}UL)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
