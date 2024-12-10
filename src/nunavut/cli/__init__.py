@@ -818,8 +818,8 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         Instruct support header generators to disable entry buffer checks in serialization routines.
         Serialization will be still safe (no buffer overflows) but it might fail during the operation
         with NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL error if provided buffer ends up being too small.
-        This option useful for systems with limited resources where messages is known to be small,
-        and so much smaller buffers can be used (comparing to the maximum possible capacity).
+        This option useful for systems with limited resources where messages are known to be small,
+        and smaller serialization buffers can be used (comparing to the maximum possible capacity).
 
     """
         ).lstrip(),
