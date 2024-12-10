@@ -366,6 +366,10 @@ class NunavutArgumentParser(argparse.ArgumentParser):
             True if args.enable_override_variable_array_capacity else DefaultValue(False)
         )
 
+        language_options["disable_serialization_buffer_check"] = (
+            True if args.disable_serialization_buffer_check else DefaultValue(False)
+        )
+
         if args.language_standard is not None:
             language_options["std"] = args.language_standard
 

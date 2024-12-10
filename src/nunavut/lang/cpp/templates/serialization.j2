@@ -23,17 +23,18 @@
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_impl(t) %}
 
-    const {{ typename_unsigned_length }} capacity_bits = out_buffer.size();
-
+{%- if not options.disable_serialization_buffer_check %}
 {%- if options.enable_override_variable_array_capacity %}
 #ifndef {{ t | full_macro_name }}_DISABLE_SERIALIZATION_BUFFER_CHECK_
 {% endif %}
+    const {{ typename_unsigned_length }} capacity_bits = out_buffer.size();
     if ((static_cast<{{ typename_unsigned_bit_length }}>(capacity_bits)) < {{ t.inner_type.bit_length_set.max }}UL)
     {
         return -nunavut::support::Error::SerializationBufferTooSmall;
     }
 {%- if options.enable_override_variable_array_capacity %}
 #endif // ndef {{ t | full_macro_name }}_DISABLE_SERIALIZATION_BUFFER_CHECK_
+{% endif %}
 {% endif %}
 
     // Notice that fields that are not an integer number of bytes long may overrun the space allocated for them
@@ -113,8 +114,10 @@
     {{ assert('out_buffer.offset_alings_to_byte()') }}
 {% endif %}
     {# NOTICE: If this is a delimited type, we will be requiring the buffer to be at least extent-sized.
-     # This is a bit wasteful because when serializing we can often use a smaller buffer. #}
-    {% if t.bit_length_set.max > 0 %}
+     # This is a bit wasteful because when serializing we can often use a smaller buffer.
+     # `disable_serialization_buffer_check` option allows to avoid such waste for variable length arrays. #}
+    {% if (t.bit_length_set.max > 0) and
+          not (t is VariableLengthArrayType and options.disable_serialization_buffer_check) %}
     {{ assert('%dULL <= out_buffer.size()'|format(t.bit_length_set.max)) }}
     {% endif %}
 

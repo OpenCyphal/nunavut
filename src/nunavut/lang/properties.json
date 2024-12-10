@@ -249,6 +249,7 @@
         "omit_serialization_support": false,
         "enable_serialization_asserts": false,
         "enable_override_variable_array_capacity": false,
+        "disable_serialization_buffer_check": false,
         "cast_format": "(({type}) {value})"
       }
     },
@@ -505,6 +506,7 @@
         "omit_serialization_support": false,
         "enable_serialization_asserts": false,
         "enable_override_variable_array_capacity": false,
+        "disable_serialization_buffer_check": false,
         "std": "c++14",
         "std_flavor": "std",
         "cast_format": "static_cast<{type}>({value})",

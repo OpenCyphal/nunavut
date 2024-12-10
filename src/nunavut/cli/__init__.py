@@ -810,6 +810,22 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     )
 
     ln_opt_group.add_argument(
+        "--disable-serialization-buffer-check",
+        action="store_true",
+        help=textwrap.dedent(
+            """
+
+        Instruct support header generators to disable entry buffer checks in serialization routines.
+        Serialization will be still safe (no buffer overflows) but it might fail during the operation
+        with NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL error if provided buffer ends up being too small.
+        This option useful for systems with limited resources where messages is known to be small,
+        and so much smaller buffers can be used (comparing to the maximum possible capacity).
+
+    """
+        ).lstrip(),
+    )
+
+    ln_opt_group.add_argument(
         "--language-standard",
         "-std",
         choices=["c11", "c++14", "cetl++14-17", "c++17", "c++17-pmr", "c++20", "c++20-pmr"],

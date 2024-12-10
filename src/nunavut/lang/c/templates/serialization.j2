@@ -27,16 +27,18 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_impl(t) %}
-    const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
+{%- if not options.disable_serialization_buffer_check %}
 {%- if options.enable_override_variable_array_capacity %}
 #ifndef {{ t | full_reference_name }}_DISABLE_SERIALIZATION_BUFFER_CHECK_
 {% endif %}
+    const {{ typename_unsigned_length }} capacity_bytes = *inout_buffer_size_bytes;
     if ((8U * ({{ typename_unsigned_bit_length }}) capacity_bytes) < {{ t.inner_type.bit_length_set.max }}UL)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
 {%- if options.enable_override_variable_array_capacity %}
 #endif
+{% endif %}
 {% endif %}
     // Notice that fields that are not an integer number of bytes long may overrun the space allocated for them
     // in the serialization buffer up to the next byte boundary. This is by design and is guaranteed to be safe.
@@ -116,8 +118,11 @@
     {{ assert('offset_bits % 8U == 0U') }}
 {% endif %}
     {# NOTICE: If this is a delimited type, we will be requiring the buffer to be at least extent-sized.
-     # This is a bit wasteful because when serializing we can often use a smaller buffer. #}
+     # This is a bit wasteful because when serializing we can often use a smaller buffer.
+     # `disable_serialization_buffer_check` option allows to avoid such waste for variable length arrays. #}
+    {% if not (t is VariableLengthArrayType and options.disable_serialization_buffer_check) %}
     {{ assert('(offset_bits + %dULL) <= (capacity_bytes * 8U)'|format(t.bit_length_set.max)) }}
+    {% endif %}
 
 {%   if t is VoidType %}                {{- _serialize_void(t, offset) }}
 {% elif t is BooleanType %}             {{- _serialize_boolean(t, reference, offset) }}

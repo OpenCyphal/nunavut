@@ -12,4 +12,7 @@
 {%- if options.enable_override_variable_array_capacity is defined %},
      "enable_override_variable_array_capacity": {{ options.enable_override_variable_array_capacity | ln.js.to_true_or_false }}
 {% endif %}
+{%- if options.disable_serialization_buffer_check is defined %},
+     "disable_serialization_buffer_check": {{ options.disable_serialization_buffer_check | ln.js.to_true_or_false }}
+{% endif %}
 }
