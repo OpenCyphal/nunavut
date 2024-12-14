@@ -13,3 +13,6 @@
 [submodule "submodules/CETL"]
 	path = submodules/CETL
 	url = https://github.com/OpenCyphal/CETL.git
+[submodule "submodules/pydsdl"]
+	path = submodules/pydsdl
+	url = https://github.com/OpenCyphal/pydsdl.git

@@ -99,7 +99,13 @@ endmacro()
 # used internally to unify argument handling for standards nnvg arguments across all cmake functions
 # Note: all options are repeated as "LOCAL_ARG_[option name]" to support forwarding.
 macro(nunavut_config_args has_name options singleValueArgs multiValueArgs usageLines)
-    list(APPEND ${options} ALLOW_EXPERIMENTAL_LANGUAGES CONSOLE_DEBUG SUPPORT_ONLY NO_SUPPORT)
+    list(APPEND ${options}
+        ALLOW_EXPERIMENTAL_LANGUAGES
+        CONSOLE_DEBUG
+        SUPPORT_ONLY
+        NO_SUPPORT
+        OMIT_PUBLIC_REGULATED_NAMESPACE
+    )
     list(APPEND ${singleValueArgs}
         NAME
         LANGUAGE
@@ -177,6 +183,10 @@ macro(nunavut_local_args)
         endforeach()
     endif()
 
+    if(NOT ARG_OMIT_PUBLIC_REGULATED_NAMESPACE)
+        list(APPEND LOCAL_DYNAMIC_ARGS "--lookup-dir" "${NUNAVUT_SUBMODULES_DIR}/public_regulated_data_types/uavcan")
+    endif()
+
     if(ARG_LANGUAGE_STANDARD)
         list(APPEND LOCAL_DYNAMIC_ARGS "--language-standard" "${ARG_LANGUAGE_STANDARD}")
     endif()
@@ -216,6 +226,8 @@ macro(nunavut_local_args)
 
     if(ARG_PYDSDL_PATH)
         set(LOCAL_PYTHON_PATH "${LOCAL_PYTHON_PATH}${NUNAVUT_PATH_LIST_SEP}${ARG_PYDSDL_PATH}")
+    else()
+        set(LOCAL_PYTHON_PATH "${LOCAL_PYTHON_PATH}${NUNAVUT_PATH_LIST_SEP}${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl")
     endif()
 
     set(ENV{PYTHONPATH} ${LOCAL_PYTHON_PATH})
@@ -242,6 +254,14 @@ endmacro()
 # ###################################################################################
 
 #[==[.rst:
+    .. cmake:variable:: NUNAVUT_SUBMODULES_DIR
+
+        Path to the submodules folder in the nunavut repository.
+
+#]==]
+set(NUNAVUT_SUBMODULES_DIR ${CMAKE_CURRENT_LIST_DIR}/nunavut/submodules PARENT_SCOPE)
+
+#[==[.rst:
 
     .. cmake:command:: export_nunavut_manifest
 
@@ -250,7 +270,7 @@ endmacro()
         and checking it into source control, the build can use the manifest to avoid dynamic discovery for each new
         configuration step.
 
-       - **param** ``LANGUAGE`` **str**:
+        - **param** ``LANGUAGE`` **str**:
 
             The language to generate code for. Supported types are ``c`` and ``cpp``.
 
@@ -260,7 +280,8 @@ endmacro()
 
         - **param** ``DSDL_NAMESPACES`` **optional list[path]**:
 
-            A list of namespaces to search for dependencies in. While optional, it's rare that this would be omitted.
+            A list of namespaces to search for dependencies in. Unless OMIT_PUBLIC_REGULATED_NAMESPACE is set, this
+            will always include ${NUNAVUT_SUBMODULES_DIR}/public_regulated_data_types/uavcan
 
         - **param** ``LANGUAGE_STANDARD`` **optional str**:
 
@@ -280,9 +301,10 @@ endmacro()
             The working directory to use when invoking the Nunavut tool. If omitted then ``${CMAKE_CURRENT_SOURCE_DIR}``
             is used.
 
-       - **param** ``PYDSDL_PATH`` **optional path**:
+        - **param** ``PYDSDL_PATH`` **optional path**:
 
-            The path to the PyDSDL tool. If omitted then it must be available to python when invoked.
+            The path to the PyDSDL tool. If omitted then this is set to ${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl
+            which is the root of the pydsdl submodule in the Nunavut repo.
 
         - **param** ``FILE_EXTENSION`` **optional str**:
 
@@ -292,7 +314,7 @@ endmacro()
 
             If set then unsupported languages will be allowed.
 
-       - **option** ``CONSOLE_DEBUG``:
+        - **option** ``CONSOLE_DEBUG``:
 
             If set then verbose output will be enabled.
 
@@ -306,6 +328,12 @@ endmacro()
 
             If set then the library created will not contain support code needed to use the code generated for
             ``DSDL_FILES``. This is a mutually exclusive option with ``SUPPORT_ONLY``.
+
+        - **option** ``OMIT_PUBLIC_REGULATED_NAMESPACE``:
+
+            By default, ``${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl`` is added to the list of ``DSDL_NAMESPACES``
+            even if this variable is not set. This option disables this behaviour so only explicitly listed
+            ``DSDL_NAMESPACES`` values will be used.
 
         - **param** ``OUT_MANIFEST_PATH``:
 
@@ -396,7 +424,8 @@ endfunction()
 
         - **param** ``PYDSDL_PATH`` **optional path**:
 
-            The path to the PyDSDL tool. If omitted then it must be available to python when invoked.
+            The path to the PyDSDL tool. If omitted then this is set to ${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl
+            which is the root of the pydsdl submodule in the Nunavut repo.
 
         - **param** ``FILE_EXTENSION`` **optional str**:
 
@@ -420,6 +449,12 @@ endfunction()
 
             If set then the library created will not contain support code needed to use the code generated for
             ``DSDL_FILES``. This is a mutually exclusive option with ``SUPPORT_ONLY``.
+
+        - **option** ``OMIT_PUBLIC_REGULATED_NAMESPACE``:
+
+            By default, ``${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl`` is added to the list of ``DSDL_NAMESPACES``
+            even if this variable is not set. This option disables this behaviour so only explicitly listed
+            ``DSDL_NAMESPACES`` values will be used.
 
         - **param** ``OUT_MANIFEST_DATA`` **optional variable:**
 
@@ -569,7 +604,8 @@ endfunction()
 
         - **param** ``PYDSDL_PATH`` **optional path**:
 
-            The path to the PyDSDL tool. If omitted then it must be available to python when invoked.
+            The path to the PyDSDL tool. If omitted then this is set to ${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl
+            which is the root of the pydsdl submodule in the Nunavut repo.
 
         - **param** ``FILE_EXTENSION`` **optional str**:
 
@@ -603,6 +639,12 @@ endfunction()
 
             If set then a JSON file containing a list of all the inputs, outputs, and other information about the
             custom command will be written to ``${CMAKE_CURRENT_BINARY_DIR}/${OUT_CODEGEN_TARGET}.json``.
+
+        - **option** ``OMIT_PUBLIC_REGULATED_NAMESPACE``:
+
+            By default, ``${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl`` is added to the list of ``DSDL_NAMESPACES``
+            even if this variable is not set. This option disables this behaviour so only explicitly listed
+            ``DSDL_NAMESPACES`` values will be used.
 
         - **param** ``OUT_LIBRARY_TARGET`` **optional variable**:
 

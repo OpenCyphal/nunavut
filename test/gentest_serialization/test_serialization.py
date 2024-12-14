@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from nunavut import generate_all
-from nunavut.lang import LanguageContextBuilder
+from nunavut._utilities import ResourceType
 
 
 @pytest.mark.parametrize("lang_key", ["cpp", "c"])
@@ -26,6 +26,7 @@ def test_support_headers(gen_paths, lang_key):  # type: ignore
         root_namespace_dir,
         gen_paths.out_dir,
         omit_serialization_support=False,
+        resource_types=(ResourceType.ONLY.value | ResourceType.SERIALIZATION_SUPPORT.value),
         allow_unregulated_fixed_port_id=True,
         include_experimental_languages=(lang_key == "cpp"),
     )
