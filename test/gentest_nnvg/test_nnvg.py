@@ -169,7 +169,7 @@ def test_list_inputs(gen_paths: Any, run_nnvg_main: Callable, generate_support: 
     # Always types because we use the types to determine what support to include.
     if generate_support == "never":
         expected_output = types + code_templates
-    elif generate_support == "only":
+    elif generate_support in ("only", "always"):
         expected_output = types + support_files
     else:
         expected_output = types + code_templates + support_files
@@ -759,7 +759,7 @@ def test_generate_support(
             assert support_output_path.exists() != omit_serialization
 
     for type_output_path in type_output:
-        if generate_support != "only":
+        if generate_support not in ("only", "always"):
             assert type_output_path.exists()
         else:
             assert not type_output_path.exists()

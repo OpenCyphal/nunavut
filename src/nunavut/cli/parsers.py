@@ -418,27 +418,26 @@ class NunavutArgumentParser(argparse.ArgumentParser):
 
             from nunavut.cli.parsers import NunavutArgumentParser, QuaternaryLogic, ResourceType
 
-            namespace = argparse.Namespace(
-                generate_support="only",
-                omit_serialization_support=False
+            def _test_create_resource_types_bitmask(generate_support, omit_serialization_support, expected):
+                namespace = argparse.Namespace(
+                    generate_support=generate_support,
+                    omit_serialization_support=omit_serialization_support
+                )
+
+                resource_types = NunavutArgumentParser._create_resource_types_bitmask(namespace)
+                assert resource_types == expected
+                assert "generate_support" not in namespace
+
+
+            _test_create_resource_types_bitmask("only", False, (
+                ResourceType.ONLY.value | ResourceType.SERIALIZATION_SUPPORT.value | ResourceType.TYPE_SUPPORT.value)
             )
-
-            resource_types = NunavutArgumentParser._create_resource_types_bitmask(namespace)
-
-            assert resource_types == (
-                ResourceType.ONLY.value | ResourceType.SERIALIZATION_SUPPORT.value | ResourceType.TYPE_SUPPORT.value
+            _test_create_resource_types_bitmask("never", True, ResourceType.NONE.value)
+            _test_create_resource_types_bitmask("as-needed", False, (
+                ResourceType.ANY.value | ResourceType.SERIALIZATION_SUPPORT.value | ResourceType.TYPE_SUPPORT.value)
             )
-            assert "generate_support" not in namespace
-
-            namespace = argparse.Namespace(
-                generate_support="never",
-                omit_serialization_support=True
-            )
-
-            resource_types = NunavutArgumentParser._create_resource_types_bitmask(namespace)
-
-            assert resource_types == (
-                ResourceType.NONE.value
+            _test_create_resource_types_bitmask("always", False, (
+                ResourceType.ONLY.value | ResourceType.SERIALIZATION_SUPPORT.value | ResourceType.TYPE_SUPPORT.value)
             )
 
         """
@@ -451,7 +450,11 @@ class NunavutArgumentParser(argparse.ArgumentParser):
             resource_types &= ~ResourceType.TYPE_SUPPORT.value
             resource_types &= ~ResourceType.SERIALIZATION_SUPPORT.value
 
-        elif generate_support is QuaternaryLogic.TRUE_UNLESS:
+        elif generate_support is QuaternaryLogic.TRUE_IF:
+            resource_types = (
+                ResourceType.ANY.value | ResourceType.SERIALIZATION_SUPPORT.value | ResourceType.TYPE_SUPPORT.value
+            )
+        elif generate_support is QuaternaryLogic.ALWAYS_TRUE or generate_support is QuaternaryLogic.TRUE_UNLESS:
             resource_types = (
                 ResourceType.ONLY.value | ResourceType.SERIALIZATION_SUPPORT.value | ResourceType.TYPE_SUPPORT.value
             )

@@ -30,7 +30,7 @@ version = f"{_version_tuple[0]}.{_version_tuple[1]}"
 # The full version, including alpha/beta/rc tags
 release = nunavut_version
 
-exclude_patterns = ["**/test", "verification"]
+exclude_patterns = ["**/test", "verification", "submodules", "docs/cmake/build", "docs/cmake/external"]
 
 with open(".gitignore", "r", encoding="utf-8") as gif:
     for line in gif:
@@ -38,10 +38,8 @@ with open(".gitignore", "r", encoding="utf-8") as gif:
         if len(stripped) > 0 and not stripped.startswith("#"):
             exclude_patterns.append(stripped)
 
-rtd_version = os.environ.get('READTHEDOCS_VERSION')
-if rtd_version is not None:
-    git_hash = subprocess.check_output(["git", "rev-parse", rtd_version]).decode().strip()
-else:
+git_hash = os.environ.get('READTHEDOCS_GIT_COMMIT_HASH')
+if git_hash is None:
     git_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
 
 # -- General configuration ---------------------------------------------------

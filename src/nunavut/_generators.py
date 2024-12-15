@@ -587,8 +587,14 @@ def generate_all_from_namespace_with_generators(
     """
 
     template_files = list(set(support_generator.get_templates()).union(set(code_generator.get_templates())))
-    support_files = list(support_generator.generate_all(dry_run, not no_overwrite))
     generated_files = list(code_generator.generate_all(dry_run, not no_overwrite))
+
+    if support_generator.resource_types & ResourceType.ONLY.value != 0 or len(generated_files) > 0:
+        # if we are specifically generating support files or if we are generating them as-needed and we need them.
+        support_files = list(support_generator.generate_all(dry_run, not no_overwrite))
+    else:
+        # else we don't need to generate support files because there's nothing to support
+        support_files = []
 
     generator_targets = {}
     for file in generated_files:
