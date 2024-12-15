@@ -23,12 +23,14 @@ import typing
 
 def _make_parser() -> argparse.ArgumentParser:
 
+    script = pathlib.Path(__file__).relative_to(pathlib.Path.cwd())
+
     epilog = textwrap.dedent(
-        """
+        f"""
 
         **Example Usage**::
 
-            ./verify.py -l c
+            {script} -l c
 
     """
     )
@@ -80,12 +82,12 @@ def _make_parser() -> argparse.ArgumentParser:
         "--version-only",
         action="store_true",
         help=textwrap.dedent(
-            """
+            f"""
         Print out the version number (stored in src/nunavut/_version.py) only and exit. This number
         will be the only output to stdout allowing build scripts to extract this string value for
         use in the build environment. For example:
 
-            export NUNAVUT_FULL_VERSION=$(./_verify.py --version-only)
+            export NUNAVUT_FULL_VERSION=$({script} --version-only)
 
     """[1:]),
     )
@@ -94,12 +96,12 @@ def _make_parser() -> argparse.ArgumentParser:
         "--major-minor-version-only",
         action="store_true",
         help=textwrap.dedent(
-            """
+            f"""
         Print out the major and minor version number (stored in src/nunavut/_version.py) only and exit.
         This number will be the only output to stdout allowing build scripts to extract this string
         value for use in the build environment. For example:
 
-            export NUNAVUT_MAJOR_MINOR_VERSION=$(./_verify.py --major-minor-version-only)
+            export NUNAVUT_MAJOR_MINOR_VERSION=$({script} --major-minor-version-only)
 
     """[1:]),
     )
@@ -107,11 +109,11 @@ def _make_parser() -> argparse.ArgumentParser:
     build_args.add_argument(
         "--version-check-only",
         help=textwrap.dedent(
-            """
+            f"""
         Compares a given semantic version number with the current Nunavut version
         (stored in src/nunavut/_version.py) and returns 0 if it matches else returns 1.
 
-            if $(./_verify.py --version-check-only 1.0.2); then echo "match"; fi
+            if $({script} --version-check-only 1.0.2); then echo "match"; fi
 
     """[1:]),
     )
@@ -535,10 +537,13 @@ def _create_build_dir_name(args: argparse.Namespace) -> str:
 
 @functools.lru_cache(maxsize=None)
 def _get_version_string() -> typing.Tuple[str, str, str, str]:
-    with open("src/nunavut/_version.py", "r", encoding="UTF-8") as version_py:
-        exec(version_py.read())  # pylint: disable=exec-used
+    version: typing.Dict[str, str] = {}
+    nunavut_version_file = pathlib.Path("src/nunavut/_version.py")
 
-    version_string = typing.cast(str, eval("__version__"))  # pylint: disable=eval-used
+    with nunavut_version_file.open("r", encoding="UTF-8") as version_py:
+        exec(version_py.read(), version)  # pylint: disable=exec-used
+
+    version_string = version["__version__"]
     version_array = version_string.split(".")
     if len(version_array) not in (3, 4):
         raise RuntimeError(f"Invalid version string: {version_string}")

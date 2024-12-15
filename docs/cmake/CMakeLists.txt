@@ -58,7 +58,7 @@ list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/nunavut")
 FetchContent_Declare(
     Nunavut
     GIT_REPOSITORY  "https://github.com/OpenCyphal/nunavut"
-    GIT_TAG         "8b67b5f4e79db6b41ed537f18a3173f5f52f61ae" # <-- Here we've specified a specific git hash. This is
+    GIT_TAG         "1b1dc839593fc1b76b62b0c07061aad0f4a7c2fc" # <-- Here we've specified a specific git hash. This is
                                                                #     the strongest declaration of a fetched dependency.
                                                                #     Using a hash says we don't care if there are bugs
                                                                #     that are patched later. We want total build
