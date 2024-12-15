@@ -227,7 +227,7 @@ macro(nunavut_local_args)
     if(ARG_PYDSDL_PATH)
         set(LOCAL_PYTHON_PATH "${LOCAL_PYTHON_PATH}${NUNAVUT_PATH_LIST_SEP}${ARG_PYDSDL_PATH}")
     else()
-        set(LOCAL_PYTHON_PATH "${LOCAL_PYTHON_PATH}${NUNAVUT_PATH_LIST_SEP}${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl")
+        set(LOCAL_PYTHON_PATH "${LOCAL_PYTHON_PATH}${NUNAVUT_PATH_LIST_SEP}${NUNAVUT_SUBMODULES_DIR}/pydsdl")
     endif()
 
     set(ENV{PYTHONPATH} ${LOCAL_PYTHON_PATH})
@@ -259,7 +259,7 @@ endmacro()
         Path to the submodules folder in the nunavut repository.
 
 #]==]
-set(NUNAVUT_SUBMODULES_DIR ${CMAKE_CURRENT_LIST_DIR}/nunavut/submodules PARENT_SCOPE)
+set(NUNAVUT_SUBMODULES_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules)
 
 #[==[.rst:
 
