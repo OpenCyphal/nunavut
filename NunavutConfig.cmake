@@ -64,21 +64,21 @@ endif()
 # HELPER MACROS FOR INTERNAL FUNCTIONS. YOU CAN IGNORE THESE.
 
 # transform a JSON array into a CMAKE list
-macro(nunavut_json_array_to_list _json_array _list)
+macro(_nunavut_json_array_to_list _json_array _list)
     string(JSON _json_array_type ERROR_VARIABLE _json_error TYPE ${${_json_array}})
 
     if(_json_error)
-        message(FATAL_ERROR "nunavut_json_array_to_list: Failed to parse JSON array: ${_json_error}")
+        message(FATAL_ERROR "_nunavut_json_array_to_list: Failed to parse JSON array: ${_json_error}")
     endif()
 
     if(NOT ${_json_array_type} STREQUAL "ARRAY")
-        message(FATAL_ERROR "nunavut_json_array_to_list: Expected JSON array but got ${_json_array_type}.")
+        message(FATAL_ERROR "_nunavut_json_array_to_list: Expected JSON array but got ${_json_array_type}.")
     endif()
 
     string(JSON _json_array_length ERROR_VARIABLE _json_error LENGTH ${${_json_array}})
 
     if(_json_error)
-        message(FATAL_ERROR "nunavut_json_array_to_list: Failed to get length of JSON array: ${_json_error}")
+        message(FATAL_ERROR "_nunavut_json_array_to_list: Failed to get length of JSON array: ${_json_error}")
     endif()
 
     set(_local_list "")
@@ -88,7 +88,7 @@ macro(nunavut_json_array_to_list _json_array _list)
         string(JSON _item ERROR_VARIABLE _json_error GET ${${_json_array}} ${_index})
 
         if(_json_error)
-            message(FATAL_ERROR "nunavut_json_array_to_list: Failed to get item from JSON array: ${_json_error}")
+            message(FATAL_ERROR "_nunavut_json_array_to_list: Failed to get item from JSON array: ${_json_error}")
         endif()
 
         list(APPEND _local_list "${_item}")
@@ -97,15 +97,16 @@ macro(nunavut_json_array_to_list _json_array _list)
     set(${_list} ${_local_list})
 endmacro()
 
-# used internally to unify argument handling for standards nnvg arguments across all cmake functions
+# used internally to unify argument handling for standards nunavut cli arguments across all cmake functions
 # Note: all options are repeated as "LOCAL_ARG_[option name]" to support forwarding.
-macro(nunavut_config_args has_name options singleValueArgs multiValueArgs usageLines)
+macro(_nunavut_config_args has_name options singleValueArgs multiValueArgs usageLines)
     list(APPEND ${options}
         ALLOW_EXPERIMENTAL_LANGUAGES
         CONSOLE_DEBUG
         SUPPORT_ONLY
         NO_SUPPORT
         OMIT_PUBLIC_REGULATED_NAMESPACE
+        OMIT_DEPENDENCIES
     )
     list(APPEND ${singleValueArgs}
         NAME
@@ -130,7 +131,7 @@ macro(nunavut_config_args has_name options singleValueArgs multiValueArgs usageL
     list(INSERT ${usageLines} 3
         "    [LANGUAGE_STANDARD <language_standard>] [OUTPUT_DIR <output_dir>] [CONFIGURATION <configuration>]"
         "    [WORKING_DIRECTORY <working_directory>] [PYDSDL_PATH <pydsdl_path>] [FILE_EXTENSION <file_extension>]"
-        "    [ALLOW_EXPERIMENTAL_LANGUAGES] [CONSOLE_DEBUG] [SUPPORT_ONLY|NO_SUPPORT]"
+        "    [ALLOW_EXPERIMENTAL_LANGUAGES] [CONSOLE_DEBUG] [SUPPORT_ONLY|NO_SUPPORT] [OMIT_DEPENDENCIES]"
     )
 
     cmake_parse_arguments(PARSE_ARGV 0 ARG "${${options}}" "${${singleValueArgs}}" "${${multiValueArgs}}")
@@ -151,10 +152,6 @@ macro(nunavut_config_args has_name options singleValueArgs multiValueArgs usageL
         message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: LANGUAGE must be 'c' or 'cpp'.")
     endif()
 
-    if(NOT ARG_DSDL_FILES)
-        message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: DSDL_FILES is required.")
-    endif()
-
     if(NOT ARG_OUTPUT_DIR)
         set(ARG_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
     endif()
@@ -167,6 +164,10 @@ macro(nunavut_config_args has_name options singleValueArgs multiValueArgs usageL
         message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: SUPPORT_ONLY and NO_SUPPORT are mutually exclusive.")
     endif()
 
+    if(NOT ARG_DSDL_FILES AND NOT ARG_SUPPORT_ONLY)
+        message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: DSDL_FILES is required.")
+    endif()
+
     if(ARG_UNPARSED_ARGUMENTS)
         list(INSERT ${usageLines} 0 "Unknown arguments found: ${ARG_UNPARSED_ARGUMENTS}")
         string(JOIN "\n" LOCAL_USAGE_MESSAGE ${${usageLines}})
@@ -174,9 +175,11 @@ macro(nunavut_config_args has_name options singleValueArgs multiValueArgs usageL
     endif()
 endmacro()
 
-macro(nunavut_local_args)
+macro(_nunavut_local_args)
     # handle forming arguments for the nunavut tool based on arguments passed into this function.
-    set(LOCAL_DYNAMIC_ARGS "")
+    if (NOT LOCAL_DYNAMIC_ARGS)
+        set(LOCAL_DYNAMIC_ARGS "")
+    endif()
 
     if(ARG_DSDL_NAMESPACES)
         foreach(LOCAL_DSDL_NAMESPACE IN LISTS ARG_DSDL_NAMESPACES)
@@ -250,6 +253,10 @@ macro(nunavut_local_args)
         set(LOCAL_JSON_FORMAT "json")
         set(LOCAL_LIST_CONFIGURATION "")
     endif()
+
+    if(ARG_OMIT_DEPENDENCIES)
+        list(APPEND LOCAL_DYNAMIC_ARGS "--omit-dependencies")
+    endif()
 endmacro()
 
 # ###################################################################################
@@ -281,8 +288,8 @@ set(NUNAVUT_SUBMODULES_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules)
 
         - **param** ``DSDL_NAMESPACES`` **optional list[path]**:
 
-            A list of namespaces to search for dependencies in. Unless OMIT_PUBLIC_REGULATED_NAMESPACE is set, this
-            will always include ${NUNAVUT_SUBMODULES_DIR}/public_regulated_data_types/uavcan
+            A list of namespaces to search for dependencies in. Unless ``OMIT_PUBLIC_REGULATED_NAMESPACE`` is set, this
+            will always include ``${NUNAVUT_SUBMODULES_DIR}/public_regulated_data_types/uavcan``
 
         - **param** ``LANGUAGE_STANDARD`` **optional str**:
 
@@ -294,7 +301,7 @@ set(NUNAVUT_SUBMODULES_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules)
 
         - **param** ``CONFIGURATION`` **optional list[path]**:
 
-            A list of configuration files to pass into nnvg. See the nunavut documentation for more information about
+            A list of configuration files to pass into nunavut. See the nunavut documentation for more information about
             configuration files.
 
         - **param** ``WORKING_DIRECTORY`` **optional path**:
@@ -304,7 +311,7 @@ set(NUNAVUT_SUBMODULES_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules)
 
         - **param** ``PYDSDL_PATH`` **optional path**:
 
-            The path to the PyDSDL tool. If omitted then this is set to ${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl
+            The path to the PyDSDL tool. If omitted then this is set to ${NUNAVUT_SUBMODULES_DIR}/pydsdl
             which is the root of the pydsdl submodule in the Nunavut repo.
 
         - **param** ``FILE_EXTENSION`` **optional str**:
@@ -332,9 +339,14 @@ set(NUNAVUT_SUBMODULES_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules)
 
         - **option** ``OMIT_PUBLIC_REGULATED_NAMESPACE``:
 
-            By default, ``${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl`` is added to the list of ``DSDL_NAMESPACES``
-            even if this variable is not set. This option disables this behaviour so only explicitly listed
-            ``DSDL_NAMESPACES`` values will be used.
+            By default, ``${NUNAVUT_SUBMODULES_DIR}/public_regulated_data_types/uavcan`` is added to the list of
+            ``DSDL_NAMESPACES`` even if this variable is not set. This option disables this behaviour so only explicitly
+            listed ``DSDL_NAMESPACES`` values will be used.
+
+        - **option** ``OMIT_DEPENDENCIES``:
+
+            Disables the generation of dependent types. This is useful when setting up build rules for a project where
+            the dependent types are generated separately.
 
         - **param** ``OUT_MANIFEST_PATH``:
 
@@ -348,10 +360,10 @@ function(export_nunavut_manifest)
     set(singleValueArgs OUT_MANIFEST_PATH)
     set(multiValueArgs)
     set(usageLines "    [OUT_MANIFEST_PATH <out_manifest_path>]")
-    nunavut_config_args(ON options singleValueArgs multiValueArgs usageLines)
+    _nunavut_config_args(ON options singleValueArgs multiValueArgs usageLines)
 
     # +-[body]-----------------------------------------------------------------+
-    nunavut_local_args()
+    _nunavut_local_args()
 
     # List all inputs to use as the dependencies for the custom command.
     execute_process(
@@ -386,8 +398,8 @@ endfunction()
 
     .. cmake:command:: discover_inputs_and_outputs
 
-        Invoke nnvg to discover all dsdl inputs for a given set of namespaces and the outputs that these would generate
-        from a codegen build step.
+        Invoke the nunavut CLI to discover all dsdl inputs for a given set of namespaces and the outputs that these
+        would generate from a codegen build step.
 
         .. note::
 
@@ -404,7 +416,8 @@ endfunction()
 
         - **param** ``DSDL_NAMESPACES`` **optional list[path]**:
 
-            A list of namespaces to search for dependencies in. While optional, it's rare that this would be omitted.
+            A list of namespaces to search for dependencies in. Unless ``OMIT_PUBLIC_REGULATED_NAMESPACE`` is set, this
+            will always include ``${NUNAVUT_SUBMODULES_DIR}/public_regulated_data_types/uavcan``
 
         - **param** ``LANGUAGE_STANDARD`` **optional str**:
 
@@ -416,7 +429,7 @@ endfunction()
 
         - **param** ``CONFIGURATION`` **optional list[path]**:
 
-            A list of configuration files to pass into nnvg. See the nunavut documentation for more information about
+            A list of configuration files to pass into nunavut. See the nunavut documentation for more information about
             configuration files.
 
         - **param** ``WORKING_DIRECTORY`` **optional path**:
@@ -426,7 +439,7 @@ endfunction()
 
         - **param** ``PYDSDL_PATH`` **optional path**:
 
-            The path to the PyDSDL tool. If omitted then this is set to ${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl
+            The path to the PyDSDL tool. If omitted then this is set to ${NUNAVUT_SUBMODULES_DIR}/pydsdl
             which is the root of the pydsdl submodule in the Nunavut repo.
 
         - **param** ``FILE_EXTENSION`` **optional str**:
@@ -454,14 +467,19 @@ endfunction()
 
         - **option** ``OMIT_PUBLIC_REGULATED_NAMESPACE``:
 
-            By default, ``${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl`` is added to the list of ``DSDL_NAMESPACES``
-            even if this variable is not set. This option disables this behaviour so only explicitly listed
-            ``DSDL_NAMESPACES`` values will be used.
+            By default, ``${NUNAVUT_SUBMODULES_DIR}/public_regulated_data_types/uavcan`` is added to the list of
+            ``DSDL_NAMESPACES`` even if this variable is not set. This option disables this behaviour so only explicitly
+            listed ``DSDL_NAMESPACES`` values will be used.
+
+        - **option** ``OMIT_DEPENDENCIES``:
+
+            Disables the generation of dependent types. This is useful when setting up build rules for a project where
+            the dependent types are generated separately.
 
         - **param** ``OUT_MANIFEST_DATA`` **optional variable:**
 
             If set, this method writes a variable named ``${OUT_MANIFEST_DATA}`` with the json string containing the
-            entire manifest read in from the nnvg invocation.
+            entire manifest read in from the nunavut CLI invocation.
 
         - **param** ``OUT_INPUTS_LIST`` **optional variable:**
 
@@ -486,10 +504,10 @@ function(discover_inputs_and_outputs)
     list(APPEND usageLines
         "    [OUT_INPUTS_LIST <inputs_list_variable>] [OUT_OUTPUTS_LIST <outputs_list_variable>] [OUT_MANIFEST_DATA <manifest_variable>]"
     )
-    nunavut_config_args(OFF options singleValueArgs multiValueArgs usageLines)
+    _nunavut_config_args(OFF options singleValueArgs multiValueArgs usageLines)
 
     # +-[body]-----------------------------------------------------------------+
-    nunavut_local_args()
+    _nunavut_local_args()
 
     # List all inputs to use as the dependencies for the custom command.
     execute_process(
@@ -517,7 +535,7 @@ function(discover_inputs_and_outputs)
         message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: Failed to read inputs from nunavut: ${LOCAL_LIB_READ_INPUTS_ERROR}")
     endif()
 
-    nunavut_json_array_to_list(LOCAL_LIB_INPUTS LOCAL_LIB_INPUTS_LIST)
+    _nunavut_json_array_to_list(LOCAL_LIB_INPUTS LOCAL_LIB_INPUTS_LIST)
     list(LENGTH LOCAL_LIB_INPUTS_LIST LOCAL_LIB_INPUTS_LENGTH)
 
     if(${LOCAL_LIB_INPUTS_LENGTH} EQUAL 0)
@@ -534,7 +552,7 @@ function(discover_inputs_and_outputs)
         message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: Failed to read outputs from nunavut: ${LOCAL_LIB_READ_OUTPUTS_ERROR}")
     endif()
 
-    nunavut_json_array_to_list(LOCAL_LIB_OUTPUTS LOCAL_LIB_OUTPUTS_LIST)
+    _nunavut_json_array_to_list(LOCAL_LIB_OUTPUTS LOCAL_LIB_OUTPUTS_LIST)
     list(LENGTH LOCAL_LIB_OUTPUTS_LIST LOCAL_LIB_OUTPUTS_LENGTH)
 
     if(${LOCAL_LIB_OUTPUTS_LENGTH} EQUAL 0)
@@ -597,7 +615,7 @@ endfunction()
 
         - **param** ``CONFIGURATION`` **optional list[path]**:
 
-            A list of configuration files to pass into nnvg. See the nunavut documentation for more information about
+            A list of configuration files to pass into nunavut. See the nunavut documentation for more information about
             configuration files.
 
         - **param** ``WORKING_DIRECTORY`` **optional path**:
@@ -607,12 +625,24 @@ endfunction()
 
         - **param** ``PYDSDL_PATH`` **optional path**:
 
-            The path to the PyDSDL tool. If omitted then this is set to ${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl
+            The path to the PyDSDL tool. If omitted then this is set to ${NUNAVUT_SUBMODULES_DIR}/pydsdl
             which is the root of the pydsdl submodule in the Nunavut repo.
+
+        - **param** ``SERIALIZATION_ASSERT`` **optional string**
+
+            Both enables generation of serialization assert logic and inserts the value of this parameter as the code
+            expanded for the ``NUNAVUT_ASSERT`` assert macro. For example ``SERIALIZATION_ASSERT assert`` will set
+            ``-DNUNAVUT_ASSERT=assert`` for the build which will then use ``assert`` as the call for serialization
+            asserts.
 
         - **param** ``FILE_EXTENSION`` **optional str**:
 
             The file extension to use for generated files. If omitted then the default for the language is used.
+
+        - **param** ``EXTRA_GENERATOR_ARGS`` **optional list[str]**
+
+            Additional command-line arguments to pass to the Nunavut CLI when generating code. These args are not
+            used for invoking the Nunavut CLI to discover dependencies.
 
         - **option** ``ALLOW_EXPERIMENTAL_LANGUAGES``:
 
@@ -645,9 +675,19 @@ endfunction()
 
         - **option** ``OMIT_PUBLIC_REGULATED_NAMESPACE``:
 
-            By default, ``${NUNAVUT_SUBMODULES_DIR}/pydsdl/pydsdl`` is added to the list of ``DSDL_NAMESPACES``
-            even if this variable is not set. This option disables this behaviour so only explicitly listed
-            ``DSDL_NAMESPACES`` values will be used.
+            By default, ``${NUNAVUT_SUBMODULES_DIR}/public_regulated_data_types/uavcan`` is added to the list of
+            ``DSDL_NAMESPACES`` even if this variable is not set. This option disables this behaviour so only explicitly
+            listed ``DSDL_NAMESPACES`` values will be used.
+
+        - **option** mutually exclusive: one of ``ENDIAN_ANY``|``ENDIAN_LITTLE``|``ENDIAN_BIG``:
+
+            If one of these is set then the endianness argument is passed into the nunavut CLI otherwise endianess is
+            taken from language configuration.
+
+        - **option** ``OMIT_DEPENDENCIES``:
+
+            Disables the generation of dependent types. This is useful when setting up build rules for a project where
+            the dependent types are generated separately.
 
         - **param** ``OUT_LIBRARY_TARGET`` **optional variable**:
 
@@ -662,24 +702,64 @@ endfunction()
 #]==]
 function(add_cyphal_library)
     # +-[input]----------------------------------------------------------------+
-    set(options EXPORT_MANIFEST EXACT_NAME)
+    set(options
+        EXPORT_MANIFEST
+        EXACT_NAME
+        ENDIAN_ANY
+        ENDIAN_LITTLE
+        ENDIAN_BIG
+    )
     set(singleValueArgs
+        SERIALIZATION_ASSERT
         OUT_LIBRARY_TARGET
         OUT_CODEGEN_TARGET
     )
-    set(multiValueArgs)
+    set(multiValueArgs EXTRA_GENERATOR_ARGS)
     list(APPEND usageLines
-        "    [EXPORT_MANIFEST] [EXACT_NAME]"
+        "    [EXPORT_MANIFEST] [EXACT_NAME] [EXTRA_GENERATOR_ARGS <argument list>]"
+        "    [ENDIAN_ANY|ENDIAN_LITTLE|ENDIAN_BIG]"
+        "    [SERIALIZATION_ASSERT <assert function>]"
         "    [OUT_LIBRARY_TARGET <library_target_variable>] [OUT_CODEGEN_TARGET <codegen_target_variable>]"
     )
-    nunavut_config_args(ON options singleValueArgs multiValueArgs usageLines)
+    _nunavut_config_args(ON options singleValueArgs multiValueArgs usageLines)
 
     if(NOT ARG_NAME AND EXACT_NAME)
         message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: NAME is required if EXACT_NAME is set.")
     endif()
 
+    if(ARG_SERIALIZATION_ASSERT)
+        string(LENGTH ARG_SERIALIZATION_ASSERT LOCAL_SERIALIZATION_ASSERT_STRING_LENGTH)
+        if (${LOCAL_SERIALIZATION_ASSERT_STRING_LENGTH} GREATER 0)
+            list(APPEND LOCAL_DYNAMIC_ARGS "--enable-serialization-asserts")
+        endif()
+    else()
+        set(LOCAL_SERIALIZATION_ASSERT_STRING_LENGTH 0)
+    endif()
+
+    if(ARG_ENDIAN_ANY)
+        if (ARG_ENDIAN_BIG OR ARG_ENDIAN_LITTLE)
+            message(FATAL_ERROR "ENDIAN_ANY|ENDIAN_LITTLE|ENDIAN_BIG options are mutually exclusive. Provide only one or none.")
+        endif()
+        list(APPEND LOCAL_DYNAMIC_ARGS "--target-endianness" "any")
+    elseif(ARG_ENDIAN_BIG)
+        if (ARG_ENDIAN_ANY OR ARG_ENDIAN_LITTLE)
+            message(FATAL_ERROR "ENDIAN_ANY|ENDIAN_LITTLE|ENDIAN_BIG options are mutually exclusive. Provide only one or none.")
+        endif()
+        list(APPEND LOCAL_DYNAMIC_ARGS "--target-endianness" "big")
+    elseif(ARG_ENDIAN_LITTLE)
+        if (ARG_ENDIAN_ANY OR ARG_ENDIAN_BIG)
+            message(FATAL_ERROR "ENDIAN_ANY|ENDIAN_LITTLE|ENDIAN_BIG options are mutually exclusive. Provide only one or none.")
+        endif()
+        list(APPEND LOCAL_DYNAMIC_ARGS "--target-endianness" "little")
+    endif()
+
+    if(NOT ARG_EXTRA_GENERATOR_ARGS)
+        # silence use of undefined warning
+        set(ARG_EXTRA_GENERATOR_ARGS)
+    endif()
+
     # +-[body]-----------------------------------------------------------------+
-    nunavut_local_args()
+    _nunavut_local_args()
 
     if(ARG_EXACT_NAME)
         set(LOCAL_TARGET_NAME "${ARG_NAME}")
@@ -726,6 +806,7 @@ function(add_cyphal_library)
         --target-language ${ARG_LANGUAGE}
         --outdir ${ARG_OUTPUT_DIR}
         ${LOCAL_DYNAMIC_ARGS}
+        ${ARG_EXTRA_GENERATOR_ARGS}
         ${ARG_DSDL_FILES}
         WORKING_DIRECTORY ${ARG_WORKING_DIRECTORY}
         DEPENDS ${LOCAL_LIB_INPUTS_LIST}
@@ -742,6 +823,10 @@ function(add_cyphal_library)
     target_include_directories(${LOCAL_TARGET_NAME} INTERFACE ${ARG_OUTPUT_DIR})
 
     add_dependencies(${LOCAL_TARGET_NAME} ${LOCAL_CODEGEN_TARGET})
+
+    if (${LOCAL_SERIALIZATION_ASSERT_STRING_LENGTH} GREATER 0)
+         target_compile_definitions(${LOCAL_TARGET_NAME} INTERFACE "-DNUNAVUT_ASSERT=${ARG_SERIALIZATION_ASSERT}")
+    endif()
 
     if(ARG_EXPORT_MANIFEST)
         set(LOCAL_MANIFEST_FILE "${CMAKE_CURRENT_BINARY_DIR}/${LOCAL_CODEGEN_TARGET}.json")

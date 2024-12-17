@@ -15,7 +15,7 @@ if(LCOV)
 
     set(NUNAVUT_GOV_TOOL_ARG )
 
-    if (${NUNAVUT_USE_LLVM_COV})
+    if (NUNAVUT_USE_LLVM_COV)
         # Try to find llvm coverage. If we don't find it
         # we'll simply omit the tool arg and hope that lcov
         # can figure it out.

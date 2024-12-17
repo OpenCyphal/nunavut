@@ -53,19 +53,21 @@ string(TOLOWER ${NUNAVUT_VERIFICATION_LANG} LOCAL_VERIFICATION_LANG)
 
 set(NUNAVUT_SUBMODULES_ROOT "${NUNAVUT_PROJECT_ROOT}/submodules" CACHE STRING "The path to git submodules for the project.")
 
-if(NOT DEFINED NUNAVUT_VERIFICATION_LANG_STANDARD)
-     set(NUNAVUT_VERIFICATION_LANG_STANDARD "c++20" CACHE STRING "A language standard for languages that support this concept.")
-endif()
 # Ensure NUNAVUT_VERIFICATION_LANG_STANDARD has a default
-if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp" AND NOT NUNAVUT_VERIFICATION_LANG_STANDARD)
-     set(NUNAVUT_VERIFICATION_LANG_STANDARD "c++20")
+if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp" AND NUNAVUT_VERIFICATION_LANG_STANDARD)
+     set(NUNAVUT_VERIFICATION_LANG_CPP_STANDARD ${NUNAVUT_VERIFICATION_LANG_STANDARD})
+else()
+     set(NUNAVUT_VERIFICATION_LANG_CPP_STANDARD "c++20")
 endif()
 
-if (NUNAVUT_VERIFICATION_LANG STREQUAL "c" AND NOT NUNAVUT_VERIFICATION_LANG_STANDARD)
-     set(NUNAVUT_VERIFICATION_LANG_STANDARD "c11")
+if (NUNAVUT_VERIFICATION_LANG STREQUAL "c" AND NUNAVUT_VERIFICATION_LANG_STANDARD)
+     set(NUNAVUT_VERIFICATION_LANG_C_STANDARD ${NUNAVUT_VERIFICATION_LANG_STANDARD})
+else()
+     set(NUNAVUT_VERIFICATION_LANG_C_STANDARD "c11")
 endif()
 
-message(STATUS "NUNAVUT_VERIFICATION_LANG_STANDARD is ${NUNAVUT_VERIFICATION_LANG_STANDARD}")
+message(STATUS "NUNAVUT_VERIFICATION_LANG_C_STANDARD is ${NUNAVUT_VERIFICATION_LANG_C_STANDARD}")
+message(STATUS "NUNAVUT_VERIFICATION_LANG_CPP_STANDARD is ${NUNAVUT_VERIFICATION_LANG_CPP_STANDARD}")
 
 if(NOT DEFINED NUNAVUT_VERIFICATION_TARGET_ENDIANNESS)
      set(NUNAVUT_VERIFICATION_TARGET_ENDIANNESS "any" CACHE STRING "The endianess for the target verification architecture.")
@@ -126,11 +128,6 @@ file(WRITE ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/README.txt
 find_package(lcov REQUIRED)
 find_package(genhtml REQUIRED)
 
-#
-# We need tox to enable a reproducible python environment.
-#
-find_package(tox REQUIRED)
-
 # +---------------------------------------------------------------------------+
 # | SOURCE GENERATION
 # +---------------------------------------------------------------------------+
@@ -152,190 +149,110 @@ add_definitions(-DUNITY_SUPPORT_64=1
 #
 # Make sure nnvg was installed correctly.
 #
-find_package(nnvg REQUIRED)
+find_package(Nunavut 3.0 REQUIRED)
 
 #
 # Pull in some stuff we need for testing C++
 #
 find_package(o1heap REQUIRED)
 
-create_dsdl_library(
-     NAME public_regulated_data_types
-     LANGUAGE c
-     ASSERT_TYPE_GTEST
-     DSDL_FILES ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
+# +-[ARGUMENT TRANSLATION]----------------------------------------------------+
+#
+# Translate local arguments into the form needed by add_cyphal_library
+#
+if (NUNAVUT_VERIFICATION_SER_ASSERT)
+     if(NUNAVUT_VERIFICATION_LANG STREQUAL "cpp")
+          set(LOCAL_SERIALIZATION_ASSERT_VALUE "EXPECT_TRUE")
+     else()
+          set(LOCAL_SERIALIZATION_ASSERT_VALUE "TEST_ASSERT_TRUE")
+     endif()
+else()
+     set(LOCAL_SERIALIZATION_ASSERT_VALUE)
+endif()
+
+set(LOCAL_EXTRA_NUNAVUT_ARGS)
+if (NUNAVUT_VERIFICATION_SER_FP_DISABLE)
+     list(APPEND LOCAL_EXTRA_NUNAVUT_ARGS "--omit-float-serialization-support")
+endif()
+
+if (NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE)
+     list(APPEND LOCAL_EXTRA_NUNAVUT_ARGS "--enable-override-variable-array-capacity")
+endif()
+
+if (${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS} STREQUAL "any")
+     set(LOCAL_NUNAVUT_VERIFICATION_TARGET_ENDIANNESS_OPTION "ENDIAN_ANY")
+elseif (${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS} STREQUAL "little")
+     set(LOCAL_NUNAVUT_VERIFICATION_TARGET_ENDIANNESS_OPTION "ENDIAN_LITTLE")
+elseif (${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS} STREQUAL "big")
+     set(LOCAL_NUNAVUT_VERIFICATION_TARGET_ENDIANNESS_OPTION "ENDIAN_BIG")
+else()
+     message(FATAL_ERROR "NUNAVUT_VERIFICATION_TARGET_ENDIANNESS value \"${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}\" is invalid.")
+endif()
+
+# +-[DISCOVER DSDL FILES]-----------------------------------------------------+
+
+# add_cyphal_library automatically adds the public_regulated_data_types/uavcan namespace
+# (unless OMIT_PUBLIC_REGULATED_NAMESPACE is set) so we can use relative paths for these.
+# Nunavut also finds all dependencies of the test types so we only add public regulated
+# types where we've specifically included them in a test.
+set(LOCAL_TEST_TYPES_PUBLIC_REGULATED
+     uavcan/pnp/8165.NodeIDAllocationData.2.0.dsdl
+     uavcan/time/TimeSystem.0.1.dsdl
+     uavcan/node/port/SubjectIDList.1.0.dsdl
+     uavcan/register/Value.1.0.dsdl
+     uavcan/node/port/SubjectIDList.0.1.dsdl
+     uavcan/metatransport/can/ArbitrationID.0.1.dsdl
 )
-#
-# Generate serialization support headers
-#
-create_dsdl_target(nunavut-support
-                   ${NUNAVUT_VERIFICATION_LANG}
-                   "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/default
-                   ""
-                   OFF
-                   ${NUNAVUT_VERIFICATION_SER_ASSERT}
-                   ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
-                   ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
-                   ON
-                   "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
-                   "only")
 
-#
-# Generate types for the Cyphal v1 public_regulated_data_types set.
-#
-create_dsdl_target(dsdl-regulated
-                   ${NUNAVUT_VERIFICATION_LANG}
-                   "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/default
-                   ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
-                   OFF
-                   ${NUNAVUT_VERIFICATION_SER_ASSERT}
-                   ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
-                   ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
-                   ON
-                   "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
-                   "never")
+set(LOCAL_NAMESPACE_TEST0_REGULATED ${CMAKE_SOURCE_DIR}/nunavut_test_types/test0/regulated)
+file(GLOB_RECURSE LOCAL_TEST_TYPES_TEST0_REGULATED CONFIGURE_DEPENDS ${LOCAL_NAMESPACE_TEST0_REGULATED}/*.dsdl)
 
-add_dependencies(dsdl-regulated nunavut-support)
+set(LOCAL_NAMESPACE_NESTED_ARRAY_TYPES ${CMAKE_SOURCE_DIR}/nunavut_test_types/nested_array_types/mymsgs)
+file(GLOB_RECURSE LOCAL_NESTED_ARRAY_TYPES CONFIGURE_DEPENDS ${LOCAL_NAMESPACE_NESTED_ARRAY_TYPES}/*.dsdl)
 
+# +-[C-TYPES]-----------------------------------------------------------------+
 #
 # Generate additional types for verification
 #
-create_dsdl_target(dsdl-test
-                   ${NUNAVUT_VERIFICATION_LANG}
-                   "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                   ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/default
-                   ${CMAKE_SOURCE_DIR}/nunavut_test_types/test0/regulated
-                   OFF
-                   ${NUNAVUT_VERIFICATION_SER_ASSERT}
-                   ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
-                   ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
-                   ON
-                   "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
-                   "never"
-                   ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
+add_cyphal_library(
+     NAME dsdl-test-c
+     LANGUAGE c
+     LANGUAGE_STANDARD ${NUNAVUT_VERIFICATION_LANG_C_STANDARD}
+     DSDL_FILES
+          ${LOCAL_TEST_TYPES_TEST0_REGULATED}
+          ${LOCAL_NESTED_ARRAY_TYPES}
+          ${LOCAL_TEST_TYPES_PUBLIC_REGULATED}
+     DSDL_NAMESPACES
+          ${LOCAL_NAMESPACE_TEST0_REGULATED}
+          ${LOCAL_NAMESPACE_NESTED_ARRAY_TYPES}
+     SERIALIZATION_ASSERT ${LOCAL_SERIALIZATION_ASSERT_VALUE}
+     EXTRA_GENERATOR_ARGS ${LOCAL_EXTRA_NUNAVUT_ARGS}
+     ${LOCAL_NUNAVUT_VERIFICATION_TARGET_ENDIANNESS_OPTION}
+     EXPORT_MANIFEST
+     ALLOW_EXPERIMENTAL_LANGUAGES
+     OUT_LIBRARY_TARGET LOCAL_TEST_TYPES_C_LIBRARY
+)
 
-add_dependencies(dsdl-test nunavut-support)
-
-if(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
-     # C++ tests including going back and forth between c and c++. We include
-     # c serialization support when verifying c++ for this reason. Future versions of this
-     # verification build might make this more generic allowing any language to test interoperability
-     # with any other language.
-     set(LOCAL_VERIFICATION_LANG_STANDARD_C "")
-     set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
-     list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS dsdl-regulated-c dsdl-test-c)
-     #
-     # Generate serialization support headers
-     #
-     create_dsdl_target(nunavut-support-c
-                        "c"
-                        "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                        ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/default
-                        ""
-                        OFF
-                        ${NUNAVUT_VERIFICATION_SER_ASSERT}
-                        ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
-                        ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
-                        ON
-                        "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
-                        "only")
-
-     #
-     # Generate types for the Cyphal v1 public_regulated_data_types set.
-     #
-     create_dsdl_target(dsdl-regulated-c
-                        "c"
-                        "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                        ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/default
-                        ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan
-                        OFF
-                        ${NUNAVUT_VERIFICATION_SER_ASSERT}
-                        ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
-                        ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
-                        ON
-                        "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
-                        "never")
-
-     add_dependencies(dsdl-regulated-c nunavut-support-c)
-
-     #
-     # Generate additional types for verification
-     #
-     create_dsdl_target(dsdl-test-c
-                        "c"
-                        "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                        ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/default
-                        ${CMAKE_SOURCE_DIR}/nunavut_test_types/test0/regulated
-                        OFF
-                        ${NUNAVUT_VERIFICATION_SER_ASSERT}
-                        ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
-                        ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
-                        ON
-                        "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
-                        "never"
-                        ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
-
-     add_dependencies(dsdl-test-c nunavut-support-c)
-endif()
-
-
-if(NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "cetl++14-17"
-OR NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++17-pmr"
-OR NUNAVUT_VERIFICATION_LANG_STANDARD STREQUAL "c++20-pmr")
-     #
-     # Generate serialization support headers with config matching the language standard
-     #
-     create_dsdl_target(nunavut-support-array-with-allocator
-                    ${NUNAVUT_VERIFICATION_LANG}
-                    "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/array-with-allocator
-                    ""
-                    OFF
-                    ${NUNAVUT_VERIFICATION_SER_ASSERT}
-                    ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
-                    ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
-                    ON
-                    "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
-                    "only")
-
-     #
-     # Generate additional types with config matching the language standard
-     #
-     create_dsdl_target(dsdl-test-array-with-allocator
-                    ${NUNAVUT_VERIFICATION_LANG}
-                    "${NUNAVUT_VERIFICATION_LANG_STANDARD}"
-                    ${NUNAVUT_GENERATED_ROOT}/${NUNAVUT_VERIFICATION_LANG}/array-with-allocator
-                    ${CMAKE_SOURCE_DIR}/nunavut_test_types/nested_array_types/mymsgs
-                    OFF
-                    ${NUNAVUT_VERIFICATION_SER_ASSERT}
-                    ${NUNAVUT_VERIFICATION_SER_FP_DISABLE}
-                    ${NUNAVUT_VERIFICATION_OVR_VAR_ARRAY_ENABLE}
-                    ON
-                    "${NUNAVUT_VERIFICATION_TARGET_ENDIANNESS}"
-                    "never"
-                    ${NUNAVUT_SUBMODULES_ROOT}/public_regulated_data_types/uavcan)
-
-     add_dependencies(dsdl-test-array-with-allocator nunavut-support-array-with-allocator)
-endif()
-
-# +---------------------------------------------------------------------------+
-# | FLAG SETS
-# +---------------------------------------------------------------------------+
-
-if (LOCAL_VERIFICATION_LANG STREQUAL "c")
-     set(LOCAL_VERIFICATION_LANG_STANDARD_C "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
-     set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "")
-     list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS "")
-elseif(LOCAL_VERIFICATION_LANG STREQUAL "cpp")
-     set(LOCAL_VERIFICATION_LANG_STANDARD_C "")
-     set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "${NUNAVUT_VERIFICATION_LANG_STANDARD}")
-     list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS "")
-else()
-    set(LOCAL_VERIFICATION_LANG_STANDARD_C "")
-    set(LOCAL_VERIFICATION_LANG_STANDARD_CXX "")
-    list(APPEND LOCAL_ADDITIONAL_DSDL_LIBS "")
+# +-[CPP-TYPES]---------------------------------------------------------------+
+if(NUNAVUT_VERIFICATION_LANG STREQUAL "cpp")
+     add_cyphal_library(
+          NAME dsdl-test-cpp
+          LANGUAGE ${NUNAVUT_VERIFICATION_LANG}
+          LANGUAGE_STANDARD ${NUNAVUT_VERIFICATION_LANG_CPP_STANDARD}
+          DSDL_FILES
+               ${LOCAL_TEST_TYPES_TEST0_REGULATED}
+               ${LOCAL_NESTED_ARRAY_TYPES}
+               ${LOCAL_TEST_TYPES_PUBLIC_REGULATED}
+          DSDL_NAMESPACES
+               ${LOCAL_NAMESPACE_TEST0_REGULATED}
+               ${LOCAL_NAMESPACE_NESTED_ARRAY_TYPES}
+          SERIALIZATION_ASSERT ${LOCAL_SERIALIZATION_ASSERT_VALUE}
+          EXTRA_GENERATOR_ARGS ${LOCAL_EXTRA_NUNAVUT_ARGS}
+          ${LOCAL_NUNAVUT_VERIFICATION_TARGET_ENDIANNESS_OPTION}
+          EXPORT_MANIFEST
+          ALLOW_EXPERIMENTAL_LANGUAGES
+          OUT_LIBRARY_TARGET LOCAL_TEST_TYPES_CPP_LIBRARY
+     )
 endif()
 
 # +---------------------------------------------------------------------------+
@@ -365,7 +282,7 @@ function(runTestCpp)
     cmake_parse_arguments(runTestCpp "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     # Skip tests not relevant to the specified language standard
-    list(FIND runTestCpp_LANGUAGE_FLAVORS "${NUNAVUT_VERIFICATION_LANG_STANDARD}" FIND_INDEX)
+    list(FIND runTestCpp_LANGUAGE_FLAVORS "${NUNAVUT_VERIFICATION_LANG_CPP_STANDARD}" FIND_INDEX)
     if (${FIND_INDEX} EQUAL -1)
         message(STATUS "Skipping ${runTestCpp_TEST_FILE}")
         return()
@@ -380,7 +297,6 @@ function(runTestCpp)
                             OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
                             DSDL_TARGETS
                                 ${runTestCpp_LINK}
-                                ${LOCAL_ADDITIONAL_DSDL_LIBS}
     )
     if(NUNAVUT_VERIFICATION_LANG STREQUAL "c")
         #
@@ -390,6 +306,7 @@ function(runTestCpp)
         #
         target_compile_options(${NATIVE_TEST_NAME} PRIVATE "-Wno-old-style-cast")
     endif()
+
     # Some tests use deprecated DSDLs
     target_compile_options(${NATIVE_TEST_NAME} PRIVATE "-Wno-deprecated-declarations")
     target_link_libraries(${NATIVE_TEST_NAME} PUBLIC o1heap)
@@ -407,14 +324,15 @@ function(runTestCpp)
 endfunction()
 
 if (NUNAVUT_VERIFICATION_LANG STREQUAL "cpp")
-     runTestCpp(TEST_FILE test_array_c++17-pmr.cpp   LINK dsdl-test-array-with-allocator LANGUAGE_FLAVORS                         c++17-pmr       c++20-pmr)
-     runTestCpp(TEST_FILE test_array_cetl++14-17.cpp LINK dsdl-test-array-with-allocator LANGUAGE_FLAVORS       cetl++14-17                                )
-     runTestCpp(TEST_FILE test_bitarray.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
-     runTestCpp(TEST_FILE test_compiles.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
-     runTestCpp(TEST_FILE test_large_bitset.cpp      LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
-     runTestCpp(TEST_FILE test_serialization.cpp     LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
-     runTestCpp(TEST_FILE test_unionant.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14 cetl++14-17 c++17 c++17-pmr c++20 c++20-pmr)
-     runTestCpp(TEST_FILE test_constant.cpp          LINK dsdl-regulated dsdl-test       LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+
+     runTestCpp(TEST_FILE test_serialization.cpp     LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+     runTestCpp(TEST_FILE test_array_c++17-pmr.cpp   LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS                         c++17-pmr       c++20-pmr)
+     runTestCpp(TEST_FILE test_array_cetl++14-17.cpp LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS       cetl++14-17                                )
+     runTestCpp(TEST_FILE test_bitarray.cpp          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+     runTestCpp(TEST_FILE test_compiles.cpp          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+     runTestCpp(TEST_FILE test_large_bitset.cpp      LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+     runTestCpp(TEST_FILE test_unionant.cpp          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14 cetl++14-17 c++17 c++17-pmr c++20 c++20-pmr)
+     runTestCpp(TEST_FILE test_constant.cpp          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
 endif()
 
 function(runTestC)
@@ -424,7 +342,7 @@ function(runTestC)
     cmake_parse_arguments(runTestC "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     # Skip tests not relevant to the specified language standard
-    list(FIND runTestC_LANGUAGE_FLAVORS "${NUNAVUT_VERIFICATION_LANG_STANDARD}" FIND_INDEX)
+    list(FIND runTestC_LANGUAGE_FLAVORS "${NUNAVUT_VERIFICATION_LANG_C_STANDARD}" FIND_INDEX)
     if (${FIND_INDEX} EQUAL -1)
         message(STATUS "Skipping ${runTestC_TEST_FILE}")
         return()
@@ -453,13 +371,13 @@ function(runTestC)
 endfunction()
 
 if (NUNAVUT_VERIFICATION_LANG STREQUAL "c")
-     runTestCpp(TEST_FILE test_canard.cpp                         LINK dsdl-regulated dsdl-test LANGUAGE_FLAVORS c11)
-     runTestCpp(TEST_FILE test_support_assert.cpp                 LINK dsdl-regulated dsdl-test LANGUAGE_FLAVORS c11)
-     runTestC(  TEST_FILE test_constant.c                         LINK dsdl-regulated dsdl-test LANGUAGE_FLAVORS c11 FRAMEWORK "unity")
-     runTestC(  TEST_FILE test_override_variable_array_capacity.c LINK dsdl-regulated dsdl-test LANGUAGE_FLAVORS c11 FRAMEWORK "unity")
-     runTestC(  TEST_FILE test_serialization.c                    LINK dsdl-regulated dsdl-test LANGUAGE_FLAVORS c11 FRAMEWORK "unity")
-     runTestC(  TEST_FILE test_support.c                          LINK dsdl-regulated dsdl-test LANGUAGE_FLAVORS c11 FRAMEWORK "unity")
-     runTestC(  TEST_FILE test_simple.c                           LINK dsdl-regulated dsdl-test LANGUAGE_FLAVORS c11 FRAMEWORK "none")
+     runTestCpp(TEST_FILE test_canard.cpp                         LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11)
+     runTestCpp(TEST_FILE test_support_assert.cpp                 LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11)
+     runTestC(  TEST_FILE test_constant.c                         LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 FRAMEWORK "unity")
+     runTestC(  TEST_FILE test_override_variable_array_capacity.c LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 FRAMEWORK "unity")
+     runTestC(  TEST_FILE test_serialization.c                    LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 FRAMEWORK "unity")
+     runTestC(  TEST_FILE test_support.c                          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 FRAMEWORK "unity")
+     runTestC(  TEST_FILE test_simple.c                           LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 FRAMEWORK "none")
 endif()
 
 # +---------------------------------------------------------------------------+

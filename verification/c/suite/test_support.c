@@ -2,8 +2,8 @@
 //
 // Tests the common functionality provided by the Nunavut support headers.
 
+#include "unity.h"
 #include "nunavut/support/serialization.h"
-#include "unity.h"  // Include 3rd-party headers afterward to ensure that our header is self-sufficient.
 
 // +--------------------------------------------------------------------------+
 // | nunavutCopyBits

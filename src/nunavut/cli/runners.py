@@ -62,6 +62,8 @@ class StandardArgparseRunner:
             lister_object["configuration"] = self.list_configuration(
                 basic_language_context_builder_from_args(**vars(self.args)).create()
             )
+            if len(sys.argv) > 0:
+                lister_object["cmdline"] = sys.argv
 
         result = generate_all(**vars(self.args))
 
@@ -145,6 +147,9 @@ def main(command_line_args: Optional[Any] = None) -> int:
     """
     Main entry point for command-line scripts.
     """
+    from multiprocessing import freeze_support  # pylint: disable=import-outside-toplevel
+
+    freeze_support()
 
     from . import _make_parser  # pylint: disable=import-outside-toplevel
     from .parsers import NunavutArgumentParser  # pylint: disable=import-outside-toplevel

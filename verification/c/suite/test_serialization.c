@@ -1,6 +1,7 @@
 // Copyright (c) 2020 OpenCyphal Development Team.
 // This software is distributed under the terms of the MIT License.
 
+#include "unity.h" // Include first to allow unity assertions to be injected into serialization code.
 #include <regulated/basics/Struct__0_1.h>
 #include <regulated/basics/Union_0_1.h>
 #include <regulated/basics/Primitive_0_1.h>
@@ -9,8 +10,7 @@
 #include <regulated/delimited/A_1_0.h>
 #include <regulated/delimited/A_1_1.h>
 #include <uavcan/pnp/NodeIDAllocationData_2_0.h>
-#include "unity.h"  // Include 3rd-party headers afterward to ensure that our headers are self-sufficient.
-#include <stdlib.h>
+#include <stdlib.h> // Include 3rd-party headers afterward to ensure that our headers are self-sufficient.
 #include <time.h>
 
 /// The reference array has been pedantically validated manually bit by bit (it did really took me about three hours).

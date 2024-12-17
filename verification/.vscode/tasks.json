@@ -1,0 +1,58 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "nunavut-pytest",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/test"
+            },
+            "command": "python -m pytest -s",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "tox build",
+            "type": "shell",
+            "command": "tox",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "doc build (tox)",
+            "type": "shell",
+            "command": "tox",
+            "args": [
+                "-e",
+                "docs"
+            ],
+            "group": {
+                "kind": "build",
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "verify c native32",
+            "type": "shell",
+            "command": "${workspaceFolder}/.github/verify.py",
+            "args": [
+                "--verbose",
+                "--force",
+                "--language", "c",
+                "--endianness", "any",
+                "--platform", "native32",
+                "--build-type", "Debug"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        }
+    ]
+}

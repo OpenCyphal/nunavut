@@ -2,6 +2,7 @@
 // This software is distributed under the terms of the MIT License.
 
 
+#include "unity.h"
 #include <nunavut/support/serialization.h>
 
 #if NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 1
@@ -11,8 +12,7 @@
 #endif
 
 #include <regulated/basics/PrimitiveArrayVariable_0_1.h>
-#include "unity.h"  // Include 3rd-party headers afterward to ensure that our headers are self-sufficient.
-#include <stdlib.h>
+#include <stdlib.h> // Include 3rd-party headers afterward to ensure that our headers are self-sufficient.
 #include <time.h>
 
 

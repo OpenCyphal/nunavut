@@ -1,0 +1,20 @@
+{
+    // See http://go.microsoft.com/fwlink/?LinkId=827846
+    // for the documentation about the extensions.json format
+    "recommendations": [
+        "uavcan.dsdl",
+        "wholroyd.jinja",
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-themes",
+        "ms-vscode.cmake-tools",
+        "josetr.cmake-language-support-vscode",
+        "streetsidesoftware.code-spell-checker",
+        "xaver.clang-format",
+        "vadimcn.vscode-lldb",
+        "matepek.vscode-catch2-test-adapter",
+        "ms-python.python",
+        "ms-python.mypy-type-checker",
+        "ms-python.black-formatter",
+        "ms-python.pylint"
+    ]
+}

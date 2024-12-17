@@ -1,0 +1,59 @@
+{
+    "cmake.configureOnOpen": false,
+    "cmake.buildBeforeRun": true,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "editor.wordWrapColumn": 120,
+    "editor.rulers": [
+        120
+    ],
+    "files.eol": "\n",
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true,
+    "testMate.cpp.test.advancedExecutables": [
+        {
+            "pattern": "build/**/suite/{test,Test,TEST}_*",
+            "cwd": "${workspaceFolder}"
+        }
+    ],
+    "testMate.cpp.debug.configTemplate": {
+        "type": "cppdbg",
+        "linux": {
+            "MIMode": "gdb"
+        },
+        "osx": {
+            "MIMode": "lldb",
+            "externalConsole": false
+        },
+        "windows": {
+            "type": "cppvsdbg"
+        },
+        "program": "${exec}",
+        "args": "${argsArray}",
+        "cwd": "${workspaceFolder}",
+        "env": "",
+        "environment": "",
+        "sourceFileMap": "${sourceFileMapObj}"
+    },
+    "cSpell.allowCompoundWords": true,
+    "cSpell.caseSensitive": false,
+    "cSpell.customDictionaries": {
+        "cyphal" : {
+            "name": "Cyphal-words",
+            "path": "${workspaceRoot}/../cyphal-words.txt",
+            "description": "Words used in Cyphal and UAVCAN to add to spell checker dictionaries.",
+            "addWords": true
+          },
+          "nunavut" : {
+            "name": "Nunavut-words",
+            "path": "${workspaceRoot}/../.vscode/nunavut-words.txt",
+            "description": "Words used in in the Nunavut codebase to add to spell checker dictionaries.",
+            "addWords": true
+          }
+    },
+    "files.associations": {
+        "*.in": "cmake",
+        "Config": "perl",
+        "__config": "cpp"
+    }
+}
