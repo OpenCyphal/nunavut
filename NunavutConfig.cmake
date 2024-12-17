@@ -83,7 +83,8 @@ macro(nunavut_json_array_to_list _json_array _list)
 
     set(_local_list "")
 
-    foreach(_index RANGE 0 ${_json_array_length} - 1)
+    math(EXPR _json_array_stop " ${_json_array_length} - 1")
+    foreach(_index RANGE 0 ${_json_array_stop})
         string(JSON _item ERROR_VARIABLE _json_error GET ${${_json_array}} ${_index})
 
         if(_json_error)
@@ -359,6 +360,7 @@ function(export_nunavut_manifest)
         --target-language ${ARG_LANGUAGE}
         --list-inputs
         --list-outputs
+        --outdir ${ARG_OUTPUT_DIR}
         ${LOCAL_LIST_CONFIGURATION}
         --list-format ${LOCAL_JSON_FORMAT}
         --dry-run
@@ -496,6 +498,7 @@ function(discover_inputs_and_outputs)
         --target-language ${ARG_LANGUAGE}
         --list-inputs
         --list-outputs
+        --outdir ${ARG_OUTPUT_DIR}
         ${LOCAL_LIST_CONFIGURATION}
         --list-format ${LOCAL_JSON_FORMAT}
         --dry-run

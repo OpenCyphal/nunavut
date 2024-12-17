@@ -10,10 +10,19 @@
             "name": "config-common",
             "hidden": true,
             "description": "Common configuration",
-            "generator": "Ninja",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build",
             "warnings": {
                 "deprecated": true,
                 "uninitialized": true
+            },
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_CONFIGURATION_TYPES": "Release;Debug",
+                "CMAKE_CROSS_CONFIGS": "all",
+                "CMAKE_DEFAULT_BUILD_TYPE": "Release",
+                "CMAKE_DEFAULT_CONFIGS": "Release",
+                "CMAKE_PREFIX_PATH": "${sourceDir}/external/nunavut"
             }
         },
         {
@@ -47,6 +56,28 @@
             "inherits": [
                 "config-common",
                 "config-disconnected"
+            ]
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "BuildRelease",
+            "displayName": "Nunavut cmake integration demo (Release)",
+            "description": "Builds our silly little demo binary.",
+            "configurePreset": "Disconnected",
+            "configuration": "Release",
+            "targets": [
+                "ecorp_pi"
+            ]
+        },
+        {
+            "name": "BuildDebug",
+            "displayName": "Nunavut cmake integration demo (Debug)",
+            "description": "Builds our silly little demo binary.",
+            "configurePreset": "Disconnected",
+            "configuration": "Debug",
+            "targets": [
+                "ecorp_pi"
             ]
         }
     ]
