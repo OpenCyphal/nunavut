@@ -1,10 +1,10 @@
 // Copyright (c) 2020 OpenCyphal Development Team.
 // This software is distributed under the terms of the MIT License.
 
+#include "unity.h"
 #include <regulated/basics/Struct__0_1.h>
 #include <regulated/basics/Union_0_1.h>
 #include <regulated/basics/Service_0_1.h>
-#include "unity.h"  // Include 3rd-party headers afterward to ensure that our header is self-sufficient.
 
 static void testStructConstants(void)
 {

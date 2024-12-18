@@ -33,6 +33,7 @@ list(APPEND C_FLAG_SET
                 "-Wdouble-promotion"
                 "-Wswitch-enum"
                 "-Wtype-limits"
+                "-Wno-c++17-attribute-extensions"
 )
 
 if(DEFINED NUNAVUT_VERIFICATION_TARGET_PLATFORM)
@@ -97,3 +98,4 @@ add_compile_options("$<$<C_COMPILER_ID:GNU>:-Wno-stringop-overflow>")
 add_link_options(${EXE_LINKER_FLAG_SET})
 add_definitions(${DEFINITIONS_SET})
 set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_CXX_EXTENSIONS OFF)

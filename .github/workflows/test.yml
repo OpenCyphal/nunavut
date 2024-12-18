@@ -72,7 +72,7 @@ jobs:
       working-directory: .tox
     - name: report-release
       if: ${{ github.event_name != 'pull_request' }}
-      uses: sonarsource/sonarcloud-github-action@master
+      uses: SonarSource/sonarqube-scan-action@v4.2.1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
@@ -86,7 +86,7 @@ jobs:
           -Dsonar.python.xunit.reportPath=.tox/py311-test/tmp/xunit-result.xml
     - name: report-pr
       if: ${{ github.event_name == 'pull_request' }}
-      uses: sonarsource/sonarcloud-github-action@master
+      uses: SonarSource/sonarqube-scan-action@v4.2.1
       env:
         SONAR_TOKEN: "6526e88c286672a7852fea52056c4b6ea583aaf7"
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -102,7 +102,7 @@ jobs:
   compat-test-python3-mac:
     strategy:
       matrix:
-        python3-version: ['11','12', '13']
+        python3-version: ['11', '12', '13']
         python3-platform: ['macos-latest']
     runs-on: ${{ matrix.python3-platform }}
     needs: test

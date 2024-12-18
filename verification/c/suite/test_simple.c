@@ -1,6 +1,15 @@
 // Copyright (c) 2020 OpenCyphal Development Team.
 // This software is distributed under the terms of the MIT License.
 
+#include <stdlib.h>
+#define TEST_ASSERT_EQUAL(A, B) do {\
+    if ((A) != (B)) { \
+        abort(); \
+    } \
+} while(0)
+
+#define TEST_ASSERT_TRUE(A) TEST_ASSERT_EQUAL(A, true)
+
 #include <regulated/basics/Struct__0_1.h>
 #include <regulated/basics/Union_0_1.h>
 #include <regulated/basics/Primitive_0_1.h>
@@ -9,17 +18,9 @@
 #include <regulated/delimited/A_1_0.h>
 #include <regulated/delimited/A_1_1.h>
 #include <uavcan/pnp/NodeIDAllocationData_2_0.h>
-#include <stdlib.h>
 #include <time.h>
-#include <assert.h>
 
-#define TEST_ASSERT_EQUAL(A, B) do {\
-    if ((A) != (B)) { \
-        abort(); \
-    } \
-} while(0)
 
-#define TEST_ASSERT_TRUE(A) TEST_ASSERT_EQUAL(A, true)
 
 /// A test to run with no test framework linked in. This allows some sanity checking but mostly is useful to support
 /// analysis or instrumentation of the code while debugging.

@@ -1,0 +1,302 @@
+{
+    "version": 7,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 27,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "config-common",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "warnings": {
+                "deprecated": true,
+                "uninitialized": true
+            },
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_PREFIX_PATH": "${sourceDir}/..",
+                "NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS":"",
+                "CMAKE_BUILD_TYPE":"Debug"
+            }
+        },
+        {
+            "name": "config-toolchain-gcc-native",
+            "hidden": true,
+            "toolchainFile": "${sourceDir}/cmake/toolchains/gcc-native.cmake"
+        },
+        {
+            "name": "config-toolchain-clang-native",
+            "hidden": true,
+            "toolchainFile": "${sourceDir}/cmake/toolchains/clang-native.cmake"
+        },
+        {
+            "name": "config-flags-asan",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_FLAGSET": "${sourceDir}/cmake/compiler_flag_sets/native_w_asan.cmake"
+            }
+        },
+        {
+            "name": "config-flags-cov",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_FLAGSET": "${sourceDir}/cmake/compiler_flag_sets/native_w_cov.cmake"
+            }
+        },
+        {
+            "name": "config-flags-common",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_FLAGSET": "${sourceDir}/cmake/compiler_flag_sets/native.cmake"
+            }
+        },
+        {
+            "name": "config-platform-native32",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_VERIFICATION_TARGET_PLATFORM": "native32"
+            }
+        },
+        {
+            "name": "config-platform-native64",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_VERIFICATION_TARGET_PLATFORM": "native64"
+            }
+        },
+        {
+            "name": "config-endianness-little",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_VERIFICATION_TARGET_ENDIANNESS": "little"
+            }
+        },
+        {
+            "name": "config-endianness-big",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_VERIFICATION_TARGET_ENDIANNESS": "big"
+            }
+        },
+        {
+            "name": "config-lang-c",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_VERIFICATION_LANG": "c",
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": ""
+            }
+        },
+        {
+            "name": "config-lang-c11",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_VERIFICATION_LANG": "c",
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c11",
+                "CMAKE_C_STANDARD": "11"
+            }
+        },
+        {
+            "name": "config-lang-cpp-14",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_VERIFICATION_LANG": "cpp",
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++14",
+                "CMAKE_CXX_STANDARD": "14"
+            }
+        },
+        {
+            "name": "config-lang-cetl-14-17",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_VERIFICATION_LANG": "cpp",
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "cetl++14-17",
+                "CMAKE_CXX_STANDARD": "14"
+            }
+        },
+        {
+            "name": "config-lang-cpp-17",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_VERIFICATION_LANG": "cpp",
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17",
+                "CMAKE_CXX_STANDARD": "17"
+            }
+        },
+        {
+            "name": "config-lang-cpp-17-pmr",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_VERIFICATION_LANG": "cpp",
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17-pmr",
+                "CMAKE_CXX_STANDARD": "17"
+            }
+        },
+        {
+            "name": "config-lang-cpp-20",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_VERIFICATION_LANG": "cpp",
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++20",
+                "CMAKE_CXX_STANDARD": "20"
+            }
+        },
+        {
+            "name": "config-lang-cpp-20-pmr",
+            "hidden": true,
+            "cacheVariables": {
+                "NUNAVUT_VERIFICATION_LANG": "cpp",
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++20-pmr",
+                "CMAKE_CXX_STANDARD": "20"
+            }
+        },
+        {
+            "name": "config-clang-cetl-14-17",
+            "displayName": "Clang Native : CETL 14-17",
+            "inherits": [
+                "config-common",
+                "config-toolchain-clang-native",
+                "config-flags-common",
+                "config-lang-cetl-14-17"
+            ]
+        },
+        {
+            "name": "config-gcc-cetl-14-17",
+            "displayName": "GCC Native : CETL 14-17",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native",
+                "config-flags-common",
+                "config-lang-cetl-14-17"
+            ]
+        },
+        {
+            "name": "config-clang-cpp-14",
+            "displayName": "Clang Native : C++14",
+            "inherits": [
+                "config-common",
+                "config-toolchain-clang-native",
+                "config-flags-common",
+                "config-lang-cpp-14"
+            ]
+        },
+        {
+            "name": "config-gcc-cpp-14",
+            "displayName": "GCC Native : C++14",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native",
+                "config-flags-common",
+                "config-lang-cpp-14"
+            ]
+        },
+        {
+            "name": "config-clang-cpp-17",
+            "displayName": "Clang Native : C++17",
+            "inherits": [
+                "config-common",
+                "config-toolchain-clang-native",
+                "config-flags-common",
+                "config-lang-cpp-17"
+            ]
+        },
+        {
+            "name": "config-gcc-cpp-17",
+            "displayName": "GCC Native : C++17",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native",
+                "config-flags-common",
+                "config-lang-cpp-17"
+            ]
+        },
+        {
+            "name": "config-clang-c",
+            "displayName": "Clang Native : C",
+            "inherits": [
+                "config-common",
+                "config-toolchain-clang-native",
+                "config-flags-common",
+                "config-lang-c"
+            ]
+        },
+        {
+            "name": "config-gcc-c",
+            "displayName": "GCC Native : C",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native",
+                "config-flags-common",
+                "config-lang-c"
+            ]
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "build-debug-clang-cetl-14-17",
+            "displayName": "Clang Native : CETL 14 - 17",
+            "configurePreset": "config-clang-cetl-14-17",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-debug-gcc-cetl-14-17",
+            "displayName": "GCC Native : CETL 14 - 17",
+            "configurePreset": "config-gcc-cetl-14-17",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-debug-clang-cpp-14",
+            "displayName": "Clang Native : C++14",
+            "configurePreset": "config-clang-cpp-14",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-debug-gcc-cpp-14",
+            "displayName": "GCC Native : C++14",
+            "configurePreset": "config-gcc-cpp-14",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-debug-clang-cpp-17",
+            "displayName": "Clang Native : C++17",
+            "configurePreset": "config-clang-cpp-17",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-debug-gcc-cpp-17",
+            "displayName": "GCC Native : C++17",
+            "configurePreset": "config-gcc-cpp-17",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-debug-clang-c",
+            "displayName": "Clang Native : C",
+            "configurePreset": "config-clang-c",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-debug-gcc-c",
+            "displayName": "GCC Native : C",
+            "configurePreset": "config-gcc-c",
+            "targets": [
+                "test_all"
+            ]
+        }
+    ]
+}

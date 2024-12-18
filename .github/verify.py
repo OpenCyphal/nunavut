@@ -416,6 +416,7 @@ def _cmake_configure(args: argparse.Namespace, cmake_args: typing.List[str], cma
 
     cmake_configure_args.append(f"--log-level={cmake_logging_level}")
     cmake_configure_args.append(f"-DNUNAVUT_VERIFICATION_LANG={args.language}")
+    cmake_configure_args.append(f"-DCMAKE_PREFIX_PATH=..")
 
     if args.language_standard is not None:
         cmake_configure_args.append(f"-DNUNAVUT_VERIFICATION_LANG_STANDARD={args.language_standard}")
