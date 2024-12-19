@@ -523,30 +523,6 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     run_mode_group.add_argument("--dry-run", "-d", action="store_true", help="If True then no files will be generated.")
 
     run_mode_group.add_argument(
-        "--omit-deprecated",
-        action="store_true",
-        help=textwrap.dedent(
-            """
-        Disables deprecated types.
-
-    """
-        ).lstrip(),
-    )
-
-    run_mode_group.add_argument(
-        "-M",
-        "--depfile",
-        action="store_true",
-        help=textwrap.dedent(
-            """
-        Emits a makefile compatible dependency file for the generated files. Use with --dry-run to
-        generate a list of dependencies for a build system.
-
-    """
-        ).lstrip(),
-    )
-
-    run_mode_group.add_argument(
         "--list-outputs",
         action="store_true",
         help=textwrap.dedent(

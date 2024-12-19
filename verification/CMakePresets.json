@@ -9,7 +9,7 @@
         {
             "name": "config-common",
             "hidden": true,
-            "generator": "Ninja",
+            "generator": "Ninja Multi-Config",
             "binaryDir": "${sourceDir}/build",
             "warnings": {
                 "deprecated": true,
@@ -18,14 +18,12 @@
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_PREFIX_PATH": "${sourceDir}/..",
-                "NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS":"",
-                "CMAKE_BUILD_TYPE":"Debug"
+                "CMAKE_CONFIGURATION_TYPES": "Release;Debug;DebugAsan;DebugCov",
+                "CMAKE_CROSS_CONFIGS": "all",
+                "CMAKE_DEFAULT_BUILD_TYPE": "Debug",
+                "CMAKE_DEFAULT_CONFIGS": "Debug",
+                "NUNAVUT_VERIFICATION_SER_ASSERT": "True"
             }
-        },
-        {
-            "name": "config-toolchain-gcc-native",
-            "hidden": true,
-            "toolchainFile": "${sourceDir}/cmake/toolchains/gcc-native.cmake"
         },
         {
             "name": "config-toolchain-clang-native",
@@ -33,267 +31,915 @@
             "toolchainFile": "${sourceDir}/cmake/toolchains/clang-native.cmake"
         },
         {
-            "name": "config-flags-asan",
+            "name": "config-toolchain-gcc-native-native64",
             "hidden": true,
-            "cacheVariables": {
-                "NUNAVUT_FLAGSET": "${sourceDir}/cmake/compiler_flag_sets/native_w_asan.cmake"
-            }
-        },
-        {
-            "name": "config-flags-cov",
-            "hidden": true,
-            "cacheVariables": {
-                "NUNAVUT_FLAGSET": "${sourceDir}/cmake/compiler_flag_sets/native_w_cov.cmake"
-            }
-        },
-        {
-            "name": "config-flags-common",
-            "hidden": true,
-            "cacheVariables": {
-                "NUNAVUT_FLAGSET": "${sourceDir}/cmake/compiler_flag_sets/native.cmake"
-            }
-        },
-        {
-            "name": "config-platform-native32",
-            "hidden": true,
-            "cacheVariables": {
-                "NUNAVUT_VERIFICATION_TARGET_PLATFORM": "native32"
-            }
-        },
-        {
-            "name": "config-platform-native64",
-            "hidden": true,
+            "toolchainFile": "${sourceDir}/cmake/toolchains/gcc-native.cmake",
             "cacheVariables": {
                 "NUNAVUT_VERIFICATION_TARGET_PLATFORM": "native64"
             }
         },
         {
-            "name": "config-endianness-little",
+            "name": "config-toolchain-gcc-native-native32",
             "hidden": true,
+            "toolchainFile": "${sourceDir}/cmake/toolchains/gcc-native.cmake",
             "cacheVariables": {
-                "NUNAVUT_VERIFICATION_TARGET_ENDIANNESS": "little"
+                "NUNAVUT_VERIFICATION_TARGET_PLATFORM": "native32"
             }
         },
         {
-            "name": "config-endianness-big",
-            "hidden": true,
-            "cacheVariables": {
-                "NUNAVUT_VERIFICATION_TARGET_ENDIANNESS": "big"
-            }
-        },
-        {
-            "name": "config-lang-c",
+            "name": "config-language-c-11",
             "hidden": true,
             "cacheVariables": {
                 "NUNAVUT_VERIFICATION_LANG": "c",
-                "NUNAVUT_VERIFICATION_LANG_STANDARD": ""
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c11"
             }
         },
         {
-            "name": "config-lang-c11",
-            "hidden": true,
-            "cacheVariables": {
-                "NUNAVUT_VERIFICATION_LANG": "c",
-                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c11",
-                "CMAKE_C_STANDARD": "11"
-            }
-        },
-        {
-            "name": "config-lang-cpp-14",
+            "name": "config-language-cpp-14",
             "hidden": true,
             "cacheVariables": {
                 "NUNAVUT_VERIFICATION_LANG": "cpp",
-                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++14",
-                "CMAKE_CXX_STANDARD": "14"
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++14"
             }
         },
         {
-            "name": "config-lang-cetl-14-17",
+            "name": "config-language-cetl-14-17",
             "hidden": true,
             "cacheVariables": {
                 "NUNAVUT_VERIFICATION_LANG": "cpp",
-                "NUNAVUT_VERIFICATION_LANG_STANDARD": "cetl++14-17",
-                "CMAKE_CXX_STANDARD": "14"
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "cetl++14-17"
             }
         },
         {
-            "name": "config-lang-cpp-17",
+            "name": "config-language-cpp-17",
             "hidden": true,
             "cacheVariables": {
                 "NUNAVUT_VERIFICATION_LANG": "cpp",
-                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17",
-                "CMAKE_CXX_STANDARD": "17"
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17"
             }
         },
         {
-            "name": "config-lang-cpp-17-pmr",
+            "name": "config-language-cpp-17-pmr",
             "hidden": true,
             "cacheVariables": {
                 "NUNAVUT_VERIFICATION_LANG": "cpp",
-                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17-pmr",
-                "CMAKE_CXX_STANDARD": "17"
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++17-pmr"
             }
         },
         {
-            "name": "config-lang-cpp-20",
+            "name": "config-language-cpp-20",
             "hidden": true,
             "cacheVariables": {
                 "NUNAVUT_VERIFICATION_LANG": "cpp",
-                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++20",
-                "CMAKE_CXX_STANDARD": "20"
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++20"
             }
         },
         {
-            "name": "config-lang-cpp-20-pmr",
+            "name": "config-language-cpp-20-pmr",
             "hidden": true,
             "cacheVariables": {
                 "NUNAVUT_VERIFICATION_LANG": "cpp",
-                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++20-pmr",
-                "CMAKE_CXX_STANDARD": "20"
+                "NUNAVUT_VERIFICATION_LANG_STANDARD": "c++20-pmr"
             }
         },
         {
-            "name": "config-clang-cetl-14-17",
-            "displayName": "Clang Native : CETL 14-17",
+            "name": "config-clang-native-c-11",
             "inherits": [
                 "config-common",
                 "config-toolchain-clang-native",
-                "config-flags-common",
-                "config-lang-cetl-14-17"
+                "config-language-c-11"
             ]
         },
         {
-            "name": "config-gcc-cetl-14-17",
-            "displayName": "GCC Native : CETL 14-17",
-            "inherits": [
-                "config-common",
-                "config-toolchain-gcc-native",
-                "config-flags-common",
-                "config-lang-cetl-14-17"
-            ]
-        },
-        {
-            "name": "config-clang-cpp-14",
-            "displayName": "Clang Native : C++14",
+            "name": "config-clang-native-cpp-14",
             "inherits": [
                 "config-common",
                 "config-toolchain-clang-native",
-                "config-flags-common",
-                "config-lang-cpp-14"
+                "config-language-cpp-14"
             ]
         },
         {
-            "name": "config-gcc-cpp-14",
-            "displayName": "GCC Native : C++14",
-            "inherits": [
-                "config-common",
-                "config-toolchain-gcc-native",
-                "config-flags-common",
-                "config-lang-cpp-14"
-            ]
-        },
-        {
-            "name": "config-clang-cpp-17",
-            "displayName": "Clang Native : C++17",
+            "name": "config-clang-native-cetl-14-17",
             "inherits": [
                 "config-common",
                 "config-toolchain-clang-native",
-                "config-flags-common",
-                "config-lang-cpp-17"
+                "config-language-cetl-14-17"
             ]
         },
         {
-            "name": "config-gcc-cpp-17",
-            "displayName": "GCC Native : C++17",
-            "inherits": [
-                "config-common",
-                "config-toolchain-gcc-native",
-                "config-flags-common",
-                "config-lang-cpp-17"
-            ]
-        },
-        {
-            "name": "config-clang-c",
-            "displayName": "Clang Native : C",
+            "name": "config-clang-native-cpp-17",
             "inherits": [
                 "config-common",
                 "config-toolchain-clang-native",
-                "config-flags-common",
-                "config-lang-c"
+                "config-language-cpp-17"
             ]
         },
         {
-            "name": "config-gcc-c",
-            "displayName": "GCC Native : C",
+            "name": "config-clang-native-cpp-17-pmr",
             "inherits": [
                 "config-common",
-                "config-toolchain-gcc-native",
-                "config-flags-common",
-                "config-lang-c"
+                "config-toolchain-clang-native",
+                "config-language-cpp-17-pmr"
+            ]
+        },
+        {
+            "name": "config-clang-native-cpp-20",
+            "inherits": [
+                "config-common",
+                "config-toolchain-clang-native",
+                "config-language-cpp-20"
+            ]
+        },
+        {
+            "name": "config-clang-native-cpp-20-pmr",
+            "inherits": [
+                "config-common",
+                "config-toolchain-clang-native",
+                "config-language-cpp-20-pmr"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native64-c-11",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native64",
+                "config-language-c-11"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native64-cpp-14",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native64",
+                "config-language-cpp-14"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native64-cetl-14-17",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native64",
+                "config-language-cetl-14-17"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native64-cpp-17",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native64",
+                "config-language-cpp-17"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native64-cpp-17-pmr",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native64",
+                "config-language-cpp-17-pmr"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native64-cpp-20",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native64",
+                "config-language-cpp-20"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native64-cpp-20-pmr",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native64",
+                "config-language-cpp-20-pmr"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native32-c-11",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native32",
+                "config-language-c-11"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native32-cpp-14",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native32",
+                "config-language-cpp-14"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native32-cetl-14-17",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native32",
+                "config-language-cetl-14-17"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native32-cpp-17",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native32",
+                "config-language-cpp-17"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native32-cpp-17-pmr",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native32",
+                "config-language-cpp-17-pmr"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native32-cpp-20",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native32",
+                "config-language-cpp-20"
+            ]
+        },
+        {
+            "name": "config-gcc-native-native32-cpp-20-pmr",
+            "inherits": [
+                "config-common",
+                "config-toolchain-gcc-native-native32",
+                "config-language-cpp-20-pmr"
             ]
         }
     ],
     "buildPresets": [
         {
-            "name": "build-debug-clang-cetl-14-17",
-            "displayName": "Clang Native : CETL 14 - 17",
-            "configurePreset": "config-clang-cetl-14-17",
+            "name": "build-clang-native-c-11-debugcov",
+            "configurePreset": "config-clang-native-c-11",
+            "configuration": "DebugCov",
             "targets": [
                 "test_all"
             ]
         },
         {
-            "name": "build-debug-gcc-cetl-14-17",
-            "displayName": "GCC Native : CETL 14 - 17",
-            "configurePreset": "config-gcc-cetl-14-17",
+            "name": "build-clang-native-cpp-14-debugcov",
+            "configurePreset": "config-clang-native-cpp-14",
+            "configuration": "DebugCov",
             "targets": [
                 "test_all"
             ]
         },
         {
-            "name": "build-debug-clang-cpp-14",
-            "displayName": "Clang Native : C++14",
-            "configurePreset": "config-clang-cpp-14",
+            "name": "build-clang-native-cetl-14-17-debugcov",
+            "configurePreset": "config-clang-native-cetl-14-17",
+            "configuration": "DebugCov",
             "targets": [
                 "test_all"
             ]
         },
         {
-            "name": "build-debug-gcc-cpp-14",
-            "displayName": "GCC Native : C++14",
-            "configurePreset": "config-gcc-cpp-14",
+            "name": "build-clang-native-cpp-17-debugcov",
+            "configurePreset": "config-clang-native-cpp-17",
+            "configuration": "DebugCov",
             "targets": [
                 "test_all"
             ]
         },
         {
-            "name": "build-debug-clang-cpp-17",
-            "displayName": "Clang Native : C++17",
-            "configurePreset": "config-clang-cpp-17",
+            "name": "build-clang-native-cpp-17-pmr-debugcov",
+            "configurePreset": "config-clang-native-cpp-17-pmr",
+            "configuration": "DebugCov",
             "targets": [
                 "test_all"
             ]
         },
         {
-            "name": "build-debug-gcc-cpp-17",
-            "displayName": "GCC Native : C++17",
-            "configurePreset": "config-gcc-cpp-17",
+            "name": "build-clang-native-cpp-20-debugcov",
+            "configurePreset": "config-clang-native-cpp-20",
+            "configuration": "DebugCov",
             "targets": [
                 "test_all"
             ]
         },
         {
-            "name": "build-debug-clang-c",
-            "displayName": "Clang Native : C",
-            "configurePreset": "config-clang-c",
+            "name": "build-clang-native-cpp-20-pmr-debugcov",
+            "configurePreset": "config-clang-native-cpp-20-pmr",
+            "configuration": "DebugCov",
             "targets": [
                 "test_all"
             ]
         },
         {
-            "name": "build-debug-gcc-c",
-            "displayName": "GCC Native : C",
-            "configurePreset": "config-gcc-c",
+            "name": "build-gcc-native-native64-c-11-debugcov",
+            "configurePreset": "config-gcc-native-native64-c-11",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-14-debugcov",
+            "configurePreset": "config-gcc-native-native64-cpp-14",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cetl-14-17-debugcov",
+            "configurePreset": "config-gcc-native-native64-cetl-14-17",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-17-debugcov",
+            "configurePreset": "config-gcc-native-native64-cpp-17",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-17-pmr-debugcov",
+            "configurePreset": "config-gcc-native-native64-cpp-17-pmr",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-20-debugcov",
+            "configurePreset": "config-gcc-native-native64-cpp-20",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-20-pmr-debugcov",
+            "configurePreset": "config-gcc-native-native64-cpp-20-pmr",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-c-11-debugcov",
+            "configurePreset": "config-gcc-native-native32-c-11",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-14-debugcov",
+            "configurePreset": "config-gcc-native-native32-cpp-14",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cetl-14-17-debugcov",
+            "configurePreset": "config-gcc-native-native32-cetl-14-17",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-17-debugcov",
+            "configurePreset": "config-gcc-native-native32-cpp-17",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-17-pmr-debugcov",
+            "configurePreset": "config-gcc-native-native32-cpp-17-pmr",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-20-debugcov",
+            "configurePreset": "config-gcc-native-native32-cpp-20",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-20-pmr-debugcov",
+            "configurePreset": "config-gcc-native-native32-cpp-20-pmr",
+            "configuration": "DebugCov",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-c-11-debug",
+            "configurePreset": "config-clang-native-c-11",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-14-debug",
+            "configurePreset": "config-clang-native-cpp-14",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cetl-14-17-debug",
+            "configurePreset": "config-clang-native-cetl-14-17",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-17-debug",
+            "configurePreset": "config-clang-native-cpp-17",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-17-pmr-debug",
+            "configurePreset": "config-clang-native-cpp-17-pmr",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-20-debug",
+            "configurePreset": "config-clang-native-cpp-20",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-20-pmr-debug",
+            "configurePreset": "config-clang-native-cpp-20-pmr",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-c-11-debug",
+            "configurePreset": "config-gcc-native-native64-c-11",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-14-debug",
+            "configurePreset": "config-gcc-native-native64-cpp-14",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cetl-14-17-debug",
+            "configurePreset": "config-gcc-native-native64-cetl-14-17",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-17-debug",
+            "configurePreset": "config-gcc-native-native64-cpp-17",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-17-pmr-debug",
+            "configurePreset": "config-gcc-native-native64-cpp-17-pmr",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-20-debug",
+            "configurePreset": "config-gcc-native-native64-cpp-20",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-20-pmr-debug",
+            "configurePreset": "config-gcc-native-native64-cpp-20-pmr",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-c-11-debug",
+            "configurePreset": "config-gcc-native-native32-c-11",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-14-debug",
+            "configurePreset": "config-gcc-native-native32-cpp-14",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cetl-14-17-debug",
+            "configurePreset": "config-gcc-native-native32-cetl-14-17",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-17-debug",
+            "configurePreset": "config-gcc-native-native32-cpp-17",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-17-pmr-debug",
+            "configurePreset": "config-gcc-native-native32-cpp-17-pmr",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-20-debug",
+            "configurePreset": "config-gcc-native-native32-cpp-20",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-20-pmr-debug",
+            "configurePreset": "config-gcc-native-native32-cpp-20-pmr",
+            "configuration": "Debug",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-c-11-release",
+            "configurePreset": "config-clang-native-c-11",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-14-release",
+            "configurePreset": "config-clang-native-cpp-14",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cetl-14-17-release",
+            "configurePreset": "config-clang-native-cetl-14-17",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-17-release",
+            "configurePreset": "config-clang-native-cpp-17",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-17-pmr-release",
+            "configurePreset": "config-clang-native-cpp-17-pmr",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-20-release",
+            "configurePreset": "config-clang-native-cpp-20",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-20-pmr-release",
+            "configurePreset": "config-clang-native-cpp-20-pmr",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-c-11-release",
+            "configurePreset": "config-gcc-native-native64-c-11",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-14-release",
+            "configurePreset": "config-gcc-native-native64-cpp-14",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cetl-14-17-release",
+            "configurePreset": "config-gcc-native-native64-cetl-14-17",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-17-release",
+            "configurePreset": "config-gcc-native-native64-cpp-17",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-17-pmr-release",
+            "configurePreset": "config-gcc-native-native64-cpp-17-pmr",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-20-release",
+            "configurePreset": "config-gcc-native-native64-cpp-20",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-20-pmr-release",
+            "configurePreset": "config-gcc-native-native64-cpp-20-pmr",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-c-11-release",
+            "configurePreset": "config-gcc-native-native32-c-11",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-14-release",
+            "configurePreset": "config-gcc-native-native32-cpp-14",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cetl-14-17-release",
+            "configurePreset": "config-gcc-native-native32-cetl-14-17",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-17-release",
+            "configurePreset": "config-gcc-native-native32-cpp-17",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-17-pmr-release",
+            "configurePreset": "config-gcc-native-native32-cpp-17-pmr",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-20-release",
+            "configurePreset": "config-gcc-native-native32-cpp-20",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-20-pmr-release",
+            "configurePreset": "config-gcc-native-native32-cpp-20-pmr",
+            "configuration": "Release",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-c-11-debugasan",
+            "configurePreset": "config-clang-native-c-11",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-14-debugasan",
+            "configurePreset": "config-clang-native-cpp-14",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cetl-14-17-debugasan",
+            "configurePreset": "config-clang-native-cetl-14-17",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-17-debugasan",
+            "configurePreset": "config-clang-native-cpp-17",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-17-pmr-debugasan",
+            "configurePreset": "config-clang-native-cpp-17-pmr",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-20-debugasan",
+            "configurePreset": "config-clang-native-cpp-20",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-clang-native-cpp-20-pmr-debugasan",
+            "configurePreset": "config-clang-native-cpp-20-pmr",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-c-11-debugasan",
+            "configurePreset": "config-gcc-native-native64-c-11",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-14-debugasan",
+            "configurePreset": "config-gcc-native-native64-cpp-14",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cetl-14-17-debugasan",
+            "configurePreset": "config-gcc-native-native64-cetl-14-17",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-17-debugasan",
+            "configurePreset": "config-gcc-native-native64-cpp-17",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-17-pmr-debugasan",
+            "configurePreset": "config-gcc-native-native64-cpp-17-pmr",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-20-debugasan",
+            "configurePreset": "config-gcc-native-native64-cpp-20",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native64-cpp-20-pmr-debugasan",
+            "configurePreset": "config-gcc-native-native64-cpp-20-pmr",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-c-11-debugasan",
+            "configurePreset": "config-gcc-native-native32-c-11",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-14-debugasan",
+            "configurePreset": "config-gcc-native-native32-cpp-14",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cetl-14-17-debugasan",
+            "configurePreset": "config-gcc-native-native32-cetl-14-17",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-17-debugasan",
+            "configurePreset": "config-gcc-native-native32-cpp-17",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-17-pmr-debugasan",
+            "configurePreset": "config-gcc-native-native32-cpp-17-pmr",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-20-debugasan",
+            "configurePreset": "config-gcc-native-native32-cpp-20",
+            "configuration": "DebugAsan",
+            "targets": [
+                "test_all"
+            ]
+        },
+        {
+            "name": "build-gcc-native-native32-cpp-20-pmr-debugasan",
+            "configurePreset": "config-gcc-native-native32-cpp-20-pmr",
+            "configuration": "DebugAsan",
             "targets": [
                 "test_all"
             ]

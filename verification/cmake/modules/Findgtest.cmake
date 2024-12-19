@@ -37,7 +37,6 @@ target_compile_options(gmock_main PRIVATE
                        "-Wno-float-equal"
                        "-Wno-conversion"
                        "-DGTEST_HAS_PTHREAD=0"
-                       "${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS}"
                        )
 
 include(FindPackageHandleStandardArgs)

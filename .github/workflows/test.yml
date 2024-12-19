@@ -139,10 +139,9 @@ jobs:
     container: ghcr.io/opencyphal/toolshed:ts22.4.10
     strategy:
       matrix:
-        build_type: [Debug, Release, MinSizeRel]
+        build_type: [Debug, Release]
         architecture: [native32, native64]
         compiler: [gcc, clang]
-        endianness: [any, little]
         flag: [--none, --enable-ovr-var-array, --disable-asserts]
         exclude:
           - build_type: Debug
@@ -160,7 +159,6 @@ jobs:
                           --language c \
                           --platform ${{ matrix.architecture }} \
                           --toolchain-family ${{ matrix.compiler }} \
-                          --endianness ${{ matrix.endianness }} \
                           ${{ matrix.flag }}
 
   language-verification-cpp-14:
@@ -169,13 +167,12 @@ jobs:
     container: ghcr.io/opencyphal/toolshed:ts22.4.10
     strategy:
       matrix:
-        build_type: [Debug, Release, MinSizeRel]
+        build_type: [DebugAsan, Release]
         architecture: [native32, native64]
         compiler: [gcc, clang]
-        endianness: [any, little]
         flag: [--none, --enable-ovr-var-array, --disable-asserts]
         exclude:
-          - build_type: Debug
+          - build_type: DebugAsan
             flag: --disable-asserts
           - build_type: Release
             flag: --disable-asserts
@@ -192,7 +189,6 @@ jobs:
                           --language cpp \
                           --platform ${{ matrix.architecture }} \
                           --toolchain-family ${{ matrix.compiler }} \
-                          --endianness ${{ matrix.endianness }} \
                           ${{ matrix.flag }}
 
   language-verification-cpp-17:
@@ -201,10 +197,9 @@ jobs:
     container: ghcr.io/opencyphal/toolshed:ts22.4.10
     strategy:
       matrix:
-        build_type: [Debug, Release, MinSizeRel]
+        build_type: [Debug, Release]
         architecture: [native32, native64]
         compiler: [gcc, clang]
-        endianness: [any, little]
         flag: [--none, --enable-ovr-var-array, --disable-asserts]
         exclude:
           - build_type: Debug
@@ -224,7 +219,6 @@ jobs:
                           --language cpp \
                           --platform ${{ matrix.architecture }} \
                           --toolchain-family ${{ matrix.compiler }} \
-                          --endianness ${{ matrix.endianness }} \
                           ${{ matrix.flag }}
 
   language-verification-cpp-20:
@@ -233,10 +227,9 @@ jobs:
     container: ghcr.io/opencyphal/toolshed:ts22.4.10
     strategy:
       matrix:
-        build_type: [Debug, Release, MinSizeRel]
+        build_type: [Debug, Release]
         architecture: [native32, native64]
         compiler: [gcc, clang]
-        endianness: [any, little]
         flag: [--none, --enable-ovr-var-array, --disable-asserts]
         exclude:
           - build_type: Debug
@@ -256,7 +249,6 @@ jobs:
                           --language cpp \
                           --platform ${{ matrix.architecture }} \
                           --toolchain-family ${{ matrix.compiler }} \
-                          --endianness ${{ matrix.endianness }} \
                           ${{ matrix.flag }}
 
   language-verification-python:

@@ -50,7 +50,6 @@ def test_realgen(
         resource_types=resource_types,
         language_options=language_options,
         include_experimental_languages=True,
-        depfile=True,
     )
 
     # We only expect one root namespace directory in the public regulated data types.

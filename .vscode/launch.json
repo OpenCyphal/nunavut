@@ -5,16 +5,28 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/verification"
+        },
+        {
             "name": "Python: nnvg c++",
             "type": "debugpy",
             "request": "launch",
             "module": "nunavut",
             "cwd": "${workspaceFolder}/src",
-            "args": ["--experimental-languages",
-                     "--verbose",
-                     "--outdir", "${workspaceFolder}/nunavut_out",
-                     "-l", "cpp",
-                     "${workspaceFolder}/submodules/public_regulated_data_types/uavcan"]
+            "args": [
+                "--experimental-languages",
+                "--verbose",
+                "--outdir",
+                "${workspaceFolder}/nunavut_out",
+                "-l",
+                "cpp",
+                "${workspaceFolder}/submodules/public_regulated_data_types/uavcan"
+            ]
         },
         {
             "name": "Pytest: current test",
@@ -84,7 +96,9 @@
             "name": "lldb: cmake.launchTargetPath",
             "args": [],
             "cwd": "${workspaceFolder}",
-            "initCommands": ["settings set target.process.thread.step-avoid-regexp \"\""],
+            "initCommands": [
+                "settings set target.process.thread.step-avoid-regexp \"\""
+            ],
             "env": {
                 "PATH": "$PATH:${command:cmake.launchTargetDirectory}",
             },
