@@ -59,6 +59,29 @@ def test_three_roots_using_nnvg(gen_paths, run_nnvg):  # type: ignore
                 '-I', str(gen_paths.dsdl_dir / Path("esmeinc")),
                 '-O', str(gen_paths.out_dir),
                 '-e', str('.json'),
+                "-Xlang",
                 str(gen_paths.dsdl_dir / Path("scotec"))]
 
     run_nnvg(gen_paths, nnvg_cmd)
+
+
+def test_same_type_different_paths(gen_paths, run_nnvg_main):  # type: ignore
+
+    expected_output = [gen_paths.out_dir / Path("esmeinc") / Path("DaughterType_0_1").with_suffix(".json")]
+
+    nnvg_args = ['--templates', str(gen_paths.templates_dir),
+                '-I', (gen_paths.dsdl_dir / Path("esmeinc")).as_posix(),
+                '-I', (gen_paths.dsdl_dir / Path("family") / Path("esmeinc")).as_posix(),
+                '-O', (gen_paths.out_dir).as_posix(),
+                "--list-outputs",
+                "-l", "js",
+                "-Xlang",
+                "--omit-serialization-support",
+                '-e', str('.json'),
+                (Path("esmeinc") / Path("DaughterType.0.1.dsdl")).as_posix()]
+
+    result = run_nnvg_main(gen_paths, nnvg_args)
+    assert 0 == result.returncode
+    completed = result.stdout.decode("utf-8").split(";")
+    completed_wo_empty = sorted([Path(i) for i in completed if len(i) > 0])
+    assert expected_output == completed_wo_empty
