@@ -1,5 +1,5 @@
 #
-# Find lcov and deal with clang weridness.
+# Find lcov and deal with clang weirdness.
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 
@@ -34,7 +34,7 @@ if(LCOV)
             # Thanks to http://logan.tw/posts/2015/04/28/check-code-coverage-with-clang-and-lcov/
             file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/gcov_tool.sh "#!/usr/bin/env bash\nexec ${LLVM_COV} gcov \"$@\"\n")
             file(COPY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/gcov_tool.sh
-                DESTINATION ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
+                DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                 NO_SOURCE_PERMISSIONS
                 FILE_PERMISSIONS OWNER_READ
                                 OWNER_WRITE
@@ -43,7 +43,7 @@ if(LCOV)
                                 GROUP_EXECUTE
                                 WORLD_READ
                                 WORLD_EXECUTE)
-            set(NUNAVUT_GOV_TOOL_ARG "--gcov-tool" "${NUNAVUT_VERIFICATIONS_BINARY_DIR}/gcov_tool.sh")
+            set(NUNAVUT_GOV_TOOL_ARG "--gcov-tool" "${CMAKE_CURRENT_BINARY_DIR}/gcov_tool.sh")
         else()
             message(WARNING "llvm-cov was not found but we are compiling using clang. The coverage report build step may fail.")
         endif()

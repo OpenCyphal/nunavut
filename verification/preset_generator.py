@@ -17,31 +17,40 @@ import json
 import sys
 import textwrap
 from pathlib import Path
+from collections import OrderedDict
 
-dimensions: dict[str, dict] = {
-    "toolchain": {
-        "short_name": "tc",
-        "help": "The toolchain to use. Optionally provide colon separated platform name.",
-        "split": ":",
-        "values": {
-            "toolchainFile": lambda tc: f"${{sourceDir}}/cmake/toolchains/{tc.split(":")[0]}.cmake",
-            "cacheVariables": lambda tc: (
-                {"NUNAVUT_VERIFICATION_TARGET_PLATFORM": tc.split(":")[1]} if len(tc.split(":")) > 1 else {}
-            ),
-        },
-    },
-    "language": {
-        "short_name": "ln",
-        "help": "A pair of language name and language standard to use separated by a dash. For example, 'c-11'.",
-        "split": "-",
-        "values": {
-            "cacheVariables": lambda las: {
-                "NUNAVUT_VERIFICATION_LANG": las.split("-")[0],
-                "NUNAVUT_VERIFICATION_LANG_STANDARD": las.split("-")[1],
-            }
-        },
-    },
-}
+dimensions: OrderedDict[str, dict] = OrderedDict(
+    [
+        (
+            "toolchain",
+            {
+                "short_name": "tc",
+                "help": "The toolchain to use. Optionally provide colon separated platform name.",
+                "split": ":",
+                "values": {
+                    "toolchainFile": lambda tc: f"${{sourceDir}}/cmake/toolchains/{tc.split(':')[0]}.cmake",
+                    "cacheVariables": lambda tc: (
+                        {"NUNAVUT_VERIFICATION_TARGET_PLATFORM": tc.split(":")[1]} if len(tc.split(":")) > 1 else {}
+                    ),
+                },
+            },
+        ),
+        (
+            "language",
+            {
+                "short_name": "ln",
+                "help": "A pair of language name and language standard to use separated by a dash. For example, 'c-11'.",
+                "split": "-",
+                "values": {
+                    "cacheVariables": lambda las: {
+                        "NUNAVUT_VERIFICATION_LANG": las.split("-")[0],
+                        "NUNAVUT_VERIFICATION_LANG_STANDARD": las.split("-")[1],
+                    }
+                },
+            },
+        ),
+    ]
+)
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -135,8 +144,28 @@ def parse_arguments() -> argparse.Namespace:
 
 def validate_json_schema(args: argparse.Namespace, presets: dict) -> bool:
     """
-    Validates the schema of the json file.
+    Validates the preset file against certain assumptions this script makes. If jsonschema and requests is available
+    the script will also validate the file against the CMake presets schema pulled from gihub.
     """
+    try:
+        import jsonschema  # pylint: disable=import-outside-toplevel
+        import urllib.request  # pylint: disable=import-outside-toplevel
+
+        schema_url = "https://raw.githubusercontent.com/Kitware/CMake/master/Help/manual/presets/schema.json"
+        with urllib.request.urlopen(schema_url, timeout=10) as response:
+            schema = json.loads(response.read().decode())
+
+        try:
+            jsonschema.validate(instance=presets, schema=schema)
+        except jsonschema.ValidationError as e:
+            print(f"JSON schema validation error: {e.message}")
+            return False
+
+    except ImportError:
+        if not getattr(args, "validate_json_schema_warn_once", False):
+            print("jsonschema is not available. Skipping schema validation.")
+            args.validate_json_schema_warn_once = True
+
     if "version" not in presets or presets["version"] != args.presets_version:
         print("The version field is missing from the presets file.")
         return False
@@ -190,7 +219,7 @@ def find_configuration_types(args: argparse.Namespace, hidden_presets: list[dict
 
 def update_hidden_configure_presets(args: argparse.Namespace, configure_presets: dict) -> list[dict]:
     """
-    Update the hidden configure presets based on the given arguments.
+    Update the hidden configure presets based on the arguments given to the script.
 
     @return: The updated hidden configure presets merged from the given presets and the arguments.
     """
@@ -307,6 +336,9 @@ def main() -> int:
     json_presets["buildPresets"] = generate_build_presets(
         args, find_configuration_types(args, hidden_presets), visible_presets
     )
+
+    if not validate_json_schema(args, json_presets):
+        return 1
 
     with args.preset_file.open("w", encoding="UTF-8") as f:
         f.write(json.dumps(json_presets, indent=args.indent))

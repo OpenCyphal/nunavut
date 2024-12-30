@@ -4,7 +4,7 @@
 # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 
-set(UNITY_SUBMODULE "${NUNAVUT_SUBMODULES_ROOT}/unity")
+set(UNITY_SUBMODULE "${NUNAVUT_SUBMODULES_DIR}/unity")
 
 if(EXISTS "${UNITY_SUBMODULE}/src")
     set(UNITY_FOUND ON)

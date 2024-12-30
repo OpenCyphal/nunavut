@@ -32,21 +32,11 @@ list(APPEND C_FLAG_SET
     "-Wdouble-promotion"
     "-Wswitch-enum"
     "-Wtype-limits"
-    "-Wno-c++17-attribute-extensions"
 )
 
-if(DEFINED NUNAVUT_VERIFICATION_TARGET_PLATFORM)
-    if(${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "native32")
-        list(APPEND C_FLAG_SET "-m32")
-        list(APPEND EXE_LINKER_FLAG_SET "-m32")
-        message(STATUS "Configuring for native32 platform.")
-    elseif(${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "native64")
-        list(APPEND C_FLAG_SET "-m64")
-        list(APPEND EXE_LINKER_FLAG_SET "-m64")
-        message(STATUS "Configuring for native64 platform.")
-    else()
-        message(FATAL_ERROR "\"${NUNAVUT_VERIFICATION_TARGET_PLATFORM}\" is not a supported value.")
-    endif()
+if(${LOCAL_VERIFICATION_TARGET_PLATFORM} STREQUAL "native32")
+    list(APPEND C_FLAG_SET "-m32")
+    list(APPEND EXE_LINKER_FLAG_SET "-m32")
 endif()
 
 set(CXX_FLAG_SET ${C_FLAG_SET})
@@ -62,12 +52,12 @@ list(APPEND CXX_FLAG_SET
     "-Wzero-as-null-pointer-constant"
     "-Wnon-virtual-dtor"
     "-Woverloaded-virtual"
+    "-Wno-c++17-attribute-extensions"
 )
 
 if(CETLVAST_DISABLE_CPP_EXCEPTIONS)
     message(STATUS "CETLVAST_DISABLE_CPP_EXCEPTIONS is true. Adding -fno-exceptions to compiler flags.")
-    list(APPEND CXX_FLAG_SET
-        "-fno-exceptions")
+    list(APPEND CXX_FLAG_SET "-fno-exceptions")
 endif()
 
 list(APPEND CXX_FLAG_SET ${C_FLAG_SET})

@@ -4,7 +4,7 @@
 # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 
-set(O1HEAP_SUBMODULE "${NUNAVUT_SUBMODULES_ROOT}/o1heap")
+set(O1HEAP_SUBMODULE "${NUNAVUT_SUBMODULES_DIR}/o1heap")
 
 if(EXISTS "${O1HEAP_SUBMODULE}/README.md")
     set(O1HEAP_FOUND ON)

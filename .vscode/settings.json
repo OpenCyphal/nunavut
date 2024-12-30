@@ -60,5 +60,6 @@
             "description": "Words used in in the Nunavut codebase to add to spell checker dictionaries.",
             "addWords": true
           }
-    }
+    },
+    "cmake.sourceDirectory": "${workspaceFolder}/verification"
 }
