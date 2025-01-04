@@ -523,30 +523,6 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     run_mode_group.add_argument("--dry-run", "-d", action="store_true", help="If True then no files will be generated.")
 
     run_mode_group.add_argument(
-        "--omit-deprecated",
-        action="store_true",
-        help=textwrap.dedent(
-            """
-        Disables deprecated types.
-
-    """
-        ).lstrip(),
-    )
-
-    run_mode_group.add_argument(
-        "-M",
-        "--depfile",
-        action="store_true",
-        help=textwrap.dedent(
-            """
-        Emits a makefile compatible dependency file for the generated files. Use with --dry-run to
-        generate a list of dependencies for a build system.
-
-    """
-        ).lstrip(),
-    )
-
-    run_mode_group.add_argument(
         "--list-outputs",
         action="store_true",
         help=textwrap.dedent(
@@ -623,6 +599,21 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         ).lstrip(),
     )
 
+    run_mode_group.add_argument(
+        "--list-to-file",
+        type=Path,
+        help=textwrap.dedent(
+            """
+
+        If provided then the output of --list-outputs, --list-inputs, or --list-configuration
+        will also be written to the file specified. If the file exists it will be overwritten.
+        This utf-8-encoded file will be written in the format specified by --list-format even
+        if --dry-run is set.
+
+    """
+        ).lstrip(),
+    )
+
     # +-----------------------------------------------------------------------+
     # | Post-Processing Options
     # +-----------------------------------------------------------------------+
@@ -632,8 +623,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         description=textwrap.dedent(
             """
 
-        Options that enable various post-generation steps because Pavel Kirienko doesn't
-        like writing jinja templates.
+        This options are all deprecated and will be removed in a future release.
 
     """
         ).lstrip(),
@@ -837,7 +827,24 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         There is a set of built-in configuration for Nunavut that provides default values for known
         languages as documented `in the template guide
         <https://nunavut.readthedocs.io/en/latest/docs/templates.html#language-options>`_. This
-        argument lets you specify override configuration json.
+        argument lets you specify an override configuration json file where any value provided will
+        override the built-in defaults. To see the built-in defaults you can use::
+
+            nnvg --list-configuration --list-format json-pretty > built-in.json
+
+        This will generate a json file with all the built-in configuration values as the "configuration.sections"
+        value. If you have `jq` installed you can use this to filter the output to just the configuration::
+
+            nnvg --list-configuration --list-format json-pretty | jq '.configuration.sections' > my-config.json
+
+        Then you can edit the my-config.json file to provide overrides for the built-in defaults and use
+        this option to provide the file to nnvg::
+
+            nnvg --configuration my-config.json ...
+
+
+        Also see ``--list-to-file`` which writes this configuration to disk if combined with ``--list-configuration``.
+
     """
         ).lstrip(),
     )

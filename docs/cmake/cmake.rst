@@ -42,11 +42,11 @@ See the :ref:`fetch_content_cmake_lists` figure for more context.
 :download:`CMakePresets.json <CMakePresets.json>`
 
 *************************************
-Helper Functions
+NunavutConfig
 *************************************
 
 Use either `CMake's FetchContent <https://cmake.org/cmake/help/latest/module/FetchContent.html>`__
 (see :ref:`fetch_content`) or `find_package(nunavut) <https://cmake.org/cmake/help/latest/command/find_package.html>`__,
-to load the Nunavut cmake functions documented here into your project.
+to load the Nunavut cmake functions and variables documented here into your project.
 
 .. cmake-module:: ../../NunavutConfig.cmake

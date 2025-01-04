@@ -36,23 +36,6 @@
                 "kind": "build",
             },
             "problemMatcher": []
-        },
-        {
-            "label": "verify c native32",
-            "type": "shell",
-            "command": "${workspaceFolder}/.github/verify.py",
-            "args": [
-                "--verbose",
-                "--force",
-                "--language", "c",
-                "--endianness", "any",
-                "--platform", "native32",
-                "--build-type", "Debug"
-            ],
-            "group": "build",
-            "problemMatcher": [
-                "$gcc"
-            ]
         }
     ]
 }

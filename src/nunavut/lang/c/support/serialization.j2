@@ -449,7 +449,11 @@ static inline int8_t nunavutGetI8(const uint8_t* const buf,
     const uint8_t sat = (uint8_t) nunavutChooseMin(len_bits, 8U);
     uint8_t       val = nunavutGetU8(buf, buf_size_bytes, off_bits, sat);
     const bool    neg = (sat > 0U) && ((val & (1ULL << (sat - 1U))) != 0U);
-    val = ((sat < 8U) && neg) ? (uint8_t)(val | ~((1U << sat) - 1U)) : val;  // Sign extension
+    if ((sat < 8U) && neg)
+    {
+        val = (uint8_t)(val | ~((1U << sat) - 1U));  // Sign extension
+    }
+
     return neg ? (int8_t)((-(int8_t)(uint8_t) ~val) - 1) : (int8_t) val;
 }
 
@@ -461,7 +465,10 @@ static inline int16_t nunavutGetI16(const uint8_t* const buf,
     const uint8_t sat = (uint8_t) nunavutChooseMin(len_bits, 16U);
     uint16_t      val = nunavutGetU16(buf, buf_size_bytes, off_bits, sat);
     const bool    neg = (sat > 0U) && ((val & (1ULL << (sat - 1U))) != 0U);
-    val = ((sat < 16U) && neg) ? (uint16_t)(val | ~((1U << sat) - 1U)) : val;  // Sign extension
+    if ((sat < 16U) && neg)
+    {
+        val = (uint16_t)(val | ~((1U << sat) - 1U));  // Sign extension
+    }
     return neg ? (int16_t)((-(int16_t)(uint16_t) ~val) - 1) : (int16_t) val;
 }
 
@@ -473,7 +480,10 @@ static inline int32_t nunavutGetI32(const uint8_t* const buf,
     const uint8_t sat = (uint8_t) nunavutChooseMin(len_bits, 32U);
     uint32_t      val = nunavutGetU32(buf, buf_size_bytes, off_bits, sat);
     const bool    neg = (sat > 0U) && ((val & (1ULL << (sat - 1U))) != 0U);
-    val = ((sat < 32U) && neg) ? (uint32_t)(val | ~((1UL << sat) - 1U)) : val;  // Sign extension
+    if ((sat < 32U) && neg)
+    {
+        val = (uint32_t)(val | ~((1UL << sat) - 1U));  // Sign extension
+    }
     return neg ? (int32_t)((-(int32_t) ~val) - 1) : (int32_t) val;
 }
 
@@ -485,7 +495,10 @@ static inline int64_t nunavutGetI64(const uint8_t* const buf,
     const uint8_t sat = (uint8_t) nunavutChooseMin(len_bits, 64U);
     uint64_t      val = nunavutGetU64(buf, buf_size_bytes, off_bits, sat);
     const bool    neg = (sat > 0U) && ((val & (1ULL << (sat - 1U))) != 0U);
-    val = ((sat < 64U) && neg) ? (uint64_t)(val | ~((1ULL << sat) - 1U)) : val;  // Sign extension
+    if ((sat < 64U) && neg)
+    {
+        val = (uint64_t)(val | ~((1ULL << sat) - 1U));  // Sign extension
+    }
     return neg ? (int64_t)((-(int64_t) ~val) - 1) : (int64_t) val;
 }
 

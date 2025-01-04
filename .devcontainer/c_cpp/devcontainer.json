@@ -1,8 +1,8 @@
 {
     "name": "C/C++ verification environment",
     "image": "ghcr.io/opencyphal/toolshed:ts22.4.10",
-    "workspaceFolder": "/workspace",
-    "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspace,type=bind,consistency=delegated",
+    "workspaceFolder": "/repo",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/repo,type=bind,consistency=delegated",
     "customizations": {
         "vscode": {
             "extensions": [

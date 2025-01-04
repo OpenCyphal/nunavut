@@ -3,7 +3,7 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 
-set(GOOGLETEST_SUBMODULE "${NUNAVUT_SUBMODULES_ROOT}/googletest")
+set(GOOGLETEST_SUBMODULE "${NUNAVUT_SUBMODULES_DIR}/googletest")
 
 if(EXISTS "${GOOGLETEST_SUBMODULE}/googletest")
     set(GTEST_FOUND ON)
@@ -37,7 +37,6 @@ target_compile_options(gmock_main PRIVATE
                        "-Wno-float-equal"
                        "-Wno-conversion"
                        "-DGTEST_HAS_PTHREAD=0"
-                       "${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS}"
                        )
 
 include(FindPackageHandleStandardArgs)

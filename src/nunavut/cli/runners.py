@@ -9,29 +9,15 @@
 
 import argparse
 import itertools
-import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Optional
 
 from .._generators import basic_language_context_builder_from_args, generate_all
-from .._utilities import DefaultValue
 from .._utilities import ResourceType
 from ..lang import LanguageContext
-
-
-class ConfigJSONEncoder(json.JSONEncoder):
-    """
-    A JSON encoder that can handle Nunavut configuration and pydsdl objects.
-    """
-
-    def default(self, o: Any) -> Any:
-        if isinstance(o, Path):
-            return str(o)
-        if isinstance(o, DefaultValue):
-            return o.value
-        return super().default(o)
+from .listers import Lister
 
 
 class StandardArgparseRunner:
@@ -82,28 +68,7 @@ class StandardArgparseRunner:
                 file_iterators.append(result.generated_files)
             lister_object["outputs"] = [str(p.resolve()) for p in itertools.chain(*file_iterators)]
 
-        if self._args.list_format == "json":
-            json.dump(lister_object, sys.stdout, ensure_ascii=False, cls=ConfigJSONEncoder)
-        elif self._args.list_format == "json-pretty":
-            json.dump(lister_object, sys.stdout, ensure_ascii=False, indent=2, cls=ConfigJSONEncoder)
-        else:
-            if self._args.list_format == "scsv":
-                sep = ";"
-                end = ";"
-            elif self._args.list_format == "csv":
-                sep = ","
-                end = ","
-            else:  # pragma: no cover
-                raise ValueError(f"Unsupported list format: {self._args.list_format}")
-            had_inputs = False
-            has_outputs = "outputs" in lister_object and len(lister_object["outputs"]) > 0
-            if "inputs" in lister_object and len(lister_object["inputs"]) > 0:
-                had_inputs = True
-                self.stdout_lister(lister_object["inputs"], sep=sep, end=(end if has_outputs else ""))
-            if has_outputs:
-                if had_inputs:
-                    sys.stdout.write(sep)
-                self.stdout_lister(lister_object["outputs"], sep=sep, end="")
+        Lister.get_lister(self._args.list_format, self._args.list_to_file).list(lister_object)
 
         return 0
 
@@ -117,29 +82,6 @@ class StandardArgparseRunner:
         config["sections"] = lctx.config.sections()
 
         return config
-
-    def stdout_lister(
-        self,
-        things_to_list: Iterable[str],
-        sep: str,
-        end: str,
-    ) -> None:
-        """
-        Write a list of things to stdout.
-
-        :param Iterable[Any] things_to_list: The things to list.
-        :param str sep: The separator to use between things.
-        :param str end: The character to print at the end.
-        """
-        first = True
-        for thing in things_to_list:
-            if first:
-                first = False
-            else:
-                sys.stdout.write(sep)
-            sys.stdout.write(thing)
-        if not first:
-            sys.stdout.write(end)
 
 
 # --[ MAIN ]-----------------------------------------------------------------------------------------------------------

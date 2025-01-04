@@ -66,7 +66,7 @@ jobs:
         path: .tox/py311-test/tmp/
     - name: set-environment
       run: |
-        echo NUNAVUT_MAJOR_MINOR_VERSION=$(./.github/verify.py --major-minor-version-only) >> $GITHUB_ENV
+        echo NUNAVUT_MAJOR_MINOR_VERSION=$(./version_check_nunavut --major-minor-version-only) >> $GITHUB_ENV
     - name: verify tox artifacts
       run: ls -R
       working-directory: .tox
@@ -139,125 +139,61 @@ jobs:
     container: ghcr.io/opencyphal/toolshed:ts22.4.10
     strategy:
       matrix:
-        build_type: [Debug, Release, MinSizeRel]
-        architecture: [native32, native64]
+        architecture: [native32, native]
         compiler: [gcc, clang]
-        endianness: [any, little]
-        flag: [--none, --enable-ovr-var-array, --disable-asserts]
         exclude:
-          - build_type: Debug
-            flag: --disable-asserts
-          - build_type: Release
-            flag: --disable-asserts
+          - architecture: native32
+            compiler: clang
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
     - name: verify
+      # We're using Ninja multi-config so we only have to configure once for all build types
+      working-directory: verification
       run: |
-        .github/verify.py --override .github/verify_global.ini \
-                          --build-type ${{ matrix.build_type }} \
-                          --language c \
-                          --platform ${{ matrix.architecture }} \
-                          --toolchain-family ${{ matrix.compiler }} \
-                          --endianness ${{ matrix.endianness }} \
-                          ${{ matrix.flag }}
+        cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS=--embed-auditing-info --preset config-${{ matrix.compiler }}-${{ matrix.architecture }}-c-11
+        cmake --build --preset build-${{ matrix.compiler }}-${{ matrix.architecture }}-c-11-release
+        cmake --build --preset build-${{ matrix.compiler }}-${{ matrix.architecture }}-c-11-debugasan
 
-  language-verification-cpp-14:
+  language-verification-cpp:
     runs-on: ubuntu-latest
     needs: test
     container: ghcr.io/opencyphal/toolshed:ts22.4.10
     strategy:
       matrix:
-        build_type: [Debug, Release, MinSizeRel]
-        architecture: [native32, native64]
+        architecture: [native32, native]
         compiler: [gcc, clang]
-        endianness: [any, little]
-        flag: [--none, --enable-ovr-var-array, --disable-asserts]
+        language: [cpp-14, cpp-17, cpp-20]
         exclude:
-          - build_type: Debug
-            flag: --disable-asserts
-          - build_type: Release
-            flag: --disable-asserts
-
+          - architecture: native32
+            compiler: clang
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
     - name: verify
+      working-directory: verification
       run: |
-        .github/verify.py --override .github/verify_global.ini \
-                          --build-type ${{ matrix.build_type }} \
-                          --language-standard c++14 \
-                          --language cpp \
-                          --platform ${{ matrix.architecture }} \
-                          --toolchain-family ${{ matrix.compiler }} \
-                          --endianness ${{ matrix.endianness }} \
-                          ${{ matrix.flag }}
+        cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS=--embed-auditing-info --preset config-${{ matrix.compiler }}-${{ matrix.architecture }}-${{ matrix.language }}
+        cmake --build --preset build-${{ matrix.compiler }}-${{ matrix.architecture }}-${{ matrix.language }}-debugasan
+        cmake --build --preset build-${{ matrix.compiler }}-${{ matrix.architecture }}-${{ matrix.language }}-release
 
-  language-verification-cpp-17:
+  language-verification-c-cpp-clang-native-extra:
     runs-on: ubuntu-latest
     needs: test
     container: ghcr.io/opencyphal/toolshed:ts22.4.10
-    strategy:
-      matrix:
-        build_type: [Debug, Release, MinSizeRel]
-        architecture: [native32, native64]
-        compiler: [gcc, clang]
-        endianness: [any, little]
-        flag: [--none, --enable-ovr-var-array, --disable-asserts]
-        exclude:
-          - build_type: Debug
-            flag: --disable-asserts
-          - build_type: Release
-            flag: --disable-asserts
-
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
     - name: verify
+      working-directory: verification
       run: |
-        .github/verify.py --override .github/verify_global.ini \
-                          --build-type ${{ matrix.build_type }} \
-                          --language-standard c++17 \
-                          --language cpp \
-                          --platform ${{ matrix.architecture }} \
-                          --toolchain-family ${{ matrix.compiler }} \
-                          --endianness ${{ matrix.endianness }} \
-                          ${{ matrix.flag }}
-
-  language-verification-cpp-20:
-    runs-on: ubuntu-latest
-    needs: test
-    container: ghcr.io/opencyphal/toolshed:ts22.4.10
-    strategy:
-      matrix:
-        build_type: [Debug, Release, MinSizeRel]
-        architecture: [native32, native64]
-        compiler: [gcc, clang]
-        endianness: [any, little]
-        flag: [--none, --enable-ovr-var-array, --disable-asserts]
-        exclude:
-          - build_type: Debug
-            flag: --disable-asserts
-          - build_type: Release
-            flag: --disable-asserts
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: true
-    - name: verify
-      run: |
-        .github/verify.py --override .github/verify_global.ini \
-                          --build-type ${{ matrix.build_type }} \
-                          --language-standard c++20 \
-                          --language cpp \
-                          --platform ${{ matrix.architecture }} \
-                          --toolchain-family ${{ matrix.compiler }} \
-                          --endianness ${{ matrix.endianness }} \
-                          ${{ matrix.flag }}
+        cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS="--enable-override-variable-array-capacity;--embed-auditing-info" --preset config-clang-native-cpp-20
+        cmake --build --preset build-clang-native-cpp-20-debugcov
+        cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS="--enable-override-variable-array-capacity;--embed-auditing-info" --preset config-clang-native-c-11
+        cmake --build --preset build-clang-native-c-11-debugcov
 
   language-verification-python:
     runs-on: ubuntu-latest

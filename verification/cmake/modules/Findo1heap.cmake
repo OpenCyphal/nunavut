@@ -4,7 +4,7 @@
 # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 
-set(O1HEAP_SUBMODULE "${NUNAVUT_SUBMODULES_ROOT}/o1heap")
+set(O1HEAP_SUBMODULE "${NUNAVUT_SUBMODULES_DIR}/o1heap")
 
 if(EXISTS "${O1HEAP_SUBMODULE}/README.md")
     set(O1HEAP_FOUND ON)
@@ -19,10 +19,6 @@ include_directories(
 add_library(o1heap STATIC EXCLUDE_FROM_ALL
             ${O1HEAP_SUBMODULE}/o1heap/o1heap.c
 )
-
-target_compile_options(o1heap PUBLIC
-                        "${NUNAVUT_VERIFICATION_EXTRA_COMPILE_CFLAGS}"
-                       )
 
 include(FindPackageHandleStandardArgs)
 

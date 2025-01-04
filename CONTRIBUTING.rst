@@ -82,13 +82,20 @@ To run the language verification build you'll need to use a different docker con
 
     docker pull ghcr.io/opencyphal/toolshed:ts22.4.10
     docker run --rm -it -v $PWD:/workspace ghcr.io/opencyphal/toolshed:ts22.4.10
-    cd /workspace
-    ./.github/verify.py -l c
-    ./.github/verify.py -l cpp
+    cd /workspace/verification
+    cmake --list-presets
 
-The verify.py script is a simple commandline generator for our cmake scripts. Use help for details::
+Choose one of the presets. For example::
 
-    ./.github/verify.py --help
+    cmake --preset config-clang-native-c-11
+
+To build replace the prefix ``config`` with ``build`` and suffix with one of the configurations listed in the presets
+file as ``CMAKE_CONFIGURATION_TYPES`` but in all lower-case. For example::
+
+    cmake --build --preset build-clang-native-c-11-debug
+
+The verification cmake uses Ninja Multi-Config so you can run any ``build-clang-native-c-11-`` build flavor without
+re-configuring in this example.
 
 If you get a "denied" response from ghcr your ip might be getting rate-limited. While these are public containers
 you'll have to login to get around any rate-limiting for your local site. See [the github docs](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
@@ -254,88 +261,33 @@ TLDR::
 
     git submodule update --init --recursive
     docker run --rm -it -v $PWD:/repo ghcr.io/opencyphal/toolshed:ts22.4.10
-    export NUNAVUT_VERIFICATION_LANG=c
     cd verification
-    mkdir "build_$NUNAVUT_VERIFICATION_LANG"
-    cd "build_$NUNAVUT_VERIFICATION_LANG"
-    cmake -DNUNAVUT_FLAGSET=/repo/verification/cmake/compiler_flag_sets/native.cmake -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/gcc-native.cmake -DCMAKE_GENERATOR=Ninja ..
-    cmake --build . --target help
+    cmake --preset config-clang-native-c-11
+    cmake --build --preset build-clang-native-c-11-debug
 
-Try running a test which will first compile the test. For example, in the C language build ::
 
-    cmake --build . --target test_all
+To see all presets available do::
 
-To run the C++ test use the same steps shown in the TLDR above but set :code:`NUNAVUT_VERIFICATION_LANG` to
-"cpp" first.
+    cmake --list-presets
+    cmake --build --list-presets
 
-In the list of targets that the :code:`cmake --build . --target help` command lists the targets that build tests
-will be prefixed with :code:`test_` and the psedo-target that also executes the test will be prefixed with
-:code:`run_test_`. You should avoid the :code:`_with_lcov` when you are manually building tests.
+
+After configuring you can also use Ninja directly::
+
+    cd build
+    ninja -t targets
 
 To obtain coverage information for the verification suite (not the Python code),
 build the `cov_all` target and inspect the output under the `coverage` directory.
 
-cmake build options
-------------------------------------------------
+While we strongly encourage you to use the cmake presets, the CMakeLists.txt for the verification suite is driven by
+three variables you can set in your environment or pass into cmake if using cmake directly:
 
-The following options are supported when configuring your build. These can be specified by using :code:`-D` arguments
-to cmake. For example ::
+ - ``NUNAVUT_VERIFICATION_LANG`` - By default this will be 'c'. Set to 'c' or 'cpp'
+ - ``NUNAVUT_VERIFICATION_LANG_STANDARD`` - See the supported options for ``--language-standard`` (see ``nnvg -h``)
+ - ``NUNAVUT_VERIFICATION_TARGET_PLATFORM`` - 'native' by default. 'native32' for cross-compiling for a 32-bit version of the native platform.
 
-    cmake -DNUNAVUT_VERIFICATION_LANG=c -DNUNAVUT_VERIFICATION_TARGET_ENDIANNESS=any ..
-
-+-----------------------------------------+---------+----------+------------------------------------+------------------------------------------------------------------+
-| Option                                  | Type    | Default  | Values                             | Description                                                      |
-+=========================================+=========+==========+====================================+==================================================================+
-|| CMAKE_BUILD_TYPE                       || string || release || Debug, Release, MinSizeRel        || Compiler optimizations are set based                            |
-||                                        ||        ||         ||                                   || on the CMake build type.                                        |
-+-----------------------------------------+---------+----------+------------------------------------+------------------------------------------------------------------+
-|| NUNAVUT_VERIFICATION_LANG              || string || c, cpp  || Specifies the language for source ||                                                                 |
-||                                        ||        ||         ||                                   || code generated by nnvg.                                         |
-+-----------------------------------------+---------+----------+------------------------------------+------------------------------------------------------------------+
-|| NUNAVUT_VERIFICATION_TARGET_ENDIANNESS || string || any     || little, big, any                  || Modifies generated serialization code                           |
-||                                        ||        ||         ||                                   || and support code to support various                             |
-||                                        ||        ||         ||                                   || CPU architectures. Other than                                   |
-||                                        ||        ||         ||                                   || endianess, Nunavut serialization and                            |
-||                                        ||        ||         ||                                   || support code should be generic.                                 |
-+-----------------------------------------+---------+----------+------------------------------------+------------------------------------------------------------------+
-|| NUNAVUT_VERIFICATION_TARGET_PLATFORM   || string || (unset) || native32, native64                || The target platform to compile for.                             |
-||                                        ||        ||         ||                                   || In future releases we hope to support                           |
-||                                        ||        ||         ||                                   || ppc (Big), AVR8, RISCV, ARM.                                    |
-+-----------------------------------------+---------+----------+------------------------------------+------------------------------------------------------------------+
-|| NUNAVUT_VERIFICATION_SER_ASSERT        || bool   || ON      || ON, OFF                           || Enable or disable asserts in                                    |
-||                                        ||        ||         ||                                   || generated serialization and support                             |
-||                                        ||        ||         ||                                   || code.                                                           |
-+-----------------------------------------+---------+----------+------------------------------------+------------------------------------------------------------------+
-|| NUNAVUT_VERIFICATION_SER_FP_DISABLE    || bool   || OFF     || ON, OFF                           || Enable to omit floating-point                                   |
-||                                        ||        ||         ||                                   || serialization routines.                                         |
-+-----------------------------------------+---------+----------+------------------------------------+------------------------------------------------------------------+
-| NUNAVUT_VERIFICATION_LANG_STANDARD      | string  | (empty)  | c++17, c99 (etc)                   | override value for the -std compiler flag of the target language |
-+-----------------------------------------+---------+----------+------------------------------------+------------------------------------------------------------------+
-
-
-
-
-
-\* *Because this option has no default, a value must be provided by the user.*
-
-VSCode Remote Container Development of Verification Tests
-====================================================================================
-
-To write and debug verification tests using `VSCode Remote Containers`_ you'll need to use the
-"Open Folder in Container..." option:
-
-.. image:: /docs/static/images/vscode_open_in_container.png
-
-Open the "verification" folder:
-
-.. image:: /docs/static/images/vscode_folder_verification.png
-
-We play a little trick here where we dump you back into the Nunvut repo root when you reopen in
-the container. This lets you also work with the Python source. If you "reopen locally" while in
-this state, however, you'll find yourself back in the verification folder which can be a little
-disorienting. Write to Microsoft asking them to allow multiple images in the .devcontainer
-json and we can get rid of this ugly hack. Sorry.
-
+All other options set when generating code are provided by setting ``NUNAVUT_EXTRA_GENERATOR_ARGS`` in your environment.
 
 .. _`read the docs`: https://readthedocs.org/
 .. _`tox`: https://tox.readthedocs.io/en/latest/

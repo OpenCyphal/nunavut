@@ -121,11 +121,16 @@ add_cyphal_library(
     OUT_LIBRARY_TARGET CYPHAL_GENERATED_HEADERS_ECORP # <-------- ${CYPHAL_GENERATED_HEADERS_ECORP} will resolve to the
                                                       #           name of the interface library defined after this
                                                       #           function exits (successfully).
-    EXPORT_MANIFEST                                   # <-------- Optional. Writes a json file in the build output that
-                                                      #           dumps all configuration used by Nunavut, all template
+    EXPORT_CONFIGURE_MANIFEST ${CMAKE_CURRENT_BINARY_DIR} # <---- Optional. Writes a configure_commands.json file under
+                                                      #           this directory that dumps all configuration used by
+                                                      #           Nunavut for the cmake configure step. (think of this
+                                                      #           as the nnvg equivalent of compile_commands.json).
+    EXPORT_GENERATE_MANIFEST ${CMAKE_CURRENT_BINARY_DIR} # <----- Optional. Writes a ${OUT_CODEGEN_TARGET}.json file
+                                                      #           under this directory which includes all template
                                                       #           files, all dsdl files, and all output files that were
-                                                      #           or would be generated (think of this as the nnvg
-                                                      #           equivalent of compile_commands.json).
+                                                      #           generated when a given code generation rule was
+                                                      #           executed. Note that this value may use generator
+                                                      #           expressions which is useful for Ninja-Multi-Config.
 )
 
 
