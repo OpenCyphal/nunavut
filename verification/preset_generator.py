@@ -214,7 +214,7 @@ def find_configuration_types(args: argparse.Namespace, hidden_presets: list[dict
             "No CMAKE_CONFIGURATION_TYPES found in common configurations and CMAKE_DEFAULT_BUILD_TYPE is not set."
         )
 
-    return list(configuration_types) if configuration_types else list(default_build_types)
+    return sorted(configuration_types) if configuration_types else sorted(default_build_types)
 
 
 def update_hidden_configure_presets(args: argparse.Namespace, configure_presets: dict) -> list[dict]:
@@ -316,7 +316,7 @@ def main() -> int:
     if not validate_json_schema(args, json_presets):
         return 1
 
-    if args.clean >= 1:
+    if args.clean is not None and args.clean >= 1:
         # clean level 1 deletes all existing buildPresets
         json_presets["buildPresets"] = []
 

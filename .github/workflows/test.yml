@@ -191,9 +191,14 @@ jobs:
       working-directory: verification
       run: |
         cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS="--enable-override-variable-array-capacity;--embed-auditing-info" --preset config-clang-native-cpp-20
-        cmake --build --preset build-clang-native-cpp-20-debugcov
+        cmake --build --preset build-clang-native-cpp-20-debugcov --target cov_all
         cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS="--enable-override-variable-array-capacity;--embed-auditing-info" --preset config-clang-native-c-11
-        cmake --build --preset build-clang-native-c-11-debugcov
+        cmake --build --preset build-clang-native-c-11-debugcov --target cov_all
+    - name: upload-verification-coverage-reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: verification-coverage-reports
+        path: verification/build/DebugCov/coverage/*
 
   language-verification-python:
     runs-on: ubuntu-latest
