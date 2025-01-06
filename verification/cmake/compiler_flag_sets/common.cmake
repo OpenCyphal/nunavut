@@ -95,12 +95,12 @@ add_compile_options("$<$<COMPILE_LANGUAGE:ASM>:${ASM_FLAG_SET}>")
 add_compile_options("$<$<C_COMPILER_ID:GNU>:-Wno-stringop-overflow>")
 add_compile_options("$<$<CONFIG:DebugAsan>:${LOCAL_SANITIZER_OPTIONS}>")
 add_compile_options(
-    "$<$<AND:$<CONFIG:DebugCov>,$<COMPILE_LANG_AND_ID:CXX,GNU>>:--coverage>"
+    "$<$<AND:$<CONFIG:DebugCov>,$<C_COMPILER_ID:GNU>>:--coverage>"
     "$<$<AND:$<CONFIG:DebugCov>,$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>>:-fno-elide-constructors>"
-    "$<$<AND:$<CONFIG:DebugCov>,$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>>:-fprofile-instr-generate>"
-    "$<$<AND:$<CONFIG:DebugCov>,$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>>:-ftest-coverage>"
-    "$<$<AND:$<CONFIG:DebugCov>,$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>>:-fprofile-arcs>"
-    "$<$<AND:$<CONFIG:DebugCov>,$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>>:-fcoverage-mapping>"
+    "$<$<AND:$<CONFIG:DebugCov>,$<C_COMPILER_ID:AppleClang,Clang>>:-fprofile-instr-generate>"
+    "$<$<AND:$<CONFIG:DebugCov>,$<C_COMPILER_ID:AppleClang,Clang>>:-ftest-coverage>"
+    "$<$<AND:$<CONFIG:DebugCov>,$<C_COMPILER_ID:AppleClang,Clang>>:-fprofile-arcs>"
+    "$<$<AND:$<CONFIG:DebugCov>,$<C_COMPILER_ID:AppleClang,Clang>>:-fcoverage-mapping>"
 )
 add_link_options(${EXE_LINKER_FLAG_SET})
 add_link_options("$<$<CONFIG:DebugAsan>:${LOCAL_SANITIZER_OPTIONS}>")
