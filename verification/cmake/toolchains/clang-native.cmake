@@ -8,4 +8,4 @@ set(CMAKE_C_COMPILER clang CACHE FILEPATH "C compiler")
 set(CMAKE_CXX_COMPILER clang++ CACHE FILEPATH "C++ compiler")
 set(CMAKE_ASM_COMPILER clang CACHE FILEPATH "assembler")
 
-set(NUNAVUT_USE_LLVM_COV ON CACHE BOOL "Enable gcov compatibility with lcov coverage tools.")
+set(VERIFICATION_COVERAGE_USE_LLVM_COV ON CACHE BOOL "Enable gcov compatibility with lcov coverage tools.")

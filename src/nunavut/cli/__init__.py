@@ -523,6 +523,27 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     run_mode_group.add_argument("--dry-run", "-d", action="store_true", help="If True then no files will be generated.")
 
     run_mode_group.add_argument(
+        "--jobs",
+        "-j",
+        type=int,
+        default=0,
+        help=textwrap.dedent(
+            """
+
+        Limits the number of subprocesses nnvg can use to parallelize type discovery
+        and code generation.
+
+        If set to 0 then the number of jobs will be set to the number of CPUs available
+        on the system.
+
+        If set to 1 then no subprocesses will be used and all work will be done in th
+        main process.
+
+    """
+        ).lstrip(),
+    )
+
+    run_mode_group.add_argument(
         "--list-outputs",
         action="store_true",
         help=textwrap.dedent(

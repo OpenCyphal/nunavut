@@ -455,6 +455,8 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         index: "Namespace",
         dsdl_files: Union[Path, str, Iterable[Union[Path, str]]],
         root_namespace_directories_or_names: Optional[Union[Path, str, Iterable[Union[Path, str]]]],
+        jobs: int = 0,
+        job_timeout_seconds: float = 0,
         lookup_directories: Optional[Union[Path, str, Iterable[Union[Path, str]]]] = None,
         print_output_handler: Optional[Callable[[Path, int, str], None]] = None,
         allow_unregulated_fixed_port_id: bool = False,
@@ -466,6 +468,10 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         :param Namespace index: The index namespace to add the new namespaces and types to.
         :param Path | str | Iterable[Path | str] dsdl_files: The dsdl files to read.
         :param Path | str | Iterable[Path | str] root_namespace_directories_or_names: See :meth:`pydsdl.read_files`.
+        :param int jobs: The number of parallel jobs to allow when reading multiple files. 0 Indicates no limit and 1
+                   diasallows all parallelism.
+        :param float job_timeout_seconds: Maximum time in fractional seconds any one read file job is allowed to take
+                     before timing out. 0 disables timeouts.
         :param Path | str | Iterable[Path | str] lookup_directories: See :meth:`pydsdl.read_files`.
         :param Callable[[Path, int, str], None] print_output_handler: A callback to handle print output.
         :param bool allow_unregulated_fixed_port_id: Allow unregulated fixed port ids.
@@ -481,32 +487,53 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
 
         already_read: set[Path] = set()
 
-        running_lookups: list[multiprocessing.pool.AsyncResult] = []
-        with multiprocessing.pool.Pool() as pool:
+        if jobs == 1:
+            # Don't use multiprocessing when jobs is 1.
             while fileset:
                 next_file = fileset.pop()
-                running_lookups.append(
-                    pool.apply_async(
-                        pydsdl.read_files,
-                        args=(
-                            next_file,
-                            root_namespace_directories_or_names,
-                            lookup_directories,
-                            print_output_handler,
-                            allow_unregulated_fixed_port_id,
-                        ),
-                    )
+                target_type, dependent_types = pydsdl.read_files(
+                    next_file,
+                    root_namespace_directories_or_names,
+                    lookup_directories,
+                    print_output_handler,
+                    allow_unregulated_fixed_port_id,
                 )
                 already_read.add(next_file)  # TODO: canonical paths for keying here?
-                if not fileset:
-                    for lookup in running_lookups:
-                        target_type, dependent_types = lookup.get()
-                        Namespace.add_types(index, (target_type[0], dependent_types))
-                        if not omit_dependencies:
-                            for dependent_type in dependent_types:
-                                if dependent_type.source_file_path not in already_read:
-                                    fileset.add(dependent_type.source_file_path)
-                    running_lookups.clear()
+                Namespace.add_types(index, (target_type[0], dependent_types))
+                if not omit_dependencies:
+                    for dependent_type in dependent_types:
+                        if dependent_type.source_file_path not in already_read:
+                            fileset.add(dependent_type.source_file_path)
+        else:
+            running_lookups: list[multiprocessing.pool.AsyncResult] = []
+            with multiprocessing.pool.Pool(processes=None if jobs == 0 else jobs) as pool:
+                while fileset:
+                    next_file = fileset.pop()
+                    running_lookups.append(
+                        pool.apply_async(
+                            pydsdl.read_files,
+                            args=(
+                                next_file,
+                                root_namespace_directories_or_names,
+                                lookup_directories,
+                                print_output_handler,
+                                allow_unregulated_fixed_port_id,
+                            ),
+                        )
+                    )
+                    already_read.add(next_file)  # TODO: canonical paths for keying here?
+                    if not fileset:
+                        for lookup in running_lookups:
+                            if job_timeout_seconds <= 0:
+                                target_type, dependent_types = lookup.get()
+                            else:
+                                target_type, dependent_types = lookup.get(timeout=job_timeout_seconds)
+                            Namespace.add_types(index, (target_type[0], dependent_types))
+                            if not omit_dependencies:
+                                for dependent_type in dependent_types:
+                                    if dependent_type.source_file_path not in already_read:
+                                        fileset.add(dependent_type.source_file_path)
+                        running_lookups.clear()
 
         return index
 
@@ -518,6 +545,8 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         lctx: LanguageContext,
         dsdl_files: Optional[Union[Path, str, Iterable[Union[Path, str]]]],
         root_namespace_directories_or_names: Optional[Union[Path, str, Iterable[Union[Path, str]]]],
+        jobs: int = 0,
+        job_timeout_seconds: float = 0,
         lookup_directories: Optional[Union[Path, str, Iterable[Union[Path, str]]]] = None,
         print_output_handler: Optional[Callable[[Path, int, str], None]] = None,
         allow_unregulated_fixed_port_id: bool = False,
@@ -530,6 +559,10 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         :param LanguageContext lctx: The language context to use when building the namespace.
         :param Path | str | Iterable[Path | str] dsdl_files: The dsdl files to read.
         :param Path | str | Iterable[Path | str] root_namespace_directories_or_names: See :meth:`pydsdl.read_files`.
+        :param int jobs: The number of parallel jobs to allow when reading multiple files. 0 Indicates no limit and 1
+                   diasallows all parallelism.
+        :param float job_timeout_seconds: Maximum time in fractional seconds any one read file job is allowed to take
+                     before timing out. 0 disables timeouts.
         :param Path | str | Iterable[Path | str] lookup_directories: See :meth:`pydsdl.read_files`.
         :param Callable[[Path, int, str], None] print_output_handler: A callback to handle print output.
         :param bool allow_unregulated_fixed_port_id: Allow unregulated fixed port ids.
@@ -539,6 +572,8 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
             Namespace.Identity(output_path, lctx),
             dsdl_files,
             root_namespace_directories_or_names,
+            jobs,
+            job_timeout_seconds,
             lookup_directories,
             print_output_handler,
             allow_unregulated_fixed_port_id,
@@ -553,6 +588,8 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         lctx: LanguageContext,
         dsdl_files: Optional[Union[Path, str, Iterable[Union[Path, str]]]],
         root_namespace_directories_or_names: Optional[Union[Path, str, Iterable[Union[Path, str]]]],
+        jobs: int = 0,
+        job_timeout_seconds: float = 0,
         lookup_directories: Optional[Union[Path, str, Iterable[Union[Path, str]]]] = None,
         print_output_handler: Optional[Callable[[Path, int, str], None]] = None,
         allow_unregulated_fixed_port_id: bool = False,
@@ -565,6 +602,10 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         :param LanguageContext lctx: The language context to use when building the namespace.
         :param Path | str | Iterable[Path | str] dsdl_files: The dsdl files to read.
         :param Path | str | Iterable[Path | str] root_namespace_directories_or_names: See :meth:`pydsdl.read_files`.
+        :param int The number of parallel jobs to allow when reading multiple files. 0 Indicates no limit and 1
+                   diasallows all parallelism.
+        :param float job_timeout_seconds: Maximum time in fractional seconds any one read file job is allowed to take
+                     before timing out. 0 disables timeouts.
         :param Path | str | Iterable[Path | str] lookup_directories: See :meth:`pydsdl.read_files`.
         :param Callable[[Path, int, str], None] print_output_handler: A callback to handle print output.
         :param bool allow_unregulated_fixed_port_id: Allow unregulated fixed port ids.
@@ -574,6 +615,8 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
             Namespace.Identity(Path(output_path), lctx),
             dsdl_files,
             root_namespace_directories_or_names,
+            jobs,
+            job_timeout_seconds,
             lookup_directories,
             print_output_handler,
             allow_unregulated_fixed_port_id,

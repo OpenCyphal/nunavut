@@ -36,6 +36,9 @@ recommend the following environment for vscode::
     tox devenv -e local
     source venv/bin/activate
 
+On Windows that last line is instead::
+
+    ./venv/Scripts/activate
 
 cmake
 ================================================

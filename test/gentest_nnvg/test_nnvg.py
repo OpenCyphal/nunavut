@@ -52,6 +52,31 @@ def test_realgen_using_nnvg(gen_paths: Any, run_nnvg: Callable) -> None:
     assert note.exists()
 
 
+@pytest.mark.parametrize("jobs", [0, 1, 2])
+def test_realgen_using_nnvg_jobs(gen_paths: Any, run_nnvg_main: Callable, jobs: int) -> None:
+    """
+    Sanity test that nnvg can generate code from known types.
+    """
+    public_regulated_data_types = gen_paths.root_dir / Path("submodules") / Path("public_regulated_data_types")
+
+    nnvg_args0 = [
+        "--outdir",
+        gen_paths.out_dir.as_posix(),
+        "-j",
+        str(jobs),
+        "-l",
+        "c",
+        "--lookup-dir",
+        (public_regulated_data_types / Path("uavcan")).as_posix(),
+        (public_regulated_data_types / Path("uavcan", "node", "430.GetInfo.1.0.dsdl")).as_posix(),
+    ]
+
+    run_nnvg_main(gen_paths, nnvg_args0)
+
+    get_info = gen_paths.out_dir / Path("uavcan") / Path("node") / Path("GetInfo_1_0").with_suffix(".h")
+    assert get_info.exists()
+
+
 def test_DSDL_INCLUDE_PATH(gen_paths: Any, run_nnvg_main: Callable) -> None:
     """
     Verify that the DSDL_INCLUDE_PATH environment variable is used by nnvg.

@@ -99,7 +99,7 @@ jobs:
           -Dsonar.python.coverage.reportPaths=.tox/report/tmp/coverage.xml
           -Dsonar.python.xunit.reportPath=.tox/py311-test/tmp/xunit-result.xml
 
-  compat-test-python3-mac:
+  compat-test-python3-windows-and-mac:
     strategy:
       matrix:
         python3-version: ['11', '12', '13']
@@ -179,7 +179,26 @@ jobs:
         cmake --build --preset build-${{ matrix.compiler }}-${{ matrix.architecture }}-${{ matrix.language }}-debugasan
         cmake --build --preset build-${{ matrix.compiler }}-${{ matrix.architecture }}-${{ matrix.language }}-release
 
-  language-verification-c-cpp-clang-native-extra:
+  language-verification-c-clang-native-extra:
+    runs-on: ubuntu-latest
+    needs: test
+    container: ghcr.io/opencyphal/toolshed:ts22.4.10
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: verify
+      working-directory: verification
+      run: |
+        cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS="--enable-override-variable-array-capacity;--embed-auditing-info" --preset config-clang-native-c-11
+        cmake --build --preset build-clang-native-c-11-debugcov --target cov_all
+    - name: upload-verification-coverage-reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: verification-c-coverage-reports
+        path: verification/build/DebugCov/coverage/*
+
+  language-verification-cpp-clang-native-extra:
     runs-on: ubuntu-latest
     needs: test
     container: ghcr.io/opencyphal/toolshed:ts22.4.10
@@ -192,12 +211,10 @@ jobs:
       run: |
         cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS="--enable-override-variable-array-capacity;--embed-auditing-info" --preset config-clang-native-cpp-20
         cmake --build --preset build-clang-native-cpp-20-debugcov --target cov_all
-        cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS="--enable-override-variable-array-capacity;--embed-auditing-info" --preset config-clang-native-c-11
-        cmake --build --preset build-clang-native-c-11-debugcov --target cov_all
     - name: upload-verification-coverage-reports
       uses: actions/upload-artifact@v4
       with:
-        name: verification-coverage-reports
+        name: verification-cpp-coverage-reports
         path: verification/build/DebugCov/coverage/*
 
   language-verification-python:
