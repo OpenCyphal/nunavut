@@ -10,8 +10,6 @@ pydsdl AST into source code.
 """
 
 import abc
-import multiprocessing
-import multiprocessing.pool
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Type, Union
@@ -297,6 +295,7 @@ def generate_all(
     resource_types: int = ResourceType.ANY.value,
     embed_auditing_info: bool = False,
     dry_run: bool = False,
+    jobs: int = 0,
     no_overwrite: bool = False,
     allow_unregulated_fixed_port_id: bool = False,
     omit_dependencies: bool = False,
@@ -389,6 +388,9 @@ def generate_all(
     :param bool dry_run:
         If True then no files will be generated/written but all logic will be exercised with commensurate logging and
         errors.
+    :param int jobs:
+        The number of parallel jobs to use when generating code. If 1 then no parallelism is used. If 0 then the
+        number of jobs is determined by the number of CPUs available.
     :param bool no_overwrite:
         If True then generated files will not be allowed to overwrite existing files under the `outdir` path causing
         errors.
@@ -424,6 +426,7 @@ def generate_all(
         resource_types,
         embed_auditing_info,
         dry_run,
+        jobs,
         no_overwrite,
         allow_unregulated_fixed_port_id,
         omit_dependencies,
@@ -441,6 +444,7 @@ def generate_all_for_language(
     resource_types: int = ResourceType.ANY.value,
     embed_auditing_info: bool = False,
     dry_run: bool = False,
+    jobs: int = 0,
     no_overwrite: bool = False,
     allow_unregulated_fixed_port_id: bool = False,
     omit_dependencies: bool = False,
@@ -465,6 +469,9 @@ def generate_all_for_language(
         source will be embedded in the generated files at the cost of build reproducibility.
     :param dry_run: If True then no files will be generated/written but all logic will be exercised with commensurate
         logging and errors.
+    :param int jobs:
+        The number of parallel jobs to use when generating code. If 1 then no parallelism is used. If 0 then the
+        number of jobs is determined by the number of CPUs available.
     :param no_overwrite: If True then generated files will not be allowed to overwrite existing files under the `outdir`
         path causing errors.
     :param allow_unregulated_fixed_port_id: If True then errors will become warning when using fixed port identifiers
@@ -485,6 +492,7 @@ def generate_all_for_language(
         language_context,
         target_files,
         root_namespace_directories_or_names,
+        jobs,
         allow_unregulated_fixed_port_id=allow_unregulated_fixed_port_id,
         omit_dependencies=omit_dependencies,
     )

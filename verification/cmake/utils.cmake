@@ -12,8 +12,8 @@
 # to the "all" target to build a gtest binary for the given test source.
 #
 # param: FRAMEWORK [gtest|unity] - The name of the test framework to use.
-# param: TEST_NAME string             - The name to give the test target.
-# param: TEST_SOURCE List[path]       - A list of source files to compile into
+# param: NAME string             - The name to give the test target.
+# param: SOURCE List[path]       - A list of source files to compile into
 #                                  the test binary.
 # param: OUTDIR path             - A path to output test binaries and coverage data under.
 # param: DSDL_TARGETS List[str]  - Zero to many targets that generate types under test.
@@ -22,8 +22,8 @@ function(define_native_unit_test)
 
     # +--[ INPUTS ]-----------------------------------------------------------+
     set(options "")
-    set(monoValues FRAMEWORK TEST_NAME OUTDIR)
-    set(multiValues TEST_SOURCE DSDL_TARGETS)
+    set(monoValues FRAMEWORK NAME OUTDIR)
+    set(multiValues SOURCE DSDL_TARGETS)
 
     cmake_parse_arguments(
         ARG
@@ -34,44 +34,44 @@ function(define_native_unit_test)
     )
 
     # +--[ BODY ]------------------------------------------------------------+
-    add_executable(${ARG_TEST_NAME} ${ARG_TEST_SOURCE})
+    add_executable(${ARG_NAME} ${ARG_SOURCE})
 
     if (ARG_DSDL_TARGETS)
-        add_dependencies(${ARG_TEST_NAME} ${ARG_DSDL_TARGETS})
-        target_link_libraries(${ARG_TEST_NAME} PUBLIC ${ARG_DSDL_TARGETS})
+        add_dependencies(${ARG_NAME} ${ARG_DSDL_TARGETS})
+        target_link_libraries(${ARG_NAME} PUBLIC ${ARG_DSDL_TARGETS})
     endif()
 
     if (${ARG_FRAMEWORK} STREQUAL "gtest")
-        target_link_libraries(${ARG_TEST_NAME} PUBLIC gmock_main)
+        target_link_libraries(${ARG_NAME} PUBLIC gmock_main)
     elseif (${ARG_FRAMEWORK} STREQUAL "unity")
-        target_link_libraries(${ARG_TEST_NAME} PUBLIC unity_core)
+        target_link_libraries(${ARG_NAME} PUBLIC unity_core)
     elseif (${ARG_FRAMEWORK} STREQUAL "none")
-        message(STATUS "${ARG_TEST_NAME}: No test framework")
-        target_compile_options(${ARG_TEST_NAME} PRIVATE "$<$<C_COMPILER_ID:GNU>:-fanalyzer>")
-        target_compile_options(${ARG_TEST_NAME} PRIVATE "$<$<C_COMPILER_ID:GNU>:-fanalyzer-checker=taint>")
+        message(STATUS "${ARG_NAME}: No test framework")
+        target_compile_options(${ARG_NAME} PRIVATE "$<$<C_COMPILER_ID:GNU>:-fanalyzer>")
+        target_compile_options(${ARG_NAME} PRIVATE "$<$<C_COMPILER_ID:GNU>:-fanalyzer-checker=taint>")
     else()
         message(FATAL_ERROR "${ARG_FRAMEWORK} isn't a supported unit test framework. Currently we support gtest and unity.")
     endif()
 
-    set_target_properties(${ARG_TEST_NAME}
+    set_target_properties(${ARG_NAME}
                           PROPERTIES
                           RUNTIME_OUTPUT_DIRECTORY "${ARG_OUTDIR}"
     )
 
-    add_custom_command(OUTPUT ${ARG_OUTDIR}/${ARG_TEST_NAME}-disassembly.S
-                       DEPENDS ${ARG_TEST_NAME}
-                       COMMAND ${CMAKE_OBJDUMP} -d ${ARG_OUTDIR}/${ARG_TEST_NAME}
+    add_custom_command(OUTPUT ${ARG_OUTDIR}/${ARG_NAME}-disassembly.S
+                       DEPENDS ${ARG_NAME}
+                       COMMAND ${CMAKE_OBJDUMP} -d ${ARG_OUTDIR}/${ARG_NAME}
                             --demangle
                             --disassemble-zeroes
                             --disassembler-options=reg-names-std
                             --syms
                             --special-syms
                             --all-headers
-                            --wide > ${ARG_OUTDIR}/${ARG_TEST_NAME}-disassembly.S
-                       COMMENT "Creating disassembly from ${ARG_TEST_NAME}"
+                            --wide > ${ARG_OUTDIR}/${ARG_NAME}-disassembly.S
+                       COMMENT "Creating disassembly from ${ARG_NAME}"
     )
 
-    add_custom_target(${ARG_TEST_NAME}-disassembly DEPENDS ${ARG_OUTDIR}/${ARG_TEST_NAME}-disassembly.S)
+    add_custom_target(${ARG_NAME}-disassembly DEPENDS ${ARG_OUTDIR}/${ARG_NAME}-disassembly.S)
 
 endfunction()
 
@@ -80,14 +80,15 @@ endfunction()
 # function: define_native_test_run - creates a makefile target that will build and
 # run individual unit tests.
 #
-# param: TEST_NAME string - The name of the test to run. A target will be created
-#                          with the name run_${ARG_TEST_NAME}
-# param: OUTDIR path - The path where the test binaries live.
+# param: NAME string        - The name of the test to run.
+# param: OUTDIR path        - The path where the test binaries live.
+# param: OUT_CUSTOM_TARGET  - A variable to set in the parent scope with the name of the custom target
+#                             defined by this function.
 #
 function(define_native_test_run)
     # +--[ INPUTS ]-----------------------------------------------------------+
     set(options "")
-    set(monoValues TEST_NAME OUTDIR)
+    set(monoValues NAME OUTDIR OUT_CUSTOM_TARGET)
     set(multiValues "")
 
     cmake_parse_arguments(
@@ -98,14 +99,18 @@ function(define_native_test_run)
         ${ARGN}
     )
 
-    # +--[ BODY ]------------------------------------------------------------+
+    # +--[ BODY ]-------------------------------------------------------------+
     add_custom_target(
-        run_${ARG_TEST_NAME}
+        run_${ARG_NAME}
         COMMAND
-            ${ARG_OUTDIR}/${ARG_TEST_NAME}
+            ${ARG_OUTDIR}/${ARG_NAME}
         DEPENDS
-            ${ARG_TEST_NAME}
+            ${ARG_NAME}
     )
+
+    # +--[ OUTPUTS ]----------------------------------------------------------+
+
+    set(${ARG_OUT_CUSTOM_TARGET} "run_${ARG_NAME}" PARENT_SCOPE)
 
 endfunction()
 

@@ -62,7 +62,7 @@ find_package(Nunavut 3.0 REQUIRED)
 #
 # We generate coverage reports. Please look at them (It wasn't easy to get this to work).
 #
-find_package(lcov REQUIRED)
+find_package(verification-coverage REQUIRED)
 find_package(genhtml REQUIRED)
 
 #
@@ -161,18 +161,11 @@ endif()
 # We generate individual test binaires so we can record which test generated
 # what coverage. We also allow test authors to generate coverage reports for
 # just one test allowing for faster iteration.
-add_custom_target(
-     lcov_zero
-     ${LCOV}
-     ${NUNAVUT_GOV_TOOL_ARG}
-     --zerocounters
-     --directory ${CMAKE_CURRENT_BINARY_DIR}
-     COMMENT "Resetting coverage counters."
-)
 
-set(ALL_TESTS "")
-set(ALL_TESTS_WITH_LCOV "")
-set(ALL_TEST_COVERAGE "")
+set(ALL_TEST_RUNS "")
+set(ALL_TEST_INFO_FILES "")
+# Don't allow tests to run in parallel
+set_property(GLOBAL PROPERTY JOB_POOLS coverage_test_runs=1)
 
 function(runTestCpp)
      set(options "")
@@ -191,9 +184,10 @@ function(runTestCpp)
      set(NATIVE_TEST "${CMAKE_CURRENT_SOURCE_DIR}/cpp/suite/${runTestCpp_TEST_FILE}")
      get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
 
-     define_native_unit_test(FRAMEWORK "gtest"
-          TEST_NAME ${NATIVE_TEST_NAME}
-          TEST_SOURCE ${NATIVE_TEST}
+     define_native_unit_test(
+          FRAMEWORK "gtest"
+          NAME ${NATIVE_TEST_NAME}
+          SOURCE ${NATIVE_TEST}
           OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
           DSDL_TARGETS
           ${runTestCpp_LINK}
@@ -212,16 +206,23 @@ function(runTestCpp)
      target_compile_options(${NATIVE_TEST_NAME} PRIVATE "-Wno-deprecated-declarations")
      target_link_libraries(${NATIVE_TEST_NAME} PUBLIC o1heap)
      target_include_directories(${NATIVE_TEST_NAME} PUBLIC "${NUNAVUT_SUBMODULES_DIR}/CETL/include")
-     define_native_test_run(TEST_NAME ${NATIVE_TEST_NAME} OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
-     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
+     define_native_test_run(
+          NAME ${NATIVE_TEST_NAME}
+          OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
+          OUT_CUSTOM_TARGET LOCAL_TEST_RUN_TARGET
+     )
+     define_coverage_native_test_run(
+          NAME ${NATIVE_TEST_NAME}
+          JOB_POOL coverage_test_runs
+          OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
+          SOURCE_FILTER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/\\*
+          OUT_INFO_FILE LOCAL_TEST_INFO_FILE
+     )
      define_native_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
-     list(APPEND ALL_TESTS "run_${NATIVE_TEST_NAME}")
-     list(APPEND ALL_TESTS_WITH_LCOV "run_${NATIVE_TEST_NAME}_with_lcov")
-     list(APPEND ALL_TEST_COVERAGE "--add-tracefile")
-     list(APPEND ALL_TEST_COVERAGE "${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.${NATIVE_TEST_NAME}.filtered.info")
-     set(ALL_TESTS ${ALL_TESTS} PARENT_SCOPE)
-     set(ALL_TESTS_WITH_LCOV ${ALL_TESTS_WITH_LCOV} PARENT_SCOPE)
-     set(ALL_TEST_COVERAGE ${ALL_TEST_COVERAGE} PARENT_SCOPE)
+     list(APPEND ALL_TEST_RUNS "${LOCAL_TEST_RUN_TARGET}")
+     list(APPEND ALL_TEST_INFO_FILES "${LOCAL_TEST_INFO_FILE}")
+     set(ALL_TEST_RUNS ${ALL_TEST_RUNS} PARENT_SCOPE)
+     set(ALL_TEST_INFO_FILES ${ALL_TEST_INFO_FILES} PARENT_SCOPE)
 endfunction()
 
 if(LOCAL_NUNAVUT_VERIFICATION_TARGET_LANG STREQUAL "cpp")
@@ -252,23 +253,31 @@ function(runTestC)
      set(NATIVE_TEST "${CMAKE_CURRENT_SOURCE_DIR}/c/suite/${runTestC_TEST_FILE}")
      get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
 
-     define_native_unit_test(FRAMEWORK ${runTestC_FRAMEWORK}
-          TEST_NAME ${NATIVE_TEST_NAME}
-          TEST_SOURCE ${NATIVE_TEST}
+     define_native_unit_test(
+          FRAMEWORK ${runTestC_FRAMEWORK}
+          NAME ${NATIVE_TEST_NAME}
+          SOURCE ${NATIVE_TEST}
           OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
           DSDL_TARGETS
           ${runTestC_LINK}
      )
-     define_native_test_run(TEST_NAME ${NATIVE_TEST_NAME} OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
-     define_native_test_run_with_lcov(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/\\*)
+     define_native_test_run(
+          NAME ${NATIVE_TEST_NAME}
+          OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
+          OUT_CUSTOM_TARGET LOCAL_TEST_RUN_TARGET
+     )
+     define_coverage_native_test_run(
+          NAME ${NATIVE_TEST_NAME}
+          JOB_POOL coverage_test_runs
+          OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
+          SOURCE_FILTER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/\\*
+          OUT_INFO_FILE LOCAL_TEST_INFO_FILE
+     )
      define_native_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
-     list(APPEND ALL_TESTS "run_${NATIVE_TEST_NAME}")
-     list(APPEND ALL_TESTS_WITH_LCOV "run_${NATIVE_TEST_NAME}_with_lcov")
-     list(APPEND ALL_TEST_COVERAGE "--add-tracefile")
-     list(APPEND ALL_TEST_COVERAGE "${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.${NATIVE_TEST_NAME}.filtered.info")
-     set(ALL_TESTS ${ALL_TESTS} PARENT_SCOPE)
-     set(ALL_TESTS_WITH_LCOV ${ALL_TESTS_WITH_LCOV} PARENT_SCOPE)
-     set(ALL_TEST_COVERAGE ${ALL_TEST_COVERAGE} PARENT_SCOPE)
+     list(APPEND ALL_TEST_RUNS "${LOCAL_TEST_RUN_TARGET}")
+     list(APPEND ALL_TEST_INFO_FILES "${LOCAL_TEST_INFO_FILE}")
+     set(ALL_TEST_RUNS ${ALL_TEST_RUNS} PARENT_SCOPE)
+     set(ALL_TEST_INFO_FILES ${ALL_TEST_INFO_FILES} PARENT_SCOPE)
 endfunction()
 
 if(LOCAL_NUNAVUT_VERIFICATION_TARGET_LANG STREQUAL "c")
@@ -284,70 +293,31 @@ endif()
 # +---------------------------------------------------------------------------+
 # Finally, we setup an overall report. the coverage.info should be uploaded
 # to a coverage reporting service as part of the CI pipeline.
-add_custom_command(
-     OUTPUT ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.all.info
-     COMMAND
-     ${LCOV}
-     ${NUNAVUT_GOV_TOOL_ARG}
-     --rc lcov_branch_coverage=1
-     ${ALL_TEST_COVERAGE}
-     --output-file ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.all.info
-     DEPENDS ${ALL_TESTS_WITH_LCOV}
+define_coverage_summary(
+     INFO_FILES ${ALL_TEST_INFO_FILES}
+     OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
+     OUT_INFO_FILE LOCAL_INFO_SUMMARY
 )
 
-add_custom_command(
-     OUTPUT ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.info
-     COMMAND
-     ${LCOV}
-     ${NUNAVUT_GOV_TOOL_ARG}
-     --rc lcov_branch_coverage=1
-     --extract ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.all.info
-     ${LOCAL_PROJECT_ROOT}/\\*
-     --output-file ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.info
-     DEPENDS ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.all.info
-)
-
-add_custom_target(
-     cov_info
-     DEPENDS ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.info
-)
+# This just gives us a utility to clean things up manually. You don't need to hook it up to anything.
+define_coverage_zero_all(OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
 
 add_custom_target(
      cov_all
-     ${GENHTML} --title "${PROJECT_NAME} native test coverage"
-     --output-directory ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage/all
-     --demangle-cpp
-     --sort
-     --num-spaces 4
-     --function-coverage
-     --branch-coverage
-     --legend
-     --highlight
-     --show-details
-     ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.info
-     DEPENDS ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage.info
+     ${GENHTML}
+          --title "${PROJECT_NAME} native test coverage"
+          --output-directory ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage/all
+          --demangle-cpp
+          --sort
+          --num-spaces 4
+          --function-coverage
+          --branch-coverage
+          --legend
+          --highlight
+          --show-details
+          ${LOCAL_INFO_SUMMARY}
+     DEPENDS ${LOCAL_INFO_SUMMARY}
      COMMENT "Build and run all tests and generate an overall html coverage report."
 )
 
-add_custom_target(
-     test_all
-     DEPENDS
-     ${ALL_TESTS}
-)
-
-add_custom_target(
-     cov_all_archive
-     COMMAND
-     ${CMAKE_COMMAND}
-     -E tar
-     "cfv"
-     "coverage_all.zip"
-     --format=zip
-     "${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage/all"
-     DEPENDS
-     cov_all
-     BYPRODUCTS
-     "${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage_all.zip"
-     COMMENT
-     "Build and run all tests and generate an overall html coverage report as a zip archive."
-)
+add_custom_target(test_all DEPENDS ${ALL_TEST_RUNS})
