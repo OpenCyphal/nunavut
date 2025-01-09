@@ -2,7 +2,7 @@
     "python.testing.cwd": "${workspaceFolder}",
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-    "python.testing.pytestArgs": ["-v"],
+    "python.testing.pytestArgs": ["-vv"],
     "pylint.args": [
         "--rcfile=${workspaceFolder}/tox.ini"
     ],

@@ -103,7 +103,7 @@ jobs:
     strategy:
       matrix:
         python3-version: ['11', '12', '13']
-        python3-platform: ['macos-latest']
+        python3-platform: ['windows-latest', 'macos-latest']
     runs-on: ${{ matrix.python3-platform }}
     needs: test
     steps:
