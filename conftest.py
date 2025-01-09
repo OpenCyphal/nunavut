@@ -135,8 +135,8 @@ def run_nnvg_main(request: pytest.FixtureRequest) -> typing.Callable:  # pylint:
 class GenTestPaths:
     """Helper to generate common paths used in our unit tests."""
 
-    def __init__(self, test_file: str, keep_temporaries: bool, node_name: str):
-        test_file_path = Path(test_file)
+    def __init__(self, test_file: Path, keep_temporaries: bool, node_name: str):
+        test_file_path = test_file.resolve()
         self.test_name = f"{test_file_path.parent.stem}_{node_name}"
         self.test_dir = test_file_path.parent
         search_dir = self.test_dir.resolve()
@@ -237,7 +237,7 @@ def gen_paths(request: pytest.FixtureRequest) -> GenTestPaths:
     Used by the "gentest" unit tests in Nunavut to standardize output paths for generated code created as part of
     the tests. Use the --keep-generated argument to disable the auto-clean behaviour this fixture provides by default.
     """
-    g = GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
+    g = GenTestPaths(request.path, request.config.option.keep_generated, request.node.name)
     request.addfinalizer(g.test_path_finalizer)
     return g
 
@@ -251,7 +251,7 @@ def gen_paths_for_module(request: pytest.FixtureRequest) -> GenTestPaths:  # pyl
     Note: this fixture is different than gen_paths because it is scoped to the module level. This is useful for
     Sybil tests that share temporary files across different test blocks within the same document.
     """
-    g = GenTestPaths(str(request.fspath), request.config.option.keep_generated, request.node.name)
+    g = GenTestPaths(request.path, request.config.option.keep_generated, request.node.name)
     request.addfinalizer(g.test_path_finalizer)
     return g
 

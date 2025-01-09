@@ -213,17 +213,20 @@ class NunavutArgumentParser(argparse.ArgumentParser):
 
             from nunavut.cli.parsers import NunavutArgumentParser
             from pytest import raises
+            from pathlib import Path
+
+            real_root = Path().cwd().as_posix()
 
             parser = NunavutArgumentParser()
             # Happy path
             root_paths, target_files = parser._parse_target_paths(
                 [
-                    "/one/to/root",
-                    "/two/to/file.dsdl",
+                    f"{real_root}one/to/root",
+                    f"{real_root}two/to/file.dsdl",
                     "three/path/four:to/file.dsdl",
-                    "/five/path/six:to/file.dsdl",
+                    f"{real_root}five/path/six:to/file.dsdl",
                     "seven/path/eight\\\\:to/file.dsdl",
-                    "/nine/path/ten/:to/file.dsdl",
+                    f"{real_root}nine/path/ten/:to/file.dsdl",
                 ],
                 False,
             )
@@ -231,12 +234,12 @@ class NunavutArgumentParser(argparse.ArgumentParser):
             assert len(root_paths) == 4
             assert len(target_files) == 5
 
-            assert Path("/one/to/root") in root_paths
+            assert Path(f"{real_root}one/to/root") in root_paths
             assert Path("three/path/four") in root_paths
-            assert Path("/five/path/six") in root_paths
-            assert Path("/nine/path/ten") in root_paths
+            assert Path(f"{real_root}five/path/six") in root_paths
+            assert Path(f"{real_root}nine/path/ten") in root_paths
 
-            assert Path("/two/to/file.dsdl") in target_files
+            assert Path(f"{real_root}two/to/file.dsdl") in target_files
             assert Path("four/to/file.dsdl") in target_files
             assert Path("six/to/file.dsdl") in target_files
             assert Path("seven/path/eight\\\\:to/file.dsdl") in target_files
@@ -250,11 +253,11 @@ class NunavutArgumentParser(argparse.ArgumentParser):
 
             # Happy path: single target file
             single_target_file_root_paths, single_target_file_target_files = parser._parse_target_paths(
-                ["/one/to/file.dsdl"], True
+                [f"{real_root}one/to/file.dsdl"], True
             )
             assert len(single_target_file_root_paths) == 0
             assert len(single_target_file_target_files) == 1
-            assert single_target_file_target_files.pop() == Path("/one/to/file.dsdl")
+            assert single_target_file_target_files.pop() == Path(f"{real_root}one/to/file.dsdl")
 
             # errors: multiple colons
             with raises(SystemExit):
@@ -262,21 +265,30 @@ class NunavutArgumentParser(argparse.ArgumentParser):
 
             # errors: leading slash
             with raises(SystemExit):
-                parser._parse_target_paths(["path/to:/root/to/file.dsdl"], False)
+                parser._parse_target_paths([f"path/to:{Path.cwd().anchor}root/to/file.dsdl"], False)
 
         """
 
         def _parse_lookup_dir(lookup_dir: str) -> Tuple[Optional[Path], Optional[Path]]:
-            split_path = re.split(r"(?<!\\):", lookup_dir)
+
+            lookup_path = Path(lookup_dir)
+            if lookup_path.is_absolute():
+                relative_lookup_dir = lookup_path.relative_to(lookup_path.anchor).as_posix()
+            else:
+                relative_lookup_dir = lookup_dir
+            split_path = re.split(r"(?<!\\):", relative_lookup_dir)
             if len(split_path) > 2:
                 self.error(f"Invalid lookup path (too many colons) > {lookup_dir}")
-            if len(split_path) == 2:
-                root_path = Path(split_path[0])
-                return root_path, Path(root_path.stem, split_path[1])
-            elif (first_path := Path(split_path[0])).suffix in self.DSDL_FILE_SUFFIXES:
-                return None, first_path
+            if lookup_path.is_absolute():
+                root_path = Path(lookup_path.anchor, split_path[0])
             else:
-                return first_path, None
+                root_path = Path(split_path[0])
+            if len(split_path) == 2:
+                return root_path, Path(root_path.stem, split_path[1])
+            elif root_path.suffix in self.DSDL_FILE_SUFFIXES:
+                return None, root_path
+            else:
+                return root_path, None
 
         if target_files_or_root_namespace is None:
             return set(), set()
