@@ -11,7 +11,7 @@ text files are often source code this module could also be used to generate
 documentation or data interchange formats like JSON or XML.
 
 The input to the nunavut library is a list of templates and a list of
-``pydsdl.pydsdl.CompositeType`` objects. Typical use of this library is simply
+``pydsdl.CompositeType`` objects. Typical use of this library is simply
 invoking the ``nunavut.generate_all`` method.
 
 """

@@ -10,6 +10,7 @@ pydsdl AST into source code.
 """
 
 import abc
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Type, Union
@@ -391,6 +392,12 @@ def generate_all(
     :param int jobs:
         The number of parallel jobs to use when generating code. If 1 then no parallelism is used. If 0 then the
         number of jobs is determined by the number of CPUs available.
+
+        .. note:: By default, any multiprocessing jobs used will not have a timeout set. To set a timeout for any jobs
+            set the environment variable ``NUNAVUT_JOB_TIMEOUT_SECONDS`` to the desired timeout in fractional seconds.
+            this is normally not useful as a correct timeout value is highly dependent on the system and the number of
+            types being generated.
+
     :param bool no_overwrite:
         If True then generated files will not be allowed to overwrite existing files under the `outdir` path causing
         errors.
@@ -472,6 +479,12 @@ def generate_all_for_language(
     :param int jobs:
         The number of parallel jobs to use when generating code. If 1 then no parallelism is used. If 0 then the
         number of jobs is determined by the number of CPUs available.
+
+        .. note:: By default, any multiprocessing jobs used will not have a timeout set. To set a timeout for any jobs
+            set the environment variable ``NUNAVUT_JOB_TIMEOUT_SECONDS`` to the desired timeout in fractional seconds.
+            this is normally not useful as a correct timeout value is highly dependent on the system and the number of
+            types being generated.
+
     :param no_overwrite: If True then generated files will not be allowed to overwrite existing files under the `outdir`
         path causing errors.
     :param allow_unregulated_fixed_port_id: If True then errors will become warning when using fixed port identifiers
@@ -493,6 +506,7 @@ def generate_all_for_language(
         target_files,
         root_namespace_directories_or_names,
         jobs,
+        float(os.environ.get("NUNAVUT_JOB_TIMEOUT_SECONDS", 0)),
         allow_unregulated_fixed_port_id=allow_unregulated_fixed_port_id,
         omit_dependencies=omit_dependencies,
     )

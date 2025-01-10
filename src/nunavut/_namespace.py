@@ -49,6 +49,7 @@ The one Namespace type can play three roles:
 
 import collections
 import itertools
+import logging
 import multiprocessing
 import multiprocessing.pool
 import sys
@@ -110,11 +111,16 @@ class NotAsyncResult:
     def __init__(self, read_method: Callable[..., Any], args: Tuple[Any, ...]) -> None:
         self.read_method = read_method
         self.args = args
+        self._logger = logging.getLogger(NotAsyncResult.__name__)
 
-    def get(self, _: Optional[Any] = None) -> Any:
+    def get(self, timeout: Optional[Any] = None) -> Any:
         """
         Perform the work synchronously.
         """
+        if timeout is not None and timeout > 0:
+            self._logger.debug(
+                "Timeout value for read_method '%s' ignored when not doing multiple jobs.", self.read_method.__name__
+            )
         return self.read_method(*self.args)
 
 
@@ -325,7 +331,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
     K-ary tree (where K is the largest set of data types in a single dsdl namespace) where
     the nodes represent dsdl namespaces and the children are the datatypes and other nested
     namespaces (with datatypes always being leaf nodes). This structure extends :code:`pydsdl.Any`
-    and is a :code:`pydsdl.pydsdl.CompositeType` via duck typing.
+    and is a :code:`pydsdl.CompositeType` via duck typing.
 
     :param str full_namespace:  The full, dot-separated name of the namepace.
     :param Path namespace_dir: If full_namespace is "" then this is interpreted as the directory under which all
