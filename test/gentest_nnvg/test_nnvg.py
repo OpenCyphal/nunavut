@@ -55,7 +55,7 @@ def test_realgen_using_nnvg(gen_paths: Any, run_nnvg: Callable) -> None:
 @pytest.mark.parametrize("jobs", [0, 1, 2])
 def test_realgen_using_nnvg_jobs(gen_paths: Any, run_nnvg_main: Callable, jobs: int) -> None:
     """
-    Sanity test that nnvg can generate code from known types.
+    Verify stable behavior of nnvg with different job counts.
     """
     public_regulated_data_types = gen_paths.root_dir / Path("submodules") / Path("public_regulated_data_types")
 
@@ -71,10 +71,32 @@ def test_realgen_using_nnvg_jobs(gen_paths: Any, run_nnvg_main: Callable, jobs: 
         (public_regulated_data_types / Path("uavcan", "node", "430.GetInfo.1.0.dsdl")).as_posix(),
     ]
 
-    run_nnvg_main(gen_paths, nnvg_args0)
+    run_nnvg_main(gen_paths, nnvg_args0, {"NUNAVUT_JOB_TIMEOUT_SECONDS": "20"})
 
     get_info = gen_paths.out_dir / Path("uavcan") / Path("node") / Path("GetInfo_1_0").with_suffix(".h")
     assert get_info.exists()
+
+
+@pytest.mark.parametrize("jobs", [0, 1, 2])
+def test_realgen_using_nnvg_failure(gen_paths: Any, run_nnvg_main: Callable, jobs: int) -> None:
+    """
+    Ensure pydsdl errors are properly propagated.
+    """
+
+    nnvg_args0 = [
+        "--outdir",
+        gen_paths.out_dir.as_posix(),
+        "-j",
+        str(jobs),
+        "-l",
+        "c",
+        "--lookup-dir",
+        Path("wrong"),
+        (Path("uavcan", "node", "430.GetInfo.1.0.dsdl")).as_posix(),
+    ]
+
+    with pytest.raises(pydsdl.FrontendError):
+        run_nnvg_main(gen_paths, nnvg_args0)
 
 
 def test_DSDL_INCLUDE_PATH(gen_paths: Any, run_nnvg_main: Callable) -> None:
