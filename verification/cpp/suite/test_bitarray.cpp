@@ -92,6 +92,48 @@ TEST(BitSpan, Subspan)
     ASSERT_EQ(nunavut::support::Error::SerializationBufferTooSmall, res.error());
 }
 
+TEST(BitSpan, ConstSubspan)
+{
+    const std::array<const uint8_t, 2> srcArray{ 0xAA, 0xFF };
+    nunavut::support::const_bitspan sp(srcArray);
+    {
+        const auto res = sp.subspan(0U, 8U);
+        ASSERT_EQ(0U, res.offset());
+        ASSERT_EQ(8U, res.size());
+        ASSERT_EQ(0xAAU, res.aligned_ref());
+    }
+    {
+        const auto res = sp.subspan(8U, 8U);
+        ASSERT_EQ(0U, res.offset());
+        ASSERT_EQ(8U, res.size());
+        ASSERT_EQ(0xFFU, res.aligned_ref());
+    }
+    {
+        const auto res = sp.subspan(12U, 4U);
+        ASSERT_EQ(4U, res.offset());
+        ASSERT_EQ(4U, res.size());
+        ASSERT_EQ(0xFFU, res.aligned_ref());
+    }
+    {
+        auto res = sp.subspan(0U, 32U);
+        ASSERT_EQ(0U, res.offset());
+        ASSERT_EQ(16U, res.size());
+    }
+    {
+        auto res = sp.subspan(3U, 32U);
+        ASSERT_EQ(3U, res.offset());
+        ASSERT_EQ(13U, res.size());
+
+        res = res.subspan(3U, 32U);
+        ASSERT_EQ(6U, res.offset());
+        ASSERT_EQ(10U, res.size());
+
+        res = res.subspan(3U);
+        ASSERT_EQ(1U, res.offset());
+        ASSERT_EQ(7U, res.size());
+    }
+}
+
 TEST(BitSpan, AlignedPtr) {
     std::array<uint8_t,5> srcArray{ 1, 2, 3, 4, 5 };
     {

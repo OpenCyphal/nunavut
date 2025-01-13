@@ -57,6 +57,7 @@ static_assert(__cplusplus >= 201402L,
 #include <cstdint> // for memset
 #include <array> // for std::array
 #include <algorithm> // for std::max, std::min
+#include <limits> // for std::numeric_limits
 #include <utility> // for std::move
 #include <type_traits> // std::underlying_type, std::aligned_storage
 
@@ -236,19 +237,30 @@ public:
         return derived_bitspan(self.data_.data(), self.data_.size(), self.offset_bits_ + bits);
     }
 
-    /// Create a copy of current bitspan, converting current offset into  pointer
+    /// Create a copy of current bitspan, converting current offset into pointer
     /// and shrinking size of underlying byte span.
     /// This operation is safe even on empty containers since we are only creating
-    /// an invalid pointer, but dont dereference it - it is guarded by asserts in this
+    /// an invalid pointer, but don't dereference it - it is guarded by asserts in this
     /// class and in byte span.
-    derived_bitspan subspan({{ typename_unsigned_bit_length }} bits=0) const noexcept{
-        auto& self  = *static_cast<const derived_bitspan*>(this);
-        const {{ typename_unsigned_bit_length }} offset_bits = self.offset_bits_ + bits;
-        const {{ typename_unsigned_length }} offset_bytes = (offset_bits) / 8U;
-        const {{ typename_unsigned_bit_length }} offset_bits_mod = (offset_bits) % 8U;
-        const {{ typename_unsigned_length }} newSize = {# -#}
-            (offset_bytes < self.data_.size())?(self.data_.size() - offset_bytes):(0U);
-        return derived_bitspan(self.data_.data() + offset_bytes, newSize, offset_bits_mod);
+    derived_bitspan subspan(
+        const {{ typename_unsigned_bit_length }} bits_at = 0,
+        const {{ typename_unsigned_bit_length }} size_bits = std::numeric_limits<{{ typename_unsigned_bit_length }}>::max()
+        ) const noexcept {
+        auto& self = *static_cast<const derived_bitspan*>(this);
+        const {{ typename_unsigned_bit_length }} offset_bits = self.offset_bits_ + bits_at;
+        const {{ typename_unsigned_length }} offset_bytes = offset_bits / 8U;
+        const {{ typename_unsigned_bit_length }} offset_bits_mod = offset_bits % 8U;
+        {{ typename_unsigned_length }} new_size_bytes = 0U;
+        if (offset_bytes < self.data_.size())
+        {
+            new_size_bytes = self.data_.size() - offset_bytes;
+            if (size_bits < (std::numeric_limits<std::size_t>::max() - 7U))
+            {
+                // Above `-7` is to prevent overflow in the below line.
+                new_size_bytes = std::min(new_size_bytes, (offset_bits_mod + size_bits) / 8U);
+            }
+        }
+        return derived_bitspan(self.data_.data() + offset_bytes, new_size_bytes, offset_bits_mod);
     }
 
     void add_offset({{ typename_unsigned_bit_length }} bits) noexcept{
