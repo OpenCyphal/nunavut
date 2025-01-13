@@ -11,6 +11,8 @@
 #include "regulated/basics/Struct__0_1.hpp"
 #include "regulated/basics/Service_0_1.hpp"
 #include "regulated/basics/Primitive_0_1.hpp"
+#include "regulated/delimited/BDelimited_1_0.hpp"
+#include "regulated/delimited/BDelimited_1_1.hpp"
 
 
 static_assert(
@@ -399,6 +401,105 @@ TEST(Serialization, StructReference)
     ASSERT_EQ(0U, obj.aligned_bitpacked_le3.size());
 }
 
+
+/// Test for issue #370:
+/// During de-serialization of a nested (not top level) delimited type (with @extent) its header size
+/// is not taken into account but instead whole remaining part of the buffer is in use - as a result
+/// "garbage" bytes could end up in the result deserialized instance when input buffer is longer than expected.
+///
+TEST(Serialization, Issue370)
+{
+    regulated::delimited::BDelimited_1_0 obj_0_1{};
+    obj_0_1.var.push_back({{{0x85}, 0x86}});
+    obj_0_1.var.push_back({{{0x87}, 0x88}});
+    obj_0_1.fix.push_back({0xF1, 0xF2});
+    obj_0_1.fix.push_back({0xF3, 0xF4});
+
+    const uint8_t reference[] = {
+        0x02,  // byte  0:
+        0x04,  // byte  1:
+        0x00,  // byte  2:
+        0x00,  // byte  3:
+        0x00,  // byte  4:
+        0x02,  // byte  5:
+        0x85,  // byte  6:
+        0x86,  // byte  7:
+        0x00,  // byte  8:
+        0x04,  // byte  9:
+        0x00,  // byte 10:
+        0x00,  // byte 11:
+        0x00,  // byte 12:
+        0x02,  // byte 13:
+        0x87,  // byte 14:
+        0x88,  // byte 15:
+        0x00,  // byte 16:
+        0x02,  // byte 17:
+        0x02,  // byte 18:
+        0x00,  // byte 19:
+        0x00,  // byte 20:
+        0x00,  // byte 21:
+        0xF1,  // byte 22:
+        0xF2,  // byte 23:
+        0x02,  // byte 24:
+        0x00,  // byte 25:
+        0x00,  // byte 26:
+        0x00,  // byte 37:
+        0xF3,  // byte 38:
+        0xF4,  // byte 39:
+        0x55,  // byte 40: canary  1
+        0x55,  // byte 41: canary  2
+        0x55,  // byte 42: canary  3
+        0x55,  // byte 43: canary  4
+        0x55,  // byte 44: canary  5
+        0x55,  // byte 45: canary  6
+        0x55,  // byte 46: canary  7
+        0x55,  // byte 47: canary  8
+        0x55,  // byte 48: canary  9
+        0x55,  // byte 49: canary 10
+        0x55,  // byte 50: canary 11
+        0x55,  // byte 51: canary 12
+        0x55,  // byte 52: canary 13
+        0x55,  // byte 53: canary 14
+        0x55,  // byte 54: canary 15
+        0x55,  // byte 55: canary 16
+    };
+
+    uint8_t buf[sizeof(reference)];
+    (void) memset(&buf[0], 0x55U, sizeof(buf));  // fill out canaries
+    auto result = serialize(obj_0_1, buf);
+    ASSERT_TRUE(result) << "Error is " << static_cast<int>(result.error());
+    EXPECT_EQ(sizeof(reference) - 16U, result.value());
+    for(size_t i=0; i< sizeof(reference); i++)
+    {
+        ASSERT_EQ(reference[i], buf[i]) << "Failed at " << i;
+    }
+
+    regulated::delimited::BDelimited_1_1 obj_1_1{};
+
+    result = deserialize(obj_1_1, reference);
+    ASSERT_TRUE(result) << "Error was " << result.error();
+    ASSERT_EQ(sizeof(reference) - 16U, result.value());   // 16 trailing bytes implicitly truncated away
+
+    EXPECT_EQ(obj_1_1.var.size(), 2);
+    EXPECT_EQ(obj_1_1.var[0].a.size(), 2);
+    EXPECT_EQ(obj_1_1.var[0].a[0], 0x85);
+    EXPECT_EQ(obj_1_1.var[0].a[1], 0x86);
+    EXPECT_EQ(obj_1_1.var[1].a.size(), 2);
+    EXPECT_EQ(obj_1_1.var[1].a[0], 0x87);
+    EXPECT_EQ(obj_1_1.var[1].a[1], 0x88);
+
+    EXPECT_EQ(obj_1_1.fix.size(), 2);
+    EXPECT_EQ(obj_1_1.fix[0].a.size(), 3);
+    EXPECT_EQ(obj_1_1.fix[0].a[0], 0xF1);
+    EXPECT_EQ(obj_1_1.fix[0].a[1], 0xF2);
+    EXPECT_EQ(obj_1_1.fix[0].a[2], 0x00);   // Without fix we get incorrect 0x02 here
+    EXPECT_EQ(obj_1_1.fix[0].b, 0x00);
+    EXPECT_EQ(obj_1_1.fix[1].a.size(), 3);
+    EXPECT_EQ(obj_1_1.fix[1].a[0], 0xF3);
+    EXPECT_EQ(obj_1_1.fix[1].a[1], 0xF4);
+    EXPECT_EQ(obj_1_1.fix[1].a[2], 0x00);   // Without fix we get incorrect 0x55 here
+    EXPECT_EQ(obj_1_1.fix[1].b, 0x00);      // Without fix we get incorrect 0x55 here
+}
 
 
 TEST(Serialization, Primitive)
