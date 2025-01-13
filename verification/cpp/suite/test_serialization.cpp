@@ -410,8 +410,8 @@ TEST(Serialization, StructReference)
 TEST(Serialization, Issue370)
 {
     regulated::delimited::BDelimited_1_0 obj_0_1{};
-    obj_0_1.var.push_back({{{0x85}, 0x86}});
-    obj_0_1.var.push_back({{{0x87}, 0x88}});
+    obj_0_1.var.push_back({{0x85, 0x86}, -53});
+    obj_0_1.var.push_back({{0x87, 0x88}, -54});
     obj_0_1.fix.push_back({0xF1, 0xF2});
     obj_0_1.fix.push_back({0xF3, 0xF4});
 
@@ -424,7 +424,7 @@ TEST(Serialization, Issue370)
         0x02,  // byte  5:
         0x85,  // byte  6:
         0x86,  // byte  7:
-        0x00,  // byte  8:
+        0xCB,  // byte  8: -53
         0x04,  // byte  9:
         0x00,  // byte 10:
         0x00,  // byte 11:
@@ -432,7 +432,7 @@ TEST(Serialization, Issue370)
         0x02,  // byte 13:
         0x87,  // byte 14:
         0x88,  // byte 15:
-        0x00,  // byte 16:
+        0xCA,  // byte 16: -54
         0x02,  // byte 17:
         0x02,  // byte 18:
         0x00,  // byte 19:
