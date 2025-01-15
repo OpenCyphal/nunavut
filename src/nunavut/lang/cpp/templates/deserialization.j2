@@ -222,7 +222,7 @@
 {% set ref_size_bytes = 'size_bytes' |to_template_unique_name %}
 {% set ref_delimiter  = 'dh' |to_template_unique_name %}
     {
-        {{ typename_unsigned_length }} {{ ref_size_bytes }};
+        {{ typename_unsigned_length }} {{ ref_size_bytes }} = in_buffer.size() / 8U;
 {% if t is DelimitedType %}
         // Delimiter header: {{ t.delimiter_header_type }}
         {{ _deserialize_integer(t.delimiter_header_type, ref_size_bytes, offset)|trim|indent }}
@@ -231,8 +231,6 @@
             return -nunavut::support::Error::RepresentationBadDelimiterHeader;
         }
         const {{ typename_unsigned_length }} {{ ref_delimiter }} = {{ ref_size_bytes }};
-{% else %}
-        {{ ref_size_bytes }} = in_buffer.size() / 8U;
 {% endif %}
 
         {{ assert('in_buffer.offset_alings_to_byte()') }}
