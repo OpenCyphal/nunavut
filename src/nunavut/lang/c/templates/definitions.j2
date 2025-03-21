@@ -232,8 +232,7 @@ static inline void {{ t | full_reference_name }}_initialize_({{ t | full_referen
     if (out_obj != {{ valuetoken_null }})
     {
         {{ typename_unsigned_length }} size_bytes = 0;
-        const {{ typename_byte }} buf = 0;
-        const {{ typename_error_type }} err = {{ t | full_reference_name }}_deserialize_(out_obj, &buf, &size_bytes);
+        const {{ typename_error_type }} err = {{ t | full_reference_name }}_deserialize_(out_obj, NULL, &size_bytes);
         {{ assert('err >= 0') }}
         (void) err;
     }

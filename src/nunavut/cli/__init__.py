@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: MIT
 #
 """
-    Command-line for using nunavut and jinja to generate code
-    from dsdl definitions.
+Command-line for using nunavut and jinja to generate code
+from dsdl definitions.
 """
 
 import argparse

@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: MIT
 #
 """
-    Filters for generating javascript. All filters in this
-    module will be available in the template's global namespace as ``ln.js``.
+Filters for generating javascript. All filters in this
+module will be available in the template's global namespace as ``ln.js``.
 """
 
 

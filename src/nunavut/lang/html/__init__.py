@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: MIT
 #
 """
-    Filters for generating docs. All filters in this
-    module will be available in the template's global namespace as ``ln.html``.
+Filters for generating docs. All filters in this
+module will be available in the template's global namespace as ``ln.html``.
 """
 
 import html

@@ -1,5 +1,6 @@
 addoption
 allclose
+asan
 astype
 autouse
 behaviour
@@ -25,6 +26,7 @@ frombuffer
 functor
 functors
 htmlcov
+inout
 itemsize
 lctx
 markupsafe

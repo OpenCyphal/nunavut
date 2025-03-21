@@ -100,10 +100,48 @@ set(LOCAL_TEST_TYPES_PUBLIC_REGULATED
 )
 
 set(LOCAL_NAMESPACE_TEST0_REGULATED ${CMAKE_CURRENT_SOURCE_DIR}/nunavut_test_types/test0/regulated)
-file(GLOB_RECURSE LOCAL_TEST_TYPES_TEST0_REGULATED CONFIGURE_DEPENDS ${LOCAL_NAMESPACE_TEST0_REGULATED}/*.dsdl)
+set(LOCAL_TEST_TYPES_TEST0_REGULATED
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/CombinatorialExplosion.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/RGB888_3840x2748.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/300.Service.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/7000.Struct_.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/DelimitedFixedSize.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/DelimitedVariableSize.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/Primitive.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/PrimitiveArrayFixed.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/PrimitiveArrayVariable.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/Union.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/UnionWithSameTypes.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/A.1.0.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/A.1.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/BDelimited.1.0.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/BDelimited.1.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/BSealed.1.0.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/CFixed.1.0.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/CFixed.1.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/CVariable.1.0.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/CVariable.1.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/drone/sensor/BMSInfo.1.0.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/drone/sensor/BMSStatus.1.0.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/drone/sensor/BMSStatusValue.1.0.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/drone/sensor/BatteryChemistry.1.0.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/zubax/actuator/esc/AngVelSetpoint.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/zubax/actuator/esc/RatiometricSetpoint.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/zubax/actuator/esc/Status.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/zubax/sensor/bms/BatteryPackParams.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/zubax/sensor/bms/BatteryPackStatus.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/zubax/sensor/bms/Technology.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/zubax/sensor/wattmeter/DCSample.0.1.dsdl
+)
 
 set(LOCAL_NAMESPACE_NESTED_ARRAY_TYPES ${CMAKE_CURRENT_SOURCE_DIR}/nunavut_test_types/nested_array_types/mymsgs)
-file(GLOB_RECURSE LOCAL_NESTED_ARRAY_TYPES CONFIGURE_DEPENDS ${LOCAL_NAMESPACE_NESTED_ARRAY_TYPES}/*.dsdl)
+set(LOCAL_NESTED_ARRAY_TYPES
+     ${LOCAL_NAMESPACE_NESTED_ARRAY_TYPES}/Inner.1.0.dsdl
+     ${LOCAL_NAMESPACE_NESTED_ARRAY_TYPES}/InnerMore.1.0.dsdl
+     ${LOCAL_NAMESPACE_NESTED_ARRAY_TYPES}/Outer.1.0.dsdl
+     ${LOCAL_NAMESPACE_NESTED_ARRAY_TYPES}/OuterMore.1.0.dsdl
+     ${LOCAL_NAMESPACE_NESTED_ARRAY_TYPES}/Simple.1.0.dsdl
+)
 
 # +-[C-TYPES]-----------------------------------------------------------------+
 #
@@ -152,7 +190,10 @@ if(LOCAL_NUNAVUT_VERIFICATION_TARGET_LANG STREQUAL "cpp")
      target_compile_definitions(${LOCAL_TEST_TYPES_C_LIBRARY} INTERFACE "$<$<CONFIG:Debug,DebugAsan,DebugCov>:-DNUNAVUT_ASSERT=EXPECT_TRUE>")
      target_compile_definitions(${LOCAL_TEST_TYPES_CPP_LIBRARY} INTERFACE "$<$<CONFIG:Debug,DebugAsan,DebugCov>:-DNUNAVUT_ASSERT=EXPECT_TRUE>")
 else()
-     target_compile_definitions(${LOCAL_TEST_TYPES_C_LIBRARY} INTERFACE "$<$<CONFIG:Debug,DebugAsan,DebugCov>:-DNUNAVUT_ASSERT=TEST_ASSERT_TRUE>")
+     target_compile_definitions(${LOCAL_TEST_TYPES_C_LIBRARY} INTERFACE
+          "$<$<CONFIG:Debug,DebugCov>:-DNUNAVUT_ASSERT=TEST_ASSERT_TRUE>"
+          "$<$<CONFIG:DebugAsan>:-DNUNAVUT_ASSERT=assert>"
+     )
 endif()
 
 # +---------------------------------------------------------------------------+

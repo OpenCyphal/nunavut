@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 #
 """
-    jinja-based :class:`~nunavut.generators.AbstractGenerator` implementation.
+jinja-based :class:`~nunavut.generators.AbstractGenerator` implementation.
 """
 
 import abc

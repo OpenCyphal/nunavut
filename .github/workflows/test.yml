@@ -136,7 +136,7 @@ jobs:
   language-verification-c:
     runs-on: ubuntu-latest
     needs: test
-    container: ghcr.io/opencyphal/toolshed:ts22.4.10
+    container: ghcr.io/opencyphal/toolshed:ts24.4.3
     strategy:
       matrix:
         architecture: [native32, native]
@@ -159,7 +159,7 @@ jobs:
   language-verification-cpp:
     runs-on: ubuntu-latest
     needs: test
-    container: ghcr.io/opencyphal/toolshed:ts22.4.10
+    container: ghcr.io/opencyphal/toolshed:ts24.4.3
     strategy:
       matrix:
         architecture: [native32, native]
@@ -182,7 +182,7 @@ jobs:
   language-verification-c-clang-native-extra:
     runs-on: ubuntu-latest
     needs: test
-    container: ghcr.io/opencyphal/toolshed:ts22.4.10
+    container: ghcr.io/opencyphal/toolshed:ts24.4.3
     steps:
     - uses: actions/checkout@v4
       with:

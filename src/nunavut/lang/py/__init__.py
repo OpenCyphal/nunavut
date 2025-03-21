@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: MIT
 #
 """
-    Filters for generating python. All filters in this
-    module will be available in the template's global namespace as ``py``.
+Filters for generating python. All filters in this
+module will be available in the template's global namespace as ``py``.
 """
 from __future__ import annotations
 

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 #
 """
-    Objects that utilize command-line inputs to run a program using Nunavut.
+Objects that utilize command-line inputs to run a program using Nunavut.
 """
 
 import argparse

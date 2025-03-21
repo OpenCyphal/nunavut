@@ -4,6 +4,7 @@
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
     "mounts": [
+        "source=profile-nunavut-python,target=/root,type=volume",
         "source=root-vscode-server,target=/root/.vscode-server/extensions,type=volume"
     ],
     "customizations": {

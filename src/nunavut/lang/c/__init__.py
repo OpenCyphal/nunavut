@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: MIT
 #
 """
-    Filters for generating C. All filters in this
-    module will be available in the template's global namespace as ``c``.
+Filters for generating C. All filters in this
+module will be available in the template's global namespace as ``c``.
 """
 
 import enum

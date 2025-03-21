@@ -114,7 +114,7 @@ if(LCOV)
             COMMAND # Generate initial "zero coverage" data.
                 ${LCOV}
                         ${VERIFICATION_COVERAGE_GOV_TOOL_ARG}
-                        --rc lcov_branch_coverage=1
+                        --rc branch_coverage=1
                         --capture
                         --initial
                         --directory ${ARG_BASE_DIR}
@@ -124,7 +124,7 @@ if(LCOV)
             COMMAND # Generate coverage from tests.
                 ${LCOV}
                         ${VERIFICATION_COVERAGE_GOV_TOOL_ARG}
-                        --rc lcov_branch_coverage=1
+                        --rc branch_coverage=1
                         --capture
                         --directory ${ARG_BASE_DIR}
                         --test-name ${ARG_NAME}
@@ -132,14 +132,14 @@ if(LCOV)
             COMMAND # Combine all the test runs with the baseline
                 ${LCOV}
                         ${VERIFICATION_COVERAGE_GOV_TOOL_ARG}
-                        --rc lcov_branch_coverage=1
+                        --rc branch_coverage=1
                         --add-tracefile ${ARG_OUTDIR}/coverage.baseline.info
                         --add-tracefile ${ARG_OUTDIR}/coverage.${ARG_NAME}.test.info
                         --output-file ${ARG_OUTDIR}/coverage.${ARG_NAME}.info
             COMMAND # Filter only the interesting data
                 ${LCOV}
                         ${VERIFICATION_COVERAGE_GOV_TOOL_ARG}
-                        --rc lcov_branch_coverage=1
+                        --rc branch_coverage=1
                         --extract ${ARG_OUTDIR}/coverage.${ARG_NAME}.info
                         ${ARG_SOURCE_FILTER_DIR}
                         --output-file ${LOCAL_INFO_FILE}
@@ -223,7 +223,7 @@ if(LCOV)
             COMMAND
                 ${LCOV}
                     ${VERIFICATION_COVERAGE_GOV_TOOL_ARG}
-                    --rc lcov_branch_coverage=1
+                    --rc branch_coverage=1
                     ${LOCAL_ADD_TRACEFILE_ARGS}
                     --output-file ${LOCAL_ALL_INFO_FILE}
             DEPENDS ${ARG_INFO_FILES}
@@ -234,7 +234,7 @@ if(LCOV)
             COMMAND
                 ${LCOV}
                     ${VERIFICATION_COVERAGE_GOV_TOOL_ARG}
-                    --rc lcov_branch_coverage=1
+                    --rc branch_coverage=1
                     --extract ${LOCAL_ALL_INFO_FILE}
                     ${LOCAL_PROJECT_ROOT}/\\*
                     --output-file ${LOCAL_FILTERED_INFO_FILE}

@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: MIT
 #
 """
-    Objects that write debug/accounting information about code generation inputs, outputs, and configuration
-    to various outputs.
+Objects that write debug/accounting information about code generation inputs, outputs, and configuration
+to various outputs.
 """
 
 import abc

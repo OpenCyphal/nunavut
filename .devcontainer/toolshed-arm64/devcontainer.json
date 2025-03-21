@@ -1,8 +1,12 @@
 {
-    "name": "C/C++ verification environment",
-    "image": "ghcr.io/opencyphal/toolshed:ts22.4.10",
+    "name": "C/C++ verification environment (arm64)",
+    "image": "ghcr.io/opencyphal/toolshed:ts24.4.3",
     "workspaceFolder": "/repo",
     "workspaceMount": "source=${localWorkspaceFolder},target=/repo,type=bind,consistency=delegated",
+    "mounts": [
+        "source=profile-nunavut-c,target=/root,type=volume",
+        "target=/root/.vscode-server,type=volume"
+    ],
     "customizations": {
         "vscode": {
             "extensions": [
@@ -23,5 +27,6 @@
             ]
         }
     },
+    "runArgs": ["--platform=linux/arm64", "-i"],
     "postCreateCommand": "git submodule update --init --recursive"
 }

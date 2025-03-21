@@ -37,17 +37,17 @@ set_and_check(NUNAVUT_SOURCE_DIR "${PACKAGE_PREFIX_DIR}/src")
 check_required_components(Nunavut Python3)
 
 execute_process(
-    COMMAND ${Python3_EXECUTABLE} ${PACKAGE_PREFIX_DIR}/version_check_nunavut.py --major-minor-version-only
+    COMMAND ${Python3_EXECUTABLE} nunavut/_version.py
     OUTPUT_VARIABLE NUNAVUT_VERSION_MAJOR_MINOR
     OUTPUT_STRIP_TRAILING_WHITESPACE
-    WORKING_DIRECTORY "${PACKAGE_PREFIX_DIR}"
+    WORKING_DIRECTORY "${NUNAVUT_SOURCE_DIR}"
 )
 
 execute_process(
-    COMMAND ${Python3_EXECUTABLE} ${PACKAGE_PREFIX_DIR}/version_check_nunavut.py --version-only
+    COMMAND ${Python3_EXECUTABLE} nunavut/_version.py
     OUTPUT_VARIABLE NUNAVUT_VERSION
     OUTPUT_STRIP_TRAILING_WHITESPACE
-    WORKING_DIRECTORY "${PACKAGE_PREFIX_DIR}"
+    WORKING_DIRECTORY "${NUNAVUT_SOURCE_DIR}"
 )
 
 message(STATUS "Nunavut version: ${NUNAVUT_VERSION}")
