@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 #
 """
-    Command line script.
+Command line script.
 """
 
 import sys

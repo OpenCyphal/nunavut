@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 #
 """
-    Command-line parsers for the Nunavut command-line interface.
+Command-line parsers for the Nunavut command-line interface.
 """
 
 import argparse

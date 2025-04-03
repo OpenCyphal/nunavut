@@ -19,7 +19,7 @@ jobs:
     - name: version-check
       # Fails the release if the release-tag doesn't match the Nunavut version at that tag.
       run: |
-        $(./version_check_nunavut.py -vv --version-check "2.3.4.dev0")
+        $(python3 ./src/nunavut/_version.py -v --fail-on-mismatch --tag=${{ github.ref }})
     - name: lint
       run: tox -e lint
     - name: test-nnvg

@@ -82,6 +82,8 @@ list(APPEND LOCAL_SANITIZER_OPTIONS
     "-fsanitize=float-cast-overflow"
     "-fsanitize=pointer-overflow"
     "-fsanitize=builtin"
+    "-fno-omit-frame-pointer"
+    "-fno-optimize-sibling-calls"
 )
 
 add_compile_options(
