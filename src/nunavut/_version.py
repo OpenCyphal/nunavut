@@ -55,7 +55,7 @@ if __name__ == "__main__":  # pragma: no cover
     parser.add_argument("--tag", help="A manually provided git tag. Overrides --git.")
     parser.add_argument(
         "--tag-triplet-pattern",
-        default=r"v(\d+\.\d+\.\d+\.\S+)",
+        default=r"v?(\d+\.\d+\.\d+\.\S+)",
         help="A regex pattern to extract the version from the git tag.",
     )
     parser.add_argument(
