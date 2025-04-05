@@ -132,9 +132,6 @@ endfunction()
 # param: OUT_VERIFICATION_LANGUAGE_STANDARD_C       - The name of a variable to set in the parent
 #                           scope with the resolved c standard to use when generating c headers.
 #                           This shall be a valid built-in --language-standard value for Nunavut.
-# param: OUT_VERIFICATION_TARGET_PLATFORM           - The name of a variable to set in the parent
-#                           scope with the resolved target platform.
-#
 function(handle_nunavut_verification_language_and_standard)
     # +--[ INPUTS ]-----------------------------------------------------------+
     set(options PRINT_STATUS REQUIRED)
@@ -142,7 +139,6 @@ function(handle_nunavut_verification_language_and_standard)
         OUT_LOCAL_VERIFICATION_TARGET_LANGUAGE
         OUT_VERIFICATION_LANGUAGE_STANDARD_CPP
         OUT_VERIFICATION_LANGUAGE_STANDARD_C
-        OUT_VERIFICATION_TARGET_PLATFORM
     )
     set(multiValues "")
 
@@ -180,12 +176,7 @@ function(handle_nunavut_verification_language_and_standard)
         set(NUNAVUT_VERIFICATION_LANG_STANDARD "c11" CACHE STRING "The language standard to use when generating source for verification.")
     endif()
 
-    if(DEFINED ENV{NUNAVUT_VERIFICATION_TARGET_PLATFORM})
-        if (ARG_PRINT_STATUS)
-            message(STATUS "Getting NUNAVUT_VERIFICATION_TARGET_PLATFORM from the environment ($ENV{NUNAVUT_VERIFICATION_TARGET_PLATFORM})")
-        endif()
-        set(NUNAVUT_VERIFICATION_TARGET_PLATFORM "$ENV{NUNAVUT_VERIFICATION_TARGET_PLATFORM}" CACHE STRING "The platform to compile for when generating source for verification.")
-    else()
+    if(NOT DEFINED ENV{NUNAVUT_VERIFICATION_TARGET_PLATFORM})
         set(NUNAVUT_VERIFICATION_TARGET_PLATFORM "native" CACHE STRING "The platform to compile for when generating source for verification.")
     endif()
 
@@ -228,16 +219,15 @@ function(handle_nunavut_verification_language_and_standard)
     endif()
 
     # PLATFORM
-    string(TOLOWER ${NUNAVUT_VERIFICATION_TARGET_PLATFORM} LOCAL_VERIFICATION_TARGET_PLATFORM)
-    if(NOT (${LOCAL_VERIFICATION_TARGET_PLATFORM} STREQUAL "native32" OR ${LOCAL_VERIFICATION_TARGET_PLATFORM} STREQUAL "native"))
+    if(NOT (${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "native32" OR ${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "native" OR ${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "armv7m"))
         message(FATAL_ERROR "\"NUNAVUT_VERIFICATION_TARGET_PLATFORM=${NUNAVUT_VERIFICATION_TARGET_PLATFORM}\" is not a supported value.")
     endif()
 
     # STATUS
     if (ARG_PRINT_STATUS)
         message(STATUS "${ARG_OUT_LOCAL_VERIFICATION_TARGET_LANGUAGE} is ${LOCAL_VERIFICATION_LANG}")
-        message(STATUS "${ARG_OUT_VERIFICATION_TARGET_PLATFORM} is ${LOCAL_VERIFICATION_TARGET_PLATFORM}")
-        message(STATUS "${ARG_OUT_VERIFICATION_LANGUAGE_STANDARD_C} is ${LOCAL_VERIFICATION_LANG_C_STANDARD}")
+        message(STATUS "NUNAVUT_VERIFICATION_TARGET_PLATFORM is ${NUNAVUT_VERIFICATION_TARGET_PLATFORM}")
+        message(STATUS "${ARG_OUT_VERIFICATION_LANGUAGE_STANDARD_C} is ${NUNAVUT_VERIFICATION_LANG_STANDARD}")
         message(STATUS "${ARG_OUT_VERIFICATION_LANGUAGE_STANDARD_CPP} is ${LOCAL_VERIFICATION_LANG_CPP_STANDARD}")
         if (ARG_REQUIRED)
             set(LOCAL_REQUIRED_STATUS " (required)")
@@ -246,11 +236,11 @@ function(handle_nunavut_verification_language_and_standard)
         endif()
         message(STATUS "CMAKE_C_STANDARD is ${LOCAL_VERIFICATION_LANG_C_MATCH}${LOCAL_REQUIRED_STATUS}")
         message(STATUS "CMAKE_CXX_STANDARD is ${LOCAL_VERIFICATION_LANG_CPP_MATCH}${LOCAL_REQUIRED_STATUS}")
+        message(STATUS "Is cross-compiling? ${CMAKE_CROSSCOMPILING}")
     endif()
 
     # +--[ OUT ]-------------------------------------------------------------+
     set(${ARG_OUT_LOCAL_VERIFICATION_TARGET_LANGUAGE} ${LOCAL_VERIFICATION_LANG} PARENT_SCOPE)
     set(${ARG_OUT_VERIFICATION_LANGUAGE_STANDARD_CPP} ${LOCAL_VERIFICATION_LANG_CPP_STANDARD} PARENT_SCOPE)
     set(${ARG_OUT_VERIFICATION_LANGUAGE_STANDARD_C} ${LOCAL_VERIFICATION_LANG_C_STANDARD} PARENT_SCOPE)
-    set(${ARG_OUT_VERIFICATION_TARGET_PLATFORM} ${LOCAL_VERIFICATION_TARGET_PLATFORM} PARENT_SCOPE)
 endfunction()

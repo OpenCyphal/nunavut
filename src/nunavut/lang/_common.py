@@ -165,18 +165,9 @@ class UniqueNameGenerator:
         Uses a global index to generate a number unique to a given base_token within a template
         for a given domain (key).
         """
-        try:
-            keymap = self._index_map[key]
-        except KeyError:
-            keymap = {}
-            self._index_map[key] = keymap
-
-        try:
-            next_index = keymap[base_token]
-            keymap[base_token] = next_index + 1
-        except KeyError:
-            next_index = 0
-            keymap[base_token] = 1
+        keymap = self._index_map.setdefault(key, {})
+        next_index = keymap.setdefault(base_token, 0)
+        keymap[base_token] = next_index + 1
 
         return f"{prefix}{base_token}{next_index}{suffix}"
 

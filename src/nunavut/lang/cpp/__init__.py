@@ -1215,9 +1215,35 @@ def assemble_initializer_expression(
 
 
 @template_language_filter(__name__)
-def filter_value_initializer(language: Language, instance: pydsdl.Any, special_method: SpecialMethod) -> str:
+def filter_value_initializer(
+    language: Language, instance: pydsdl.Any, special_method: SpecialMethod, id_prefix: str = ""
+) -> str:
     """
     Emit an initialization expression for a C++ special method.
+
+    .. invisible-code-block: python
+
+        from nunavut.lang.cpp import filter_value_initializer, SpecialMethod
+        from unittest.mock import MagicMock
+        import pydsdl
+        from nunavut.lang import LanguageContextBuilder
+
+        lctx = (
+            LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language("cpp")
+                .create()
+        )
+
+        test_type = MagicMock(spec=pydsdl.CompositeType)
+        test_type.name = "foo"
+        test_type.data_type = MagicMock(spec=pydsdl.PrimitiveType)
+
+        output = filter_value_initializer(
+            lctx.get_target_language(),
+            test_type,
+            SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR)
+        assert '{foo}' == output
+
     """
 
     value_initializer: str = ""
@@ -1228,9 +1254,11 @@ def filter_value_initializer(language: Language, instance: pydsdl.Any, special_m
         trailing_args: typing.List[str] = []
 
         if needs_initializing_value(special_method):
+            instance_id = language.filter_id(instance)
             if needs_rhs(special_method):
-                rhs = "rhs."
-            rhs += language.filter_id(instance)
+                rhs = f"rhs.{instance_id}"
+            else:
+                rhs = f"{id_prefix}{instance_id}"
 
         if needs_vla_init_args(instance, special_method):
             constructor_args = language.get_option("variable_array_type_constructor_args")

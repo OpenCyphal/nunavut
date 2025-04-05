@@ -278,12 +278,12 @@ public:
         return self.offset_bits_ % alignment_bits;
     }
 
-    bool offset_alings_to({{ typename_unsigned_bit_length }} alignment_bits) const noexcept{
+    bool offset_aligns_to({{ typename_unsigned_bit_length }} alignment_bits) const noexcept{
         return offset_misalignment(alignment_bits) == 0U;
     }
 
-    bool offset_alings_to_byte() const noexcept{
-        return offset_alings_to(8U);
+    bool offset_aligns_to_byte() const noexcept{
+        return offset_aligns_to(8U);
     }
 
     {{ typename_unsigned_bit_length }} size() const noexcept{
@@ -613,7 +613,7 @@ inline VoidResult bitspan::padAndMoveToAlignment({{ typename_unsigned_bit_length
             return ref_result;
         }
         add_offset( padding);
-        {{ assert('offset_alings_to(n_bits)') }}
+        {{ assert('offset_aligns_to(n_bits)') }}
     }
     return {};
 }

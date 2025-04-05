@@ -422,6 +422,7 @@ class CodeGenEnvironment(Environment):
             keep_trailing_newline=True,
             lstrip_blocks=lstrip_blocks,
             trim_blocks=trim_blocks,
+            optimized=False, # cannot allow optimization because it prevents the use of stateful filters.
             auto_reload=False,
             cache_size=400,
         )

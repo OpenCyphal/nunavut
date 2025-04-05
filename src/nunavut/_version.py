@@ -9,7 +9,7 @@
 """
 import sys
 
-__version__ = "3.0.0.dev1"
+__version__ = "3.0.0.dev1"  # please update NunavutConfigVersion.cmake if changing the major or minor version.
 __license__ = "MIT"
 __author__ = "OpenCyphal"
 __copyright__ = (
@@ -20,42 +20,52 @@ __email__ = "maintainers@opencyphal.org"
 __pydsdl_version__ = ">= 1.22.2"
 
 
-def _get_version_from_git_tag(tag: str, pattern: str) -> tuple:  # pragma: no cover
+def _parse_version_string(tag: str, pattern: str, major_minor_only: bool) -> tuple:  # pragma: no cover
     """
-    Given a git tag, extract the version number as a tuple.
+    Given a version string, extract the version number as a tuple.
     """
-    import re  # pylint: disable=import-outside-toplevel
+    from re import match as rematch  # pylint: disable=import-outside-toplevel
 
-    match = re.match(pattern, tag)
-    if match:
-        return match.groups()
-    return ("0", "0", "0")
+    if tag.startswith("refs/tags/"):
+        tag = tag.split("/")[-1]
+    match = rematch(pattern, tag)
+    if match is None:
+        groups = ("0", "0", "0")
+    else:
+        groups = match.group(1).split(".")
+
+    if major_minor_only and len(groups) > 1:
+        return groups[0:2]
+    else:
+        return groups
 
 
-def _fail_on_mismatch(tag: str, tag_triplet_pattern: str) -> None:  # pragma: no cover
+def _fail_on_mismatch(tag: str, tag_triplet_pattern: str, major_minor_only: bool) -> None:  # pragma: no cover
     """
     Call exit if the git tag does not match the embedded version.
     """
-    git_version = _get_version_from_git_tag(tag, tag_triplet_pattern)
-    if ".".join(git_version) != __version__:
+    version_from_tag = _parse_version_string(tag, tag_triplet_pattern, major_minor_only)
+    nunavut_version = _parse_version_string(__version__, tag_triplet_pattern, major_minor_only)
+    if ".".join(version_from_tag) != ".".join(nunavut_version):
         sys.stderr.write(
-            f"Git-tagged version {'.'.join(git_version)} does not match the embedded version {__version__}.\r\n"
+            f"tagged version {'.'.join(version_from_tag)} does not match the embedded version {__version__}.\r\n"
         )
         sys.exit(-1)
 
 
 if __name__ == "__main__":  # pragma: no cover
-    import argparse  # pylint: disable=import-outside-toplevel
+    from argparse import ArgumentParser  # pylint: disable=import-outside-toplevel
 
-    parser = argparse.ArgumentParser(description="Get the version of the package.")
+    parser = ArgumentParser(description="Get the version of the package.")
     parser.add_argument("--verbose", "-v", action="store_true", help="Print more information.")
     parser.add_argument("--git", action="store_true", help="Get the version from the latest git tag.")
     parser.add_argument("--git-branch", default="main", help="The git branch to use.")
     parser.add_argument("--tag-match", default="v*", help="The git tag pattern to match.")
     parser.add_argument("--tag", help="A manually provided git tag. Overrides --git.")
+    parser.add_argument("--major-minor-only", action="store_true", help="Only use major and minor version.")
     parser.add_argument(
         "--tag-triplet-pattern",
-        default=r"v?(\d+\.\d+\.\d+\.\S+)",
+        default=r"^v?(\d+\.\d+(?:\.\d+)?(?:\.[^.\s]+)?)$",
         help="A regex pattern to extract the version from the git tag.",
     )
     parser.add_argument(
@@ -63,30 +73,22 @@ if __name__ == "__main__":  # pragma: no cover
     )
     args = parser.parse_args()
 
+    local_version = ".".join(_parse_version_string(__version__, args.tag_triplet_pattern, args.major_minor_only))
     if args.verbose:
-        print(f"nunavut version: {__version__}")
+        print(f"nunavut version: {local_version}")
     else:
-        print(__version__, end="")
+        print(local_version, end="")
 
     if args.tag is not None:
-        if args.tag.startswith("refs/tags/"):
-            ref = args.tag
-            tag_name = ref.split("/")[-1] if ref and "tags" in ref else None
-        else:
-            tag_name = args.tag
-        if tag_name is not None:
-            if args.verbose:
-                print(f"Git-tag version from command-line is {tag_name}")
-            if args.fail_on_mismatch:
-                _fail_on_mismatch(tag_name, args.tag_triplet_pattern)
-        elif args.fail_on_mismatch:
-            if args.verbose:
-                sys.stderr.write(f"Unrecognized --tag argument: {ref}\r\n")
-            sys.exit(-2)
+        if args.verbose:
+            print(f"Git-tag version from command-line is {args.tag}")
+        if args.fail_on_mismatch:
+            _fail_on_mismatch(args.tag, args.tag_triplet_pattern, args.major_minor_only)
     elif args.git:
-        import subprocess  # pylint: disable=import-outside-toplevel
+        from subprocess import run as run_subprocess  # pylint: disable=import-outside-toplevel
 
-        completed = subprocess.run(
+        # amazonq-ignore-next-line
+        completed = run_subprocess(
             ["git", "describe", args.git_branch, "--tags", "--abbrev=0", f"--match={args.tag_match}"],
             capture_output=True,
             check=False,
@@ -97,7 +99,7 @@ if __name__ == "__main__":  # pragma: no cover
             if args.verbose:
                 print(f"Git-tagged version on {args.git_branch} is {git_tag_version}")
             if args.fail_on_mismatch:
-                _fail_on_mismatch(git_tag_version, args.tag_triplet_pattern)
+                _fail_on_mismatch(git_tag_version, args.tag_triplet_pattern, args.major_minor_only)
         elif args.fail_on_mismatch:
             if args.verbose:
                 sys.stderr.write(f"Failed to get git tag: {completed.stderr.decode('utf-8')}\r\n")
