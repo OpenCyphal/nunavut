@@ -32,6 +32,7 @@ prof
 out
 venv*
 *.bkp
+*.bak
 
 # Eclipse
 .metadata

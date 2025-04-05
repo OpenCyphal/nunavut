@@ -4,4 +4,6 @@
 # SPDX-License-Identifier: MIT
 #
 
-include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/gcc-native.cmake)
+
+set(NUNAVUT_VERIFICATION_TARGET_PLATFORM "native32")
