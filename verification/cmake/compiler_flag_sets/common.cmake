@@ -13,6 +13,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(C_FLAG_SET)
 set(EXE_LINKER_FLAG_SET)
 
+if(${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "armv7m")
+    include(${CMAKE_CURRENT_LIST_DIR}/arm-none-eabi.cmake)
+endif()
+
 #
 # Diagnostics for C and C++
 #
@@ -21,6 +25,7 @@ list(APPEND C_FLAG_SET
     "-Wall"
     "-Wextra"
     "-Werror"
+    "-Wshadow"
     "-Wfloat-equal"
     "-Wconversion"
     "-Wunused-parameter"
@@ -34,7 +39,7 @@ list(APPEND C_FLAG_SET
     "-Wtype-limits"
 )
 
-if(${LOCAL_VERIFICATION_TARGET_PLATFORM} STREQUAL "native32")
+if(${NUNAVUT_VERIFICATION_TARGET_PLATFORM} STREQUAL "native32")
     list(APPEND C_FLAG_SET "-m32")
     list(APPEND EXE_LINKER_FLAG_SET "-m32")
 endif()
@@ -54,6 +59,16 @@ list(APPEND CXX_FLAG_SET
     "-Woverloaded-virtual"
     "-Wno-c++17-attribute-extensions"
 )
+
+if(LOCAL_NUNAVUT_VERIFICATION_TARGET_LANG STREQUAL "c")
+    #
+    # If we are testing C headers with C++ tests we have to disable
+    # certain checks to allow the inline code to compile without
+    # warnings.
+    #
+    list(APPEND CXX_FLAG_SET "-Wno-old-style-cast")
+endif()
+
 
 if(CETLVAST_DISABLE_CPP_EXCEPTIONS)
     message(STATUS "CETLVAST_DISABLE_CPP_EXCEPTIONS is true. Adding -fno-exceptions to compiler flags.")

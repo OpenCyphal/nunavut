@@ -66,7 +66,7 @@ jobs:
         path: .tox/py311-test/tmp/
     - name: set-environment
       run: |
-        echo NUNAVUT_MAJOR_MINOR_VERSION=$(./version_check_nunavut --major-minor-version-only) >> $GITHUB_ENV
+        echo NUNAVUT_MAJOR_MINOR_VERSION=$(./src/nunavut/_version.py --major-minor-only) >> $GITHUB_ENV
     - name: verify tox artifacts
       run: ls -R
       working-directory: .tox
@@ -133,40 +133,19 @@ jobs:
     - name: python3.${{ matrix.python3-version }} test
       run: tox -e py3${{ matrix.python3-version }}-nnvg,py3${{ matrix.python3-version }}-test
 
-  language-verification-c:
+  language-verification-c-cpp:
     runs-on: ubuntu-latest
     needs: test
     container: ghcr.io/opencyphal/toolshed:ts24.4.3
     strategy:
       matrix:
-        architecture: [native32, native]
+        architecture: [native32, native, arm-none-eabi]
         compiler: [gcc, clang]
+        language: [c-11, c-11-arr-override, cpp-14, cpp-17, cpp-20]
         exclude:
           - architecture: native32
             compiler: clang
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: true
-    - name: verify
-      # We're using Ninja multi-config so we only have to configure once for all build types
-      working-directory: verification
-      run: |
-        cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS=--embed-auditing-info --preset config-${{ matrix.compiler }}-${{ matrix.architecture }}-c-11
-        cmake --build --preset build-${{ matrix.compiler }}-${{ matrix.architecture }}-c-11-release
-        cmake --build --preset build-${{ matrix.compiler }}-${{ matrix.architecture }}-c-11-debugasan
-
-  language-verification-cpp:
-    runs-on: ubuntu-latest
-    needs: test
-    container: ghcr.io/opencyphal/toolshed:ts24.4.3
-    strategy:
-      matrix:
-        architecture: [native32, native]
-        compiler: [gcc, clang]
-        language: [cpp-14, cpp-17, cpp-20]
-        exclude:
-          - architecture: native32
+          - architecture: arm-none-eabi
             compiler: clang
     steps:
     - uses: actions/checkout@v4
@@ -174,10 +153,7 @@ jobs:
         submodules: true
     - name: verify
       working-directory: verification
-      run: |
-        cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS=--embed-auditing-info --preset config-${{ matrix.compiler }}-${{ matrix.architecture }}-${{ matrix.language }}
-        cmake --build --preset build-${{ matrix.compiler }}-${{ matrix.architecture }}-${{ matrix.language }}-debugasan
-        cmake --build --preset build-${{ matrix.compiler }}-${{ matrix.architecture }}-${{ matrix.language }}-release
+      run: cmake --workflow --preset workflow-${{ matrix.compiler }}-${{ matrix.architecture }}-${{ matrix.language }}
 
   language-verification-c-clang-native-extra:
     runs-on: ubuntu-latest
@@ -190,8 +166,8 @@ jobs:
     - name: verify
       working-directory: verification
       run: |
-        cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS="--enable-override-variable-array-capacity;--embed-auditing-info" --preset config-clang-native-c-11
-        cmake --build --preset build-clang-native-c-11-debugcov --target cov_all
+        cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS="--enable-override-variable-array-capacity;--embed-auditing-info" --preset configure-clang-native-c-11
+        cmake --build --preset build-DebugCov-clang-native-c-11 --target cov_all
     - name: upload-verification-coverage-reports
       uses: actions/upload-artifact@v4
       with:
@@ -209,8 +185,8 @@ jobs:
     - name: verify
       working-directory: verification
       run: |
-        cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS="--enable-override-variable-array-capacity;--embed-auditing-info" --preset config-clang-native-cpp-20
-        cmake --build --preset build-clang-native-cpp-20-debugcov --target cov_all
+        cmake -DNUNAVUT_EXTRA_GENERATOR_ARGS="--enable-override-variable-array-capacity;--embed-auditing-info" --preset configure-clang-native-cpp-20
+        cmake --build --preset build-DebugCov-clang-native-cpp-20 --target cov_all
     - name: upload-verification-coverage-reports
       uses: actions/upload-artifact@v4
       with:

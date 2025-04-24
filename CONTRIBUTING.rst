@@ -14,10 +14,14 @@ your dev environment setup.
     - See `nunavut on read the docs`_ for the full set of nunavut documentation.
     - See the `OpenCyphal website`_ for documentation on the Cyphal protocol.
 
-.. warning::
+************************************************
+Release
+************************************************
 
-    When committing to main you **must** bump at least the patch number in ``src/nunavut/_version.py``
-    or the build will fail on the upload step.
+To release nunavut to Pypi and on github first bump the version number in ``src/nunavut/_version.py``.
+Once that is merged into the branch you are releasing from then you just create a new github release and tag the
+change with the same version number you set in ``src/nunavut/_version.py``. Once you create this release the CI
+will kickoff and do the rest for you.
 
 
 ************************************************
@@ -296,7 +300,9 @@ three variables you can set in your environment or pass into cmake if using cmak
 
  - ``NUNAVUT_VERIFICATION_LANG`` - By default this will be 'c'. Set to 'c' or 'cpp'
  - ``NUNAVUT_VERIFICATION_LANG_STANDARD`` - See the supported options for ``--language-standard`` (see ``nnvg -h``)
- - ``NUNAVUT_VERIFICATION_TARGET_PLATFORM`` - 'native' by default. 'native32' for cross-compiling for a 32-bit version of the native platform.
+ - ``NUNAVUT_VERIFICATION_TARGET_PLATFORM`` - 'native' by default. 'native32' for cross-compiling for a 32-bit version
+                                              of the native platform and 'armv7m' to cross-compile for a generic arm
+                                              micro controller (cortex-m).
 
 All other options set when generating code are provided by setting ``NUNAVUT_EXTRA_GENERATOR_ARGS`` in your environment.
 

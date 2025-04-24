@@ -143,13 +143,13 @@ struct {% if composite_type.deprecated -%}
     // Initializing constructor
     {{ composite_type | explicit_decorator(SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR)}}(
     {%- for field in composite_type.fields_except_padding %}
-        const _traits_::TypeOf::{{ field | id }}& {{ field | id }},
+        const _traits_::TypeOf::{{ field | id }}& param_{{ field | id }},
     {%- endfor %}
         const allocator_type& allocator
     {%- if options.allocator_is_default_constructible %} = allocator_type(){% endif %})
     {%- for field in composite_type.fields_except_padding %}
         {%if loop.first %}: {%else%}, {%endif-%}
-        {{ field | id }}{{ field | value_initializer(SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR) }}
+        {{ field | id }}{{ field | value_initializer(SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR, "param_") }}
     {%- endfor %}
     {
         static_cast<void>(allocator); // avoid unused param warning
