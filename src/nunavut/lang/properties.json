@@ -244,12 +244,29 @@
         "null": "NULL"
       },
       "options": {
+        "std": "c11",
         "target_endianness": "any",
         "omit_float_serialization_support": false,
         "omit_serialization_support": false,
         "enable_serialization_asserts": false,
         "enable_override_variable_array_capacity": false,
-        "cast_format": "(({type}) {value})"
+        "cast_format": "(({type}) {value})",
+        "static_assert": "_Static_assert",
+        "cpp_safe_c": true
+      },
+      "defaults": {
+        "c11": {
+          "std": "c11",
+          "static_assert": "_Static_assert"
+        },
+        "c17": {
+          "std": "c17",
+          "static_assert": "_Static_assert"
+        },
+        "c23": {
+          "std": "c23",
+          "static_assert": "static_assert"
+        }
       }
     },
     "nunavut.lang.cpp": {

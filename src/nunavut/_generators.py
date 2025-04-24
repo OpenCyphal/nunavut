@@ -250,6 +250,7 @@ def basic_language_context_builder_from_args(target_language: str, **kwargs: Any
         The following arguments are supported:
 
             * **configuration**: A list of additional configuration files to load.
+            * **option**: Key value arguments to override individual language option values.
             * **include_experimental_languages**: If true then experimental languages will also be available.
             * **language_options**: Opaque arguments passed through to the language objects. The supported arguments and
                 valid values are different depending on the language specified by the :code:`language_key` parameter.
@@ -260,7 +261,7 @@ def basic_language_context_builder_from_args(target_language: str, **kwargs: Any
     :return: A new :class:`LanguageContextBuilder` object based on the command line arguments.
     """
 
-    additional_config_files = kwargs.get("configuration", None)
+    additional_config_files = kwargs.get("configuration")
     if additional_config_files is None:
         additional_config_files = []
     if isinstance(additional_config_files, Path):
@@ -278,6 +279,11 @@ def basic_language_context_builder_from_args(target_language: str, **kwargs: Any
         )
         .add_config_files(*additional_config_files)
     )
+
+    options = kwargs.get("option")
+    if options is not None:
+        for option_key, option_value in options:
+            builder.add_target_language_option_override(option_key, option_value)
 
     return builder
 

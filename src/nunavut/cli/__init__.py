@@ -12,7 +12,7 @@ import argparse
 import sys
 import textwrap
 from pathlib import Path
-from typing import Any, Optional, Type, TypeVar, cast
+from typing import Any, Optional, Tuple, Type, TypeVar, cast
 
 
 class _LazyVersionAction(argparse._VersionAction):
@@ -35,6 +35,26 @@ class _LazyVersionAction(argparse._VersionAction):
 
         parser._print_message(__version__, sys.stdout)
         parser.exit()
+
+
+def keyvalue(arg: str) -> Tuple[str, Any]:
+    """
+    Parse a key=value string into a tuple.
+
+    :param arg: String in the format "key=value"
+    :return: Tuple of (key, value)
+    :raises ValueError: If the string is not in key=value format
+    """
+    try:
+        key, value = arg.split("=", 1)
+        value_stripped: Any = value.strip()
+        if value_stripped == "false":
+            value_stripped = False
+        elif value_stripped == "true":
+            value_stripped = True
+        return (key.strip(), value_stripped)
+    except ValueError:
+        raise ValueError(f'"{arg}" is not in key=value format') from None
 
 
 ParserT = TypeVar("ParserT")
@@ -310,14 +330,14 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
 
             # looks for all_types.j2 in the c_jinja template directory and generates
             # generated/include/all_types.h from all types in all DSDL namespaces.
-            nnvg --index-file all_types.h --outdir generated/include --templates c_jinja \
-                path/to/types/animal:cat.1.0.dsdl \
+            nnvg --index-file all_types.h --outdir generated/include --templates c_jinja \\
+                path/to/types/animal:cat.1.0.dsdl \\
                 path/to/types/animal:dog.1.0.dsdl
 
             # looks for manifest.j2 in the json_jinja template directory and generates
             # generated/include/manifest.json from all types in all DSDL namespaces.
-            nnvg --index-file include/manifest.json --outdir generated --templates json_jinja \
-                path/to/types/animal:cat.1.0.dsdl \
+            nnvg --index-file include/manifest.json --outdir generated --templates json_jinja \\
+                path/to/types/animal:cat.1.0.dsdl \\
                 path/to/types/animal:dog.1.0.dsdl
 
     """
@@ -344,7 +364,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     )
 
     def extension_type(raw_arg: str) -> str:
-        if len(raw_arg) > 0 and not raw_arg.startswith("."):
+        if raw_arg and not raw_arg.startswith("."):
             return "." + raw_arg
         else:
             return raw_arg
@@ -823,7 +843,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     ln_opt_group.add_argument(
         "--language-standard",
         "-std",
-        choices=["c11", "c++14", "cetl++14-17", "c++17", "c++17-pmr", "c++20", "c++20-pmr"],
+        choices=["c11", "c17", "c23", "c++14", "cetl++14-17", "c++17", "c++17-pmr", "c++20", "c++20-pmr"],
         help=textwrap.dedent(
             """
 
@@ -865,6 +885,29 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
 
 
         Also see ``--list-to-file`` which writes this configuration to disk if combined with ``--list-configuration``.
+
+    """
+        ).lstrip(),
+    )
+
+    ln_opt_group.add_argument(
+        "--option",
+        "-o",
+        nargs="*",
+        type=keyvalue,
+        help=textwrap.dedent(
+            """
+        Passes a key=value pair to the template as a language option overriding default options where they are
+        specified. This is useful for passing options to the template that are not available as command-line
+        arguments. For example, if you have a template that uses the
+        "foo" variable you can pass a value to it using this argument::
+
+            nnvg -o foo=value ...
+
+        where "foo" is then available in the template as `{{ options.foo }}`.
+
+        This option is similar to the `--configuration` option but only applies to the options section of the target
+        language and doesn't require a file to be created.
 
     """
         ).lstrip(),

@@ -232,11 +232,11 @@
     {% elif t.bit_length == 32 %}
         {% set ref_value = reference %}
     // Saturation code not emitted -- assume the native representation of float32 is conformant.
-    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
+    {{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
     {% elif t.bit_length == 64 %}
         {% set ref_value = reference %}
     // Saturation code not emitted -- assume the native representation of float64 is conformant.
-    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
+    {{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
     {% else %}{% assert False %}
     {% endif %}
 {% else %}
@@ -248,10 +248,10 @@
     const uint16_t {{ ref_half }} = nunavutFloat16Pack({{ ref_value }});
     (void) memmove(&buffer[offset_bits / 8U], &{{ ref_half }}, 2U);
     {% elif t.bit_length == 32 %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
+    {{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
     (void) memmove(&buffer[offset_bits / 8U], &{{ ref_value }}, 4U);
     {% elif t.bit_length == 64 %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
+    {{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
     (void) memmove(&buffer[offset_bits / 8U], &{{ ref_value }}, 8U);
     {% else %}{% assert False %}
     {% endif %}
@@ -290,9 +290,9 @@
 {% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
     // Saturation code not emitted -- assume the native representation is conformant.
     {% if t.element_type is FloatType %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
+    {{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
         {% if t.element_type.bit_length > 32 %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
+    {{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
         {% endif %}
     {% endif %}
     {% if offset.is_aligned_at_byte() %}
@@ -367,9 +367,9 @@
 {% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
     // Saturation code not emitted -- assume the native representation is conformant.
     {% if t.element_type is FloatType %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
+    {{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
         {% if t.element_type.bit_length > 32 %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
+    {{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
         {% endif %}
     {% endif %}
     {% if element_offset.is_aligned_at_byte() %}

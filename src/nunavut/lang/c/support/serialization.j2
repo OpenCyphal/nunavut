@@ -33,18 +33,33 @@
 
 #ifndef NUNAVUT_SUPPORT_SERIALIZATION_H_INCLUDED
 #define NUNAVUT_SUPPORT_SERIALIZATION_H_INCLUDED
-
+{% if options.cpp_safe_c %}
 #ifdef __cplusplus
 #   if (__cplusplus < 201402L)
 #       error "Unsupported language: ISO C11, C++14, or a newer version of either is required."
 #   endif
 extern "C"
 {
-#else
+#else{% endif %}
 #   if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
 #       error "Unsupported language: ISO C11 or a newer version is required."
 #   endif
+{%- if options.cpp_safe_c %}
 #endif
+
+#ifdef __cplusplus
+#include <cstring>
+{% if not options.omit_float_serialization_support %}
+#include <cfloat>
+#include <cmath>  // For isfinite().
+using std::isfinite;
+{% endif -%}
+#include <cstdint>
+#include <cassert>  // For _Static_assert (C11) static_assert (C23) and assert() if NUNAVUT_ASSERT is used.
+#ifndef _Static_assert
+#define _Static_assert(TERM,MESSAGE) static_assert(TERM, MESSAGE)
+#endif
+#else{% endif %}
 
 #include <string.h>
 {% if not options.omit_float_serialization_support %}
@@ -53,9 +68,10 @@ extern "C"
 {% endif -%}
 #include <stdbool.h>
 #include <stdint.h>
-#include <assert.h>  // For static_assert (C11) and assert() if NUNAVUT_ASSERT is used.
+#include <assert.h>  // For _Static_assert (C11) static_assert (C23) and assert() if NUNAVUT_ASSERT is used.
+{% if options.cpp_safe_c %}#endif{% endif %}
 
-static_assert(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_unsigned_length }}),
+{{ options.static_assert }}(sizeof({{ typename_unsigned_bit_length }}) >= sizeof({{ typename_unsigned_length }}),
     "The bit-length type used by Nunavut, {{ typename_unsigned_bit_length }}, "
     "is smaller than this platform's {{ typename_unsigned_length }} type. "
     "Nunavut serialization relies on {{ typename_unsigned_length }} to {{ typename_unsigned_bit_length }} conversions "
@@ -158,9 +174,9 @@ static inline void nunavutCopyBits(void* const dst,
                                    const void* const src,
                                    const {{ typename_unsigned_bit_length }} src_offset_bits)
 {
-    {{ assert('src != NULL') }}
-    {{ assert('dst != NULL') }}
-    {{ assert('src != dst') }}
+    {{- assert('src != NULL') }}
+    {{- assert('dst != NULL') }}
+    {{- assert('src != dst') }}
     if ((0U == (src_offset_bits % 8U)) && (0U == (dst_offset_bits % 8U)))  // Aligned copy, optimized, most common case.
     {
         const {{ typename_unsigned_length }} length_bytes = ({{ typename_unsigned_length }})(length_bits / 8U);
@@ -226,7 +242,7 @@ static inline void nunavutCopyBits(void* const dst,
             src_off += size;
             dst_off += size;
         }
-        {{ assert('last_bit == src_off') }}
+        {{- assert('last_bit == src_off') }}
     }
 }
 
@@ -242,8 +258,8 @@ static inline void nunavutGetBits(void* const output,
                                   const {{ typename_unsigned_bit_length }} off_bits,
                                   const {{ typename_unsigned_bit_length }} len_bits)
 {
-    {{ assert('output != NULL') }}
-    {{ assert('buf != NULL') }}
+    {{- assert('output != NULL') }}
+    {{- assert('buf != NULL') }}
     const {{ typename_unsigned_bit_length }} sat_bits = nunavutSaturateBufferFragmentBitLength({# -#}
         buf_size_bytes, off_bits, len_bits);
     // Apply implicit zero extension. Normally, this is a no-op unless (len_bits > sat_bits) or (len_bits % 8 != 0).
@@ -271,7 +287,7 @@ static inline {{typename_error_type}} nunavutSetBit(
     const {{ typename_unsigned_bit_length }} off_bits,
     const bool value)
 {
-    {{ assert('buf != NULL') }}
+    {{- assert('buf != NULL') }}
     if ((buf_size_bytes * 8) <= off_bits)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
@@ -288,8 +304,8 @@ static inline {{typename_error_type}} nunavutSetUxx(
     const uint64_t value,
     const uint8_t len_bits)
 {
-    static_assert(64U == (sizeof(uint64_t) * 8U), "Unexpected size of uint64_t");
-    {{ assert('buf != NULL') }}
+    {{ options.static_assert }}(64U == (sizeof(uint64_t) * 8U), "Unexpected size of uint64_t");
+    {{- assert('buf != NULL') }}
     if ((buf_size_bytes * 8) < (off_bits + len_bits))
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
@@ -362,10 +378,10 @@ static inline uint8_t nunavutGetU8(const uint8_t* const buf,
                                    const {{ typename_unsigned_bit_length }} off_bits,
                                    const uint8_t len_bits)
 {
-    {{ assert('buf != NULL') }}
+    {{- assert('buf != NULL') }}
     const {{ typename_unsigned_bit_length }} bits = {# -#}
         nunavutSaturateBufferFragmentBitLength(buf_size_bytes, off_bits, nunavutChooseMin(len_bits, 8U));
-    {{ assert('bits <= (sizeof(uint8_t) * 8U)') }}
+    {{- assert('bits <= (sizeof(uint8_t) * 8U)') }}
     uint8_t val = 0;
     nunavutCopyBits(&val, 0U, bits, buf, off_bits);
     return val;
@@ -397,7 +413,7 @@ static inline uint32_t nunavutGetU32(const uint8_t* const buf,
                                      const {{ typename_unsigned_bit_length }} off_bits,
                                      const uint8_t len_bits)
 {
-    {{ assert('buf != NULL') }}
+    {{- assert('buf != NULL') }}
     const {{ typename_unsigned_bit_length }} bits = {# -#}
         nunavutSaturateBufferFragmentBitLength(buf_size_bytes, off_bits, nunavutChooseMin(len_bits, 32U));
     {{ assert('bits <= (sizeof(uint32_t) * 8U)') }}
@@ -418,10 +434,10 @@ static inline uint64_t nunavutGetU64(const uint8_t* const buf,
                                      const {{ typename_unsigned_bit_length }} off_bits,
                                      const uint8_t len_bits)
 {
-    {{ assert('buf != NULL') }}
+    {{- assert('buf != NULL') }}
     const {{ typename_unsigned_bit_length }} bits = {# -#}
         nunavutSaturateBufferFragmentBitLength(buf_size_bytes, off_bits, nunavutChooseMin(len_bits, 64U));
-    {{ assert('bits <= (sizeof(uint64_t) * 8U)') }}
+    {{- assert('bits <= (sizeof(uint64_t) * 8U)') }}
 {%- if options.target_endianness == 'little' %}
     uint64_t val = 0U;
     nunavutCopyBits(&val, 0U, bits, buf, off_bits);
@@ -506,9 +522,9 @@ static inline int64_t nunavutGetI64(const uint8_t* const buf,
 
 // ---------------------------------------------------- FLOAT16 ----------------------------------------------------
 
-static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT,
+{{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_FLOAT,
               "The target platform does not support IEEE754 floating point operations.");
-static_assert(32U == (sizeof({{typename_float_32}}) * 8U), "Unsupported floating point model");
+{{ options.static_assert }}(32U == (sizeof({{typename_float_32}}) * 8U), "Unsupported floating point model");
 
 /// Converts a single-precision float into the binary representation of the value as a half-precision IEEE754 value.
 static inline uint16_t nunavutFloat16Pack(const {{typename_float_32}} value)
@@ -593,9 +609,9 @@ static inline {{typename_float_32}} nunavutGetF16(
 
 // ---------------------------------------------------- FLOAT32 ----------------------------------------------------
 
-static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT,
+{{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_FLOAT,
               "The target platform does not support IEEE754 floating point operations.");
-static_assert(32U == (sizeof({{typename_float_32}}) * 8U), "Unsupported floating point model");
+{{ options.static_assert }}(32U == (sizeof({{typename_float_32}}) * 8U), "Unsupported floating point model");
 
 static inline {{typename_error_type}} nunavutSetF32(
     uint8_t* const buf,
@@ -632,9 +648,9 @@ static inline {{typename_float_32}} nunavutGetF32(
 
 // ---------------------------------------------------- FLOAT64 ----------------------------------------------------
 
-static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE,
+{{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_DOUBLE,
               "The target platform does not support IEEE754 double-precision floating point operations.");
-static_assert(64U == (sizeof({{typename_float_64}}) * 8U), "Unsupported floating point model");
+{{ options.static_assert }}(64U == (sizeof({{typename_float_64}}) * 8U), "Unsupported floating point model");
 
 static inline {{typename_error_type}} nunavutSetF64(
     uint8_t* const buf,
@@ -671,8 +687,9 @@ static inline {{typename_float_64}} nunavutGetF64(
 
 {% endif -%}
 
+{%- if options.cpp_safe_c %}
 #ifdef __cplusplus
 }
-#endif
+#endif{% endif %}
 
 #endif // NUNAVUT_SUPPORT_SERIALIZATION_H_INCLUDED

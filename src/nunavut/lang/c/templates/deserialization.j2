@@ -168,9 +168,9 @@
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
 {% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
     {% if t.element_type is FloatType %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
+    {{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
         {% if t.element_type.bit_length > 32 %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
+    {{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
         {% endif %}
     {% endif %}
     nunavutGetBits(&{{ reference }}[0], &buffer[0], capacity_bytes, offset_bits, {# -#}
@@ -226,9 +226,9 @@
 {# SPECIAL CASE: ZERO-COST PRIMITIVES #}
 {% elif t.element_type is PrimitiveType and t.element_type is zero_cost_primitive %}
     {% if t.element_type is FloatType %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
+    {{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_FLOAT, "Native IEEE754 binary32 required. TODO: relax constraint");
         {% if t.element_type.bit_length > 32 %}
-    static_assert(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
+    {{ options.static_assert }}(NUNAVUT_PLATFORM_IEEE754_DOUBLE, "Native IEEE754 binary64 required. TODO: relax constraint");
         {% endif %}
     {% endif %}
     nunavutGetBits(&{{ reference }}.elements[0], &buffer[0], capacity_bytes, offset_bits, {# -#}

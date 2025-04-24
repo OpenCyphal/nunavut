@@ -5,19 +5,20 @@
 #
 
 from pathlib import Path
-from typing import Any, Callable, Dict, List
+from typing import Any, Dict, List
 from unittest.mock import MagicMock
 
 import pytest
-from nunavut._namespace import build_namespace_tree
-from nunavut.jinja import DSDLCodeGenerator
+from pydsdl import read_namespace
+
 from nunavut._dependencies import Dependencies
-from nunavut.lang import Language, LanguageContext, LanguageClassLoader, LanguageContextBuilder
+from nunavut._namespace import build_namespace_tree
+from nunavut._utilities import YesNoDefault
+from nunavut.jinja import DSDLCodeGenerator
+from nunavut.lang import Language, LanguageClassLoader, LanguageContextBuilder
 from nunavut.lang.c import filter_id as c_filter_id
 from nunavut.lang.cpp import filter_id as cpp_filter_id
 from nunavut.lang.py import filter_id as py_filter_id
-from nunavut._utilities import YesNoDefault
-from pydsdl import read_namespace
 
 
 class Dummy:
@@ -432,8 +433,3 @@ def test_either_target_or_extension() -> None:
         .get_target_language()
         .name
     )
-
-def test_lang_cpp_use_vector(gen_paths) -> None:
-    """
-    Test override of the built-in variable-length array type.
-    """

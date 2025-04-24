@@ -313,6 +313,12 @@ set(LOCAL_NESTED_ARRAY_TYPES
 # Generate additional types for verification
 #
 
+if(LOCAL_NUNAVUT_VERIFICATION_TARGET_LANG STREQUAL "cpp")
+     set(LOCAL_C_ONLY_GENERATOR_ARGS "--option" "cpp_safe_c=true")
+else()
+     set(LOCAL_C_ONLY_GENERATOR_ARGS "--option" "cpp_safe_c=false")
+endif()
+
 add_cyphal_library(
      NAME dsdl-test-c
      LANGUAGE c
@@ -327,7 +333,9 @@ add_cyphal_library(
      ${LOCAL_NAMESPACE_NESTED_ARRAY_TYPES}
      EXPORT_CONFIGURE_MANIFEST ${CMAKE_CURRENT_BINARY_DIR}
      EXPORT_GENERATE_MANIFEST ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
-     EXTRA_GENERATOR_ARGS "$<$<CONFIG:Debug,DebugAsan,DebugCov>:--enable-serialization-asserts>"
+     EXTRA_GENERATOR_ARGS
+          ${LOCAL_C_ONLY_GENERATOR_ARGS}
+          "$<$<CONFIG:Debug,DebugAsan,DebugCov>:--enable-serialization-asserts>"
      OUT_LIBRARY_TARGET LOCAL_TEST_TYPES_C_LIBRARY
 )
 
@@ -557,15 +565,15 @@ endfunction()
 
 if(LOCAL_NUNAVUT_VERIFICATION_TARGET_LANG STREQUAL "c")
 if(NOT ${CMAKE_CROSSCOMPILING})
-     runTestCpp(TEST_FILE test_canard.cpp                         LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11)
-     runTestCpp(TEST_FILE test_support_assert.cpp                 LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11)
-     runTestC(  TEST_FILE test_constant.c                         LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 FRAMEWORK "unity")
-     runTestC(  TEST_FILE test_override_variable_array_capacity.c LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 FRAMEWORK "unity")
-     runTestC(  TEST_FILE test_serialization.c                    LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 FRAMEWORK "unity")
-     runTestC(  TEST_FILE test_support.c                          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 FRAMEWORK "unity")
-     runTestC(  TEST_FILE test_simple.c                           LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 FRAMEWORK "none")
+     runTestCpp(TEST_FILE test_canard.cpp                         LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23)
+     runTestCpp(TEST_FILE test_support_assert.cpp                 LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23)
+     runTestC(  TEST_FILE test_constant.c                         LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "unity")
+     runTestC(  TEST_FILE test_override_variable_array_capacity.c LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "unity")
+     runTestC(  TEST_FILE test_serialization.c                    LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "unity")
+     runTestC(  TEST_FILE test_support.c                          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "unity")
+     runTestC(  TEST_FILE test_simple.c                           LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "none")
 else()
-     compileTestMcu(TEST_FILE test_armv7m.c                       LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11)
+     compileTestMcu(TEST_FILE test_armv7m.c                       LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23)
 endif()
 endif()
 
