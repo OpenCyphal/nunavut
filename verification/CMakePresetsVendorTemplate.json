@@ -53,6 +53,16 @@
                         "standard": "c11",
                         "args": "--enable-override-variable-array-capacity;--embed-auditing-info"
                     },
+                    "c-17": {
+                        "name": "c",
+                        "standard": "c17",
+                        "args": "--enable-override-variable-array-capacity;--embed-auditing-info"
+                    },
+                    "c-23": {
+                        "name": "c",
+                        "standard": "c23",
+                        "args": "--enable-override-variable-array-capacity;--embed-auditing-info"
+                    },
                     "cpp-14": {
                         "name": "cpp",
                         "standard": "c++14",
@@ -107,6 +117,8 @@
                         "language": [
                             "c-11",
                             "c-11-arr-override",
+                            "c-17",
+                            "c-23",
                             "cpp-14",
                             "cetl-14-17",
                             "cpp-17",

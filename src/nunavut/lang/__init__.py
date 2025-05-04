@@ -66,7 +66,7 @@ class LanguageContextBuilder:
 
     def __init__(self, include_experimental_languages: bool = False):
         self._target_language_name: typing.Optional[str] = None
-        self._target_language_config: typing.Dict[str, str] = {}
+        self._target_language_config: typing.Dict[str, typing.Any] = {}
         self._ln_loader = LanguageClassLoader()
         self._include_experimental_languages = include_experimental_languages
 
@@ -161,6 +161,82 @@ class LanguageContextBuilder:
         """
         if value is not None:
             self._target_language_config[key] = value
+        return self
+
+    def add_target_language_option_override(self, key: str, value: typing.Any) -> "LanguageContextBuilder":
+        """
+        Adds a key and value to override in the language options section of the configuration for a language target
+        when a LanguageContext is crated. These overrides are always set under the language section of the target
+        language.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import LanguageContextBuilder, Language, LanguageClassLoader
+
+        .. code-block:: python
+
+            builder = LanguageContextBuilder().set_target_language("c")
+            c_section_name = LanguageClassLoader.to_language_module_name("c")
+
+            default_c_language_options = builder.config.get_config_value_as_dict(
+                                            c_section_name,
+                                            Language.WKCV_LANGUAGE_OPTIONS)
+
+            assert default_c_language_options["std"] == "c11"
+
+        We can now try to override the default standard for a future "C" target language object:
+
+        .. code-block:: python
+
+            builder.add_target_language_option_override("std", "c17")
+
+        ...but that value will not be overridden until you create the target language:
+
+        .. code-block:: python
+
+
+            default_c_language_options = builder.config.get_config_value_as_dict(
+                                            c_section_name,
+                                            Language.WKCV_LANGUAGE_OPTIONS)
+
+            assert default_c_language_options["std"] == "c11"
+
+            _ = builder.create()
+
+            overridden_c_language_options = builder.config.get_config_value_as_dict(
+                                            c_section_name,
+                                            Language.WKCV_LANGUAGE_OPTIONS)
+
+            assert default_c_language_options["std"] == "c17"
+
+        Note that the config is scoped by the builder but is then inherited by the language objects created by the
+        builder in the same way as the configuration overrides.
+
+        .. invisible-code-block: python
+
+            from pytest import raises
+
+            builder = LanguageContextBuilder().set_target_language("c")
+            c_section_name = LanguageClassLoader.to_language_module_name("c")
+            builder.set_target_language_configuration_override(
+                Language.WKCV_LANGUAGE_OPTIONS,
+                "wrong type"
+            )
+            with raises(ValueError):
+                builder.add_target_language_option_override("std", "c17")
+            # This will raise a ValueError because the WKCV_LANGUAGE_OPTIONS is not a dict.
+
+        """
+        if value is not None:
+            options = self._target_language_config.get(Language.WKCV_LANGUAGE_OPTIONS)
+            if options is None:
+                options = {}
+                self._target_language_config[Language.WKCV_LANGUAGE_OPTIONS] = options
+            if not isinstance(options, dict):
+                raise ValueError(
+                    f"Cannot set target language option override for {key} because the value is not a dict."
+                )
+            options[key] = value
         return self
 
     def set_target_language_extension(

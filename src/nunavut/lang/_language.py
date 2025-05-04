@@ -143,7 +143,6 @@ class Language(metaclass=abc.ABCMeta):
     def _validate_language_options(
         self, defaults: typing.Dict[str, typing.Any], options: typing.Dict[str, typing.Any]
     ) -> typing.Dict[str, typing.Any]:
-        # pylint: disable=unused-argument
         """
         Subclasses may override this method to validate language options. It will be invoked once
         by the base class constructor before setting the language options property.
@@ -152,7 +151,57 @@ class Language(metaclass=abc.ABCMeta):
         :param options: The options to validate.
         :return: The validated or modified options.
         :throws: ValueError if the options are invalid.
+
+        .. invisible-code-block: python
+
+            from nunavut.lang import LanguageContextBuilder
+            from pytest import raises as assert_raises
+
+            # test std
+            language = LanguageContextBuilder()\
+               .set_target_language("c")\
+               .create()\
+               .get_target_language()
+
+            validated0 = language._validate_language_options(
+                {},
+                {
+                    "std":"c11",
+                }
+            )
+
+            assert validated0 is not None
+            assert "std" in validated0
+
+            validated1 = language._validate_language_options(
+                {},
+                {}
+            )
+
+            assert validated1 is not None
+
+            validated2 = language._validate_language_options(
+                {
+                    "c11": {
+                        "foo": "bar"
+                    },
+                },
+                {
+                    "std": "c11",
+                    "foo": "baz"
+                }
+            )
+
+            assert validated2 is not None
+            assert "std" in validated2
+            assert validated2["foo"] == "bar"
+
         """
+        language_standard = options.get("std")
+
+        if language_standard is not None and language_standard in defaults:
+            options.update(defaults[language_standard])
+
         return options
 
     def _validate_globals(self, globals_map: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:

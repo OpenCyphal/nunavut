@@ -100,6 +100,7 @@ class NunavutArgumentParser(argparse.ArgumentParser):
     """
 
     DSDL_FILE_SUFFIXES = (".uavcan", ".dsdl")
+    MAX_LOG_ENTRY_LENGTH = 1000
 
     # --[ OVERRIDE ]--------------------------------------------------------------------------------------------------
     def parse_known_args(self, args=None, namespace=None):  # type: ignore
@@ -108,13 +109,79 @@ class NunavutArgumentParser(argparse.ArgumentParser):
         return (parsed_args, argv)
 
     # --[ PRIVATE ]---------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def _sanitize_log_message(message: str) -> str:
+        """
+        Sanitize a message before logging by:
+        1. Removing control characters
+        2. Replacing newlines and tabs with spaces
+        3. Limiting length
+
+        :param: Raw message to sanitize
+
+        :return: Sanitized message safe for logging
+
+         .. invisible-code-block: python
+
+            from nunavut.cli.parsers import NunavutArgumentParser
+
+            # Control characters
+            message = "This is a test message with control characters \\x00\\x01."
+            sanitized_message = "This is a test message with control characters ."
+            assert sanitized_message == NunavutArgumentParser._sanitize_log_message(message)
+
+            # Newlines and tabs
+            message = "This is a\\r\\ntest\\tmessage with newlines and tabs.\\n\\t"
+            sanitized_message = "This is a test message with newlines and tabs."
+            assert sanitized_message == NunavutArgumentParser._sanitize_log_message(message)
+
+            # Multiple spaces
+            message = "This is a test message    with    multiple    spaces."
+            sanitized_message = "This is a test message with multiple spaces."
+            assert sanitized_message == NunavutArgumentParser._sanitize_log_message(message)
+
+            # Stripping whitespace
+            message = "   This is a test message with leading and trailing whitespace.   "
+            sanitized_message = "This is a test message with leading and trailing whitespace."
+            assert sanitized_message == NunavutArgumentParser._sanitize_log_message(message)
+
+            # Length limit
+            message_preamble = "This is a test message"
+            message = message_preamble + "a" * NunavutArgumentParser.MAX_LOG_ENTRY_LENGTH
+            sanitized_message = (
+                message_preamble +
+                "a" * (NunavutArgumentParser.MAX_LOG_ENTRY_LENGTH - len(message_preamble)) + "... (truncated)"
+            )
+            assert sanitized_message == NunavutArgumentParser._sanitize_log_message(message)
+
+        """
+        # Remove control characters except whitespace
+        message = "".join(char for char in message if char.isprintable() or char.isspace())
+
+        # Replace newlines and tabs with spaces
+        message = re.sub(r"[\n\r\t]+", " ", message)
+
+        # Collapse multiple spaces
+        message = re.sub(r"\s+", " ", message)
+
+        # Trim whitespace
+        message = message.strip()
+
+        # Limit length to prevent log flooding
+        if len(message) > NunavutArgumentParser.MAX_LOG_ENTRY_LENGTH:
+            message = message[: NunavutArgumentParser.MAX_LOG_ENTRY_LENGTH] + "... (truncated)"
+
+        return message
+
     def _post_process_log(self, args: argparse.Namespace, message: str) -> None:
         """
         Print a message to the log.
         """
         if args.verbose <= 0:
             return
-        self._print_message(message, sys.stdout)
+        sanitary_message = self._sanitize_log_message(message)
+        self._print_message(sanitary_message, sys.stdout)
 
     def _post_process_args(self, args: argparse.Namespace) -> None:
         """

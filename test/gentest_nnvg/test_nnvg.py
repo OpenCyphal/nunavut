@@ -965,3 +965,25 @@ def test_colon_syntax(gen_paths: Any, run_nnvg_main: Callable) -> None:
     completed = result.stdout.decode("utf-8").split(";")
     completed_wo_empty = sorted([Path(i) for i in completed if len(i) > 0])
     assert expected_output == completed_wo_empty
+
+
+def test_option_override(gen_paths: Any, run_nnvg_main: Callable) -> None:
+    """
+    Test the --option argument to override language options.
+    """
+    nnvg_args = ["--list-configuration", "--list-format", "json-pretty", "--option", "foo=bar"]
+
+    result = run_nnvg_main(gen_paths, nnvg_args)
+    completed = result.stdout.decode("utf-8")
+    assert completed
+    parsed_config = json.loads(completed)
+    default_target_section_name = LanguageClassLoader.to_language_module_name(
+        LanguageContextBuilder.DEFAULT_TARGET_LANGUAGE
+    )
+    assert "configuration" in parsed_config
+    config = parsed_config["configuration"]
+    c_config = config["sections"][default_target_section_name]
+    assert "options" in c_config
+    assert "foo" in c_config["options"]
+    assert c_config["options"]["foo"] == "bar"
+    print(json.dumps(config, indent=2))

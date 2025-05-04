@@ -34,7 +34,7 @@
 /// is always known during serialization (unlike deserialization). If not sure, use extent everywhere.
 #define {{ ref }}_EXTENT_BYTES_                    {{ t.extent // 8 }}UL
 #define {{ ref }}_SERIALIZATION_BUFFER_SIZE_BYTES_ {{ t.inner_type.extent // 8 }}UL
-static_assert({{ ref }}_EXTENT_BYTES_ >= {{ ref }}_SERIALIZATION_BUFFER_SIZE_BYTES_,
+{{ options.static_assert }}({{ ref }}_EXTENT_BYTES_ >= {{ ref }}_SERIALIZATION_BUFFER_SIZE_BYTES_,
               "Internal constraint violation");
 {%- endif %}
 {% endmacro %}

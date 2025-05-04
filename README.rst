@@ -35,7 +35,7 @@ Nunavut ships with built-in support for some programming languages,
 and it can be used to generate code for other languages if custom templates (and some glue logic) are provided.
 Currently, the following languages are supported out of the box:
 
-- **C11** (generates header-only libraries)
+- **C11,c17,c23** (generates header-only libraries)
 - **C++** (generates header-only libraries; `work-in-progress <https://github.com/OpenCyphal/nunavut/issues/91>`_)
 - **Python** (generates Python packages)
 - **HTML** (generates documentation pages)
