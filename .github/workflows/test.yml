@@ -141,7 +141,7 @@ jobs:
       matrix:
         architecture: [native32, native, arm-none-eabi]
         compiler: [gcc, clang]
-        language: [c-11, c-11-arr-override, c-17, c-23, cpp-14, cpp-17, cpp-20]
+        language: [c-11, c-11-arr-override, c-17, c-23, cpp-14, cetl-14-17, cpp-17, cpp-17-pmr, cpp-20, cpp-20-pmr]
         exclude:
           - architecture: native32
             compiler: clang

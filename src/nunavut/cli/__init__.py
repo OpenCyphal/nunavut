@@ -913,7 +913,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         ).lstrip(),
     )
 
-    return cast(ParserT, parser)
+    return parser
 
 
 def make_argparse_parser() -> argparse.ArgumentParser:
