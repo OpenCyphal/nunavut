@@ -412,8 +412,8 @@ TEST(Serialization, Issue370)
     regulated::delimited::BDelimited_1_0 obj_0_1{};
     obj_0_1.var.push_back({{0x85, 0x86}, -53});
     obj_0_1.var.push_back({{0x87, 0x88}, -54});
-    obj_0_1.fix.push_back({0xF1, 0xF2});
-    obj_0_1.fix.push_back({0xF3, 0xF4});
+    obj_0_1.fix.push_back(regulated::delimited::CFixed_1_0{std::array<std::uint8_t,2>{0xF1, 0xF2}});
+    obj_0_1.fix.push_back(regulated::delimited::CFixed_1_0{std::array<std::uint8_t,2>{0xF3, 0xF4}});
 
     const uint8_t reference[] = {
         0x02,  // byte  0:

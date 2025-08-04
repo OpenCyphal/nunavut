@@ -4,7 +4,7 @@
  # SPDX-License-Identifier: MIT
 -#}
 {%- from '_definitions.j2' import assert -%}
-{%- ifuses "std_variant" %}
+{%- ifuses "variant" %}
 // +-------------------------------------------------------------------------------------------------------------------+
 // | This implementation uses the C++17 standard library variant type with wrappers for the emplace and
 // | get_if methods to support backwards-compatibility with the C++14 version of this object. The union_value type
@@ -124,9 +124,20 @@ struct {% if composite_type.deprecated -%}
     // Allocator constructor
     explicit {{composite_type|short_reference_name}}(const allocator_type& allocator)
     {%- if composite_type.inner_type is UnionType %}
-        : union_value{}
-        {%- if not composite_type.bit_length_set.fixed_length %}
-        , allocator_{allocator.select_on_container_copy_construction()}
+        {%- set member_init_list_started = False -%}
+        {%- if composite_type.fields_except_padding[0] | needs_allocator -%}
+        {%- if options.ctor_convention != ConstructorConvention.DEFAULT %}
+        : union_value{cetl::in_place_index_t<0u>{}, allocator}
+        {%- set member_init_list_started = True -%}
+        {%- endif -%}
+        {%- endif -%}
+        {%- if not composite_type.bit_length_set.fixed_length -%}
+        {%- if member_init_list_started %}
+        ,{{- " " -}}
+        {%- else %}
+        :{{- " " -}}
+        {%- endif -%}
+        allocator_{allocator}
         {%- endif %}
     {%- else %}
     {%- for field in composite_type.fields_except_padding %}
@@ -138,9 +149,18 @@ struct {% if composite_type.deprecated -%}
         static_cast<void>(allocator); // avoid unused param warning
     }
 
-    {%- if composite_type.inner_type is not UnionType %}
     {% if composite_type.fields_except_padding %}
     // Initializing constructor
+    {%- if composite_type.inner_type is UnionType %}
+    template<std::size_t I, class T>
+    {{composite_type|short_reference_name}}(cetl::in_place_index_t<I>, T&& v, const allocator_type& allocator
+                                            {%- if options.allocator_is_default_constructible %} = allocator_type(){% endif %} )
+        : union_value{construct_variant_type(cetl::in_place_index_t<I>{}, std::forward<T>(v), allocator)}
+        {%- if not composite_type.bit_length_set.fixed_length %}
+        , allocator_{allocator}
+        {%- endif %}
+    {}
+    {%- else %}
     {{ composite_type | explicit_decorator(SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR)}}(
     {%- for field in composite_type.fields_except_padding %}
         const _traits_::TypeOf::{{ field | id }}& param_{{ field | id }},
@@ -158,25 +178,33 @@ struct {% if composite_type.deprecated -%}
     {%- endif %}
 
     // Copy constructor
-    {{composite_type|short_reference_name}}(const {{composite_type|short_reference_name}}&) = default;
+    {{composite_type|short_reference_name}}(const {{composite_type|short_reference_name}}& rhs)
+    {%- if composite_type.inner_type is UnionType and not composite_type.bit_length_set.fixed_length %}
+        : union_value{copy_variant_value_from(rhs.union_value, rhs.allocator_.select_on_container_copy_construction())}
+        , allocator_{rhs.allocator_.select_on_container_copy_construction()}
+    {}
+    {%- else -%}
+    {{ " " }}= default;
+    {%- endif %}
 
     // Copy constructor with allocator
     {{composite_type|short_reference_name}}(const {{composite_type|short_reference_name}}& rhs, const allocator_type& allocator)
     {%- if composite_type.inner_type is UnionType %}
-        : union_value{rhs.union_value}
+        : union_value{copy_variant_value_from(rhs.union_value, allocator)}
         {%- if not composite_type.bit_length_set.fixed_length %}
-        , allocator_{allocator.select_on_container_copy_construction()}
+        , allocator_{allocator}
         {%- endif %}
+    {}
     {%- else %}
     {%- for field in composite_type.fields_except_padding %}
         {%if loop.first %}: {%else%}, {%endif-%}
         {{ field | id }}{{ field | value_initializer(SpecialMethod.COPY_CONSTRUCTOR_WITH_ALLOCATOR) }}
     {%- endfor %}
-    {%- endif %}
     {
         static_cast<void>(rhs);       // avoid unused param warning
         static_cast<void>(allocator); // avoid unused param warning
     }
+    {%- endif %}
 
     // Move constructor
     {{composite_type|short_reference_name}}({{composite_type|short_reference_name}}&&) = default;
@@ -184,20 +212,21 @@ struct {% if composite_type.deprecated -%}
     // Move constructor with allocator
     {{composite_type|short_reference_name}}({{composite_type|short_reference_name}}&& rhs, const allocator_type& allocator)
     {%- if composite_type.inner_type is UnionType %}
-        : union_value{}
+        : union_value{move_variant_value_from(std::move(rhs.union_value), allocator)}
         {%- if not composite_type.bit_length_set.fixed_length %}
-        , allocator_{allocator.select_on_container_copy_construction()}
+        , allocator_{allocator}
         {%- endif %}
+    {}
     {%- else %}
     {%- for field in composite_type.fields_except_padding %}
         {%if loop.first %}: {%else%}, {%endif-%}
         {{ field | id }}{{ field | value_initializer(SpecialMethod.MOVE_CONSTRUCTOR_WITH_ALLOCATOR) }}
     {%- endfor %}
-    {%- endif %}
     {
         static_cast<void>(rhs);       // avoid unused param warning
         static_cast<void>(allocator); // avoid unused param warning
     }
+    {%- endif %}
 
     {% if composite_type.inner_type is UnionType and not composite_type.bit_length_set.fixed_length %}
     // Copy assignment
@@ -206,7 +235,7 @@ struct {% if composite_type.deprecated -%}
         if (this != &rhs)
         {
             nunavut::support::assignInplace(allocator_, rhs.allocator_.select_on_container_copy_construction());
-            union_value = rhs.union_value;
+            union_value = copy_variant_value_from(rhs.union_value, allocator_);
         }
         return *this;
     }
@@ -214,8 +243,8 @@ struct {% if composite_type.deprecated -%}
     // Move assignment
     {{composite_type|short_reference_name}}& operator=({{composite_type|short_reference_name}}&& rhs)
     {
-        nunavut::support::assignInplace(allocator_, rhs.allocator_.select_on_container_copy_construction());
-        union_value = std::move(rhs.union_value);
+        nunavut::support::assignInplace(allocator_, std::move(rhs.allocator_));
+        union_value = move_variant_value_from(std::move(rhs.union_value), allocator_);
         return *this;
     }
     {% else %}
@@ -229,7 +258,7 @@ struct {% if composite_type.deprecated -%}
     // Destructor
     ~{{composite_type|short_reference_name}}() = default;
 
-{%- endif %}
+{% endif -%}
 
 {%- for constant in composite_type.constants %}
     {% if loop.first %}
@@ -241,14 +270,10 @@ struct {% if composite_type.deprecated -%}
     static constexpr {{ constant.data_type | declaration }} {{ constant.name | id }} = {{ constant | constant_value }};
 {%- endfor -%}
 {%- if composite_type.inner_type is UnionType -%}
-{%- ifuses "std_variant" -%}
-{% include '_fields_as_std_variant.j2' %}
-{%- else -%}
-{%- ifuses "cetl" -%}
+{%- ifuses "variant" -%}
 {% include '_fields_as_cetl_variant.j2' %}
 {%- else -%}
 {% include '_fields_as_union.j2' %}
-{%- endifuses -%}
 {%- endifuses -%}
 {%- if options.ctor_convention != ConstructorConvention.DEFAULT %}
 {%- if composite_type.inner_type is UnionType and not composite_type.bit_length_set.fixed_length %}
@@ -279,17 +304,142 @@ struct {% if composite_type.deprecated -%}
         {{ assert('is_%s()' | format(field.name|id)) }}
         return *VariantType::get_if<VariantType::IndexOf::{{field.name|id}}>(&union_value);
     }
-    template<class... Args> typename std::add_lvalue_reference<_traits_::TypeOf::{{field.name|id}}>::type
-    set_{{field.name|id}}(Args&&...v)
+    {%- if field.data_type is FixedLengthArrayType and options.ctor_convention != ConstructorConvention.DEFAULT -%}
+    {%- if not composite_type.bit_length_set.fixed_length and (field.data_type.element_type | needs_allocator) %}
+    typename std::add_lvalue_reference<_traits_::TypeOf::{{field.name|id}}>::type set_{{field.name|id}}()
     {
-        {% if options.ctor_convention != ConstructorConvention.DEFAULT
-          and composite_type.inner_type is UnionType and not composite_type.bit_length_set.fixed_length %}
-        return union_value.emplace<VariantType::IndexOf::{{field.name|id}}>(v..., allocator_);
-        {%- else -%}
-        return union_value.emplace<VariantType::IndexOf::{{field.name|id}}>(v...);
+        // Fixed-length array elements do not have a default constructor, initialize each instance with member allocator
+        return union_value.emplace<VariantType::IndexOf::{{ field.name | id }}>(
+            _traits_::TypeOf::{{field.name|id}}{
+                {% for i in range(field.data_type.capacity) -%}
+                {%- if i > 0 -%},{{ " " }}{%- endif -%}{{ field.data_type.element_type | declaration }}{allocator_}
+                {%- endfor %}
+            }
+        );
+    }
+    {%- endif -%}
+    {%- endif %}
+    template<class... Args> typename
+    std::add_lvalue_reference<_traits_::TypeOf::{{field.name|id}}>::type set_{{field.name|id}}(Args&&...v)
+    {
+        {%- if not composite_type.bit_length_set.fixed_length and (field | needs_allocator) -%}
+        {%- if options.ctor_convention == ConstructorConvention.USES_LEADING_ALLOCATOR %}
+        return union_value.emplace<VariantType::IndexOf::{{ field.name | id }}>(std::allocator_arg, allocator_, std::forward<Args>(v)...);
+        {%- elif options.ctor_convention == ConstructorConvention.USES_TRAILING_ALLOCATOR %}
+        return union_value.emplace<VariantType::IndexOf::{{field.name | id}}>(std::forward<Args>(v)..., allocator_);
+        {%- else %}
+        return union_value.emplace<VariantType::IndexOf::{{field.name | id}}>(std::forward<Args>(v)...);
+        {%- endif -%}
+        {%- else %}
+        return union_value.emplace<VariantType::IndexOf::{{field.name | id}}>(std::forward<Args>(v)...);
         {%- endif %}
     }
 {%- endfor %}
+
+{%- if options.ctor_convention != ConstructorConvention.DEFAULT %}
+private:
+
+    template<std::size_t I, class T,
+             std::enable_if_t<
+                std::is_constructible<
+                    typename VariantType::alternative<I, VariantType::Base>::type,
+                    T&&,
+                    const allocator_type&
+                >::value>* = nullptr>
+    static VariantType construct_variant_type(cetl::in_place_index_t<I>, T&& v, const allocator_type& allocator)
+    {
+        return VariantType{
+                cetl::in_place_index_t<I>{},
+                std::forward<T>(v),
+                allocator
+            };
+    }
+
+    template<std::size_t I, class T,
+             std::enable_if_t<
+                !std::is_constructible<
+                    typename VariantType::alternative<I, VariantType::Base>::type,
+                    T&&,
+                    const allocator_type&
+                >::value>* = nullptr>
+    static VariantType construct_variant_type(cetl::in_place_index_t<I>, T&& v, const allocator_type& allocator)
+    {
+        (void)allocator; // Avoid unused parameter warning
+
+        return VariantType{
+                cetl::in_place_index_t<I>{},
+                std::forward<T>(v)
+            };
+    }
+
+    static VariantType copy_variant_value_from(const VariantType& src, const allocator_type& allocator)
+    {
+        (void)allocator; // Avoid unused parameter warning
+
+{%- for field in composite_type.fields_except_padding %}
+        {%- if loop.last %}
+        else
+        {%- else %}
+        {% if loop.first %}if{% else %}else if{% endif %} (src.index() == VariantType::IndexOf::{{ field.name | id }})
+        {%- endif %}
+        {
+    {%- if field.data_type is FixedLengthArrayType and field.data_type.element_type | needs_allocator %}
+            // Fixed length array, emplace all elements initialized with member allocator
+            const auto& src_array = *VariantType::get_if<VariantType::IndexOf::{{ field.name|id }}>(&src);
+            return construct_variant_type(
+                cetl::in_place_index_t<VariantType::IndexOf::{{ field.name|id }}>{},
+                _traits_::TypeOf::{{ field.name|id }}{
+                    {% for i in range(field.data_type.capacity) -%}
+                    {%- if i > 0 -%},{{ " " }}{%- endif -%}
+                        {{ field.data_type.element_type | declaration }}{src_array[{{ i }}], allocator}
+                    {%- endfor %}
+                },
+                allocator
+            );
+    {%- else %}
+            return construct_variant_type(
+                cetl::in_place_index_t<VariantType::IndexOf::{{ field.name | id }}>{},
+                *VariantType::get_if<VariantType::IndexOf::{{field.name|id}}>(&src),
+                allocator
+            );
+    {%- endif %}
+        }
+{%- endfor %}
+    }
+
+    static VariantType move_variant_value_from(VariantType&& src, const allocator_type& allocator)
+    {
+{%- for field in composite_type.fields_except_padding %}
+        {%- if loop.last %}
+        else
+        {%- else %}
+        {% if loop.first %}if{% else %}else if{% endif %} (src.index() == VariantType::IndexOf::{{ field.name | id }})
+        {%- endif %}
+        {
+    {%- if field.data_type is FixedLengthArrayType and field.data_type.element_type | needs_allocator %}
+            // Fixed length array, emplace all elements initialized with member allocator
+            const auto& src_array = *VariantType::get_if<VariantType::IndexOf::{{ field.name|id }}>(&src);
+            return construct_variant_type(
+                cetl::in_place_index_t<VariantType::IndexOf::{{ field.name|id }}>{},
+                _traits_::TypeOf::{{ field.name|id }}{
+                    {% for i in range(field.data_type.capacity) -%}
+                    {%- if i > 0 -%},{{ " " }}{%- endif -%}
+                        {{ field.data_type.element_type | declaration }}{std::move(src_array[{{ i }}]), allocator}
+                    {%- endfor %}
+                },
+                allocator
+            );
+    {%- else %}
+            return construct_variant_type(
+                cetl::in_place_index_t<VariantType::IndexOf::{{ field.name | id }}>{},
+                std::move(*VariantType::get_if<VariantType::IndexOf::{{field.name|id}}>(&src)),
+                allocator
+            );
+    {%- endif %}
+        }
+{%- endfor %}
+    }
+{%- endif %}
 {%- else -%}
 {% include '_fields.j2' %}
 {%- endif %}

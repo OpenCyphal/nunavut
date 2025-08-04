@@ -301,6 +301,33 @@ def test_filter_includes_cpp_vla(gen_paths):  # type: ignore
     assert "<vector>" in imports
 
 
+def test_cpp_filter_value_initializer_fla(gen_paths):
+    """
+    Test that member initializer expressions for fixed length arrays with elements that require an allocator on
+    construction are generated to fit the signature of C++ std:array
+    """
+    lctx = (
+        LanguageContextBuilder(include_experimental_languages=True)
+        .set_target_language("cpp")
+        .create()
+    )
+
+    uavcan_dir = (gen_paths.dsdl_dir / pathlib.Path("uavcan")).as_posix()
+    type_map = read_namespace((gen_paths.dsdl_dir / pathlib.Path("new")).as_posix(), [uavcan_dir])
+    from nunavut.lang.cpp import SpecialMethod, filter_id, filter_value_initializer # pylint: disable=import-outside-toplevel
+
+    msg = next(filter(lambda type: (type.short_name == "hotness"), type_map))
+    test_subject = next(
+        filter(lambda field: (filter_id(lctx.get_target_language(), field) == "data"), msg.fields_except_padding))
+    init_expression = filter_value_initializer(lctx.get_target_language(),
+                                               test_subject,
+                                               SpecialMethod.ALLOCATOR_CONSTRUCTOR)
+    assert (init_expression
+            ==
+            "{uavcan::time::SynchronizedTimestamp_1_0{allocator}, uavcan::time::SynchronizedTimestamp_1_0{allocator}, "
+            "uavcan::time::SynchronizedTimestamp_1_0{allocator}, uavcan::time::SynchronizedTimestamp_1_0{allocator}}")
+
+
 @typing.no_type_check
 @pytest.mark.parametrize("language_name,namespace_separator", [("c", "_"), ("cpp", "::")])
 def test_filter_full_reference_name_via_template(gen_paths, language_name, namespace_separator):

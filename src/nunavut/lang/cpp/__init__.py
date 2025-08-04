@@ -293,6 +293,7 @@ class Language(BaseLanguage):
     @property
     def has_variant(self) -> bool:
         """
+        Indicates if the language standard and flavor combo provides a type compliant with std::variant
         .. invisible-code-block: python
 
            from nunavut.lang import LanguageClassLoader
@@ -329,7 +330,7 @@ class Language(BaseLanguage):
 
            assert language.has_variant
         """
-        return self.standard_version >= 17
+        return (self.standard_version >= 17) or (self.standard_version == 14 and self.standard_flavor == "cetl")
 
     def get_includes(self, dep_types: Dependencies) -> typing.List[str]:
         """
@@ -361,6 +362,7 @@ class Language(BaseLanguage):
 
                 test_dependencies = Dependencies()
                 test_dependencies.uses_variable_length_array = True
+                test_dependencies.uses_union = True
 
                 # If we override the include we should not provide the default
                 # variable array include.
@@ -409,17 +411,16 @@ class Language(BaseLanguage):
                 std_includes.append("array")
             if dep_types.uses_boolean_static_array:
                 std_includes.append("bitset")
-        if dep_types.uses_union and self.has_variant:
-            std_includes.append("variant")
         includes_formatted = [f"<{include}>" for include in sorted(std_includes)]
 
         allocator_include = str(self.get_option("allocator_include", ""))
         if len(allocator_include) > 0:
             includes_formatted.append(allocator_include)
 
-        variant_include = str(self.get_option("variant_include", ""))
-        if len(variant_include) > 0:
-            includes_formatted.append(variant_include)
+        if dep_types.uses_union:
+            variant_include = str(self.get_option("variant_include", ""))
+            if len(variant_include) > 0:
+                includes_formatted.append(variant_include)
 
         if dep_types.uses_variable_length_array:
             variable_array_include = str(self.get_option("variable_array_type_include", ""))
@@ -448,50 +449,65 @@ class Language(BaseLanguage):
 
 
 @template_language_test(__name__)
-def uses_std_variant(language: Language) -> bool:
+def uses_variant(language: Language) -> bool:
     """
-    Uses query for std variant.
+    Uses query for variant.
 
-    If the language options contain an ``std`` entry for C++ and the specified standard includes the
-    ``std::variant`` type added to the language at C++17 then this value is true. The logic included
-    in this filter can be stated as "options has key std and the value for options.std evaluates to
-    C++ version 17 or greater" but the implementation is able to parse out actual compiler flags like
-    ``gnu++20`` and is aware of any overrides to suppress use of the standard variant type even if
-    available.
+    If the language options contain an entry for C++ and the specified standard or flavor includes a type that is
+    compliant with ``std::variant``, then this value is true.
+
+    The logic included in this filter can be stated as:
+    Options has keys [``std``, ``std_flavor``] and the values stored at those keys resolve to one of the following
+    combinations:
+    - {``std``: ``>="c++17"``}
+    - {``std``: ``"c++14"``, ``std_flavor``: ``"cetl"``}
+
+    but the implementation is able to parse out actual compiler flags like ``gnu++20`` and is aware of any overrides
+    to suppress use of the standard variant type even if available.
 
     Example:
 
-        .. code-block:: python
+    .. code-block:: python
 
-            template = '''
-                {%- ifuses "std_variant" -%}
-                    #include <variant>
-                {%- else -%}
-                    #include "user_variant.h"
-                {%- endifuses -%}
-            '''
+        template = '''
+            {%- ifuses "variant" -%}
+                #include <variant>
+            {%- else -%}
+                #include "user_variant.h"
+            {%- endifuses -%}
+        '''
 
-        .. invisible-code-block: python
+    .. invisible-code-block: python
 
-            # test c++17
-            options = {"std": "c++17"}
-            lctx = (
-                LanguageContextBuilder(include_experimental_languages=True)
-                    .set_target_language("cpp")
-                    .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
-                    .create()
-            )
-            jinja_filter_tester(None, template, '#include <variant>', lctx)
+        # test c++17
+        options = {"std": "c++17"}
+        lctx = (
+            LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language("cpp")
+                .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
+                .create()
+        )
+        jinja_filter_tester(None, template, '#include <variant>', lctx)
 
-            # test c++14
-            options = {"std": "c++14"}
-            lctx = (
-                LanguageContextBuilder(include_experimental_languages=True)
-                    .set_target_language("cpp")
-                    .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
-                    .create()
-            )
-            jinja_filter_tester(None, template, '#include "user_variant.h"', lctx)
+        # test c++14-17 with CETL
+        options = {"std": "c++14", "std_flavor": "cetl"}
+        lctx = (
+            LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language("cpp")
+                .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
+                .create()
+        )
+        jinja_filter_tester(None, template, '#include <variant>', lctx)
+
+        # test c++14
+        options = {"std": "c++14"}
+        lctx = (
+            LanguageContextBuilder(include_experimental_languages=True)
+                .set_target_language("cpp")
+                .set_target_language_configuration_override(Language.WKCV_LANGUAGE_OPTIONS, options)
+                .create()
+        )
+        jinja_filter_tester(None, template, '#include "user_variant.h"', lctx)
 
     """
     return language.has_variant
@@ -1057,8 +1073,8 @@ def filter_includes(language: Language, t: pydsdl.CompositeType, sort: bool = Tr
         # Listing the includes for a union with only integer types:
         template = "{% for include in my_type | includes -%}{{include}}{%- endfor %}"
 
-        # cstdint will normally be generated. limits is always generated.
-        rendered = "<cstdint><limits>"
+        # cstdint will normally be generated. limits and cetlpf are always generated.
+        rendered = "<cetl/pf17/cetlpf.hpp><cstdint><limits>"
 
     .. invisible-code-block: python
 
@@ -1068,7 +1084,7 @@ def filter_includes(language: Language, t: pydsdl.CompositeType, sort: bool = Tr
 
         # You can suppress std includes by setting use_standard_types to False under
         # nunavut.lang.cpp
-        rendered = "<limits>"
+        rendered = "<cetl/pf17/cetlpf.hpp><limits>"
 
     .. invisible-code-block: python
 
@@ -1160,36 +1176,24 @@ def filter_default_value_initializer(language: Language, instance: pydsdl.Any) -
     return ""
 
 
-def needs_initializing_value(special_method: SpecialMethod) -> bool:
-    """Helper method used by filter_value_initializer()"""
-    return special_method == SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR or needs_rhs(special_method)
-
-
-def needs_rhs(special_method: SpecialMethod) -> bool:
-    """Helper method used by filter_value_initializer()"""
-    return special_method in (
-        SpecialMethod.COPY_CONSTRUCTOR_WITH_ALLOCATOR,
-        SpecialMethod.MOVE_CONSTRUCTOR_WITH_ALLOCATOR,
-    )
-
-
 def needs_allocator(instance: pydsdl.Any) -> bool:
-    """Helper method used by filter_value_initializer()"""
-    return isinstance(instance.data_type, pydsdl.VariableLengthArrayType) or isinstance(
-        instance.data_type, pydsdl.CompositeType
-    )
+    """
+    Return True if the provided instance requires an allocator on initialization, False if not
+    """
+
+    def type_needs_allocator(type: pydsdl.Any) -> bool:
+        return isinstance(type, pydsdl.VariableLengthArrayType) or isinstance(type, pydsdl.CompositeType)
+
+    if hasattr(instance, "data_type"):
+        return type_needs_allocator(instance.data_type)
+    return type_needs_allocator(instance)
 
 
-def needs_vla_init_args(instance: pydsdl.Any, special_method: SpecialMethod) -> bool:
-    """Helper method used by filter_value_initializer()"""
-    return special_method == SpecialMethod.ALLOCATOR_CONSTRUCTOR and isinstance(
-        instance.data_type, pydsdl.VariableLengthArrayType
-    )
-
-
-def needs_move(special_method: SpecialMethod) -> bool:
-    """Helper method used by filter_value_initializer()"""
-    return special_method == SpecialMethod.MOVE_CONSTRUCTOR_WITH_ALLOCATOR
+def filter_needs_allocator(instance: pydsdl.Any) -> bool:
+    """
+    Check if the provided instance requires an allocator instance during initialization
+    """
+    return needs_allocator(instance)
 
 
 def requires_initialization(instance: pydsdl.Any) -> bool:
@@ -1244,6 +1248,37 @@ def filter_value_initializer(
             SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR)
         assert '{foo}' == output
 
+        output = filter_value_initializer(
+            lctx.get_target_language(),
+            test_type,
+            SpecialMethod.COPY_CONSTRUCTOR_WITH_ALLOCATOR)
+        assert '{rhs.foo}' == output
+
+        output = filter_value_initializer(
+            lctx.get_target_language(),
+            test_type,
+            SpecialMethod.MOVE_CONSTRUCTOR_WITH_ALLOCATOR)
+        assert '{std::move(rhs.foo)}' == output
+
+        test_type.data_type = MagicMock(spec=pydsdl.CompositeType)
+
+        output = filter_value_initializer(
+            lctx.get_target_language(),
+            test_type,
+            SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR)
+        assert '{foo, allocator}' == output
+
+        output = filter_value_initializer(
+            lctx.get_target_language(),
+            test_type,
+            SpecialMethod.COPY_CONSTRUCTOR_WITH_ALLOCATOR)
+        assert '{rhs.foo, allocator}' == output
+
+        output = filter_value_initializer(
+            lctx.get_target_language(),
+            test_type,
+            SpecialMethod.MOVE_CONSTRUCTOR_WITH_ALLOCATOR)
+        assert '{std::move(rhs.foo), allocator}' == output
     """
 
     value_initializer: str = ""
@@ -1253,26 +1288,31 @@ def filter_value_initializer(
         leading_args: typing.List[str] = []
         trailing_args: typing.List[str] = []
 
-        if needs_initializing_value(special_method):
-            instance_id = language.filter_id(instance)
-            if needs_rhs(special_method):
-                rhs = f"rhs.{instance_id}"
-            else:
-                rhs = f"{id_prefix}{instance_id}"
+        instance_id = language.filter_id(instance)
 
-        if needs_vla_init_args(instance, special_method):
-            constructor_args = language.get_option("variable_array_type_constructor_args")
-            if isinstance(constructor_args, str) and len(constructor_args) > 0:
-                trailing_args.append(constructor_args.format(MAX_SIZE=instance.data_type.capacity))
+        if special_method == SpecialMethod.ALLOCATOR_CONSTRUCTOR:
+            if isinstance(instance.data_type, pydsdl.ArrayType):
+                if isinstance(instance.data_type, pydsdl.VariableLengthArrayType):
+                    constructor_args = language.get_option("variable_array_type_constructor_args")
+                    if isinstance(constructor_args, str) and len(constructor_args) > 0:
+                        trailing_args.append(constructor_args.format(MAX_SIZE=instance.data_type.capacity))
+                elif needs_allocator(instance.data_type.element_type):
+                    # Fixed length array with elements that require allocator on construction
+                    element_init = str(filter_declaration(language, instance.data_type.element_type) + "{allocator}")
+                    trailing_args.extend([element_init] * instance.data_type.capacity)
+        elif special_method == SpecialMethod.INITIALIZING_CONSTRUCTOR_WITH_ALLOCATOR:
+            rhs = f"{id_prefix}{instance_id}"
+        else:
+            # COPY_CONSTRUCTOR_WITH_ALLOCATOR or MOVE_CONSTRUCTOR_WITH_ALLOCATOR
+            rhs = f"rhs.{instance_id}"
+            if special_method == SpecialMethod.MOVE_CONSTRUCTOR_WITH_ALLOCATOR:
+                wrap = "std::move"
 
         if needs_allocator(instance):
             if language.get_option("ctor_convention") == ConstructorConvention.USES_LEADING_ALLOCATOR.value:
                 leading_args.extend(["std::allocator_arg", "allocator"])
             else:
                 trailing_args.append("allocator")
-
-        if needs_move(special_method):
-            wrap = "std::move"
 
         value_initializer = assemble_initializer_expression(wrap, rhs, leading_args, trailing_args)
 

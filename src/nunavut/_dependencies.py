@@ -96,7 +96,12 @@ class DependencyBuilder:
     ) -> Dependencies:
         results = Dependencies()
         for dependant in dependant_types:
-            if isinstance(dependant, pydsdl.UnionType):
+            is_delimited_union = isinstance(dependant.inner_type, pydsdl.UnionType)
+            is_service_union = isinstance(dependant, pydsdl.ServiceType) and (
+                isinstance(dependant.request_type, pydsdl.UnionType)
+                or isinstance(dependant.response_type, pydsdl.UnionType)
+            )
+            if isinstance(dependant, pydsdl.UnionType) or is_delimited_union or is_service_union:
                 # Unions always require integer for the tag field.
                 results.uses_integer = True
                 results.uses_union = True

@@ -3,7 +3,7 @@
  # Copyright (C) 2024  OpenCyphal Development Team  <opencyphal.org>
  # This software is distributed under the terms of the MIT License.
 #}
-    class VariantType final : public cetl::pf17::variant<
+    class VariantType final : public cetl::variant<
 {%- for field in composite_type.fields_except_padding %}
         {{ field.doc | block_comment('cpp-doxygen', 8, 120) }}
         _traits_::TypeOf::{{field.name|id}}{% if not loop.last %},{% endif %}
@@ -12,7 +12,15 @@
     {
     public:
 
-        static const constexpr std::size_t variant_npos = cetl::pf17::variant_npos;
+        static const constexpr std::size_t variant_npos = cetl::variant_npos;
+
+        using Base = cetl::variant<
+{%- for field in composite_type.fields_except_padding %}
+            _traits_::TypeOf::{{field.name|id}}{% if not loop.last %},{% endif %}
+{%- endfor %}
+        >;
+
+        using Base::Base;
 
         struct IndexOf final
         {
@@ -27,27 +35,27 @@
         struct alternative;
 
         template<size_t I, typename... Types>
-        struct alternative<I, cetl::pf17::variant<Types...>> final
+        struct alternative<I, cetl::variant<Types...>> final
         {
-            using type = typename cetl::pf17::variant_alternative<I, cetl::pf17::variant<Types...>>::type;
+            using type = typename cetl::variant_alternative<I, cetl::variant<Types...>>::type;
         };
 
         template<size_t I, typename T>
         struct alternative<I, const T> final
         {
-            using type = std::add_const_t<typename cetl::pf17::variant_alternative<I, T>::type>;
+            using type = std::add_const_t<typename cetl::variant_alternative<I, T>::type>;
         };
 
         template<std::size_t I, class... Types>
-        static constexpr typename alternative<I, cetl::pf17::variant<Types...>>::type* get_if(cetl::pf17::variant<Types...>* v) noexcept
+        static constexpr typename alternative<I, cetl::variant<Types...>>::type* get_if(cetl::variant<Types...>* v) noexcept
         {
-            return cetl::pf17::get_if<I, Types...>(v);
+            return cetl::get_if<I, Types...>(v);
         }
 
         template<std::size_t I, class... Types>
-        static constexpr const typename alternative<I, cetl::pf17::variant<Types...>>::type* get_if(const cetl::pf17::variant<Types...>* v) noexcept
+        static constexpr const typename alternative<I, cetl::variant<Types...>>::type* get_if(const cetl::variant<Types...>* v) noexcept
         {
-            return cetl::pf17::get_if<I, Types...>(v);
+            return cetl::get_if<I, Types...>(v);
         }
 
     };
