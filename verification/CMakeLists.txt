@@ -641,7 +641,7 @@ if(NOT PROFRAW_FILES)
     message(FATAL_ERROR \"No .profraw files found. Tests may not have run successfully.\")
 endif()
 execute_process(
-    COMMAND llvm-profdata merge -sparse \${PROFRAW_FILES} -o \"${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/tests.profdata\"
+    COMMAND \"${LLVM_PROFDATA}\" merge -sparse \${PROFRAW_FILES} -o \"${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/tests.profdata\"
     RESULT_VARIABLE merge_result
 )
 if(NOT merge_result EQUAL 0)
