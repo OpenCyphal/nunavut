@@ -15,9 +15,12 @@ import base64
 import gzip
 import pickle
 import itertools
+import re
+import typing
 from typing import Any, Iterable
 
 import pydsdl
+from jinja2 import Environment
 
 from nunavut._dependencies import Dependencies
 from nunavut._templates import (
@@ -97,8 +100,9 @@ def filter_string_reference_name(language: Language, t: pydsdl.CompositeType) ->
             ns = list(map(functools.partial(filter_id, language), ns_parts[:-1]))
         else:
             ns = ns_parts[:-1]
-
-    return ".".join(ns + [language.filter_short_reference_name(t)])
+        return ".".join(ns + [language.filter_short_reference_name(t)])
+    else:
+        return language.filter_short_reference_name(t)
 
 
 @template_language_filter(__name__)
@@ -113,8 +117,9 @@ def filter_full_reference_name(language: Language, t: pydsdl.CompositeType) -> s
             ns = list(map(functools.partial(filter_id, language), ns_parts[:-1]))
         else:
             ns = ns_parts[:-1]
-
-    return "_".join(ns + [language.filter_short_reference_name(t)])
+        return "_".join(ns + [language.filter_short_reference_name(t)])
+    else:
+        return language.filter_short_reference_name(t)
 
 
 @template_language_filter(__name__)
@@ -234,7 +239,7 @@ def filter_to_base_type(language: Language, value: pydsdl.PrimitiveType) -> str:
     else:
         raise RuntimeError("{} is not a known PrimitiveType".format(type(value).__name__))
 
-@template_language_filter(__name__)
+@template_language_int_filter(__name__)
 def filter_to_serialized_length(language: Language, value: pydsdl.PrimitiveType) -> int:
     """
     Returns the number of serialized bytes to use for each Primitive bit depth
@@ -252,9 +257,8 @@ def filter_to_serialized_length(language: Language, value: pydsdl.PrimitiveType)
     else:
         raise RuntimeError('Bit depth above 64 bit is not supported!')
 
-@template_language_filter(__name__)
-@template_environment_list_filter
+@template_language_list_filter(__name__)
 def filter_requires(
-    language: Language, env: Environment, t: pydsdl.CompositeType, sort: bool = True
+    language: Language, t: pydsdl.CompositeType, sort: bool = True
 ) -> typing.List[pydsdl.CompositeType]:
     return RequireGenerator(language, t).generate_require_list(sort)
