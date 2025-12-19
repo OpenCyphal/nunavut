@@ -33,6 +33,7 @@ out
 venv*
 *.bkp
 *.bak
+*.profraw
 
 # Eclipse
 .metadata

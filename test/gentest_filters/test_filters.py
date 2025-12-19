@@ -14,8 +14,8 @@ from pydsdl import read_namespace
 
 from nunavut import Namespace
 from nunavut._namespace import build_namespace_tree # deprecated
-from nunavut.jinja import DSDLCodeGenerator
-from nunavut.jinja.jinja2.exceptions import TemplateAssertionError
+from nunavut.jinja import DSDLCodeGenerator, SupportGenerator
+from nunavut.jinja.jinja2.exceptions import TemplateAssertionError, UndefinedError
 from nunavut.lang import Language, LanguageClassLoader, LanguageContextBuilder
 
 
@@ -448,3 +448,75 @@ def test_filter_to_template_unique(gen_paths):
         actual = foo_file.read()
 
     assert expected == actual
+
+
+def test_support_generator_filter_isolation(gen_paths):  # type: ignore
+    """
+    Test that DSDL-specific filters are not available in SupportGenerator templates.
+    This verifies that suggestion #2 (creating different environment objects per generator)
+    is properly implemented, preventing filter leaking between generators.
+    """
+    root_path = str(gen_paths.dsdl_dir / Path("uavcan"))
+    output_path = gen_paths.out_dir / "filter_isolation"
+    compound_types = read_namespace(root_path, [])
+    language_context = LanguageContextBuilder().set_target_language("c").create()
+    namespace = build_namespace_tree(compound_types, root_path, output_path, language_context)
+    
+    # Create a template that tries to use a DSDL-specific filter
+    template_dir = gen_paths.out_dir / "filter_isolation_templates"
+    template_dir.mkdir(parents=True, exist_ok=True)
+    template_file = template_dir / "serialization.j2"
+    
+    # This template tries to use type_to_template, which should only be available in DSDLCodeGenerator
+    with open(template_file, "w", encoding="utf-8") as f:
+        f.write("{{ 'test' | type_to_template }}")
+    
+    # Create a SupportGenerator with this template
+    from nunavut._utilities import ResourceType
+    support_generator = SupportGenerator(
+        namespace,
+        resource_types=ResourceType.SERIALIZATION_SUPPORT.value,
+        templates_dir=template_dir
+    )
+    
+    # Attempting to generate should fail because type_to_template filter is not available
+    # in SupportGenerator's environment
+    with pytest.raises((TemplateAssertionError, UndefinedError, AttributeError)) as exc_info:
+        list(support_generator.generate_all())
+
+    # Verify the error message mentions the missing filter
+    error_message = str(exc_info.value)
+    assert "type_to_template" in error_message.lower() or "no filter" in error_message.lower()
+
+
+def test_dsdl_generator_has_dsdl_filters(gen_paths):  # type: ignore
+    """
+    Test that DSDL-specific filters ARE available in DSDLCodeGenerator templates.
+    This is the positive test case for filter isolation.
+    """
+    root_path = str(gen_paths.dsdl_dir / Path("uavcan"))
+    output_path = gen_paths.out_dir / "dsdl_filter_test"
+    compound_types = read_namespace(root_path, [])
+    language_context = LanguageContextBuilder().set_target_language("c").create()
+    namespace = build_namespace_tree(compound_types, root_path, output_path, language_context)
+    
+    # Create a template that uses DSDL-specific filters
+    template_dir = gen_paths.out_dir / "dsdl_filter_test_templates"
+    template_dir.mkdir(parents=True, exist_ok=True)
+    template_file = template_dir / "Any.j2"
+    
+    # This template uses type_to_template, which should be available in DSDLCodeGenerator
+    with open(template_file, "w", encoding="utf-8") as f:
+        f.write("{{ T | type_to_template }}")
+    
+    # Create a DSDLCodeGenerator with this template
+    dsdl_generator = DSDLCodeGenerator(
+        namespace,
+        templates_dir=template_dir
+    )
+    
+    # This should work without errors
+    generated_files = list(dsdl_generator.generate_all())
+    
+    # Verify that files were generated successfully
+    assert len(generated_files) > 0
