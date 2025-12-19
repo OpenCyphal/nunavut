@@ -13,6 +13,5 @@
         "streetsidesoftware.code-spell-checker",
         "xaver.clang-format",
         "vadimcn.vscode-lldb",
-        "matepek.vscode-catch2-test-adapter"
     ]
 }

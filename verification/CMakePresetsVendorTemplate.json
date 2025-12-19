@@ -31,13 +31,13 @@
                 "workflow-displayName-gcc-arm-none-eabi": "Configure, build, and install on arm cores (gcc).",
                 "workflow-description-gcc-arm-none-eabi": "Configure, compile, and flash arm cores using a gcc toolchain.",
                 "gcc-native-targets": [
-                    "test_all"
+                    "all"
                 ],
                 "gcc-native32-targets": [
-                    "test_all"
+                    "all"
                 ],
                 "clang-native-targets": [
-                    "test_all"
+                    "all"
                 ],
                 "gcc-arm-none-eabi-targets": [
                     "test_armv7m"
@@ -182,8 +182,6 @@
                     ],
                     "shape": {
                         "toolchain": {
-                            "displayName": "{{{pq}(this).text({pq}('vendor tcpm static workflow-displayName-{parameter}').text())}}",
-                            "description": "TCPM, auto-generated workflow: {{{pq}(this).text({pq}('vendor tcpm static workflow-displayName-{parameter}').text())}}",
                             "steps": [
                                 {
                                     "type": "configure",

@@ -115,12 +115,13 @@ add_compile_options(
     "$<$<AND:$<CONFIG:DebugCov>,$<C_COMPILER_ID:GNU>>:--coverage>"
     "$<$<AND:$<CONFIG:DebugCov>,$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>>:-fno-elide-constructors>"
     "$<$<AND:$<CONFIG:DebugCov>,$<C_COMPILER_ID:AppleClang,Clang>>:-fprofile-instr-generate>"
-    "$<$<AND:$<CONFIG:DebugCov>,$<C_COMPILER_ID:AppleClang,Clang>>:-ftest-coverage>"
-    "$<$<AND:$<CONFIG:DebugCov>,$<C_COMPILER_ID:AppleClang,Clang>>:-fprofile-arcs>"
     "$<$<AND:$<CONFIG:DebugCov>,$<C_COMPILER_ID:AppleClang,Clang>>:-fcoverage-mapping>"
 )
 add_link_options(${EXE_LINKER_FLAG_SET})
 add_link_options("$<$<CONFIG:DebugAsan>:${LOCAL_SANITIZER_OPTIONS}>")
-add_link_options("$<$<CONFIG:DebugCov>:--coverage>")
+add_link_options("$<$<AND:$<CONFIG:DebugCov>,$<C_COMPILER_ID:GNU>>:--coverage>")
+add_link_options(
+    "$<$<AND:$<CONFIG:DebugCov>,$<C_COMPILER_ID:AppleClang,Clang>>:-fprofile-instr-generate>"
+)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_CXX_EXTENSIONS OFF)
