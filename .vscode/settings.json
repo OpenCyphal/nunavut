@@ -138,5 +138,9 @@
             "addWords": true
           }
     },
-    "cmake.sourceDirectory": "${workspaceFolder}/verification"
+    "cmake.sourceDirectory": "${workspaceFolder}/verification",
+    "sonarlint.connectedMode.project": {
+        "connectionId": "opencyphal",
+        "projectKey": "OpenCyphal_nunavut"
+    }
 }

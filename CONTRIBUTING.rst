@@ -285,15 +285,34 @@ After configuring you can also use Ninja directly::
     ninja -t targets
 
 To obtain coverage information for the verification suite (not the Python code),
-build the `cov_all` target and inspect the output under the `coverage` directory::
+build the ``cov_all`` target and inspect the output under the ``coverage`` directory.
+Coverage is generated using LLVM source-based code coverage and includes HTML, text,
+and lcov format reports. Only generated Nunavut code is included in coverage; vendor
+code (submodules, googletest, Unity), build artifacts, system headers, and test source
+files are excluded::
 
-    cmake --build --preset build-clang-native-c-11-debug --target cov_all
+    cmake --build --preset build-DebugCov-clang-native-c-11 --target cov_all
+
+This will:
+ 1. Build all test executables with coverage instrumentation
+ 2. Run all tests (generating .profraw files)
+ 3. Merge coverage data into tests.profdata
+ 4. Generate coverage reports in:
+    - ``build/DebugCov/coverage/html/index.html`` - Interactive HTML report
+    - ``build/DebugCov/coverage/text/summary.txt`` - Text summary
+    - ``build/DebugCov/coverage/lcov/coverage.lcov`` - lcov format for SonarCloud
+
+.. note::
+
+    The ``DebugCov`` configuration is specifically for coverage builds. Use a preset
+    that includes ``DebugCov`` in its name (e.g., ``build-DebugCov-clang-native-c-11``)
 
 .. warning::
 
     When switching between gcc and clang you must do a full clean of your repo if you previously ran the coverage
     build. For example ``git clean -xdf`` or clone a new repo in a different folder. Each compiler suite leaves
     different byproducts that may interfere with the coverage tools in the other suite.
+
 
 While we strongly encourage you to use the cmake presets, the CMakeLists.txt for the verification suite is driven by
 three variables you can set in your environment or pass into cmake if using cmake directly:

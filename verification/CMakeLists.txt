@@ -51,6 +51,12 @@ set(CMAKE_PREFIX_PATH ${LOCAL_PROJECT_ROOT})
 #
 set(NUNAVUT_VERIFICATIONS_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
 
+#
+# Enable CTest for test discovery and execution
+#
+include(CTest)
+enable_testing()
+
 # +-[DEPENDENCIES]------------------------------------------------------------+
 #
 # Load the Nunavut cmake integration.
@@ -61,7 +67,6 @@ find_package(Nunavut 3.0 REQUIRED)
 # We generate coverage reports. Please look at them (It wasn't easy to get this to work).
 #
 find_package(verification-coverage REQUIRED)
-find_package(genhtml REQUIRED)
 
 #
 # We require googletest to run the verification suite.
@@ -382,30 +387,26 @@ endif()
 # +---------------------------------------------------------------------------+
 # | VERIFICATION SUITE
 # +---------------------------------------------------------------------------+
-# We generate individual test binaires so we can record which test generated
-# what coverage. We also allow test authors to generate coverage reports for
-# just one test allowing for faster iteration.
 
-set(ALL_TEST_RUNS "")
-set(ALL_TEST_INFO_FILES "")
-# Don't allow tests to run in parallel
-set_property(GLOBAL PROPERTY JOB_POOLS coverage_test_runs=1)
+# Append llvm source coverage outputs to this list as you define each test.
+set(LOCAL_PROFRAW_FILES)
+set(LOCAL_TEST_EXECUTABLES)
 
-function(runTestCpp)
+function(compileTestCpp)
      set(options "")
      set(oneValueArgs TEST_FILE)
      set(multiValueArgs LINK LANGUAGE_FLAVORS)
-     cmake_parse_arguments(runTestCpp "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+     cmake_parse_arguments(compileTestCpp "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
      # Skip tests not relevant to the specified language standard
-     list(FIND runTestCpp_LANGUAGE_FLAVORS "${LOCAL_VERIFICATION_LANGUAGE_STANDARD_CPP}" FIND_INDEX)
+     list(FIND compileTestCpp_LANGUAGE_FLAVORS "${LOCAL_VERIFICATION_LANGUAGE_STANDARD_CPP}" FIND_INDEX)
 
      if(${FIND_INDEX} EQUAL -1)
-          message(STATUS "Skipping ${runTestCpp_TEST_FILE}")
+          message(STATUS "Skipping ${compileTestCpp_TEST_FILE}")
           return()
      endif()
 
-     set(NATIVE_TEST "${CMAKE_CURRENT_SOURCE_DIR}/cpp/suite/${runTestCpp_TEST_FILE}")
+     set(NATIVE_TEST "${CMAKE_CURRENT_SOURCE_DIR}/cpp/suite/${compileTestCpp_TEST_FILE}")
      get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
 
      define_native_unit_test(
@@ -414,30 +415,33 @@ function(runTestCpp)
           SOURCE ${NATIVE_TEST}
           OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
           DSDL_TARGETS
-          ${runTestCpp_LINK}
+          ${compileTestCpp_LINK}
      )
 
      # Some tests use deprecated DSDLs
      target_compile_options(${NATIVE_TEST_NAME} PRIVATE "-Wno-deprecated-declarations")
      target_link_libraries(${NATIVE_TEST_NAME} PUBLIC o1heap)
      target_include_directories(${NATIVE_TEST_NAME} PUBLIC "${NUNAVUT_SUBMODULES_DIR}/CETL/include")
-     define_native_test_run(
-          NAME ${NATIVE_TEST_NAME}
-          OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
-          OUT_CUSTOM_TARGET LOCAL_TEST_RUN_TARGET
+
+     # Register test with CTest for automatic discovery and execution
+     add_test(NAME ${NATIVE_TEST_NAME}
+              COMMAND $<TARGET_FILE:${NATIVE_TEST_NAME}>
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+     # Track profraw file locations for coverage merge
+     list(APPEND LOCAL_PROFRAW_FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${NATIVE_TEST_NAME}.profraw")
+     set(LOCAL_PROFRAW_FILES ${LOCAL_PROFRAW_FILES} PARENT_SCOPE)
+
+     list(APPEND LOCAL_TEST_EXECUTABLES ${NATIVE_TEST_NAME})
+     set(LOCAL_TEST_EXECUTABLES ${LOCAL_TEST_EXECUTABLES} PARENT_SCOPE)
+
+     # Set test properties - use generator expression in ENVIRONMENT for proper config resolution
+     set_tests_properties(${NATIVE_TEST_NAME} PROPERTIES
+          TIMEOUT 300  # 5 minute timeout for each test
+          LABELS "cpp;unittest"
+          ENVIRONMENT "LLVM_PROFILE_FILE=${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${NATIVE_TEST_NAME}.profraw"
      )
-     define_coverage_native_test_run(
-          NAME ${NATIVE_TEST_NAME}
-          JOB_POOL coverage_test_runs
-          OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
-          SOURCE_FILTER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/\\*
-          OUT_INFO_FILE LOCAL_TEST_INFO_FILE
-     )
-     define_native_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
-     list(APPEND ALL_TEST_RUNS "${LOCAL_TEST_RUN_TARGET}")
-     list(APPEND ALL_TEST_INFO_FILES "${LOCAL_TEST_INFO_FILE}")
-     set(ALL_TEST_RUNS ${ALL_TEST_RUNS} PARENT_SCOPE)
-     set(ALL_TEST_INFO_FILES ${ALL_TEST_INFO_FILES} PARENT_SCOPE)
+
 endfunction()
 
 
@@ -506,107 +510,255 @@ endfunction()
 
 if(LOCAL_NUNAVUT_VERIFICATION_TARGET_LANG STREQUAL "cpp")
 if(NOT ${CMAKE_CROSSCOMPILING})
-     runTestCpp(TEST_FILE test_serialization.cpp     LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
-     runTestCpp(TEST_FILE test_array_c++17-pmr.cpp   LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS                         c++17-pmr       c++20-pmr)
-     runTestCpp(TEST_FILE test_array_cetl++14-17.cpp LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS       cetl++14-17                                )
-     runTestCpp(TEST_FILE test_bitarray.cpp          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
-     runTestCpp(TEST_FILE test_compiles.cpp          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17           c++20          )
-     runTestCpp(TEST_FILE test_large_bitset.cpp      LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
-     runTestCpp(TEST_FILE test_unionant.cpp          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14 cetl++14-17 c++17 c++17-pmr c++20 c++20-pmr)
-     runTestCpp(TEST_FILE test_unionant_c++14.cpp    LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14                                            )
-     runTestCpp(TEST_FILE test_unionant_pmr.cpp      LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS       cetl++14-17       c++17-pmr       c++20-pmr)
-     runTestCpp(TEST_FILE test_constant.cpp          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+     compileTestCpp(TEST_FILE test_serialization.cpp     LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+     compileTestCpp(TEST_FILE test_array_c++17-pmr.cpp   LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS                         c++17-pmr       c++20-pmr)
+     compileTestCpp(TEST_FILE test_array_cetl++14-17.cpp LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS       cetl++14-17                                )
+     compileTestCpp(TEST_FILE test_bitarray.cpp          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+     compileTestCpp(TEST_FILE test_compiles.cpp          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17           c++20          )
+     compileTestCpp(TEST_FILE test_large_bitset.cpp      LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
+     compileTestCpp(TEST_FILE test_unionant.cpp          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14 cetl++14-17 c++17 c++17-pmr c++20 c++20-pmr)
+     compileTestCpp(TEST_FILE test_unionant_c++14.cpp    LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14                                            )
+     compileTestCpp(TEST_FILE test_unionant_pmr.cpp      LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS       cetl++14-17       c++17-pmr       c++20-pmr)
+     compileTestCpp(TEST_FILE test_constant.cpp          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14             c++17 c++17-pmr c++20 c++20-pmr)
 else()
      compileTestMcu(TEST_FILE test_armv7m.cpp        LINK ${LOCAL_TEST_TYPES_C_LIBRARY} ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14 cetl++14-17 c++17 c++17-pmr c++20 c++20-pmr)
 endif()
 endif()
 
-function(runTestC)
+function(compileTestC)
      set(options "")
      set(oneValueArgs TEST_FILE FRAMEWORK)
      set(multiValueArgs LINK LANGUAGE_FLAVORS)
-     cmake_parse_arguments(runTestC "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+     cmake_parse_arguments(compileTestC "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
      # Skip tests not relevant to the specified language standard
-     list(FIND runTestC_LANGUAGE_FLAVORS "${LOCAL_VERIFICATION_LANGUAGE_STANDARD_C}" FIND_INDEX)
+     list(FIND compileTestC_LANGUAGE_FLAVORS "${LOCAL_VERIFICATION_LANGUAGE_STANDARD_C}" FIND_INDEX)
 
      if(${FIND_INDEX} EQUAL -1)
-          message(STATUS "Skipping ${runTestC_TEST_FILE}")
+          message(STATUS "Skipping ${compileTestC_TEST_FILE}")
           return()
      endif()
 
-     set(NATIVE_TEST "${CMAKE_CURRENT_SOURCE_DIR}/c/suite/${runTestC_TEST_FILE}")
+     set(NATIVE_TEST "${CMAKE_CURRENT_SOURCE_DIR}/c/suite/${compileTestC_TEST_FILE}")
      get_filename_component(NATIVE_TEST_NAME ${NATIVE_TEST} NAME_WE)
 
      define_native_unit_test(
-          FRAMEWORK ${runTestC_FRAMEWORK}
+          FRAMEWORK ${compileTestC_FRAMEWORK}
           NAME ${NATIVE_TEST_NAME}
           SOURCE ${NATIVE_TEST}
           OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
           DSDL_TARGETS
-          ${runTestC_LINK}
+          ${compileTestC_LINK}
      )
-     define_native_test_run(
-          NAME ${NATIVE_TEST_NAME}
-          OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
-          OUT_CUSTOM_TARGET LOCAL_TEST_RUN_TARGET
+
+     # Register test with CTest for automatic discovery and execution
+     add_test(NAME ${NATIVE_TEST_NAME}
+              COMMAND $<TARGET_FILE:${NATIVE_TEST_NAME}>
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+     # Track profraw file locations for coverage merge
+     list(APPEND LOCAL_PROFRAW_FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${NATIVE_TEST_NAME}.profraw")
+     set(LOCAL_PROFRAW_FILES ${LOCAL_PROFRAW_FILES} PARENT_SCOPE)
+
+     list(APPEND LOCAL_TEST_EXECUTABLES ${NATIVE_TEST_NAME})
+     set(LOCAL_TEST_EXECUTABLES ${LOCAL_TEST_EXECUTABLES} PARENT_SCOPE)
+
+     # Set test properties - use generator expression in ENVIRONMENT for proper config resolution
+     set_tests_properties(${NATIVE_TEST_NAME} PROPERTIES
+          TIMEOUT 300  # 5 minute timeout for each test
+          LABELS "c;unittest"
+          ENVIRONMENT "LLVM_PROFILE_FILE=${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${NATIVE_TEST_NAME}.profraw"
      )
-     define_coverage_native_test_run(
-          NAME ${NATIVE_TEST_NAME}
-          JOB_POOL coverage_test_runs
-          OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
-          SOURCE_FILTER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/\\*
-          OUT_INFO_FILE LOCAL_TEST_INFO_FILE
-     )
-     define_native_test_coverage(${NATIVE_TEST_NAME} ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
-     list(APPEND ALL_TEST_RUNS "${LOCAL_TEST_RUN_TARGET}")
-     list(APPEND ALL_TEST_INFO_FILES "${LOCAL_TEST_INFO_FILE}")
-     set(ALL_TEST_RUNS ${ALL_TEST_RUNS} PARENT_SCOPE)
-     set(ALL_TEST_INFO_FILES ${ALL_TEST_INFO_FILES} PARENT_SCOPE)
+
 endfunction()
 
 if(LOCAL_NUNAVUT_VERIFICATION_TARGET_LANG STREQUAL "c")
 if(NOT ${CMAKE_CROSSCOMPILING})
-     runTestCpp(TEST_FILE test_canard.cpp                         LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23)
-     runTestCpp(TEST_FILE test_support_assert.cpp                 LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23)
-     runTestC(  TEST_FILE test_constant.c                         LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "unity")
-     runTestC(  TEST_FILE test_override_variable_array_capacity.c LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "unity")
-     runTestC(  TEST_FILE test_serialization.c                    LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "unity")
-     runTestC(  TEST_FILE test_support.c                          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "unity")
-     runTestC(  TEST_FILE test_simple.c                           LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "none")
+     compileTestCpp(TEST_FILE test_canard.cpp                         LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23)
+     compileTestCpp(TEST_FILE test_support_assert.cpp                 LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23)
+     compileTestC(  TEST_FILE test_constant.c                         LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "unity")
+     compileTestC(  TEST_FILE test_override_variable_array_capacity.c LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "unity")
+     compileTestC(  TEST_FILE test_serialization.c                    LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "unity")
+     compileTestC(  TEST_FILE test_support.c                          LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "unity")
+     compileTestC(  TEST_FILE test_simple.c                           LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23 FRAMEWORK "none")
 else()
      compileTestMcu(TEST_FILE test_armv7m.c                       LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23)
 endif()
 endif()
 
-# +---------------------------------------------------------------------------+
-# Finally, we setup an overall report. the coverage.info should be uploaded
-# to a coverage reporting service as part of the CI pipeline.
-define_coverage_summary(
-     INFO_FILES ${ALL_TEST_INFO_FILES}
-     OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR}
-     OUT_INFO_FILE LOCAL_INFO_SUMMARY
+# +-[LLVM SOURCE-BASED CODE COVERAGE]----------------------------------------+
+#
+# Create comprehensive coverage reporting using LLVM source-based coverage.
+# This generates HTML, text, and lcov format reports with vendor code excluded.
+# See: https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
+#
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|AppleClang" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang")
+    message(STATUS "LLVM profdata merge and coverage reporting configured")
+    message(STATUS "  Test executables: ${LOCAL_TEST_EXECUTABLES}")
+    message(STATUS "  Profraw files will be: ${LOCAL_PROFRAW_FILES}")
+
+    # Create the merged profdata file path
+    set(MERGED_PROFDATA_FILE "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/tests.profdata")
+    
+    # Create coverage output directories
+    set(COVERAGE_BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coverage")
+    set(COVERAGE_HTML_DIR "${COVERAGE_BASE_DIR}/html")
+    set(COVERAGE_LCOV_DIR "${COVERAGE_BASE_DIR}/lcov")
+    set(COVERAGE_TEXT_DIR "${COVERAGE_BASE_DIR}/text")
+    
+    # Build the list of test executable files for llvm-cov
+    # We need to convert target names to actual file paths at build time
+    set(TEST_BINARIES_FOR_COV)
+    foreach(TEST_TARGET ${LOCAL_TEST_EXECUTABLES})
+        list(APPEND TEST_BINARIES_FOR_COV "$<TARGET_FILE:${TEST_TARGET}>")
+    endforeach()
+    
+    # Create a file to store test binary paths (needed because generator expressions
+    # don't work well in custom commands with complex arguments)
+    file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/test_binaries_$<CONFIG>.txt"
+         CONTENT "$<JOIN:${TEST_BINARIES_FOR_COV},\n>")
+    
+    # Exclusion filter for vendor code, system headers, and test source files
+    # We INCLUDE: All generated code in build/.*/generated/
+    # We EXCLUDE: submodules/, _deps/, system headers, test suite source files, CMakeFiles
+    # Note: Paths in llvm-cov reports are relative, so patterns match anywhere in the path
+    set(COVERAGE_IGNORE_REGEX "(submodules/|_deps/|/usr/|/Applications/|/Library/|/suite/test_|CMakeFiles/)")
+    
+    # Create a script that runs tests before merging profdata
+    # This ensures .profraw files exist before attempting to merge
+    # We use file(GENERATE) to properly handle $<CONFIG> generator expressions
+    file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/run_tests_and_merge_$<CONFIG>.cmake"
+        CONTENT "execute_process(
+    COMMAND \"${CMAKE_CTEST_COMMAND}\" --build-config \"$<CONFIG>\" --output-on-failure
+    WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}\"
+    RESULT_VARIABLE test_result
 )
-
-# This just gives us a utility to clean things up manually. You don't need to hook it up to anything.
-define_coverage_zero_all(OUTDIR ${NUNAVUT_VERIFICATIONS_BINARY_DIR})
-
-add_custom_target(
-     cov_all
-     ${GENHTML}
-          --title "${PROJECT_NAME} native test coverage"
-          --output-directory ${NUNAVUT_VERIFICATIONS_BINARY_DIR}/coverage/all
-          --demangle-cpp
-          --sort
-          --num-spaces 4
-          --function-coverage
-          --branch-coverage
-          --legend
-          --highlight
-          --show-details
-          ${LOCAL_INFO_SUMMARY}
-     DEPENDS ${LOCAL_INFO_SUMMARY}
-     COMMENT "Build and run all tests and generate an overall html coverage report."
+if(NOT test_result EQUAL 0)
+    message(WARNING \"Some tests failed, but continuing with coverage generation\")
+endif()
+file(GLOB PROFRAW_FILES \"${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/*.profraw\")
+if(NOT PROFRAW_FILES)
+    message(FATAL_ERROR \"No .profraw files found. Tests may not have run successfully.\")
+endif()
+execute_process(
+    COMMAND \"${LLVM_PROFDATA}\" merge -sparse \${PROFRAW_FILES} -o \"${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/tests.profdata\"
+    RESULT_VARIABLE merge_result
 )
-
-add_custom_target(test_all DEPENDS ${ALL_TEST_RUNS})
+if(NOT merge_result EQUAL 0)
+    message(FATAL_ERROR \"Failed to merge profraw files\")
+endif()
+"
+    )
+    
+    # Target to run tests and merge profdata
+    add_custom_target(run_tests_and_merge
+        COMMAND ${CMAKE_COMMAND} 
+                -P "${CMAKE_CURRENT_BINARY_DIR}/run_tests_and_merge_$<CONFIG>.cmake"
+        COMMENT "Running tests and merging LLVM profile data files"
+        VERBATIM
+    )
+    
+    # Make sure test executables are built before running tests
+    foreach(TEST_TARGET ${LOCAL_TEST_EXECUTABLES})
+        add_dependencies(run_tests_and_merge ${TEST_TARGET})
+    endforeach()
+    
+    # Create a script to generate coverage reports
+    # Using file(GENERATE) to properly handle $<CONFIG> generator expressions  
+    file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generate_coverage_reports_$<CONFIG>.cmake"
+        CONTENT "file(READ \"${CMAKE_CURRENT_BINARY_DIR}/test_binaries_$<CONFIG>.txt\" TEST_BINARIES)
+string(REPLACE \"\\n\" \";\" TEST_BINARIES_LIST \"\${TEST_BINARIES}\")
+set(LLVM_COV \"${LLVM_COV}\")
+set(COVERAGE_HTML_DIR \"${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coverage/html\")
+set(COVERAGE_LCOV_DIR \"${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coverage/lcov\")
+set(COVERAGE_TEXT_DIR \"${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coverage/text\")
+set(PROFDATA_FILE \"${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/tests.profdata\")
+set(IGNORE_REGEX \"${COVERAGE_IGNORE_REGEX}\")
+file(MAKE_DIRECTORY \"\${COVERAGE_HTML_DIR}\")
+file(MAKE_DIRECTORY \"\${COVERAGE_LCOV_DIR}\")
+file(MAKE_DIRECTORY \"\${COVERAGE_TEXT_DIR}\")
+# Build list of -object arguments for llvm-cov (one per test binary)
+set(OBJECT_ARGS)
+foreach(BINARY IN LISTS TEST_BINARIES_LIST)
+    list(APPEND OBJECT_ARGS -object \${BINARY})
+endforeach()
+# Generate HTML report
+execute_process(
+    COMMAND \${LLVM_COV} show 
+            -format=html
+            -output-dir=\${COVERAGE_HTML_DIR}
+            -instr-profile=\${PROFDATA_FILE}
+            -ignore-filename-regex=\${IGNORE_REGEX}
+            \${OBJECT_ARGS}
+    RESULT_VARIABLE html_result
+)
+if(NOT html_result EQUAL 0)
+    message(WARNING \"Failed to generate HTML coverage report\")
+endif()
+# Generate text summary report
+execute_process(
+    COMMAND \${LLVM_COV} report
+            -instr-profile=\${PROFDATA_FILE}
+            -ignore-filename-regex=\${IGNORE_REGEX}
+            \${OBJECT_ARGS}
+    OUTPUT_FILE \"\${COVERAGE_TEXT_DIR}/summary.txt\"
+    RESULT_VARIABLE report_result
+)
+if(NOT report_result EQUAL 0)
+    message(WARNING \"Failed to generate text coverage report\")
+endif()
+# Generate detailed text report
+execute_process(
+    COMMAND \${LLVM_COV} show
+            -instr-profile=\${PROFDATA_FILE}
+            -ignore-filename-regex=\${IGNORE_REGEX}
+            \${OBJECT_ARGS}
+    OUTPUT_FILE \"\${COVERAGE_TEXT_DIR}/detailed.txt\"
+    RESULT_VARIABLE show_result
+)
+if(NOT show_result EQUAL 0)
+    message(WARNING \"Failed to generate detailed text coverage report\")
+endif()
+# Generate lcov format for SonarCloud
+execute_process(
+    COMMAND \${LLVM_COV} export
+            -format=lcov
+            -instr-profile=\${PROFDATA_FILE}
+            -ignore-filename-regex=\${IGNORE_REGEX}
+            \${OBJECT_ARGS}
+    OUTPUT_FILE \"\${COVERAGE_LCOV_DIR}/coverage.lcov\"
+    RESULT_VARIABLE lcov_result
+)
+if(NOT lcov_result EQUAL 0)
+    message(WARNING \"Failed to generate lcov coverage report\")
+endif()
+message(STATUS \"Coverage reports generated:\")
+message(STATUS \"  HTML:  \${COVERAGE_HTML_DIR}/index.html\")
+message(STATUS \"  Text:  \${COVERAGE_TEXT_DIR}/summary.txt\")
+message(STATUS \"  Lcov:  \${COVERAGE_LCOV_DIR}/coverage.lcov\")
+"
+    )
+    
+    # Target to generate all coverage reports
+    add_custom_target(generate_coverage_reports
+        COMMAND ${CMAKE_COMMAND}
+                -P "${CMAKE_CURRENT_BINARY_DIR}/generate_coverage_reports_$<CONFIG>.cmake"
+        DEPENDS run_tests_and_merge
+        COMMENT "Generating coverage reports (HTML, text, lcov)"
+        VERBATIM
+    )
+    
+    # Master target: cov_all - runs tests and generates all coverage reports
+    add_custom_target(cov_all
+        DEPENDS generate_coverage_reports
+        COMMENT "Complete coverage pipeline: run tests → merge profdata → generate reports"
+    )
+    
+    message(STATUS "Coverage targets configured:")
+    message(STATUS "  - cmake --build . --target cov_all              # Complete coverage pipeline")
+    message(STATUS "  - cmake --build . --target run_tests_and_merge  # Run tests and merge profdata")
+    message(STATUS "  - cmake --build . --target generate_coverage_reports # Generate reports from existing profdata")
+    message(STATUS "  Output directory: ${COVERAGE_BASE_DIR}")
+    message(STATUS "  Exclusion filter: ${COVERAGE_IGNORE_REGEX}")
+    
+endif()

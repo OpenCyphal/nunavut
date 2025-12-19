@@ -75,45 +75,6 @@ function(define_native_unit_test)
 
 endfunction()
 
-
-#
-# function: define_native_test_run - creates a makefile target that will build and
-# run individual unit tests.
-#
-# param: NAME string        - The name of the test to run.
-# param: OUTDIR path        - The path where the test binaries live.
-# param: OUT_CUSTOM_TARGET  - A variable to set in the parent scope with the name of the custom target
-#                             defined by this function.
-#
-function(define_native_test_run)
-    # +--[ INPUTS ]-----------------------------------------------------------+
-    set(options "")
-    set(monoValues NAME OUTDIR OUT_CUSTOM_TARGET)
-    set(multiValues "")
-
-    cmake_parse_arguments(
-        ARG
-        "${options}"
-        "${monoValues}"
-        "${multiValues}"
-        ${ARGN}
-    )
-
-    # +--[ BODY ]-------------------------------------------------------------+
-    add_custom_target(
-        run_${ARG_NAME}
-        COMMAND
-            ${ARG_OUTDIR}/${ARG_NAME}
-        DEPENDS
-            ${ARG_NAME}
-    )
-
-    # +--[ OUTPUTS ]----------------------------------------------------------+
-
-    set(${ARG_OUT_CUSTOM_TARGET} "run_${ARG_NAME}" PARENT_SCOPE)
-
-endfunction()
-
 #
 # function: handle_nunavut_verification_language_and_standard - Parse NUNAVUT_VERIFICATION_LANG,
 # NUNAVUT_VERIFICATION_LANG_STANDARD, and NUNAVUT_VERIFICATION_TARGET_PLATFORM applying defaults,
