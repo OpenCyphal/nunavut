@@ -29,6 +29,10 @@ local {{ structure_type | full_reference_name }}_Response_{{ field_name }} = Pro
     local _length_ = 0 -- used for the length of variable length array
     local field_size = 0 -- used to track the extent of a field or it's _delimiter_ size.
     local extent = 0 -- used to track the current of this type
+    -- early exit
+    if payload:len() == 0 then
+        return 0
+    end
     if payload:len() <= EXTENT then
         extent = payload:len()
     else

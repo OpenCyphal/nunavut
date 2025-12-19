@@ -53,16 +53,6 @@ local function register_{{ type | full_reference_name }}(cyphal_proto)
     end
 end
 
--- Decodes a {{ type | full_reference_name }}
--- Returns the number of bytes decoded
-local function decode_{{ type | full_reference_name }}(proto, payload, pinfo, payload_tree, label, request_not_response)
-    if request_not_response == 1 then -- Request
-        return decode_{{ type | full_reference_name }}_Request(proto, payload, pinfo, payload_tree, label)
-    else -- Response
-        return decode_{{ type | full_reference_name }}_Response(proto, payload, pinfo, payload_tree, label)
-    end
-end
-
 
 -- Decodes a {{ type | full_reference_name }} Request
 -- Returns the number of bytes decoded
@@ -76,13 +66,23 @@ local function decode_{{ type | full_reference_name }}_Response(proto, payload, 
     {{ macros.decode_function(type.response_type) }}
 end
 
+-- Decodes a {{ type | full_reference_name }}
+-- Returns the number of bytes decoded
+local function decode_{{ type | full_reference_name }}(proto, payload, pinfo, payload_tree, label, request_not_response)
+    if request_not_response == 1 then -- Request
+        return decode_{{ type | full_reference_name }}_Request(proto, payload, pinfo, payload_tree, label)
+    else -- Response
+        return decode_{{ type | full_reference_name }}_Response(proto, payload, pinfo, payload_tree, label)
+    end
+end
+
 -- Return the decode, register and the option port id
 return {
     register = register_{{ type | full_reference_name }}
     , decode = decode_{{ type | full_reference_name }}
     , response = {
         extent = RESPONSE_EXTENT
-    },
+    }
     , request = {
         extent = REQUEST_EXTENT
     }

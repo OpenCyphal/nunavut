@@ -7,10 +7,9 @@
 -- Nunavut Support Library Function for Decoding Primitives in Lua
 
 local function as_little_endian(field, payload, pinfo, tree, bit_depth)
-    local offset = 0
     local field_size = bit_depth / 8
-    tree:add_le(field, payload(offset, field_size))
-    return offset
+    tree:add_le(field, payload(0, field_size))
+    return field_size
 end
 
 local function decode_payload_uint8(field, payload, pinfo, tree)
