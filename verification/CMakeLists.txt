@@ -668,6 +668,7 @@ endif()
     file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generate_coverage_reports_$<CONFIG>.cmake"
         CONTENT "file(READ \"${CMAKE_CURRENT_BINARY_DIR}/test_binaries_$<CONFIG>.txt\" TEST_BINARIES)
 string(REPLACE \"\\n\" \";\" TEST_BINARIES_LIST \"\${TEST_BINARIES}\")
+set(LLVM_COV \"${LLVM_COV}\")
 set(COVERAGE_HTML_DIR \"${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coverage/html\")
 set(COVERAGE_LCOV_DIR \"${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coverage/lcov\")
 set(COVERAGE_TEXT_DIR \"${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coverage/text\")
@@ -683,7 +684,7 @@ foreach(BINARY IN LISTS TEST_BINARIES_LIST)
 endforeach()
 # Generate HTML report
 execute_process(
-    COMMAND llvm-cov show 
+    COMMAND \${LLVM_COV} show 
             -format=html
             -output-dir=\${COVERAGE_HTML_DIR}
             -instr-profile=\${PROFDATA_FILE}
@@ -696,7 +697,7 @@ if(NOT html_result EQUAL 0)
 endif()
 # Generate text summary report
 execute_process(
-    COMMAND llvm-cov report
+    COMMAND \${LLVM_COV} report
             -instr-profile=\${PROFDATA_FILE}
             -ignore-filename-regex=\${IGNORE_REGEX}
             \${OBJECT_ARGS}
@@ -708,7 +709,7 @@ if(NOT report_result EQUAL 0)
 endif()
 # Generate detailed text report
 execute_process(
-    COMMAND llvm-cov show
+    COMMAND \${LLVM_COV} show
             -instr-profile=\${PROFDATA_FILE}
             -ignore-filename-regex=\${IGNORE_REGEX}
             \${OBJECT_ARGS}
@@ -720,7 +721,7 @@ if(NOT show_result EQUAL 0)
 endif()
 # Generate lcov format for SonarCloud
 execute_process(
-    COMMAND llvm-cov export
+    COMMAND \${LLVM_COV} export
             -format=lcov
             -instr-profile=\${PROFDATA_FILE}
             -ignore-filename-regex=\${IGNORE_REGEX}
