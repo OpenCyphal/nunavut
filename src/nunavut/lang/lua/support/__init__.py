@@ -13,8 +13,10 @@ from nunavut._utilities import (
     empty_list_support_files,
     iter_package_resources,
 )
+
 __version__ = "1.0.0"
 """Version of the LUA dissectors."""
+
 
 def list_support_files(
     resource_type: ResourceType = ResourceType.ANY,
@@ -22,6 +24,18 @@ def list_support_files(
     """
     Get a list of Lua support modules embedded in this package.
     """
-    if resource_type not in (ResourceType.ANY, ResourceType.SERIALIZATION_SUPPORT):
+    if resource_type is ResourceType.SERIALIZATION_SUPPORT:
+        # Return serialization support files (nunavut_support.j2)
+        for path in iter_package_resources(__name__, ".j2"):
+            if path.name != "cyphal.j2":
+                yield path
+    elif resource_type is ResourceType.TYPE_SUPPORT:
+        # Return cyphal.j2 which aggregates all registered types
+        for path in iter_package_resources(__name__, ".j2"):
+            if path.name == "cyphal.j2":
+                yield path
+    elif resource_type is ResourceType.ANY:
+        # Return all support files
+        return iter_package_resources(__name__, ".j2")
+    else:
         return empty_list_support_files()
-    return iter_package_resources(__name__, ".j2")

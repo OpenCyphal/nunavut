@@ -1,0 +1,63 @@
+{#-
+# Copyright (c) 2024 OpenCyphal
+# This software is distributed under the terms of the MIT License.
+# Author: Erik Rainey <erik.rainey@gmail.com>
+-#}
+
+{#- This is the top level file which is imported by Cyphal/UDP or Cyphal/CAN to pull in all required types. -#}
+
+{# for each registered message w/ a defined port id #}
+{%- for type in messages %}
+local {{type | full_reference_name }} = require('{{type | string_reference_name}}')
+{%- endfor %}
+{# for each registered service w/ a defined port id #}
+{%- for type in services %}
+local {{type | full_reference_name }} = require('{{type | string_reference_name}}')
+{%- endfor %}
+
+function register_cyphal_types(cyphal_proto)
+{%- for type in messages %}
+    {{type | full_reference_name }}.register(cyphal_proto)
+{%- endfor %}
+end
+
+function decode_cyphal_messages(cyphal_proto, payload, pinfo, payload_tree, subject_id)
+-- for each message w/ a registered port id, add a condition to check for it's subject ID and call it's dissector
+{%- if messages %}
+{%- for type in messages %}
+{%- if loop.first %}
+    if subject_id == {{type | full_reference_name }}.subject_id then
+{%- else %}
+    elseif subject_id == {{type | full_reference_name }}.subject_id then
+{%- endif %}
+        {{type | full_reference_name }}.decode(cyphal_proto, payload, pinfo, payload_tree)
+{%- endfor %}
+    else
+        payload_tree:add_expert_info(PI_RECEIVE, PI_COMMENT, "Unknown Message type")
+    end
+{%- endif %}
+end
+
+function decode_cyphal_services(cyphal_proto, payload, pinfo, payload_tree, request_not_response, service_id)
+-- for each message w/ a registered port id, add a condition to check for it's service ID and call it's dissector
+{%- if services %}
+{%- for type in services %}
+{%- if loop.first %}
+    if service_id == {{type | full_reference_name }}.service_id then
+{%- else %}
+    elseif service_id == {{type | full_reference_name }}.service_id then
+{%- endif %}
+        {{type | full_reference_name }}.decode(cyphal_proto, payload, pinfo, payload_tree)
+{%- endfor %}
+    else
+        payload_tree:add_expert_info(PI_RECEIVE, PI_COMMENT, "Unknown Service type")
+    end
+{%- endif %}
+end
+
+-- Return the types and the decoders
+return {
+    register_cyphal_types = register_cyphal_types,
+    decode_messages = decode_cyphal_messages,
+    decode_services = decode_cyphal_services
+}

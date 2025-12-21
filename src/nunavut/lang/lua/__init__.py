@@ -4,8 +4,8 @@
 # This software is distributed under the terms of the MIT License.
 #
 """
-    Filters for generating python. All filters in this
-    module will be available in the template's global namespace as ``lua``.
+Filters for generating python. All filters in this
+module will be available in the template's global namespace as ``lua``.
 """
 from __future__ import annotations
 import builtins
@@ -29,7 +29,7 @@ from nunavut._templates import (
     template_language_filter,
     template_language_int_filter,
     template_language_list_filter,
-    template_environment_list_filter
+    template_environment_list_filter,
 )
 from nunavut.lang import Language as BaseLanguage
 from nunavut.lang._common import RequireGenerator, TokenEncoder, UniqueNameGenerator
@@ -72,6 +72,35 @@ class Language(BaseLanguage):
         raw_name = self.default_filter_id_for_target(instance)
         return self._get_token_encoder().strop(raw_name, id_type)
 
+    def get_support_globals(self, namespace: typing.Any) -> typing.Dict[str, typing.Any]:
+        """
+        Provide additional globals for support template rendering.
+        Collects all messages and services with fixed port IDs from the namespace tree.
+
+        :param namespace: The root namespace being generated
+        :return: Dictionary of additional globals to inject into support templates
+        """
+        messages = []
+        services = []
+
+        def collect_from_namespace(ns: typing.Any) -> None:
+            """Recursively collect registered types from namespace tree."""
+            for data_type, _ in ns.get_nested_types():
+                if isinstance(data_type, pydsdl.ServiceType):
+                    if hasattr(data_type, "fixed_port_id") and data_type.fixed_port_id is not None:
+                        services.append(data_type)
+                elif hasattr(data_type, "fixed_port_id") and data_type.fixed_port_id is not None:
+                    messages.append(data_type)
+
+            # Recurse into nested namespaces
+            for child_ns in ns.get_nested_namespaces():
+                collect_from_namespace(child_ns)
+
+        if namespace is not None:
+            collect_from_namespace(namespace)
+
+        return {"messages": messages, "services": services}
+
 
 @template_language_filter(__name__)
 def filter_id(language: Language, instance: typing.Any, id_type: str = "any") -> str:
@@ -87,6 +116,7 @@ def filter_id(language: Language, instance: typing.Any, id_type: str = "any") ->
     """
     print(">>LUA ", instance, " is ", instance.__class__, " with id ", id_type)
     return language.filter_id(instance, id_type)
+
 
 @template_language_filter(__name__)
 def filter_string_reference_name(language: Language, t: pydsdl.CompositeType) -> str:
@@ -131,50 +161,65 @@ def filter_short_reference_name(language: Language, t: pydsdl.CompositeType) -> 
     """
     return language.filter_short_reference_name(t)
 
+
 @template_language_filter(__name__)
 def filter_to_protofield_type(language: Language, value: pydsdl.PrimitiveType) -> str:
     """
     Converts a primitive type to a wireshark protofield subtype
     """
     if isinstance(value, pydsdl.UnsignedIntegerType):
+
         if value.bit_length <= 8:
-            return 'uint8'
+            return "uint8"
         elif value.bit_length <= 16:
-            return 'uint16'
+            return "uint16"
         elif value.bit_length <= 24:
-            return 'uint24'
+            return "uint24"
         elif value.bit_length <= 32:
-            return 'uint32'
+            return "uint32"
+        elif value.bit_length <= 40:
+            return "uint40"
+        elif value.bit_length <= 48:
+            return "uint48"
+        elif value.bit_length <= 56:
+            return "uint56"
         elif value.bit_length <= 64:
-            return 'uint64'
+            return "uint64"
         else:
-            raise RuntimeError('Bit depth above 64 bit is not supported!')
+            raise RuntimeError("Bit depth above 64 bit is not supported!")
     elif isinstance(value, pydsdl.SignedIntegerType):
         if value.bit_length <= 8:
-            return 'int8'
+            return "int8"
         elif value.bit_length <= 16:
-            return 'int16'
+            return "int16"
         elif value.bit_length <= 24:
-            return 'int24'
+            return "int24"
         elif value.bit_length <= 32:
-            return 'int32'
+            return "int32"
+        elif value.bit_length <= 40:
+            return "int40"
+        elif value.bit_length <= 48:
+            return "int48"
+        elif value.bit_length <= 56:
+            return "int56"
         elif value.bit_length <= 64:
-            return 'int64'
+            return "int64"
         else:
-            raise RuntimeError('Bit depth above 64 bit is not supported!')
+            raise RuntimeError("Bit depth above 64 bit is not supported!")
     elif isinstance(value, pydsdl.FloatType):
         if value.bit_length <= 32:
-            return 'float'
+            return "float"
         elif value.bit_length <= 64:
-            return 'double'
+            return "double"
         else:
-            raise RuntimeError('Bit depth above 64 bit is not supported!')
+            raise RuntimeError("Bit depth above 64 bit is not supported!")
     elif isinstance(value, pydsdl.BooleanType):
-        return 'bool'
+        return "bool"
     elif isinstance(value, pydsdl.VoidType):
-        return 'none'
+        return "none"
     else:
         raise RuntimeError("{} is not a known PrimitiveType".format(type(value).__name__))
+
 
 @template_language_filter(__name__)
 def filter_to_field_type(language: Language, value: pydsdl.PrimitiveType) -> str:
@@ -183,43 +228,44 @@ def filter_to_field_type(language: Language, value: pydsdl.PrimitiveType) -> str
     """
     if isinstance(value, pydsdl.UnsignedIntegerType):
         if value.bit_length <= 8:
-            return 'ftypes.UINT8'
+            return "ftypes.UINT8"
         elif value.bit_length <= 16:
-            return 'ftypes.UINT16'
+            return "ftypes.UINT16"
         elif value.bit_length <= 24:
-            return 'ftypes.UINT24'
+            return "ftypes.UINT24"
         elif value.bit_length <= 32:
-            return 'ftypes.UINT32'
+            return "ftypes.UINT32"
         elif value.bit_length <= 64:
-            return 'ftypes.UINT64'
+            return "ftypes.UINT64"
         else:
-            raise RuntimeError('Bit depth above 64 bit is not supported!')
+            raise RuntimeError("Bit depth above 64 bit is not supported!")
     elif isinstance(value, pydsdl.SignedIntegerType):
         if value.bit_length <= 8:
-            return 'ftypes.INT8'
+            return "ftypes.INT8"
         elif value.bit_length <= 16:
-            return 'ftypes.INT16'
+            return "ftypes.INT16"
         elif value.bit_length <= 24:
-            return 'ftypes.INT24'
+            return "ftypes.INT24"
         elif value.bit_length <= 32:
-            return 'ftypes.INT32'
+            return "ftypes.INT32"
         elif value.bit_length <= 64:
-            return 'ftypes.INT64'
+            return "ftypes.INT64"
         else:
-            raise RuntimeError('Bit depth above 64 bit is not supported!')
+            raise RuntimeError("Bit depth above 64 bit is not supported!")
     elif isinstance(value, pydsdl.FloatType):
         if value.bit_length <= 32:
-            return 'ftypes.FLOAT'
+            return "ftypes.FLOAT"
         elif value.bit_length <= 64:
-            return 'ftypes.DOUBLE'
+            return "ftypes.DOUBLE"
         else:
-            raise RuntimeError('Bit depth above 64 bit is not supported!')
+            raise RuntimeError("Bit depth above 64 bit is not supported!")
     elif isinstance(value, pydsdl.BooleanType):
-        return 'ftypes.BOOLEAN'
+        return "ftypes.BOOLEAN"
     elif isinstance(value, pydsdl.VoidType):
-        return 'ftypes.NONE'
+        return "ftypes.NONE"
     else:
         raise RuntimeError("{} is not a known PrimitiveType".format(type(value).__name__))
+
 
 @template_language_filter(__name__)
 def filter_to_base_type(language: Language, value: pydsdl.PrimitiveType) -> str:
@@ -227,17 +273,18 @@ def filter_to_base_type(language: Language, value: pydsdl.PrimitiveType) -> str:
     Converts a primitive type to a protofield subtype
     """
     if isinstance(value, pydsdl.UnsignedIntegerType):
-        return 'base.DEC'
+        return "base.DEC"
     elif isinstance(value, pydsdl.SignedIntegerType):
-        return 'base.DEC'
+        return "base.DEC"
     elif isinstance(value, pydsdl.FloatType):
-        return ''
+        return ""
     elif isinstance(value, pydsdl.BooleanType):
-        return ''
+        return ""
     elif isinstance(value, pydsdl.VoidType):
-        return 'base.NONE'
+        return "base.NONE"
     else:
         raise RuntimeError("{} is not a known PrimitiveType".format(type(value).__name__))
+
 
 @template_language_int_filter(__name__)
 def filter_to_serialized_length(language: Language, value: pydsdl.PrimitiveType) -> int:
@@ -252,10 +299,73 @@ def filter_to_serialized_length(language: Language, value: pydsdl.PrimitiveType)
         return 3
     elif value.bit_length <= 32:
         return 4
+    elif value.bit_length <= 40:
+        return 5
+    elif value.bit_length <= 48:
+        return 6
+    elif value.bit_length <= 56:
+        return 7
     elif value.bit_length <= 64:
         return 8
     else:
-        raise RuntimeError('Bit depth above 64 bit is not supported!')
+        raise RuntimeError("Bit depth above 64 bit is not supported!")
+
+
+@template_language_filter(__name__)
+def filter_to_wireshark_type(language: Language, value: pydsdl.PrimitiveType) -> str:
+    """
+    Converts a primitive type to a wireshark protofield subtype
+    """
+    if isinstance(value, pydsdl.UnsignedIntegerType):
+        if value.bit_length <= 8:
+            return "uint"
+        elif value.bit_length <= 16:
+            return "uint"
+        elif value.bit_length <= 24:
+            return "uint"
+        elif value.bit_length <= 32:
+            return "uint"
+        elif value.bit_length <= 40:
+            return "uint64"
+        elif value.bit_length <= 48:
+            return "uint64"
+        elif value.bit_length <= 56:
+            return "uint64"
+        elif value.bit_length <= 64:
+            return "uint64"
+        else:
+            raise RuntimeError("Bit depth above 64 bit is not supported!")
+    elif isinstance(value, pydsdl.SignedIntegerType):
+        if value.bit_length <= 8:
+            return "int"
+        elif value.bit_length <= 16:
+            return "int"
+        elif value.bit_length <= 24:
+            return "int"
+        elif value.bit_length <= 32:
+            return "int"
+        elif value.bit_length <= 40:
+            return "int64"
+        elif value.bit_length <= 48:
+            return "int64"
+        elif value.bit_length <= 56:
+            return "int64"
+        elif value.bit_length <= 64:
+            return "int64"
+        else:
+            raise RuntimeError("Bit depth above 64 bit is not supported!")
+    elif isinstance(value, pydsdl.FloatType):
+        if value.bit_length <= 32:
+            return "float"
+        elif value.bit_length <= 64:
+            return "double"
+        else:
+            raise RuntimeError("Bit depth above 64 bit is not supported!")
+    elif isinstance(value, pydsdl.BooleanType):
+        return "bool"
+    else:
+        raise RuntimeError("{} is not a known PrimitiveType".format(type(value).__name__))
+
 
 @template_language_list_filter(__name__)
 def filter_requires(

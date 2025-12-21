@@ -6,66 +6,138 @@
 
 -- Nunavut Support Library Function for Decoding Primitives in Lua
 
-local function as_little_endian(field, payload, pinfo, tree, bit_depth)
-    local field_size = bit_depth / 8
-    tree:add_le(field, payload(0, field_size))
+local function decode_payload_uint8(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_uint()
+    tree:add_le(field, tvb, value)
     return field_size
 end
 
-local function decode_payload_uint8(field, payload, pinfo, tree)
-    return as_little_endian(field, payload, pinfo, tree, 8)
+local function decode_payload_uint16(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_uint()
+    tree:add_le(field, tvb, value)
+    return field_size
 end
 
-local function decode_payload_uint16(field, payload, pinfo, tree)
-    return as_little_endian(field, payload, pinfo, tree, 16)
+local function decode_payload_uint24(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_uint()
+    tree:add_le(field, tvb, value)
+    return field_size
 end
 
-local function decode_payload_uint24(field, payload, pinfo, tree)
-    return as_little_endian(field, payload, pinfo, tree, 24)
+local function decode_payload_uint32(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_uint()
+    tree:add_le(field, tvb, value)
+    return field_size
 end
 
-local function decode_payload_uint32(field, payload, pinfo, tree)
-    return as_little_endian(field, payload, pinfo, tree, 32)
+local function decode_payload_uint40(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_uint64()
+    tree:add_le(field, tvb, value)
+    return field_size
 end
 
-local function decode_payload_uint64(field, payload, pinfo, tree)
-    return as_little_endian(field, payload, pinfo, tree, 64)
+local function decode_payload_uint48(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_uint64()
+    tree:add_le(field, tvb, value)
+    return field_size
 end
 
-local function decode_payload_int8(field, payload, pinfo, tree)
-    return as_little_endian(field, payload, pinfo, tree, 8)
+local function decode_payload_uint56(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_uint64()
+    tree:add_le(field, tvb, value)
+    return field_size
 end
 
-local function decode_payload_int16(field, payload, pinfo, tree)
-    return as_little_endian(field, payload, pinfo, tree, 16)
+local function decode_payload_uint64(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_uint64()
+    tree:add_le(field, tvb, value)
+    return field_size
 end
 
-local function decode_payload_int24(field, payload, pinfo, tree)
-    return as_little_endian(field, payload, pinfo, tree, 24)
+local function decode_payload_int8(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_int()
+    tree:add_le(field, tvb, value)
+    return field_size
 end
 
-local function decode_payload_int32(field, payload, pinfo, tree)
-    return as_little_endian(field, payload, pinfo, tree, 32)
+local function decode_payload_int16(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_int()
+    tree:add_le(field, tvb, value)
+    return field_size
 end
 
-local function decode_payload_int64(field, payload, pinfo, tree)
-    return as_little_endian(field, payload, pinfo, tree, 64)
+local function decode_payload_int24(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_int()
+    tree:add_le(field, tvb, value)
+    return field_size
 end
 
-local function decode_payload_float(field, payload, pinfo, tree)
-    return as_little_endian(field, payload, pinfo, tree, 32)
+local function decode_payload_int32(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_int()
+    tree:add_le(field, tvb, value)
+    return field_size
 end
 
-local function decode_payload_double(field, payload, pinfo, tree)
-    return as_little_endian(field, payload, pinfo, tree, 64)
+local function decode_payload_int40(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_int64()
+    tree:add_le(field, tvb, value)
+    return field_size
 end
 
-local function decode_payload_bool(field, payload, pinfo, tree)
+local function decode_payload_int48(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_int64()
+    tree:add_le(field, tvb, value)
+    return field_size
+end
+
+local function decode_payload_int56(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_int64()
+    tree:add_le(field, tvb, value)
+    return field_size
+end
+
+local function decode_payload_int64(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_int64()
+    tree:add_le(field, tvb, value)
+    return field_size
+end
+
+local function decode_payload_float(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_float()
+    tree:add_le(field, tvb, value)
+    return field_size
+end
+
+local function decode_payload_double(field, payload, offset, field_size, tree)
+    tvb = payload(offset, field_size)
+    value = tvb:le_float()
+    tree:add_le(field, tvb, value)
+    return field_size
+end
+
+local function decode_payload_bool(field, payload, offset, field_size, tree)
     local offset = 0
     local field_size = 1
     local bits = payload(offset, 1):le_uint()
     local value = bit.band(bits, 0x1)
-    tree:add_le(field, value)
+    tree:add_le(field, bits, value)
     return offset
 end
 
@@ -98,11 +170,17 @@ return {
     as_uint16 = decode_payload_uint16,
     as_uint24 = decode_payload_uint24,
     as_uint32 = decode_payload_uint32,
+    as_uint40 = decode_payload_uint40,
+    as_uint48 = decode_payload_uint48,
+    as_uint56 = decode_payload_uint56,
     as_uint64 = decode_payload_uint64,
     as_int8 = decode_payload_int8,
     as_int16 = decode_payload_int16,
     as_int24 = decode_payload_int24,
     as_int32 = decode_payload_int32,
+    as_int40 = decode_payload_int40,
+    as_int48 = decode_payload_int48,
+    as_int56 = decode_payload_int56,
     as_int64 = decode_payload_int64,
     as_float = decode_payload_float,
     as_double = decode_payload_double,

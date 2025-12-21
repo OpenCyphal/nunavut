@@ -12,11 +12,11 @@ subtree - The current level of the tree structure
     -- void type
     offset = offset + {{ field.data_type | to_serialized_length }}
 {%- elif field is PrimitiveType %}
-    -- primitive type
+    -- primitive type {{ field.data_type }}
     offset = offset + nunavut_support.as_{{ field.data_type | to_protofield_type }}(
             {{ type | full_reference_name }}_{{ field.name }},
-            payload(offset, {{ field.data_type | to_serialized_length }}),
-            pinfo, subtree, "{{ field.name }}")
+            payload, offset, {{ field.data_type | to_serialized_length }},
+            subtree) -- , "{{ field.name }}")
 {%- elif field is ArrayType %}
     -- array type
 {%-     if field is FixedLengthArrayType %}
@@ -26,7 +26,7 @@ subtree - The current level of the tree structure
     local mask = payload(offset, {{field.data_type.capacity}}):bytes()
     local functor = function(proto, payload, pinfo, tree, index)
         -- index X is set or not! what does that mean to you?
-        -- subtree:add(proto, )
+        -- TODO reprsent boolean series
     end
     nunavut_support.as_bool_array(proto, payload, pinfo, subtree, functor, "{{field.name}}")
 {%-         elif field.data_type.element_type is PrimitiveType %}
@@ -34,7 +34,9 @@ subtree - The current level of the tree structure
     field_size = {{ field.data_type.element_type | to_serialized_length }}
     for i = 1, _length_ do
         -- element is primitive type {{ field.data_type.element_type }}
-        subtree:add_le(proto, payload(offset, field_size), string.format("{{field.name}}[%u]", i))
+        tvb = payload(offset, field_size)
+        value = tvb:le_{{ field.data_type.element_type | to_wireshark_type }}()
+        subtree:add_le(proto, tvb, value, string.format("{{field.name}}[%u]", i))
         offset = offset + field_size
     end
 {%-         else %}

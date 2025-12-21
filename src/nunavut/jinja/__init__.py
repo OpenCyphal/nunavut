@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 #
 """
-    jinja-based :class:`~nunavut.generators.AbstractGenerator` implementation.
+jinja-based :class:`~nunavut.generators.AbstractGenerator` implementation.
 """
 
 import abc
@@ -922,6 +922,13 @@ class SupportGenerator(CodeGenerator):
         self._env.update_nunavut_globals(
             *target_language.get_support_module(), omit_serialization_support, embed_auditing_info
         )
+
+        # Allow language to provide additional support globals (e.g., for aggregator files)
+        if hasattr(target_language, "get_support_globals"):
+            support_globals = target_language.get_support_globals(self.namespace)
+            for key, value in support_globals.items():
+                self._env.globals[key] = value
+
         target_path = pathlib.Path(self.namespace.get_support_output_folder()) / self._sub_folders
 
         line_pps = []  # type: typing.List['nunavut._postprocessors.LinePostProcessor']
