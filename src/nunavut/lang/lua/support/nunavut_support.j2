@@ -150,7 +150,7 @@ end
 
 local function decode_payload_mask(field, byte_array, pinfo, tree, functor)
     -- we assume the payload has be narrowed to the right value for the mask array
-    -- the functor must be of the form function(field, pinfo, tree, index)
+    -- the functor must be of the form function(field, byte_array, pinfo, tree, byte_offset, bit_index)
     -- only set mask bits will be called.
     for i = 1, byte_array:len() do
         for j = 1, 8 do
@@ -158,8 +158,8 @@ local function decode_payload_mask(field, byte_array, pinfo, tree, functor)
             local value = byte_array(i - 1, 1):le_uint()
             local bit = bit.band(value, mask)
             if bit > 0 then -- if any bit set
-                local index = (8 * (i - 1)) + (j - 1)
-                functor(field, byte_array, pinfo, tree, index)
+                local bit_index = (8 * (i - 1)) + (j - 1)
+                functor(field, byte_array, pinfo, tree, i - 1, bit_index)
             end
         end
     end

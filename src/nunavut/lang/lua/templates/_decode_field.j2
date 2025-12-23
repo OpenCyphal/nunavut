@@ -29,12 +29,13 @@ subtree - The current level of the tree structure
 {%-         if field.data_type.element_type is BooleanType %}
     -- bool mask!
     local mask = payload(offset, ({{field.data_type.capacity}} / 8)):bytes()
-    local functor = function(proto, byte_array, pinfo, tree, index)
-        -- Create a big-endian bit string representation
-        local bit_string = string.format("[%u]", index)
-        subtree:add(proto, byte_array(0, ({{field.data_type.capacity}} / 8)), bit_string)
+    local set_indexes = {}
+    local functor = function(proto, byte_array, pinfo, tree, byte_offset, bit_index)
+        table.insert(set_indexes, tostring(bit_index))
     end
     nunavut_support.as_bool_array(proto, mask, pinfo, subtree, functor, "{{field.name}}")
+    local index_str = table.concat(set_indexes, ", ")
+    subtree:add(proto, payload(offset, ({{field.data_type.capacity}} / 8)), string.format("[%s]", index_str))
     offset = offset + ({{field.data_type.capacity}} / 8)
 {%-         elif field.data_type.element_type is PrimitiveType %}
     _length_ = {{field.data_type.capacity}}
@@ -61,12 +62,13 @@ subtree - The current level of the tree structure
 {%-         if field.data_type.element_type is BooleanType %}
     -- bool mask!
     local mask = payload(offset, (_length_ / 8)):bytes()
-    local functor = function(proto, byte_array, pinfo, tree, index)
-        -- Create a big-endian bit string representation
-        local bit_string = string.format("[%u]", index)
-        subtree:add(proto, byte_array(0, (_length_ / 8)), bit_string)
+    local set_indexes = {}
+    local functor = function(proto, byte_array, pinfo, tree, byte_offset, bit_index)
+        table.insert(set_indexes, tostring(bit_index))
     end
     nunavut_support.as_bool_array(proto, mask, pinfo, subtree, functor, "{{field.name}}")
+    local index_str = table.concat(set_indexes, ", ")
+    subtree:add(proto, payload(offset, (_length_ / 8)), string.format("[%s]", index_str))
     offset = offset + (_length_ / 8)
 {%-         elif field.data_type.element_type is PrimitiveType %}
     field_size = {{ field.data_type.element_type | to_serialized_length }}
