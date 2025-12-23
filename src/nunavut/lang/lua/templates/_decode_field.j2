@@ -72,6 +72,38 @@ subtree - The current level of the tree structure
     offset = offset + (_length_ / 8)
 {%-         elif field.data_type.element_type is PrimitiveType %}
     field_size = {{ field.data_type.element_type | to_serialized_length }}
+{%-             if field.data_type.element_type is UnsignedIntegerType and field.data_type.element_type.bit_length == 8 %}
+    -- Special case: uint8 array might be an ASCII string
+    if _length_ > 0 then
+        local byte_data = payload(offset, _length_ * field_size):bytes()
+        local is_ascii = true
+        local has_printable = false
+        -- Check if data is ASCII printable or whitespace
+        for i = 0, _length_ - 1 do
+            local byte_val = byte_data:get_index(i)
+            if byte_val >= 32 and byte_val <= 126 then
+                has_printable = true
+            elseif byte_val ~= 9 and byte_val ~= 10 and byte_val ~= 13 and byte_val ~= 0 then
+                -- Not printable, not tab, not newline, not carriage return, not null
+                is_ascii = false
+                break
+            end
+        end
+        if is_ascii and has_printable then
+            -- Display as ASCII string (use proto directly, not the typed ProtoField)
+            local str_value = payload(offset, _length_ * field_size):string()
+            subtree:add(proto, payload(offset - {{ field.data_type.length_field_type | to_serialized_length }}, _length_ * field_size + {{ field.data_type.length_field_type | to_serialized_length }}), string.format("{{field.name}}: \"%s\"", str_value))
+        else
+            -- Display as hex bytes
+            for i = 1, _length_ do
+                tvb = payload(offset + (i - 1) * field_size, field_size)
+                value = tvb:le_uint()
+                subtree:add_le(proto, tvb, value, string.format("{{field.name}}[%u]", i))
+            end
+        end
+    end
+    offset = offset + _length_ * field_size
+{%-             else %}
     for i = 1, _length_ do
         -- element is primitive type {{ field.data_type.element_type }}
         tvb = payload(offset, field_size)
@@ -85,6 +117,7 @@ subtree - The current level of the tree structure
                 pinfo, subtree, "{{ field.name }}")
         #}
     end
+{%-             endif %}
 {%-         else %}
     for i = 1, _length_ do
         -- composite type {{ field.data_type.element_type }}
