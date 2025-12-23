@@ -42,16 +42,19 @@ local {{ structure_type | full_reference_name }}_Response_{{ field_name }} = Pro
     local subtree = payload_tree:add(proto, payload(0, extent), "{{ type | string_reference_name }}")
     subtree:prepend_text(string.format("%s of type ", label))
 
-{%- if type is UnionType %}
+{%- if type is UnionType or type.inner_type is UnionType %}
 {# START UNION TYPES #}
     local _tag_ = payload(offset, 1):le_uint()
+    subtree:add_le({{ type | full_reference_name }}_tag, payload(offset, 1), _tag_)
     offset = offset + 1
-{%- set ns = namespace(_tag_=1) %}
+{%- set ns = namespace(_tag_=0) %}
 {%- for field in type.fields %}
-{%- if ns._tag_ == 1 %}
+{%- if ns._tag_ == 0 %}
     if _tag_ == {{ns._tag_}} then
+        subtree:append_text(string.format(" [variant: %s]", "{{field.name}}"))
 {%- else %}
     elseif _tag_ == {{ns._tag_}} then
+        subtree:append_text(string.format(" [variant: %s]", "{{field.name}}"))
 {%- endif %}
     {%- include '_decode_field.j2' %}
     {%- set ns._tag_ = ns._tag_ + 1 %}
@@ -81,6 +84,13 @@ local {{ c.name }} = {{ c.value }}
 
 {# Field Declarations #}
 {%- macro declare_fields(type) %}
+{%- if type is UnionType or type.inner_type is UnionType %}
+-- Union tag field
+local {{ type | full_reference_name }}_tag = ProtoField.new(
+    '_tag_', -- name in the shown fields
+    '{{ type | string_reference_name }}._tag_', -- abbr named used by filters
+    ftypes.UINT8) -- tag is always uint8
+{%- endif %}
 {%- for field in type.fields %}
 {%- if field.doc %}
 --[[
@@ -121,6 +131,9 @@ local {{ c.name }} = {{ c.value }}
 {# Register Fields Inner function #}
 {%- macro register_fields(type) %}
 {# this is intended twice #}
+        {%- if type is UnionType or type.inner_type is UnionType %}
+        table.insert(cyphal_proto.fields, {{ type | full_reference_name }}_tag)
+        {%- endif %}
         {%- for field in type.fields %}
         {%- if field is PrimitiveType %}
         table.insert(cyphal_proto.fields, {{ type | full_reference_name }}_{{field.name}})

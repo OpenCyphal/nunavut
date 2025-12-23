@@ -138,7 +138,7 @@ local function decode_payload_bool(field, payload, offset, field_size, tree)
     local bits = payload(offset, 1):le_uint()
     local value = bit.band(bits, 0x1)
     tree:add_le(field, bits, value)
-    return offset
+    return field_size
 end
 
 function uint16_to_bytes_le(value)
@@ -148,18 +148,18 @@ function uint16_to_bytes_le(value)
     return arr
 end
 
-local function decode_payload_mask(field, bytes_array, pinfo, tree, functor)
+local function decode_payload_mask(field, byte_array, pinfo, tree, functor)
     -- we assume the payload has be narrowed to the right value for the mask array
     -- the functor must be of the form function(field, pinfo, tree, index)
     -- only set mask bits will be called.
-    for i = 1, bytes_array:len() do
+    for i = 1, byte_array:len() do
         for j = 1, 8 do
             local mask = bit.lshift(1, j - 1)
-            local value = byte_array:get_index(i - 1)
+            local value = byte_array(i - 1, 1):le_uint()
             local bit = bit.band(value, mask)
             if bit > 0 then -- if any bit set
                 local index = (8 * (i - 1)) + (j - 1)
-                functor(field, pinfo, tree, index)
+                functor(field, byte_array, pinfo, tree, index)
             end
         end
     end

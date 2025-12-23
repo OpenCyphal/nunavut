@@ -29,19 +29,12 @@ subtree - The current level of the tree structure
 {%-         if field.data_type.element_type is BooleanType %}
     -- bool mask!
     local mask = payload(offset, ({{field.data_type.capacity}} / 8)):bytes()
-    local functor = function(proto, payload, pinfo, tree, index)
+    local functor = function(proto, byte_array, pinfo, tree, index)
         -- Create a big-endian bit string representation
-        local bit_string = "0b"
-        for i = 0, {{field.data_type.capacity - 1}} do
-            local byte_idx = math.floor(i / 8)
-            local bit_idx = 7 - (i % 8)  -- Big-endian: MSB first
-            local byte_val = mask:get_index(byte_idx)
-            local bit_val = bit.band(bit.rshift(byte_val, bit_idx), 1)
-            bit_string = bit_string .. tostring(bit_val)
-        end
-        subtree:add(proto, payload(offset, ({{field.data_type.capacity}} / 8)), bit_string)
+        local bit_string = string.format("[%u]", index)
+        subtree:add(proto, byte_array(0, ({{field.data_type.capacity}} / 8)), bit_string)
     end
-    nunavut_support.as_bool_array(proto, payload, pinfo, subtree, functor, "{{field.name}}")
+    nunavut_support.as_bool_array(proto, mask, pinfo, subtree, functor, "{{field.name}}")
     offset = offset + ({{field.data_type.capacity}} / 8)
 {%-         elif field.data_type.element_type is PrimitiveType %}
     _length_ = {{field.data_type.capacity}}
@@ -68,20 +61,12 @@ subtree - The current level of the tree structure
 {%-         if field.data_type.element_type is BooleanType %}
     -- bool mask!
     local mask = payload(offset, (_length_ / 8)):bytes()
-    local functor = function(proto, payload, pinfo, tree, index)
+    local functor = function(proto, byte_array, pinfo, tree, index)
         -- Create a big-endian bit string representation
-        local bit_string = ""
-        local num_bits = math.min(_length_ * 8, {{field.data_type.capacity}})  -- Don't exceed capacity
-        for i = 0, num_bits - 1 do
-            local byte_idx = math.floor(i / 8)
-            local bit_idx = 7 - (i % 8)  -- Big-endian: MSB first
-            local byte_val = mask:get_index(byte_idx)
-            local bit_val = bit.band(bit.rshift(byte_val, bit_idx), 1)
-            bit_string = bit_string .. tostring(bit_val)
-        end
-        subtree:add(proto, payload(offset, (_length_ / 8)), bit_string)
+        local bit_string = string.format("[%u]", index)
+        subtree:add(proto, byte_array(0, (_length_ / 8)), bit_string)
     end
-    nunavut_support.as_bool_array(proto, payload, pinfo, subtree, functor, "{{field.name}}")
+    nunavut_support.as_bool_array(proto, mask, pinfo, subtree, functor, "{{field.name}}")
     offset = offset + (_length_ / 8)
 {%-         elif field.data_type.element_type is PrimitiveType %}
     field_size = {{ field.data_type.element_type | to_serialized_length }}
