@@ -18,10 +18,38 @@ subtree - The current level of the tree structure
             payload, offset, subtree) -- , "{{ field.name }}")
 {%- elif field.data_type is PrimitiveType %}
     -- primitive type {{ field.data_type }}
+{%- if type.constants %}
+    -- Field may use enumerated constants
+    do
+        local tvb = payload(offset, {{ field.data_type | to_serialized_length }})
+        local value = tvb:le_{{ field.data_type | to_wireshark_type }}()
+        local enum_name = nil
+        -- Look up constant name
+{%- set ns = namespace(first=true) %}
+{%- for constant in type.constants %}
+{%- if ns.first %}
+        if value == {{ constant.name }} then
+            enum_name = "{{ constant.name }}"
+{%- set ns.first = false %}
+{%- else %}
+        elseif value == {{ constant.name }} then
+            enum_name = "{{ constant.name }}"
+{%- endif %}
+{%- endfor %}
+        end
+        if enum_name then
+            subtree:add_le({{ type | full_reference_name }}_{{ field.name }}, tvb, value, string.format("{{field.name}}: %s (%s)", tostring(value), enum_name))
+        else
+            subtree:add_le({{ type | full_reference_name }}_{{ field.name }}, tvb, value)
+        end
+        offset = offset + {{ field.data_type | to_serialized_length }}
+    end
+{%- else %}
     offset = offset + nunavut_support.as_{{ field.data_type | to_protofield_type }}(
             {{ type | full_reference_name }}_{{ field.name }},
             payload, offset, {{ field.data_type | to_serialized_length }},
             subtree) -- , "{{ field.name }}")
+{%- endif %}
 {%- elif field.data_type is ArrayType %}
     -- array type
 {%-     if field.data_type is FixedLengthArrayType %}
