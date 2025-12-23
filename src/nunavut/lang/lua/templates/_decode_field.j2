@@ -28,7 +28,7 @@ subtree - The current level of the tree structure
     -- Fixed Length Array of {{field.data_type.capacity}} elements
 {%-         if field.data_type.element_type is BooleanType %}
     -- bool mask!
-    local mask = payload(offset, {{field.data_type.capacity}}):bytes()
+    local mask = payload(offset, ({{field.data_type.capacity}} / 8)):bytes()
     local functor = function(proto, payload, pinfo, tree, index)
         -- Create a big-endian bit string representation
         local bit_string = "0b"
@@ -39,10 +39,10 @@ subtree - The current level of the tree structure
             local bit_val = bit.band(bit.rshift(byte_val, bit_idx), 1)
             bit_string = bit_string .. tostring(bit_val)
         end
-        subtree:add(proto, payload(offset, {{field.data_type.capacity}}), bit_string)
+        subtree:add(proto, payload(offset, ({{field.data_type.capacity}} / 8)), bit_string)
     end
     nunavut_support.as_bool_array(proto, payload, pinfo, subtree, functor, "{{field.name}}")
-    offset = offset + {{field.data_type.capacity}}
+    offset = offset + ({{field.data_type.capacity}} / 8)
 {%-         elif field.data_type.element_type is PrimitiveType %}
     _length_ = {{field.data_type.capacity}}
     field_size = {{ field.data_type.element_type | to_serialized_length }}
@@ -67,7 +67,7 @@ subtree - The current level of the tree structure
     offset = offset + {{ field.data_type.length_field_type | to_serialized_length }}
 {%-         if field.data_type.element_type is BooleanType %}
     -- bool mask!
-    local mask = payload(offset, _length_):bytes()
+    local mask = payload(offset, (_length_ / 8)):bytes()
     local functor = function(proto, payload, pinfo, tree, index)
         -- Create a big-endian bit string representation
         local bit_string = ""
@@ -79,10 +79,10 @@ subtree - The current level of the tree structure
             local bit_val = bit.band(bit.rshift(byte_val, bit_idx), 1)
             bit_string = bit_string .. tostring(bit_val)
         end
-        subtree:add(proto, payload(offset, _length_), bit_string)
+        subtree:add(proto, payload(offset, (_length_ / 8)), bit_string)
     end
     nunavut_support.as_bool_array(proto, payload, pinfo, subtree, functor, "{{field.name}}")
-    offset = offset + _length_
+    offset = offset + (_length_ / 8)
 {%-         elif field.data_type.element_type is PrimitiveType %}
     field_size = {{ field.data_type.element_type | to_serialized_length }}
     for i = 1, _length_ do
