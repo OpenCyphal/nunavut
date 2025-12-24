@@ -1,6 +1,6 @@
 {# Declares the Message Field #}
 {%- macro declare_primitive_field(structure_type, field_name, field_type) -%}
-local {{ structure_type | full_reference_name }}_{{ field_name }} = ProtoField.new(
+{{ structure_type | full_reference_name }}.{{ field_name }} = ProtoField.new(
     '{{field_name}}', -- name in the shown fields
     '{{ structure_type | string_reference_name }}.{{field_name}}', -- abbr named used by filters
      {{field_type | to_field_type }}) -- field type
@@ -8,7 +8,7 @@ local {{ structure_type | full_reference_name }}_{{ field_name }} = ProtoField.n
 
 {# Declares the Request Field #}
 {%- macro declare_primitive_field_request(structure_type, field_name, field_type) -%}
-local {{ structure_type | full_reference_name }}_Request_{{ field_name }} = ProtoField.new(
+{{ structure_type | full_reference_name }}.Request.{{ field_name }} = ProtoField.new(
     '{{field_name}}', -- name in the shown fields
     '{{ structure_type | string_reference_name }}.Request.{{field_name}}', -- abbr named used by filters
      {{field_type | to_field_type }}) -- field type
@@ -16,7 +16,7 @@ local {{ structure_type | full_reference_name }}_Request_{{ field_name }} = Prot
 
 {# Declares the Response Field #}
 {%- macro declare_primitive_field_response(structure_type, field_name, field_type) -%}
-local {{ structure_type | full_reference_name }}_Response_{{ field_name }} = ProtoField.new(
+{{ structure_type | full_reference_name }}.Response.{{ field_name }} = ProtoField.new(
     '{{field_name}}', -- name in the shown fields
     '{{ structure_type | string_reference_name }}.Response.{{field_name}}', -- abbr named used by filters
      {{field_type | to_field_type }}) -- field type
@@ -45,7 +45,7 @@ local {{ structure_type | full_reference_name }}_Response_{{ field_name }} = Pro
 {%- if type is UnionType or type.inner_type is UnionType %}
 {# START UNION TYPES #}
     local _tag_ = payload(offset, 1):le_uint()
-    subtree:add_le({{ type | full_reference_name }}_tag, payload(offset, 1), _tag_)
+    subtree:add_le({{ type | full_reference_name }}._tag_, payload(offset, 1), _tag_)
     offset = offset + 1
 {%- set ns = namespace(_tag_=0) %}
 {%- for field in type.fields %}
@@ -86,7 +86,7 @@ local {{ c.name }} = {{ c.value }}
 {%- macro declare_fields(type) %}
 {%- if type is UnionType or type.inner_type is UnionType %}
 -- Union tag field
-local {{ type | full_reference_name }}_tag = ProtoField.new(
+{{ type | full_reference_name }}._tag_ = ProtoField.new(
     '_tag_', -- name in the shown fields
     '{{ type | string_reference_name }}._tag_', -- abbr named used by filters
     ftypes.UINT8) -- tag is always uint8
@@ -128,18 +128,96 @@ local {{ type | full_reference_name }}_tag = ProtoField.new(
 {%- endfor %}
 {%- endmacro %}
 
+{# Field Declarations for Request in ServiceTypes #}
+{%- macro declare_fields_request(service_type, request_type) %}
+{%- if request_type is UnionType or request_type.inner_type is UnionType %}
+-- Union tag field
+{{ service_type | full_reference_name }}.Request._tag_ = ProtoField.new(
+    '_tag_', -- name in the shown fields
+    '{{ service_type | string_reference_name }}.Request._tag_', -- abbr named used by filters
+    ftypes.UINT8) -- tag is always uint8
+{%- endif %}
+{%- for field in request_type.fields %}
+{%- if field.doc %}
+--[[
+{{ field.doc }}
+]]--
+{%- endif %}
+{%- if field is PrimitiveType %}
+{{ declare_primitive_field_request(service_type, field.name, field.data_type) }}
+{%- elif field is ArrayType %}
+{%- if field is FixedLengthArrayType %}
+{%- if field.data_type.element_type is PrimitiveType %}
+{{ declare_primitive_field_request(service_type, field.name, field.data_type.element_type) }}
+{%- else %}
+-- CompositeTypes are required above ^
+{%- endif %}
+{%- elif field is VariableLengthArrayType %}
+{%- if field.data_type.element_type is PrimitiveType %}
+{{ declare_primitive_field_request(service_type, field.name, field.data_type.element_type) }}
+{%- else %}
+-- CompositeTypes are required above ^
+{%- endif %}
+{%- endif %}
+{%- elif field is CompositeType %}
+-- CompositeTypes are required above ^
+{%- else %}
+-- FIXME {{ field.name }} is a {{ field.data_type }} and we don't know about that yet!
+{%- endif %}
+{%- endfor %}
+{%- endmacro %}
+
+{# Field Declarations for Response in ServiceTypes #}
+{%- macro declare_fields_response(service_type, response_type) %}
+{%- if response_type is UnionType or response_type.inner_type is UnionType %}
+-- Union tag field
+{{ service_type | full_reference_name }}.Response._tag_ = ProtoField.new(
+    '_tag_', -- name in the shown fields
+    '{{ service_type | string_reference_name }}.Response._tag_', -- abbr named used by filters
+    ftypes.UINT8) -- tag is always uint8
+{%- endif %}
+{%- for field in response_type.fields %}
+{%- if field.doc %}
+--[[
+{{ field.doc }}
+]]--
+{%- endif %}
+{%- if field is PrimitiveType %}
+{{ declare_primitive_field_response(service_type, field.name, field.data_type) }}
+{%- elif field is ArrayType %}
+{%- if field is FixedLengthArrayType %}
+{%- if field.data_type.element_type is PrimitiveType %}
+{{ declare_primitive_field_response(service_type, field.name, field.data_type.element_type) }}
+{%- else %}
+-- CompositeTypes are required above ^
+{%- endif %}
+{%- elif field is VariableLengthArrayType %}
+{%- if field.data_type.element_type is PrimitiveType %}
+{{ declare_primitive_field_response(service_type, field.name, field.data_type.element_type) }}
+{%- else %}
+-- CompositeTypes are required above ^
+{%- endif %}
+{%- endif %}
+{%- elif field is CompositeType %}
+-- CompositeTypes are required above ^
+{%- else %}
+-- FIXME {{ field.name }} is a {{ field.data_type }} and we don't know about that yet!
+{%- endif %}
+{%- endfor %}
+{%- endmacro %}
+
 {# Register Fields Inner function #}
 {%- macro register_fields(type) %}
 {# this is intended twice #}
         {%- if type is UnionType or type.inner_type is UnionType %}
-        table.insert(cyphal_proto.fields, {{ type | full_reference_name }}_tag)
+        table.insert(cyphal_proto.fields, {{ type | full_reference_name }}._tag_)
         {%- endif %}
         {%- for field in type.fields %}
         {%- if field is PrimitiveType %}
-        table.insert(cyphal_proto.fields, {{ type | full_reference_name }}_{{field.name}})
+        table.insert(cyphal_proto.fields, {{ type | full_reference_name }}.{{field.name}})
         {%- elif field is ArrayType %}
-        -- FIXME register {{ type | full_reference_name }}_{{field.name}} as a single entry which will be repeated?
-        table.insert(cyphal_proto.fields, {{ type | full_reference_name }}_{{field.name}})
+        -- FIXME register {{ type | full_reference_name }}.{{field.name}} as a single entry which will be repeated?
+        table.insert(cyphal_proto.fields, {{ type | full_reference_name }}.{{field.name}})
         {%- elif field is CompositeType %}
         -- composite types are registered as types below
         {%- else %}

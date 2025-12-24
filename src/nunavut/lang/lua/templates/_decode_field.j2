@@ -14,7 +14,7 @@ subtree - The current level of the tree structure
 {%- elif field.data_type is BooleanType %}
     -- boolean type
     offset = offset + nunavut_support.as_bool(
-            {{ type | full_reference_name }}_{{ field.name }},
+            {{ type | full_reference_name }}.{{ field.name }},
             payload, offset, subtree) -- , "{{ field.name }}")
 {%- elif field.data_type is PrimitiveType %}
     -- primitive type {{ field.data_type }}
@@ -38,15 +38,15 @@ subtree - The current level of the tree structure
 {%- endfor %}
         end
         if enum_name then
-            subtree:add_le({{ type | full_reference_name }}_{{ field.name }}, tvb, value, string.format("{{field.name}}: %s (%s)", tostring(value), enum_name))
+            subtree:add_le({{ type | full_reference_name }}.{{ field.name }}, tvb, value, string.format("{{field.name}}: %s (%s)", tostring(value), enum_name))
         else
-            subtree:add_le({{ type | full_reference_name }}_{{ field.name }}, tvb, value)
+            subtree:add_le({{ type | full_reference_name }}.{{ field.name }}, tvb, value)
         end
         offset = offset + {{ field.data_type | to_serialized_length }}
     end
 {%- else %}
     offset = offset + nunavut_support.as_{{ field.data_type | to_protofield_type }}(
-            {{ type | full_reference_name }}_{{ field.name }},
+            {{ type | full_reference_name }}.{{ field.name }},
             payload, offset, {{ field.data_type | to_serialized_length }},
             subtree) -- , "{{ field.name }}")
 {%- endif %}
@@ -164,9 +164,9 @@ subtree - The current level of the tree structure
     offset = offset + 2
     if _length_ > 0 then
         local str_value = payload(offset, _length_):string()
-        subtree:add({{ type | full_reference_name }}_{{ field.name }}, payload(offset - 2, _length_ + 2), str_value)
+        subtree:add({{ type | full_reference_name }}.{{ field.name }}, payload(offset - 2, _length_ + 2), str_value)
     else
-        subtree:add({{ type | full_reference_name }}_{{ field.name }}, payload(offset - 2, 2), "(empty)")
+        subtree:add({{ type | full_reference_name }}.{{ field.name }}, payload(offset - 2, 2), "(empty)")
     end
     offset = offset + _length_
 {%-     elif 'uavcan.primitive.Unstructured' in (field.data_type.full_name or '') %}
@@ -174,9 +174,9 @@ subtree - The current level of the tree structure
     _length_ = payload(offset, 2):le_uint()  -- Unstructured uses 2-byte length prefix
     offset = offset + 2
     if _length_ > 0 then
-        subtree:add({{ type | full_reference_name }}_{{ field.name }}, payload(offset - 2, _length_ + 2), string.format("%d bytes", _length_))
+        subtree:add({{ type | full_reference_name }}.{{ field.name }}, payload(offset - 2, _length_ + 2), string.format("%d bytes", _length_))
     else
-        subtree:add({{ type | full_reference_name }}_{{ field.name }}, payload(offset - 2, 2), "(empty)")
+        subtree:add({{ type | full_reference_name }}.{{ field.name }}, payload(offset - 2, 2), "(empty)")
     end
     offset = offset + _length_
 {%-     elif field.data_type is DelimitedType %}

@@ -22,6 +22,9 @@ local PORT_ID = {{ type.fixed_port_id }}
 local BIT_EXTENT = {{ type.extent }}
 local EXTENT = BIT_EXTENT / 8
 
+-- Initialize field table for dot notation
+{{ type | full_reference_name }} = {}
+
 -- constituent fields
 {{ macros.declare_fields(type) }}
 

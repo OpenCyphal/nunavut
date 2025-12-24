@@ -34,9 +34,14 @@ local REQUEST_EXTENT = BIT_REQUEST_EXTENT / 8
 local BIT_RESPONSE_EXTENT = {{ type.response_type.extent }}
 local RESPONSE_EXTENT = BIT_RESPONSE_EXTENT / 8
 
+-- Initialize field tables for dot notation
+{{ type | full_reference_name }} = {}
+{{ type | full_reference_name }}.Request = {}
+{{ type | full_reference_name }}.Response = {}
+
 -- constituent fields
-{{ macros.declare_fields(type.request_type) }}
-{{ macros.declare_fields(type.response_type) }}
+{{ macros.declare_fields_request(type, type.request_type) }}
+{{ macros.declare_fields_response(type, type.response_type) }}
 
 -- local flag to prevent multiple inclusion
 local {{ type | full_reference_name }}_registered = false

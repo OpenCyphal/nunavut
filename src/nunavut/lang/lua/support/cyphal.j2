@@ -3,9 +3,7 @@
 # This software is distributed under the terms of the MIT License.
 # Author: Erik Rainey <erik.rainey@gmail.com>
 -#}
-
 {#- This is the top level file which is imported by Cyphal/UDP or Cyphal/CAN to pull in all required types. -#}
-
 {# for each registered message w/ a defined port id #}
 {%- for type in messages %}
 local {{type | full_reference_name }} = require('{{type | string_reference_name}}')
