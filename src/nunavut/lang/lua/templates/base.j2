@@ -3,23 +3,20 @@
  # This software is distributed under the terms of the MIT License.
  # Author: Erik Rainey <erik.rainey@gmail.com>
 -#}
-
 {%- include '_header.j2' %}
-
 {%- include '_requires.j2' %}
-
 {%- import '_macros.j2' as macros with context %}
-
 {%- macro data_schema(name, type, parent_class_name=None) -%}
-
 -- constants
 {{ macros.declare_constants(type) }}
 
 {%- if type.has_fixed_port_id %}
+-- {{ type | full_reference_name }} has a fixed port ID
 local PORT_ID = {{ type.fixed_port_id }}
 {%- endif %}
-
+-- Size in bits
 local BIT_EXTENT = {{ type.extent }}
+-- Size in bytes
 local EXTENT = BIT_EXTENT / 8
 
 -- Initialize field table for dot notation

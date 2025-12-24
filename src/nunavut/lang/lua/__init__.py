@@ -75,22 +75,27 @@ class Language(BaseLanguage):
     def get_support_globals(self, namespace: typing.Any) -> typing.Dict[str, typing.Any]:
         """
         Provide additional globals for support template rendering.
-        Collects all messages and services with fixed port IDs from the namespace tree.
+        Collects all messages and services from the namespace tree.
 
         :param namespace: The root namespace being generated
         :return: Dictionary of additional globals to inject into support templates
         """
-        messages = []
-        services = []
+        all_messages = []
+        all_services = []
+        fixed_port_messages = []
+        fixed_port_services = []
 
         def collect_from_namespace(ns: typing.Any) -> None:
-            """Recursively collect registered types from namespace tree."""
+            """Recursively collect all types from namespace tree."""
             for data_type, _ in ns.get_nested_types():
                 if isinstance(data_type, pydsdl.ServiceType):
+                    all_services.append(data_type)
                     if hasattr(data_type, "fixed_port_id") and data_type.fixed_port_id is not None:
-                        services.append(data_type)
-                elif hasattr(data_type, "fixed_port_id") and data_type.fixed_port_id is not None:
-                    messages.append(data_type)
+                        fixed_port_services.append(data_type)
+                else:
+                    all_messages.append(data_type)
+                    if hasattr(data_type, "fixed_port_id") and data_type.fixed_port_id is not None:
+                        fixed_port_messages.append(data_type)
 
             # Recurse into nested namespaces
             for child_ns in ns.get_nested_namespaces():
@@ -99,7 +104,12 @@ class Language(BaseLanguage):
         if namespace is not None:
             collect_from_namespace(namespace)
 
-        return {"messages": messages, "services": services}
+        return {
+            "all_messages": all_messages,
+            "all_services": all_services,
+            "fixed_port_messages": fixed_port_messages,
+            "fixed_port_services": fixed_port_services,
+        }
 
 
 @template_language_filter(__name__)

@@ -29,10 +29,7 @@
     local _length_ = 0 -- used for the length of variable length array
     local field_size = 0 -- used to track the extent of a field or it's _delimiter_ size.
     local extent = 0 -- used to track the current of this type
-    -- early exit
-    if payload:len() == 0 then
-        return 0
-    end
+
     if payload:len() <= EXTENT then
         extent = payload:len()
     else
@@ -71,6 +68,106 @@
 {% include '_decode_field.j2' %}
 {%- endfor %}
 {# END NON UNION TYPES #}
+{%- endif %}
+    return offset
+{%- endmacro %}
+
+{# Decode function for Service Request #}
+{%- macro decode_function_request(service_type, request_type, extent_name) -%}
+    local offset = 0
+    local _delimiter_ = 0
+    local _length_ = 0
+    local field_size = 0
+    local extent = 0
+
+    if payload:len() <= {{extent_name}} then
+        extent = payload:len()
+    else
+        error("Payload is too large for {{ service_type | string_reference_name }}.Request")
+        extent = {{extent_name}}
+    end
+    local subtree = payload_tree:add(proto, payload(0, extent), "{{ service_type | string_reference_name }}.Request")
+    subtree:prepend_text(string.format("%s of type ", label))
+
+{%- if request_type is UnionType or request_type.inner_type is UnionType %}
+    local _tag_ = payload(offset, 1):le_uint()
+    subtree:add_le({{ service_type | full_reference_name }}.Request._tag_, payload(offset, 1), _tag_)
+    offset = offset + 1
+{%- set ns = namespace(_tag_=0) %}
+{%- for field in request_type.fields %}
+{%- if ns._tag_ == 0 %}
+    if _tag_ == {{ns._tag_}} then
+        subtree:append_text(string.format(" [variant: %s]", "{{field.name}}"))
+{%- else %}
+    elseif _tag_ == {{ns._tag_}} then
+        subtree:append_text(string.format(" [variant: %s]", "{{field.name}}"))
+{%- endif %}
+{%- set type = service_type %}
+{%- set field_prefix = '.Request' %}
+    {%- include '_decode_field_service.j2' %}
+    {%- set ns._tag_ = ns._tag_ + 1 %}
+{%- endfor %}
+    end
+{%- else %}
+{%- for field in request_type.fields %}
+{%- if request_type.inner_type is DelimitedType %}
+    _delimiter_ = payload(offset, 4):le_uint()
+    offset = offset + 4
+{%- endif %}
+{%- set type = service_type %}
+{%- set field_prefix = '.Request' %}
+{% include '_decode_field_service.j2' %}
+{%- endfor %}
+{%- endif %}
+    return offset
+{%- endmacro %}
+
+{# Decode function for Service Response #}
+{%- macro decode_function_response(service_type, response_type, extent_name) -%}
+    local offset = 0
+    local _delimiter_ = 0
+    local _length_ = 0
+    local field_size = 0
+    local extent = 0
+
+    if payload:len() <= {{extent_name}} then
+        extent = payload:len()
+    else
+        error("Payload is too large for {{ service_type | string_reference_name }}.Response")
+        extent = {{extent_name}}
+    end
+    local subtree = payload_tree:add(proto, payload(0, extent), "{{ service_type | string_reference_name }}.Response")
+    subtree:prepend_text(string.format("%s of type ", label))
+
+{%- if response_type is UnionType or response_type.inner_type is UnionType %}
+    local _tag_ = payload(offset, 1):le_uint()
+    subtree:add_le({{ service_type | full_reference_name }}.Response._tag_, payload(offset, 1), _tag_)
+    offset = offset + 1
+{%- set ns = namespace(_tag_=0) %}
+{%- for field in response_type.fields %}
+{%- if ns._tag_ == 0 %}
+    if _tag_ == {{ns._tag_}} then
+        subtree:append_text(string.format(" [variant: %s]", "{{field.name}}"))
+{%- else %}
+    elseif _tag_ == {{ns._tag_}} then
+        subtree:append_text(string.format(" [variant: %s]", "{{field.name}}"))
+{%- endif %}
+{%- set type = service_type %}
+{%- set field_prefix = '.Response' %}
+    {%- include '_decode_field_service.j2' %}
+    {%- set ns._tag_ = ns._tag_ + 1 %}
+{%- endfor %}
+    end
+{%- else %}
+{%- for field in response_type.fields %}
+{%- if response_type.inner_type is DelimitedType %}
+    _delimiter_ = payload(offset, 4):le_uint()
+    offset = offset + 4
+{%- endif %}
+{%- set type = service_type %}
+{%- set field_prefix = '.Response' %}
+{% include '_decode_field_service.j2' %}
+{%- endfor %}
 {%- endif %}
     return offset
 {%- endmacro %}
@@ -209,20 +306,20 @@ local {{ c.name }} = {{ c.value }}
 {# Register Fields Inner function #}
 {%- macro register_fields(type) %}
 {# this is intended twice #}
-        {%- if type is UnionType or type.inner_type is UnionType %}
+    {%- if type is UnionType or type.inner_type is UnionType %}
         table.insert(cyphal_proto.fields, {{ type | full_reference_name }}._tag_)
-        {%- endif %}
-        {%- for field in type.fields %}
+    {%- endif %}
+    {%- for field in type.fields %}
         {%- if field is PrimitiveType %}
         table.insert(cyphal_proto.fields, {{ type | full_reference_name }}.{{field.name}})
         {%- elif field is ArrayType %}
-        -- FIXME register {{ type | full_reference_name }}.{{field.name}} as a single entry which will be repeated?
         table.insert(cyphal_proto.fields, {{ type | full_reference_name }}.{{field.name}})
         {%- elif field is CompositeType %}
         -- composite types are registered as types below
         {%- else %}
+        -- FIXME {{ field.name }} is a {{ field.data_type }} and we don't know about that yet!
         {%- endif %}
-        {%- endfor %}
+    {%- endfor %}
 {%- endmacro %}
 
 {# Register Types #}
@@ -231,4 +328,42 @@ local {{ c.name }} = {{ c.value }}
         {%- for n in type | requires %}
         {{ n | full_reference_name }}.register(cyphal_proto)
         {%- endfor %}
+{%- endmacro %}
+
+{# Register Fields for Request in ServiceTypes #}
+{%- macro register_fields_request(service_type, request_type) %}
+{# this is intended twice #}
+    {%- if request_type is UnionType or request_type.inner_type is UnionType %}
+        table.insert(cyphal_proto.fields, {{ service_type | full_reference_name }}.Request._tag_)
+    {%- endif %}
+    {%- for field in request_type.fields %}
+        {%- if field is PrimitiveType %}
+        table.insert(cyphal_proto.fields, {{ service_type | full_reference_name }}.Request.{{field.name}})
+        {%- elif field is ArrayType %}
+        table.insert(cyphal_proto.fields, {{ service_type | full_reference_name }}.Request.{{field.name}})
+        {%- elif field is CompositeType %}
+        -- composite types are registered as types below
+        {%- else %}
+        -- FIXME {{ field.name }} is a {{ field.data_type }} and we don't know about that yet!
+        {%- endif %}
+    {%- endfor %}
+{%- endmacro %}
+
+{# Register Fields for Response in ServiceTypes #}
+{%- macro register_fields_response(service_type, response_type) %}
+{# this is intended twice #}
+    {%- if response_type is UnionType or response_type.inner_type is UnionType %}
+        table.insert(cyphal_proto.fields, {{ service_type | full_reference_name }}.Response._tag_)
+    {%- endif %}
+    {%- for field in response_type.fields %}
+        {%- if field is PrimitiveType %}
+        table.insert(cyphal_proto.fields, {{ service_type | full_reference_name }}.Response.{{field.name}})
+        {%- elif field is ArrayType %}
+        table.insert(cyphal_proto.fields, {{ service_type | full_reference_name }}.Response.{{field.name}})
+        {%- elif field is CompositeType %}
+        -- composite types are registered as types below
+        {%- else %}
+        -- FIXME {{ field.name }} is a {{ field.data_type }} and we don't know about that yet!
+        {%- endif %}
+    {%- endfor %}
 {%- endmacro %}

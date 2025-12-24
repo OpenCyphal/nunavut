@@ -141,13 +141,6 @@ local function decode_payload_bool(field, payload, offset, field_size, tree)
     return field_size
 end
 
-function uint16_to_bytes_le(value)
-    local arr = ByteArray.new("0000")
-    arr:set_index(0, bit.band(value, 0xFF))     -- low byte
-    arr:set_index(1, bit.rshift(value, 8))      -- high byte
-    return arr
-end
-
 local function decode_payload_mask(field, byte_array, pinfo, tree, functor)
     -- we assume the payload has be narrowed to the right value for the mask array
     -- the functor must be of the form function(field, byte_array, pinfo, tree, byte_offset, bit_index)

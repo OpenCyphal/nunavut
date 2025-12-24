@@ -1,37 +1,28 @@
 {#-
- # Copyright (c) 2024 OpenCyphal
- # This software is distributed under the terms of the MIT License.
- # Author: Erik Rainey <erik.rainey@gmail.com>
+# Copyright (c) 2024 OpenCyphal
+# This software is distributed under the terms of the MIT License.
+# Author: Erik Rainey <erik.rainey@gmail.com>
 -#}
-
-{# Require Request #}
-{# register #}
-{# decode #}
-
-{# Require Response #}
-{# register #}
-{# decode #}
-
 {%- include '_header.j2' %}
-
 {%- include '_requires.j2' %}
-
 {%- import '_macros.j2' as macros with context %}
-
 {%- set type = T %}
 {%- set name = T | short_reference_name %}
-
 -- constants
 {{ macros.declare_constants(type.request_type) }}
 {{ macros.declare_constants(type.response_type) }}
 
 {%- if type.has_fixed_port_id %}
+-- {{ type | full_reference_name }} has a fixed port ID
 local PORT_ID = {{ type.fixed_port_id }}
 {%- endif %}
-
+-- Request size in bits
 local BIT_REQUEST_EXTENT = {{ type.request_type.extent }}
+-- Request size in bytes
 local REQUEST_EXTENT = BIT_REQUEST_EXTENT / 8
+-- Response size in bits
 local BIT_RESPONSE_EXTENT = {{ type.response_type.extent }}
+-- Response size in bytes
 local RESPONSE_EXTENT = BIT_RESPONSE_EXTENT / 8
 
 -- Initialize field tables for dot notation
@@ -50,9 +41,9 @@ local {{ type | full_reference_name }}_registered = false
 -- @param cyphal_proto The Proto to add the fields to
 local function register_{{ type | full_reference_name }}(cyphal_proto)
     if not {{ type | full_reference_name }}_registered then
-        {{ macros.register_fields(type.request_type) }}
+        {{ macros.register_fields_request(type, type.request_type) }}
         {{ macros.register_subtypes(type.request_type) }}
-        {{ macros.register_fields(type.response_type) }}
+        {{ macros.register_fields_response(type, type.response_type) }}
         {{ macros.register_subtypes(type.response_type) }}
         {{ type | full_reference_name }}_registered = true
     end
@@ -62,13 +53,13 @@ end
 -- Decodes a {{ type | full_reference_name }} Request
 -- Returns the number of bytes decoded
 local function decode_{{ type | full_reference_name }}_Request(proto, payload, pinfo, payload_tree, label)
-    {{ macros.decode_function(type.request_type) }}
+    {{ macros.decode_function_request(type, type.request_type, 'REQUEST_EXTENT') }}
 end
 
 -- Decodes a {{ type | full_reference_name }} Response
 -- Returns the number of bytes decoded
 local function decode_{{ type | full_reference_name }}_Response(proto, payload, pinfo, payload_tree, label)
-    {{ macros.decode_function(type.response_type) }}
+    {{ macros.decode_function_response(type, type.response_type, 'RESPONSE_EXTENT') }}
 end
 
 -- Decodes a {{ type | full_reference_name }}

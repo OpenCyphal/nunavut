@@ -4,58 +4,118 @@
 # Author: Erik Rainey <erik.rainey@gmail.com>
 -#}
 {#- This is the top level file which is imported by Cyphal/UDP or Cyphal/CAN to pull in all required types. -#}
-{# for each registered message w/ a defined port id #}
-{%- for type in messages %}
+{# Require all message types #}
+{%- for type in all_messages %}
 local {{type | full_reference_name }} = require('{{type | string_reference_name}}')
 {%- endfor %}
-{# for each registered service w/ a defined port id #}
-{%- for type in services %}
+{# Require all service types #}
+{%- for type in all_services %}
 local {{type | full_reference_name }} = require('{{type | string_reference_name}}')
 {%- endfor %}
 
+--[[
+Custom Port ID Mappings:
+
+To assign custom port IDs to DSDL types, create a file named "cyphal_port_mappings.lua"
+in your Wireshark plugins directory. This file should return a table with the following structure:
+
+-- Add ALL types here, even those without fixed port IDs
+local my_custom_Foo_1_0 = require("my.custom.Foo.1.0")
+local acme_project_Bar_2_1 = require("acme.project.Bar.2.1")
+local example_test_Baz_1_0 = require("example.test.Baz.1.0")
+local my_custom_FooService_1_0 = require("my.custom.FooService.1.0")
+local acme_project_BarService_2_1 = require("acme.project.BarService.2.1")
+local acme_project_Bar_2_1 = require("acme.project.Bar.2.1")
+local example_test_Baz_1_0 = require("example.test.Baz.1.0")
+
+return {
+    messages = {
+        [1000] = my_custom_Foo_1_0,
+        [1001] = acme_project_Bar_2_1,
+        [1002] = example_test_Baz_1_0
+    },
+    services = {
+        [500] = my_custom_FooService_1_0,
+        [501] = acme_project_BarService_2_1
+    }
+}
+
+The port ID (numeric key) maps to the full DSDL type name using dot notation.
+This allows you to use non-regulated types or override standard port assignments.
+]]--
+
+-- Port ID mapping tables (can be customized by user)
+local message_port_map = {}
+local service_port_map = {}
+
+-- Initialize with fixed port IDs
+{%- for type in fixed_port_messages %}
+message_port_map[{{type.fixed_port_id}}] = {{type | full_reference_name }}
+{%- endfor %}
+{%- for type in fixed_port_services %}
+service_port_map[{{type.fixed_port_id}}] = {{type | full_reference_name }}
+{%- endfor %}
+
+-- Load custom port ID mappings if available
+-- Users can create a file "cyphal_port_mappings.lua" that returns tables:
+-- { messages = { [port_id] = "type.name" }, services = { [port_id] = "type.name" } }
+local status, custom_mappings = pcall(require, "cyphal_port_mappings")
+if status and custom_mappings then
+    if custom_mappings.messages then
+        for port_id, type_name in pairs(custom_mappings.messages) do
+            -- Look up the type by name
+            local type_module = _G[type_name:gsub('%%.', '_')]
+            if type_module then
+                message_port_map[port_id] = type_module
+            end
+        end
+    end
+    if custom_mappings.services then
+        for port_id, type_name in pairs(custom_mappings.services) do
+            local type_module = _G[type_name:gsub('%%.', '_')]
+            if type_module then
+                service_port_map[port_id] = type_module
+            end
+        end
+    end
+end
+
 function register_cyphal_types(cyphal_proto)
-{%- for type in messages %}
+    -- Register all message types
+{%- for type in all_messages %}
+    {{type | full_reference_name }}.register(cyphal_proto)
+{%- endfor %}
+    -- Register all service types
+{%- for type in all_services %}
     {{type | full_reference_name }}.register(cyphal_proto)
 {%- endfor %}
 end
 
 function decode_cyphal_messages(cyphal_proto, payload, pinfo, payload_tree, subject_id)
--- for each message w/ a registered port id, add a condition to check for it's subject ID and call it's dissector
-{%- if messages %}
-{%- for type in messages %}
-{%- if loop.first %}
-    if subject_id == {{type | full_reference_name }}.subject_id then
-{%- else %}
-    elseif subject_id == {{type | full_reference_name }}.subject_id then
-{%- endif %}
-        {{type | full_reference_name }}.decode(cyphal_proto, payload, pinfo, payload_tree, "payload")
-{%- endfor %}
+    -- Look up the type by port ID
+    local decoder = message_port_map[subject_id]
+    if decoder then
+        decoder.decode(cyphal_proto, payload, pinfo, payload_tree, "payload")
     else
-        payload_tree:add_expert_info(PI_RECEIVE, PI_COMMENT, "Unknown Message type")
+        payload_tree:add_expert_info(PI_RECEIVE, PI_COMMENT, string.format("Unknown Message type for subject ID %d", subject_id))
     end
-{%- endif %}
 end
 
 function decode_cyphal_services(cyphal_proto, payload, pinfo, payload_tree, request_not_response, service_id)
--- for each message w/ a registered port id, add a condition to check for it's service ID and call it's dissector
-{%- if services %}
-{%- for type in services %}
-{%- if loop.first %}
-    if service_id == {{type | full_reference_name }}.service_id then
-{%- else %}
-    elseif service_id == {{type | full_reference_name }}.service_id then
-{%- endif %}
-        {{type | full_reference_name }}.decode(cyphal_proto, payload, pinfo, payload_tree, "payload")
-{%- endfor %}
+    -- Look up the type by port ID
+    local decoder = service_port_map[service_id]
+    if decoder then
+        decoder.decode(cyphal_proto, payload, pinfo, payload_tree, "payload", request_not_response)
     else
-        payload_tree:add_expert_info(PI_RECEIVE, PI_COMMENT, "Unknown Service type")
+        payload_tree:add_expert_info(PI_RECEIVE, PI_COMMENT, string.format("Unknown Service type for service ID %d", service_id))
     end
-{%- endif %}
 end
 
 -- Return the types and the decoders
 return {
     register_cyphal_types = register_cyphal_types,
     decode_messages = decode_cyphal_messages,
-    decode_services = decode_cyphal_services
+    decode_services = decode_cyphal_services,
+    message_port_map = message_port_map,
+    service_port_map = service_port_map
 }
