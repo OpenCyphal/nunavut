@@ -204,7 +204,23 @@ class CodeGenerator(AbstractGenerator):
             env_builder.add_globals(**additional_globals)
         env_builder.set_embed_auditing_info(embed_auditing_info)
 
-        self._env = env_builder.create(language_context)
+        self._env = self._create_environment(env_builder, language_context)
+
+    def _create_environment(
+        self, env_builder: CodeGenEnvironmentBuilder, language_context: nunavut.lang.LanguageContext
+    ) -> CodeGenEnvironment:
+        """
+        Create the code generation environment for this generator.
+
+        This is a template method that subclasses can override to customize the environment
+        with generator-specific filters, tests, and globals. The base implementation creates
+        an environment with language-specific filters only.
+
+        :param env_builder: The environment builder with basic configuration already set.
+        :param language_context: The language context for this generator.
+        :return: A configured CodeGenEnvironment instance.
+        """
+        return env_builder.create(language_context)
 
     @property
     def dsdl_loader(self) -> DSDLTemplateLoader:
@@ -772,9 +788,31 @@ class DSDLCodeGenerator(CodeGenerator):
 
     def __init__(self, namespace: nunavut.Namespace, resource_types: int = ResourceType.ANY.value, **kwargs: Any):
         super().__init__(namespace, resource_types=resource_types, **kwargs)
+
+    def _create_environment(
+        self, env_builder: CodeGenEnvironmentBuilder, language_context: nunavut.lang.LanguageContext
+    ) -> CodeGenEnvironment:
+        """
+        Create the environment with DSDL-specific filters and tests.
+
+        This override adds DSDL-specific functionality like type_to_template, type_to_include_path,
+        and DSDL tests (is_service_request, is_service_response, etc.) that should only be
+        available in DSDL type templates, not in support templates.
+
+        :param env_builder: The environment builder with basic configuration already set.
+        :param language_context: The language context for this generator.
+        :return: A configured CodeGenEnvironment with DSDL-specific additions.
+        """
+        env = super()._create_environment(env_builder, language_context)
+
+        # Add DSDL-specific tests (is_service_request, is_service_response, etc.)
         for test_name, test in self._create_all_dsdl_tests().items():
-            self._env.add_test(test_name, test)
-        self._env.add_conventional_methods_to_environment(self)
+            env.add_test(test_name, test)
+
+        # Add DSDL-specific filters (type_to_template, type_to_include_path, etc.)
+        env.add_conventional_methods_to_environment(self)
+
+        return env
 
     # +-----------------------------------------------------------------------+
     # | AbstractGenerator
