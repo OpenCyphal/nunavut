@@ -82,8 +82,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
 
     """
 
-    epilog = textwrap.dedent(
-        """
+    epilog = textwrap.dedent("""
 
         Copyright (C) OpenCyphal Development Team  <opencyphal.org>
         Copyright Amazon.com Inc. or its affiliates.
@@ -98,8 +97,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
             nnvg --outdir include --templates c_jinja -e .h dsdl/uavcan:node/7509.Heartbeat.1.0.dsdl
 
         ᓄᓇᕗᑦ
-    """
-    )
+    """)
 
     if not issubclass(parser_type, argparse.ArgumentParser):
         raise ValueError("parser_type must be a subclass of argparse.ArgumentParser")
@@ -113,8 +111,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     parser.add_argument(
         "target_files_or_root_namespace",
         nargs="*",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         One or more dsdl files to generate from.
 
@@ -149,15 +146,13 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
             for all .dsdl files found. To disable this behavior use the --no-target-namespaces
             argument which will cause an error if a folder is provided as a target.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     parser.add_argument(
         "--no-target-namespaces",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         If provided then all target paths must be to individual DSDL files and not folders. If
         set and a folder is provided as a target an error will be raised.
@@ -167,16 +162,14 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         path itself as the root namespace.
 
         see target_files_or_root_namespace for more information.
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     parser.add_argument(
         "--lookup-dir",
         "-I",
         action="append",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         List of other namespace directories containing data type definitions that are referred to
         from the target root namespace. For example, if you are reading a vendor-specific namespace,
@@ -227,8 +220,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
             CYPHAL_PATH=/path/to/types nnvg animals:mammals/cats/Tabby.1.0.dsdl \\
                                             plants:trees/conifers/Fir.1.0.dsdl
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     parser.add_argument("--outdir", "-O", default="nunavut_out", help="output directory")
@@ -236,16 +228,14 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     parser.add_argument(
         "--target-language",
         "-l",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Language support to install into the templates.
 
         If provided then the output extension (-e) can be inferred otherwise the output
         extension must be provided.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     # +-----------------------------------------------------------------------+
@@ -254,68 +244,59 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
 
     extended_group = parser.add_argument_group(
         "extended options",
-        description=textwrap.dedent(
-            """
+        description=textwrap.dedent("""
 
         Additional options to control output generation.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
         "--templates-dir",
         "--templates",
         type=Path,
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Paths to a directory containing templates to use when generating code.
 
         Templates found under these paths will override the built-in templates for a
         given language.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
         "--support-templates-dir",
         "--support-templates",
         type=Path,
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Paths to a directory containing templates to use when generating support code.
 
         Templates found under these paths will override the built-in support templates for a
         given language.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
         "--fallback-to-builtin-templates",
         "-tfb",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Normally, if providing a custom templates directory, the built-in templates are not
         searched for. This option will cause the built-in templates to be searched for if a
         template is not found in the custom templates directory first.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
         "--index-file",
         type=Path,
         action="append",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Index-files are generated from special templates that are given access to all types in
         all namespaces. This is useful for generating files that are not specific to a single
@@ -340,8 +321,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
                 path/to/types/animal:cat.1.0.dsdl \\
                 path/to/types/animal:dog.1.0.dsdl
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
@@ -349,8 +329,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         "--experimental-languages",
         "-Xlang",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Activate languages with unstable, experimental support.
 
@@ -359,8 +338,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         may change in a non-backwards-compatible way in future versions, or
         that it might not even work yet.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     def extension_type(raw_arg: str) -> str:
@@ -373,8 +351,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         "--output-extension",
         "-e",
         type=extension_type,
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
         The output extension for generated files. If target language is provided an extension is
         inferred based on language configuration. This option allows overriding this inference.
 
@@ -385,16 +362,14 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         If a dot (.) is omitted one will be added, therefore; `-e h` and `-e .h` will both result
         in an extension of `.h`.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
         "--generate-support",
         choices=["always", "never", "as-needed", "only"],
         default="as-needed",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
         Change the criteria used to enable or disable support code generation.
 
         as-needed (default) - generate support if it is needed.
@@ -406,15 +381,13 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         types of support code. Where `--omit-serialization-support` is set different types of
         support code may still be generated unless this option is set to `never`.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
         "--generate-namespace-types",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
         If enabled this script will generate source for namespaces.
         All namespaces including and under the root namespace will be treated as a
         pseudo-type and the appropriate template will be used. The generator will
@@ -423,23 +396,20 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         the default value for the --namespace-output-stem argument and can be
         changed using that argument.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
         "--omit-serialization-support",
         "-pod",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
         If provided then the types generated will be POD datatypes with no additional logic.
         By default types generated include serialization routines and additional support libraries,
         headers, or methods as needed. These additional support artifacts can be suppressed using
         the `--generate-support` option.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
@@ -450,52 +420,45 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     extended_group.add_argument(
         "--no-overwrite",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         By default, generated files will be silently overwritten by
         subsequent invocations of the generator. If this argument is specified an
         error will be raised instead preventing overwrites.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
         "--file-mode",
         default=0o444,
         type=lambda value: int(value, 0),
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         The file-mode each generated file is set to after it is created.
         Note that this value is interpreted using python auto base detection.
         Because of this, to provide an octal value, you'll need to prefix your
         literal with '0o' (e.g. --file-mode 0o664).
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
         "--allow-unregulated-fixed-port-id",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Do not reject unregulated fixed port identifiers.
         This is a dangerous feature that must not be used unless you understand the
         risks. The background information is provided in the Cyphal specification.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
         "--embed-auditing-info",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         If set, generators are instructed to add additional information in the form of
         language-specific comments or meta-data to use when auditing source code generated by
@@ -504,21 +467,18 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         a type may be included with this option where these paths will be different depending
         on the server used to run nnvg.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     extended_group.add_argument(
         "--omit-dependencies",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Disables the generation of dependent types. This is useful when setting up build
         rules for a project where the dependent types are generated separately.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     # +-----------------------------------------------------------------------+
@@ -527,13 +487,11 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
 
     run_mode_group = parser.add_argument_group(
         "run mode options",
-        description=textwrap.dedent(
-            """
+        description=textwrap.dedent("""
 
         Options that control the operation mode of the script.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     run_mode_group.add_argument("--verbose", "-v", action="count", help="verbosity level (-v, -vv)")
@@ -547,8 +505,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         "-j",
         type=int,
         default=0,
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Limits the number of subprocesses nnvg can use to parallelize type discovery
         and code generation.
@@ -559,15 +516,13 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         If set to 1 then no subprocesses will be used and all work will be done in th
         main process.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     run_mode_group.add_argument(
         "--list-outputs",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
         Emit a semicolon-separated list of files.
         (implies --dry-run)
         Emits files that would be generated if invoked without --dry-run.
@@ -580,15 +535,13 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         using value-delimited formats. Use --list-format to control the output format
         including using json to avoid the need for an empty-value delimiter.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     run_mode_group.add_argument(
         "--list-inputs",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Emit a semicolon-separated list of files.
         (implies --dry-run)
@@ -601,16 +554,14 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         --list-format to control the output format including using json to avoid the
         need for an empty-value delimiter.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     run_mode_group.add_argument(
         "--list-configuration",
         "-lc",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Lists all configuration values resolved for the given arguments. Unlike --list-inputs
         and --list-outputs this command does *not* imply --dry-run but can be used in conjunction
@@ -618,16 +569,14 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
 
         This option is only available if --list-format is set to json.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     run_mode_group.add_argument(
         "--list-format",
         default="scsv",
         choices=["csv", "scsv", "json", "json-pretty"],
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         For commands that emit lists of files this option controls the format of the output.
 
@@ -636,23 +585,20 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         json        - json formatted results
         json-pretty - json formatted results with indentation
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     run_mode_group.add_argument(
         "--list-to-file",
         type=Path,
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         If provided then the output of --list-outputs, --list-inputs, or --list-configuration
         will also be written to the file specified. If the file exists it will be overwritten.
         This utf-8-encoded file will be written in the format specified by --list-format even
         if --dry-run is set.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     # +-----------------------------------------------------------------------+
@@ -661,46 +607,39 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
 
     ln_pp_group = parser.add_argument_group(
         "post-processing options",
-        description=textwrap.dedent(
-            """
+        description=textwrap.dedent("""
 
         This options are all deprecated and will be removed in a future release.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_pp_group.add_argument(
         "--trim-blocks",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         If this is set to True the first newline after a block in a template
         is removed (block, not variable tag!).
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_pp_group.add_argument(
         "--lstrip-blocks",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         If this is set to True leading spaces and tabs are stripped from the
         start of a line to a block in templates.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_pp_group.add_argument(
         "--pp-max-emptylines",
         type=int,
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         If provided this will suppress generation of additional consecutive
         empty lines beyond the limit set by this argument.
@@ -709,15 +648,13 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         performance. Consider using a code formatter on the generated output
         to enforce whitespace rules instead.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_pp_group.add_argument(
         "--pp-trim-trailing-whitespace",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Enables a line post-processor that will elide all whitespace at the
         end of each line.
@@ -726,15 +663,13 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         performance. Consider using a code formatter on the generated output
         to enforce whitespace rules instead.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_pp_group.add_argument(
         "-pp-rp",
         "--pp-run-program",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Runs a program after each file is generated but before the file is
         set to read-only.
@@ -746,22 +681,19 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
 
             nnvg --outdir include --templates c_jinja -e .h -pp-rp clang-format -pp-rpa=-i dsdl
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_pp_group.add_argument(
         "-pp-rpa",
         "--pp-run-program-arg",
         action="append",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Additional arguments to provide to the program specified by --pp-run-program.
         The last argument will always be the path to the generated file.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     # +-----------------------------------------------------------------------+
@@ -769,36 +701,31 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     # +-----------------------------------------------------------------------+
     ln_opt_group = parser.add_argument_group(
         "language options",
-        description=textwrap.dedent(
-            """
+        description=textwrap.dedent("""
 
         Options passed through to templates as `options` on the target language.
 
         Note that these arguments are passed though without validation, have no effect on the
         Nunavut library, and may or may not be appropriate based on the target language and
         generator templates in use.
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_opt_group.add_argument(
         "--target-endianness",
         choices=["any", "big", "little"],
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Specify the endianness of the target hardware. This allows serialization
         logic to be optimized for different CPU architectures.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_opt_group.add_argument(
         "--omit-float-serialization-support",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Instruct support header generators to omit support for floating point operations
         in serialization routines. This will result in errors if floating point types are used,
@@ -806,15 +733,13 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         point types in your message definitions this option will avoid dead code or compiler
         errors in generated serialization logic.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_opt_group.add_argument(
         "--enable-serialization-asserts",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Instruct support header generators to generate language-specific assert statements as part
         of serialization routines. By default the serialization logic generated may make assumptions
@@ -822,30 +747,26 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         behavior. The alternative, for languages that do not support exception handling, is to
         use assertions designed to halt a program rather than execute undefined logic.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_opt_group.add_argument(
         "--enable-override-variable-array-capacity",
         action="store_true",
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         Instruct support header generators to add the possibility to override max capacity of a
         variable length array in serialization routines. This option will disable serialization
         buffer checks and add conditional compilation statements which violates MISRA.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_opt_group.add_argument(
         "--language-standard",
         "-std",
         choices=["c11", "c17", "c23", "c++14", "cetl++14-17", "c++17", "c++17-pmr", "c++20", "c++20-pmr"],
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         For language generators that support different standards of their core language this option
         can be used to optimize the output. For example, C templates may generate slightly different
@@ -853,8 +774,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         documentation for built-in templates
         (https://nunavut.readthedocs.io/en/latest/docs/templates.html#built-in-template-guide).
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_opt_group.add_argument(
@@ -862,8 +782,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         "-c",
         nargs="*",
         type=Path,
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
 
         There is a set of built-in configuration for Nunavut that provides default values for known
         languages as documented `in the template guide
@@ -886,8 +805,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
 
         Also see ``--list-to-file`` which writes this configuration to disk if combined with ``--list-configuration``.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     ln_opt_group.add_argument(
@@ -895,8 +813,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         "-o",
         nargs="*",
         type=keyvalue,
-        help=textwrap.dedent(
-            """
+        help=textwrap.dedent("""
         Passes a key=value pair to the template as a language option overriding default options where they are
         specified. This is useful for passing options to the template that are not available as command-line
         arguments. For example, if you have a template that uses the
@@ -909,8 +826,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         This option is similar to the `--configuration` option but only applies to the options section of the target
         language and doesn't require a file to be created.
 
-    """
-        ).lstrip(),
+    """).lstrip(),
     )
 
     return parser

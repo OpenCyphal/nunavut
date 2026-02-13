@@ -6,11 +6,12 @@
 """
 Module containing post processing logic to run on generated files.
 """
+
 import abc
 import pathlib
-import typing
 import re
 import sys
+import typing
 from subprocess import run as subprocess_run  # nosec
 
 # +---------------------------------------------------------------------------+

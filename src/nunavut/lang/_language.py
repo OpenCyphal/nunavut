@@ -8,6 +8,7 @@ Language-specific support in nunavut.
 
 This module contains the Language object and supporting types.
 """
+
 import abc
 import functools
 import importlib

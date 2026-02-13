@@ -12,6 +12,7 @@ A small collection of common utilities.
     full-featured language, there should be very few truly generic utilities in Nunavut.
 
 """
+
 import collections.abc
 import copy
 import enum

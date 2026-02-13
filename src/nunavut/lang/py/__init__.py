@@ -7,6 +7,7 @@
 Filters for generating python. All filters in this
 module will be available in the template's global namespace as ``py``.
 """
+
 from __future__ import annotations
 
 import base64
