@@ -369,7 +369,10 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
     def add_types(
         cls,
         index: "Namespace",
-        types: Tuple[pydsdl.CompositeType, List[pydsdl.CompositeType]] | List[Tuple[pydsdl.CompositeType, List[pydsdl.CompositeType]]],
+        types: (
+            Tuple[pydsdl.CompositeType, List[pydsdl.CompositeType]]
+            | List[Tuple[pydsdl.CompositeType, List[pydsdl.CompositeType]]]
+        ),
         extension: str | None = None,
     ) -> None:
         """

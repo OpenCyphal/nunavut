@@ -19,8 +19,8 @@ import enum
 import logging
 import pathlib
 import sys
-from typing import Any, Callable, Generator, Generic, MutableMapping, Optional, TypeVar, cast
 from importlib import resources as importlib_resources
+from typing import Any, Callable, Generator, Generic, MutableMapping, Optional, TypeVar, cast
 
 _logger = logging.getLogger(__name__)
 
@@ -555,4 +555,3 @@ class cached_property(Generic[PropertyT]):
             val = self._func(instance)
             cache[self._attr_name] = val
         return val
-
