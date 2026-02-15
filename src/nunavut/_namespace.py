@@ -66,11 +66,9 @@ from typing import (
     Iterator,
     KeysView,
     List,
-    Optional,
     Protocol,
     Tuple,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -78,15 +76,6 @@ import pydsdl
 
 from .lang import Language, LanguageContext
 from .lang._common import IncludeGenerator
-
-if sys.version_info < (3, 9):
-    # Python 3.8 has a bug. This is a workaround per https://stackoverflow.com/a/66518591/310659
-    def _register(self, cls, method=None):  # type: ignore
-        if hasattr(cls, "__func__"):
-            setattr(cls, "__annotations__", cls.__func__.__annotations__)
-        return self.dispatcher.register(cls, func=method)
-
-    singledispatchmethod.register = _register  # type: ignore
 
 # +--------------------------------------------------------------------------------------------------------------------+
 
@@ -96,7 +85,7 @@ class AsyncResultProtocol(Protocol):
     Defines the protocol for a duck-type compatible with multiprocessing.pool.AsyncResult.
     """
 
-    def get(self, timeout: Optional[Any] = None) -> Any:
+    def get(self, timeout: Any | None = None) -> Any:
         """
         See multiprocessing.pool.AsyncResult.get
         """
@@ -113,7 +102,7 @@ class NotAsyncResult:
         self.args = args
         self._logger = logging.getLogger(NotAsyncResult.__name__)
 
-    def get(self, timeout: Optional[Any] = None) -> Any:
+    def get(self, timeout: Any | None = None) -> Any:
         """
         Perform the work synchronously.
         """
@@ -130,7 +119,7 @@ ApplyMethodT = TypeVar("ApplyMethodT", bound=Callable[..., AsyncResultProtocol])
 def _read_files_strategy(
     index: "Namespace",
     apply_method: ApplyMethodT,
-    dsdl_files: Union[Path, str, Iterable[Union[Path, str]]],
+    dsdl_files: Path | str | Iterable[Path | str],
     job_timeout_seconds: float,
     omit_dependencies: bool,
     args: Iterable[Any],
@@ -274,7 +263,7 @@ class Generatable(type(Path())):  # type: ignore
         """
         return Generatable(definition, input_types, path)
 
-    def with_segments(self, *pathsegments: Union[str, PathLike]) -> Path:
+    def with_segments(self, *pathsegments: str | PathLike) -> Path:
         """
         Path override: Construct a new path object from any number of path-like objects.
         We discard the Generatable type here and continue on with a default Path object.
@@ -380,11 +369,11 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
     def add_types(
         cls,
         index: "Namespace",
-        types: Union[
-            Tuple[pydsdl.CompositeType, List[pydsdl.CompositeType]],
-            List[Tuple[pydsdl.CompositeType, List[pydsdl.CompositeType]]],
-        ],
-        extension: Optional[str] = None,
+        types: (
+            Tuple[pydsdl.CompositeType, List[pydsdl.CompositeType]]
+            | List[Tuple[pydsdl.CompositeType, List[pydsdl.CompositeType]]]
+        ),
+        extension: str | None = None,
     ) -> None:
         """
         Add a set of types to a namespace tree building new nodes as needed.
@@ -441,9 +430,9 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
     def read_namespace(
         cls,
         index: "Namespace",
-        root_namespace_directory: Union[Path, str],
-        lookup_directories: Optional[Union[Path, str, Iterable[Union[Path, str]]]] = None,
-        print_output_handler: Optional[Callable[[Path, int, str], None]] = None,
+        root_namespace_directory: Path | str,
+        lookup_directories: Path | str | Iterable[Path | str] | None = None,
+        print_output_handler: Callable[[Path, int, str], None] | None = None,
         allow_unregulated_fixed_port_id: bool = False,
         allow_root_namespace_name_collision: bool = True,
     ) -> "Namespace":
@@ -477,9 +466,9 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         cls,
         output_path: str,
         lctx: LanguageContext,
-        root_namespace_directory: Union[Path, str],
-        lookup_directories: Optional[Union[Path, str, Iterable[Union[Path, str]]]] = None,
-        print_output_handler: Optional[Callable[[Path, int, str], None]] = None,
+        root_namespace_directory: Path | str,
+        lookup_directories: Path | str | Iterable[Path | str] | None = None,
+        print_output_handler: Callable[[Path, int, str], None] | None = None,
         allow_unregulated_fixed_port_id: bool = False,
         allow_root_namespace_name_collision: bool = True,
     ) -> pydsdl.Any:
@@ -510,9 +499,9 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         cls,
         output_path: Path,
         lctx: LanguageContext,
-        root_namespace_directory: Union[Path, str],
-        lookup_directories: Optional[Union[Path, str, Iterable[Union[Path, str]]]] = None,
-        print_output_handler: Optional[Callable[[Path, int, str], None]] = None,
+        root_namespace_directory: Path | str,
+        lookup_directories: Path | str | Iterable[Path | str] | None = None,
+        print_output_handler: Callable[[Path, int, str], None] | None = None,
         allow_unregulated_fixed_port_id: bool = False,
         allow_root_namespace_name_collision: bool = True,
     ) -> pydsdl.Any:
@@ -542,12 +531,12 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
     def read_files(
         cls,
         index: "Namespace",
-        dsdl_files: Union[Path, str, Iterable[Union[Path, str]]],
-        root_namespace_directories_or_names: Optional[Union[Path, str, Iterable[Union[Path, str]]]],
+        dsdl_files: Path | str | Iterable[Path | str],
+        root_namespace_directories_or_names: Path | str | Iterable[Path | str] | None,
         jobs: int = 0,
         job_timeout_seconds: float = 0,
-        lookup_directories: Optional[Union[Path, str, Iterable[Union[Path, str]]]] = None,
-        print_output_handler: Optional[Callable[[Path, int, str], None]] = None,
+        lookup_directories: Path | str | Iterable[Path | str] | None = None,
+        print_output_handler: Callable[[Path, int, str], None] | None = None,
         allow_unregulated_fixed_port_id: bool = False,
         omit_dependencies: bool = False,
     ) -> "Namespace":
@@ -590,12 +579,12 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         cls,
         output_path: Path,
         lctx: LanguageContext,
-        dsdl_files: Optional[Union[Path, str, Iterable[Union[Path, str]]]],
-        root_namespace_directories_or_names: Optional[Union[Path, str, Iterable[Union[Path, str]]]],
+        dsdl_files: Path | str | Iterable[Path | str] | None,
+        root_namespace_directories_or_names: Path | str | Iterable[Path | str] | None,
         jobs: int = 0,
         job_timeout_seconds: float = 0,
-        lookup_directories: Optional[Union[Path, str, Iterable[Union[Path, str]]]] = None,
-        print_output_handler: Optional[Callable[[Path, int, str], None]] = None,
+        lookup_directories: Path | str | Iterable[Path | str] | None = None,
+        print_output_handler: Callable[[Path, int, str], None] | None = None,
         allow_unregulated_fixed_port_id: bool = False,
         omit_dependencies: bool = False,
     ) -> pydsdl.Any:
@@ -633,12 +622,12 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         cls,
         output_path: str,
         lctx: LanguageContext,
-        dsdl_files: Optional[Union[Path, str, Iterable[Union[Path, str]]]],
-        root_namespace_directories_or_names: Optional[Union[Path, str, Iterable[Union[Path, str]]]],
+        dsdl_files: Path | str | Iterable[Path | str] | None,
+        root_namespace_directories_or_names: Path | str | Iterable[Path | str] | None,
         jobs: int = 0,
         job_timeout_seconds: float = 0,
-        lookup_directories: Optional[Union[Path, str, Iterable[Union[Path, str]]]] = None,
-        print_output_handler: Optional[Callable[[Path, int, str], None]] = None,
+        lookup_directories: Path | str | Iterable[Path | str] | None = None,
+        print_output_handler: Callable[[Path, int, str], None] | None = None,
         allow_unregulated_fixed_port_id: bool = False,
         omit_dependencies: bool = False,
     ) -> pydsdl.Any:
@@ -677,7 +666,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         full_namespace: str,
         namespace_dir: Path,
         language_context: LanguageContext,
-        parent: Optional["Namespace"] = None,
+        parent: "Namespace | None" = None,
     ):
         if full_namespace.startswith("."):
             full_namespace = full_namespace[1:]
@@ -741,7 +730,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         return self._output_path
 
     @property
-    def parent(self) -> Optional["Namespace"]:
+    def parent(self) -> "Namespace | None":
         """
         The parent namespace of this namespace or None if this is a root namespace.
         """
@@ -934,14 +923,14 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         """
         yield from self._recursive_namespace_generator(self)
 
-    def get_all_types(self) -> Generator[Tuple[pydsdl.Any, Union[Generatable, Path]], None, None]:
+    def get_all_types(self) -> Generator[Tuple[pydsdl.Any, Generatable | Path], None, None]:
         """
         Generates tuples relating datatypes and nested namespaces at and below this
         namespace to the path for each type's generated output.
         """
         yield from self._recursive_data_type_and_namespace_generator(self)
 
-    def find_output_path_for_type(self, compound_type: Union["Namespace", pydsdl.CompositeType]) -> Path:
+    def find_output_path_for_type(self, compound_type: "Namespace | pydsdl.CompositeType") -> Path:
         """
         Searches the entire namespace tree to find a mapping of the type to an
         output file path.
@@ -958,7 +947,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
             return root_namespace._bfs_search_for_output_path(compound_type)  # pylint: disable=protected-access
 
     def add_data_type(
-        self, dsdl_type: pydsdl.CompositeType, input_types: List[pydsdl.CompositeType], extension: Optional[str]
+        self, dsdl_type: pydsdl.CompositeType, input_types: List[pydsdl.CompositeType], extension: str | None
     ) -> Generatable:
         """
         Add a datatype to this namespace.
@@ -1098,7 +1087,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
     @classmethod
     def _recursive_data_type_and_namespace_generator(
         cls, namespace: "Namespace"
-    ) -> Generator[Tuple[pydsdl.Any, Union[Path, Generatable]], None, None]:
+    ) -> Generator[Tuple[pydsdl.Any, Path | Generatable], None, None]:
         yield (namespace, namespace.output_path)
 
         for data_type, output_path in namespace.get_nested_types():
@@ -1113,8 +1102,8 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
 
 def build_namespace_tree(
     types: List[pydsdl.CompositeType],
-    root_namespace_dir: Union[str, Path],
-    output_dir: Union[str, Path],
+    root_namespace_dir: str | Path,
+    output_dir: str | Path,
     language_context: LanguageContext,
 ) -> Namespace:
     """

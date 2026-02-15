@@ -6,6 +6,7 @@
 """
 Contains supporting C headers to distribute with generated types.
 """
+
 import pathlib
 import typing
 

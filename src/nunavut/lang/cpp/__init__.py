@@ -8,7 +8,6 @@ Filters for generating C++. All filters in this
 module will be available in the template's global namespace as ``cpp``.
 """
 
-
 import fractions
 import functools
 import io
@@ -20,12 +19,8 @@ from enum import Enum, auto
 import pydsdl
 
 from nunavut._dependencies import Dependencies
-from nunavut._templates import (
-    template_language_filter,
-    template_language_list_filter,
-    template_language_test,
-)
-from nunavut._utilities import YesNoDefault, cached_property, ResourceType
+from nunavut._templates import template_language_filter, template_language_list_filter, template_language_test
+from nunavut._utilities import ResourceType, YesNoDefault, cached_property
 from nunavut.jinja.environment import Environment
 from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
 from nunavut.lang._language import Language as BaseLanguage

@@ -9,6 +9,7 @@ Language-specific support in nunavut.
 This package contains modules that provide specific support for generating
 source for various languages using templates.
 """
+
 import functools
 import logging
 import pathlib

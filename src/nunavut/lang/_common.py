@@ -8,16 +8,17 @@
 This package contains modules that provide specific support for generating
 source for various languages using templates.
 """
+
 import functools
 import pathlib
 import re
 import typing
 
 import pydsdl
+
 from nunavut._utilities import ResourceType
 
 from ._language import Language
-
 
 # +-------------------------------------------------------------------------------------------------------------------+
 # | GENERATORS
@@ -458,11 +459,9 @@ class TokenEncoder:
         """
         token_type_lower = token_type.lower()
         if token_type_lower == "all":
-            raise ValueError(
-                """Token type 'all' is reserved for patterns that apply to all other types. A single token
+            raise ValueError("""Token type 'all' is reserved for patterns that apply to all other types. A single token
                 can't be all token types at once but it can be compatible with any type; perhaps you meant 'any'?
-            """
-            )
+            """)
 
         # we encode first.
         encoded = self._do_for_type_and_all(self._encode, token, token_type_lower, False)

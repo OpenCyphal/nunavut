@@ -6,6 +6,7 @@
 """
 Jinja2 extensions for use with the Nunavut code generator.
 """
+
 import typing
 
 from nunavut.jinja.jinja2 import TemplateAssertionError, UndefinedError, nodes

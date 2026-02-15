@@ -6,6 +6,7 @@
 """
 Empty python package to ensure the support generator doesn't explode.
 """
+
 import pathlib
 import typing
 

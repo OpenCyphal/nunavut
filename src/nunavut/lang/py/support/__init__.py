@@ -7,13 +7,11 @@ Contains supporting Python modules to distribute with generated types.
 The contained support modules are not part of Nunavut, and one should not attempt to import them,
 as they may depend on modules that are not available in the local environment.
 """
+
 import pathlib
 import typing
-from nunavut._utilities import (
-    ResourceType,
-    empty_list_support_files,
-    iter_package_resources,
-)
+
+from nunavut._utilities import ResourceType, empty_list_support_files, iter_package_resources
 
 __version__ = "1.0.0"
 """Version of the Python support module."""

@@ -6,6 +6,7 @@
 """
 Abstractions around template engine internals.
 """
+
 import functools
 import inspect
 import types

@@ -15,36 +15,26 @@ The input to the nunavut library is a list of templates and a list of
 invoking the ``nunavut.generate_all`` method.
 
 """
+
 import sys as _sys
 
-from ._generators import AbstractGenerator
-from ._generators import generate_all
-from ._generators import generate_all_for_language
-from ._generators import generate_all_from_namespace
-from ._generators import generate_all_from_namespace_with_generators
-from ._generators import basic_language_context_builder_from_args
+from ._generators import (
+    AbstractGenerator,
+    basic_language_context_builder_from_args,
+    generate_all,
+    generate_all_for_language,
+    generate_all_from_namespace,
+    generate_all_from_namespace_with_generators,
+)
 from ._namespace import Namespace
-from ._utilities import TEMPLATE_SUFFIX
-from ._utilities import DefaultValue
-from ._utilities import ResourceType
-from ._utilities import ResourceSearchPolicy
-from ._utilities import YesNoDefault
-from ._version import __author__
-from ._version import __copyright__
-from ._version import __email__
-from ._version import __license__
-from ._version import __version__
-from .jinja import CodeGenerator
-from .jinja import DSDLCodeGenerator
-from .jinja import SupportGenerator
-from .lang import Language
-from .lang import LanguageContext
-from .lang import LanguageContextBuilder
-from .lang import UnsupportedLanguageError
+from ._utilities import TEMPLATE_SUFFIX, DefaultValue, ResourceSearchPolicy, ResourceType, YesNoDefault
+from ._version import __author__, __copyright__, __email__, __license__, __version__
+from .jinja import CodeGenerator, DSDLCodeGenerator, SupportGenerator
+from .lang import Language, LanguageContext, LanguageContextBuilder, UnsupportedLanguageError
 from .lang._config import LanguageConfig
 
-if _sys.version_info[:2] < (3, 8):  # pragma: no cover
-    print("A newer version of Python is required", file=_sys.stderr)
+if _sys.version_info[:2] < (3, 10):  # pragma: no cover
+    print("Python 3.10 or newer is required", file=_sys.stderr)
     _sys.exit(1)
 
 __version_info__ = tuple(map(int, __version__.split(".")[:3]))

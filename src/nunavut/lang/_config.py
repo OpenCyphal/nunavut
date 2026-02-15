@@ -6,6 +6,7 @@
 """
 Logic for parsing language configuration.
 """
+
 import json
 import re
 import types

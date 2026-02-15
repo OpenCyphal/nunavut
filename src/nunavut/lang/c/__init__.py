@@ -22,7 +22,7 @@ from nunavut._templates import (
     template_language_test,
     template_volatile_filter,
 )
-from nunavut._utilities import YesNoDefault, cached_property, ResourceType
+from nunavut._utilities import ResourceType, YesNoDefault, cached_property
 from nunavut.jinja.environment import Environment
 from nunavut.lang._common import IncludeGenerator, TokenEncoder, UniqueNameGenerator
 from nunavut.lang._language import Language as BaseLanguage
@@ -994,7 +994,7 @@ def is_zero_cost_primitive(language: Language, t: pydsdl.PrimitiveType) -> bool:
         u32 = pydsdl.UnsignedIntegerType(32, pydsdl.PrimitiveType.CastMode.TRUNCATED)
         f16 = pydsdl.FloatType(16, pydsdl.PrimitiveType.CastMode.TRUNCATED)
         f32 = pydsdl.FloatType(32, pydsdl.PrimitiveType.CastMode.SATURATED)
-        bl = pydsdl.BooleanType(pydsdl.PrimitiveType.CastMode.SATURATED)
+        bl = pydsdl.BooleanType()
 
         # and
         template = (
