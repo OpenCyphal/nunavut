@@ -20,11 +20,7 @@ import logging
 import pathlib
 import sys
 from typing import Any, Callable, Generator, Generic, MutableMapping, Optional, TypeVar, cast
-
-if sys.version_info < (3, 9):
-    import importlib_resources
-else:
-    from importlib import resources as importlib_resources
+from importlib import resources as importlib_resources
 
 _logger = logging.getLogger(__name__)
 
@@ -544,13 +540,13 @@ class cached_property(Generic[PropertyT]):
 
     def __init__(self, func: Callable[..., PropertyT]):
         self._func = func
-        self._attr_name: Optional[str] = None
+        self._attr_name: str | None = None
         self.__doc__ = func.__doc__
 
     def __set_name__(self, owner: Any, name: str) -> None:
         self._attr_name = name
 
-    def __get__(self, instance: Any, owner: Optional[Any] = None) -> PropertyT:
+    def __get__(self, instance: Any, owner: Any | None = None) -> PropertyT:
         if self._attr_name is None:  # pragma: no cover
             raise TypeError("Cannot use cached_property instance without calling __set_name__ on it.")
         cache = instance.__dict__
@@ -559,3 +555,4 @@ class cached_property(Generic[PropertyT]):
             val = self._func(instance)
             cache[self._attr_name] = val
         return val
+

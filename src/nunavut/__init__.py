@@ -33,8 +33,8 @@ from .jinja import CodeGenerator, DSDLCodeGenerator, SupportGenerator
 from .lang import Language, LanguageContext, LanguageContextBuilder, UnsupportedLanguageError
 from .lang._config import LanguageConfig
 
-if _sys.version_info[:2] < (3, 8):  # pragma: no cover
-    print("A newer version of Python is required", file=_sys.stderr)
+if _sys.version_info[:2] < (3, 10):  # pragma: no cover
+    print("Python 3.10 or newer is required", file=_sys.stderr)
     _sys.exit(1)
 
 __version_info__ = tuple(map(int, __version__.split(".")[:3]))

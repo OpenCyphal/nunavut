@@ -10,7 +10,7 @@ from pathlib import Path
 import nox
 
 
-PYTHONS = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+PYTHONS = ["3.10", "3.11", "3.12", "3.13"]
 
 nox.options.error_on_external_run = True
 

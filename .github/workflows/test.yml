@@ -122,7 +122,7 @@ jobs:
   compat-test-python3-ubuntu:
     strategy:
       matrix:
-        python3-version: ['8', '9', '10', '11', '12', '13']
+        python3-version: ['10', '11', '12', '13']
     runs-on: ubuntu-latest
     container: ghcr.io/opencyphal/toxic:tx22.4.3
     needs: test

@@ -33,18 +33,8 @@ if not match:
 pydsdl_version_specifier = f"pydsdl {match.group(1)} {match.group(2)}"
 package_data = {"": ["*.j2", "**/*.css", "**/*.js", "*.ini", "*.json", "*.hpp", "*.h"]}
 
-if sys.version_info < (3, 9):
-    # For version 3.8 we need to add importlib_resources as a dependency. This seems to blow away the values
-    # in setup.cfg so we need to specify them here.
-    setuptools.setup(
-        version=version["__version__"],
-        package_data=package_data,
-        install_requires=["importlib_resources", pydsdl_version_specifier],
-    )
-else:
-    # For version 3.9 and later we don't need to add importlib_resources as a dependency.
-    setuptools.setup(
-        version=version["__version__"],
-        package_data=package_data,
-        install_requires=[pydsdl_version_specifier],
-    )
+setuptools.setup(
+    version=version["__version__"],
+    package_data=package_data,
+    install_requires=[pydsdl_version_specifier],
+)
