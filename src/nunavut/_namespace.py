@@ -666,7 +666,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         full_namespace: str,
         namespace_dir: Path,
         language_context: LanguageContext,
-        parent: "Namespace" | None = None,
+        parent: "Namespace | None" = None,
     ):
         if full_namespace.startswith("."):
             full_namespace = full_namespace[1:]
@@ -730,7 +730,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         return self._output_path
 
     @property
-    def parent(self) -> "Namespace" | None:
+    def parent(self) -> "Namespace | None":
         """
         The parent namespace of this namespace or None if this is a root namespace.
         """
@@ -930,7 +930,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         """
         yield from self._recursive_data_type_and_namespace_generator(self)
 
-    def find_output_path_for_type(self, compound_type: "Namespace" | pydsdl.CompositeType) -> Path:
+    def find_output_path_for_type(self, compound_type: "Namespace | pydsdl.CompositeType") -> Path:
         """
         Searches the entire namespace tree to find a mapping of the type to an
         output file path.
