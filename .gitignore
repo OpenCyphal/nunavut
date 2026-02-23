@@ -58,3 +58,6 @@ nunavut_out
 .hypothesis
 
 .ropeproject
+
+#clangd
+.cache

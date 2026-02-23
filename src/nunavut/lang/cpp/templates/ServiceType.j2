@@ -25,11 +25,19 @@ struct {{service_name}}
     struct _traits_
     {
         _traits_() = delete;
+{%- if T.has_fixed_port_id %}
+        static constexpr bool HasFixedPortID = true;
+        static constexpr {{ typename_unsigned_port }} FixedPortId = {{ T.fixed_port_id }}U;
+{%- else %}
+        static constexpr bool HasFixedPortID = false;
+{%- endif %}
 
         static constexpr bool IsServiceType = true;
         static constexpr bool IsService = true;
         static constexpr bool IsRequest = false;
         static constexpr bool IsResponse = false;
+
+        static constexpr const char* FullNameAndVersion() { return "{{ T }}"; }
     };
 };
 
