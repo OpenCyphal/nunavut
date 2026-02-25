@@ -30,6 +30,8 @@ const bool regulated::basics::Service::Response_0_1::_traits_::IsResponse;
 const bool regulated::basics::Service::Response_0_1::_traits_::IsServiceType;
 const bool regulated::basics::Service_0_1::_traits_::IsService;
 const bool regulated::basics::Service_0_1::_traits_::IsServiceType;
+const bool regulated::basics::Service_0_1::_traits_::HasFixedPortID;
+const std::uint16_t regulated::basics::Service_0_1::_traits_::FixedPortId;
 
 const std::size_t regulated::basics::Struct__0_1::_traits_::ArrayCapacity::i10_4;
 const std::size_t regulated::basics::Struct__0_1::_traits_::ArrayCapacity::f16_le2;
@@ -101,6 +103,10 @@ TEST(ConstantTests, Service)
     // Type parameters.
     EXPECT_TRUE(regulated::basics::Service_0_1::_traits_::IsService);
     EXPECT_TRUE(regulated::basics::Service_0_1::_traits_::IsServiceType);
+    EXPECT_TRUE(regulated::basics::Service_0_1::_traits_::HasFixedPortID);
+    EXPECT_THAT(regulated::basics::Service_0_1::_traits_::FixedPortId, 300);
+    EXPECT_THAT(regulated::basics::Service_0_1::_traits_::FullNameAndVersion(),
+                StrEq("regulated.basics.Service.0.1"));
 
     EXPECT_FALSE(regulated::basics::Service::Request_0_1::_traits_::IsService);
     EXPECT_TRUE(regulated::basics::Service::Request_0_1::_traits_::IsServiceType);

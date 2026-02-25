@@ -30,6 +30,10 @@ static_assert(
     "Service is a service type");
 
 static_assert(
+    regulated::basics::Service_0_1::_traits_::HasFixedPortID,
+    "Service has a fixed port ID");
+
+static_assert(
     not regulated::basics::Service_0_1::Request::_traits_::IsService,
     "Request is not a service");
 static_assert(
