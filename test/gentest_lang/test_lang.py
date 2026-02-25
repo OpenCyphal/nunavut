@@ -15,7 +15,7 @@ from nunavut._dependencies import Dependencies
 from nunavut._namespace import build_namespace_tree
 from nunavut._utilities import YesNoDefault
 from nunavut.jinja import DSDLCodeGenerator
-from nunavut.lang import Language, LanguageClassLoader, LanguageContextBuilder
+from nunavut.lang import Language, LanguageClassLoader, LanguageContextBuilder, UnsupportedLanguageError
 from nunavut.lang.c import filter_id as c_filter_id
 from nunavut.lang.cpp import filter_id as cpp_filter_id
 from nunavut.lang.py import filter_id as py_filter_id
@@ -433,3 +433,14 @@ def test_either_target_or_extension() -> None:
         .get_target_language()
         .name
     )
+
+
+def test_experimental_language_without_enable_flag() -> None:
+    """
+    Verify that using an experimental language without the include_experimental_languages
+    flag raises UnsupportedLanguageError. Covers the error path in
+    LanguageContextBuilder._new_language_w_experimental_handling().
+    """
+    # cpp is experimental (stable_support is not set, defaults to False)
+    with pytest.raises(UnsupportedLanguageError, match=r"experimental"):
+        LanguageContextBuilder(include_experimental_languages=False).set_target_language("cpp").create()
