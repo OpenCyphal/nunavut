@@ -1,0 +1,14 @@
+[MAIN]
+ignore-paths = .*/(jinja2|markupsafe)/.*
+source-roots = src
+
+[FORMAT]
+max-line-length = 120
+
+[DESIGN]
+max-args = 8
+max-attributes = 12
+min-public-methods = 0
+
+[MESSAGES CONTROL]
+disable = no-else-return,invalid-name,too-many-positional-arguments

@@ -1,4 +1,4 @@
-# This file provided for readthedocs.io only. Use tox.ini for all dependencies.
+# This file provided for readthedocs.io only. Use noxfile.py for all dependencies.
 
 .
 furo
