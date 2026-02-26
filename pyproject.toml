@@ -105,6 +105,9 @@ omit = [
     "*/public_regulated_data_types/*",
 ]
 
+[tool.setuptools]
+    zip-safe = false
+
 [tool.coverage.paths]
 source = [
     "src",

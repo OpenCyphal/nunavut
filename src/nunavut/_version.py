@@ -18,7 +18,7 @@ __copyright__ = (
     "Development Team <opencyphal.org>."
 )
 __email__ = "maintainers@opencyphal.org"
-__pydsdl_version__ = ">= 1.22.2"
+__pydsdl_version__ = ">= 1.24.3"
 
 
 def _parse_version_string(tag: str, pattern: str, major_minor_only: bool) -> list:  # pragma: no cover

@@ -15,7 +15,7 @@
     ],
     "mypy-type-checker.args": [
         "--config-file",
-        "${workspaceFolder}/setup.cfg"
+        "${workspaceFolder}/pyproject.toml"
     ],
     "mypy-type-checker.importStrategy": "fromEnvironment",
     "flake8.args": [

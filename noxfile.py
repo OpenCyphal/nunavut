@@ -50,7 +50,6 @@ LINT_DEPS = [
     "Pygments",
     "mypy",
     "lxml",
-    "types-PyYAML",
 ]
 
 nox.options.sessions = [
