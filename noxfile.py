@@ -50,7 +50,6 @@ LINT_DEPS = [
     "Pygments",
     "mypy",
     "lxml",
-    "types-setuptools",
     "types-PyYAML",
 ]
 
@@ -219,7 +218,7 @@ def lint(session: nox.Session) -> None:
         "nunavut",
         f"--cache-dir={tmpdir}",
         f"--txt-report={tmpdir}/mypy-report-lib",
-        f"--config-file={root / 'setup.cfg'}",
+        f"--config-file={root / 'pyproject.toml'}",
     )
 
 

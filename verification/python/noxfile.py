@@ -108,7 +108,7 @@ def test(session):
     session.run(
         "mypy",
         "--strict",
-        f"--config-file={NUNAVUT_DIR / 'setup.cfg'}",  # Inherit the settings from the outer project.
+        f"--config-file={NUNAVUT_DIR / 'pyproject.toml'}",  # Inherit the settings from the outer project.
         str(SUITE_SRC_DIR),
         *[str(x) for x in generated_dir.iterdir() if x.is_dir() and x.name[0] not in "._"],
     )
