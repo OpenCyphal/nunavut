@@ -247,7 +247,7 @@ Mypy
 At the end of the mypy run we generate the following summaries:
 
 - .nox/lint/tmp/mypy-report-lib/index.txt
-- .nox/lint/tmp/mypy-report-lib/index.txt
+- .nox/lint/tmp/mypy-report-script/index.txt
 
 ************************************************
 Nunavut Verification Suite
