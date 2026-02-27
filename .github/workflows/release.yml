@@ -13,21 +13,23 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: true
+    - name: setup nox
+      run: pip install nox
     - name: version-check
       # Fails the release if the release-tag doesn't match the Nunavut version at that tag.
       run: |
         python3 ./src/nunavut/_version.py -v --fail-on-mismatch --tag=${{ github.ref }}
     - name: lint
-      run: tox -e lint
+      run: nox -s lint
     - name: test-nnvg
-      run: tox -e py311-nnvg
+      run: nox -s nnvg-3.11
     - name: test-doctest
-      run: tox -e py311-doctest,py311-rstdoctest
+      run: nox -s doctest-3.11 rstdoctest-3.11
     - name: test-pytest
-      run: tox -e py311-test
+      run: nox -s test-3.11
     - name: package
-      run: tox -e package
+      run: nox -s package
     - name: upload
       run: |
         pip3 install twine
-        twine upload -u __token__ -p ${{ secrets.PYPI_PASSWORD }} .tox/package/dist/*
+        twine upload -u __token__ -p ${{ secrets.PYPI_PASSWORD }} .nox/package/tmp/dist/*

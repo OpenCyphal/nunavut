@@ -3,7 +3,7 @@ Nunavut: DSDL transpiler
 ################################################
 
 +--------------------------------+-----------------------------------+
-| tox build (main)               | |badge_build|_                    |
+| nox build (main)               | |badge_build|_                    |
 +--------------------------------+-----------------------------------+
 | static analysis                | |badge_analysis|_ |badge_issues|_ |
 +--------------------------------+-----------------------------------+
@@ -222,9 +222,9 @@ Nunavut is part of the OpenCyphal project:
     :alt: Documentation Status
 .. _badge_docs: https://nunavut.readthedocs.io/en/latest/?badge=latest
 
-.. |badge_build| image:: https://github.com/OpenCyphal/nunavut/actions/workflows/test_and_release.yml/badge.svg
+.. |badge_build| image:: https://github.com/OpenCyphal/nunavut/actions/workflows/test.yml/badge.svg
     :alt: Build status
-.. _badge_build: https://github.com/OpenCyphal/nunavut/actions/workflows/test_and_release.yml
+.. _badge_build: https://github.com/OpenCyphal/nunavut/actions/workflows/test.yml
 
 .. |badge_pypi_support| image:: https://img.shields.io/pypi/pyversions/nunavut.svg
     :alt: Supported Python Versions

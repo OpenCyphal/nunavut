@@ -28,21 +28,22 @@ will kickoff and do the rest for you.
 Tools
 ************************************************
 
-tox devenv -e local
+nox -s local
 ================================================
 
-I highly recommend using the local tox environment when doing python development. It'll save you hours
+I highly recommend using the local nox session when doing python development. It'll save you hours
 of lost productivity the first time it keeps you from pulling in an unexpected dependency from your
-global python environment. You can install tox from brew on osx or apt-get on GNU/Linux. I'd
+global python environment. You can install nox from brew on osx or pip on any platform. I'd
 recommend the following environment for vscode::
 
     git submodule update --init --recursive
-    tox devenv -e local
-    source venv/bin/activate
+    pip install nox
+    nox -s local
+    source .nox/local/bin/activate
 
 On Windows that last line is instead::
 
-    ./venv/Scripts/activate
+    .\.nox\local\Scripts\activate
 
 cmake
 ================================================
@@ -58,15 +59,16 @@ To use vscode you'll need:
 
 1. vscode
 2. install vscode command line (`Shell Command: Install`)
-3. tox
+3. nox
 4. cmake (and an available GCC or Clang toolchain, or Docker to use our toolchain-as-container)
 
 Do::
 
     cd path/to/nunavut
     git submodule update --init --recursive
-    tox devenv -e local
-    source venv/bin/activate
+    pip install nox
+    nox -s local
+    source .nox/local/bin/activate
     code .
 
 Then install recommended extensions.
@@ -75,15 +77,15 @@ Then install recommended extensions.
 Running The Tests
 ************************************************
 
-To run the full suite of `tox`_ tests locally you'll need docker. Once you have docker installed
+To run the full suite of `nox`_ tests locally you'll need docker. Once you have docker installed
 and running do::
 
     git submodule update --init --recursive
     docker pull ghcr.io/opencyphal/toxic:tx22.4.3
-    docker run --rm -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.3 tox
+    docker run --rm -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.3 /bin/sh -c "pip install nox && nox"
 
 To run a limited suite using only locally available interpreters directly on your host machine,
-skip the docker invocations and use ``tox run -s``.
+skip the docker invocations and use ``nox``.
 
 To run the language verification build you'll need to use a different docker container::
 
@@ -210,13 +212,13 @@ Building The Docs
 ************************************************
 
 We rely on `read the docs`_ to build our documentation from github but we also verify this build
-as part of our tox build. This means you can view a local copy after completing a full, successful
+as part of our nox build. This means you can view a local copy after completing a full, successful
 test run (See `Running The Tests`_) or do
-:code:`docker run --rm -t -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.3 /bin/sh -c "tox run -e docs"` to build
-the docs target. You can open the index.html under ``.tox_{host platform}/docs/tmp/index.html`` or run a local
+:code:`docker run --rm -t -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.3 /bin/sh -c "pip install nox && nox -s docs"` to build
+the docs target. You can open the index.html under ``.nox/docs/tmp/index.html`` or run a local
 web-server::
 
-    python3 -m http.server --directory .tox_{host platform}/docs/tmp &
+    python3 -m http.server --directory .nox/docs/tmp &
     open http://localhost:8000/docs/index.html
 
 Of course, you can just use `Visual Studio Code`_ to build and preview the docs using
@@ -227,16 +229,16 @@ Of course, you can just use `Visual Studio Code`_ to build and preview the docs 
 Coverage and Linting Reports
 ************************************************
 
-We publish the results of our coverage data to `sonarcloud`_ and the tox build will fail for any mypy
-or black errors but you can view additional reports locally under the :code:`.tox_{host platform}` dir.
+We publish the results of our coverage data to `sonarcloud`_ and the nox build will fail for any mypy
+or black errors but you can view additional reports locally under the :code:`.nox` dir.
 
 Coverage
 ================================================
 
-We generate a local html coverage report. You can open the index.html under .tox_{host platform}/report/tmp
+We generate a local html coverage report. You can open the index.html under .nox/report/tmp
 or run a local web-server::
 
-    python -m http.server --directory .tox_{host platform}/report/tmp &
+    python -m http.server --directory .nox/report/tmp &
     open http://localhost:8000/index.html
 
 Mypy
@@ -244,8 +246,8 @@ Mypy
 
 At the end of the mypy run we generate the following summaries:
 
-- .tox_{host platform}/mypy/tmp/mypy-report-lib/index.txt
-- .tox_{host platform}/mypy/tmp/mypy-report-script/index.txt
+- .nox/lint/tmp/mypy-report-lib/index.txt
+- .nox/lint/tmp/mypy-report-script/index.txt
 
 ************************************************
 Nunavut Verification Suite
@@ -326,7 +328,7 @@ three variables you can set in your environment or pass into cmake if using cmak
 All other options set when generating code are provided by setting ``NUNAVUT_EXTRA_GENERATOR_ARGS`` in your environment.
 
 .. _`read the docs`: https://readthedocs.org/
-.. _`tox`: https://tox.readthedocs.io/en/latest/
+.. _`nox`: https://nox.thea.codes/en/stable/
 .. _`sonarcloud`: https://sonarcloud.io/dashboard?id=OpenCyphal_nunavut
 .. _`OpenCyphal website`: http://opencyphal.org
 .. _`OpenCyphal forum`: https://forum.opencyphal.org

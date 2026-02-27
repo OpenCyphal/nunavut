@@ -1,0 +1,165 @@
+#
+# Copyright (C) OpenCyphal Development Team  <opencyphal.org>
+# Copyright Amazon.com Inc. or its affiliates.
+# SPDX-License-Identifier: MIT
+#
+
+[build-system]
+requires = ["setuptools >= 68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# +---------------------------------------------------------------------------+
+# | PROJECT METADATA (PEP 621)
+# +---------------------------------------------------------------------------+
+
+[project]
+name = "nunavut"
+dynamic = ["version"]
+description = "Generate code from DSDL using Jinja2 templates."
+readme = {file = "README.rst", content-type = "text/x-rst"}
+license = "MIT"
+license-files = ["LICENSE.rst"]
+requires-python = ">= 3.10"
+keywords = [
+    "uavcan", "dsdl", "can", "can-bus", "ethernet", "udp",
+    "codegen", "cyphal", "opencyphal",
+]
+authors = [
+    {name = "OpenCyphal Development Team", email = "maintainers@opencyphal.org"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Embedded Systems",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: System :: Networking",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pydsdl >= 1.24.3",
+]
+
+[project.optional-dependencies]
+shell = ["argcomplete"]
+config = ["pyyaml"]
+
+[project.urls]
+Homepage = "https://opencyphal.org"
+Repository = "https://github.com/OpenCyphal/nunavut"
+
+[project.scripts]
+nnvg = "nunavut.cli.runners:main"
+
+# +---------------------------------------------------------------------------+
+# | SETUPTOOLS CONFIGURATION
+# +---------------------------------------------------------------------------+
+
+[tool.setuptools.dynamic]
+version = {attr = "nunavut._version.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.j2", "**/*.css", "**/*.js", "*.ini", "*.json", "*.hpp", "*.h"]
+nunavut = ["py.typed"]
+
+# +---------------------------------------------------------------------------+
+# | TOOL CONFIGURATION
+# +---------------------------------------------------------------------------+
+
+[tool.pytest.ini_options]
+log_file = "pytest.log"
+log_level = "DEBUG"
+log_cli = true
+log_cli_level = "WARNING"
+norecursedirs = ["submodules", ".*", "build*", "verification", ".nox"]
+addopts = "-p no:doctest"
+
+[tool.coverage.run]
+data_file = "build/coverage-py/.coverage"
+branch = true
+parallel = true
+relative_files = true
+include = [
+    "src/nunavut/*",
+    ".nox/*/lib/*/site-packages/nunavut/*",
+]
+omit = [
+    "*/jinja2/*",
+    "*/markupsafe/*",
+    "*/setup.py",
+    "*/conf.py",
+    "*/public_regulated_data_types/*",
+]
+
+[tool.setuptools]
+    zip-safe = false
+
+[tool.coverage.paths]
+source = [
+    "src",
+    ".nox/*/lib/*/site-packages",
+    ".nox/*/bin",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "assert False",
+    "if False:",
+    "if __name__ == .__main__.:",
+]
+omit = ["*.j2"]
+
+[tool.doc8]
+max-line-length = 120
+verbose = 1
+
+[tool.mypy]
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_context = true
+mypy_path = "src"
+exclude = "(jinja2|markupsafe)"
+python_version = "3.10"
+
+[[tool.mypy.overrides]]
+module = "pydsdl"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "nunavut.jinja.jinja2.*"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "pytest.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "sybil.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "setuptools.*"
+ignore_missing_imports = true

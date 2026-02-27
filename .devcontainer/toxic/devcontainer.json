@@ -20,5 +20,5 @@
             ]
         }
     },
-    "postCreateCommand": "git submodule update --init --recursive && tox -e local"
+    "postCreateCommand": "git submodule update --init --recursive && nox -s local"
 }
