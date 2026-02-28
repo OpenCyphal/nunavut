@@ -17,6 +17,7 @@ invoking the ``nunavut.generate_all`` method.
 """
 
 import sys as _sys
+import re as _re
 
 from ._generators import (
     AbstractGenerator,
@@ -37,7 +38,10 @@ if _sys.version_info[:2] < (3, 10):  # pragma: no cover
     print("Python 3.10 or newer is required", file=_sys.stderr)
     _sys.exit(1)
 
-__version_info__ = tuple(map(int, __version__.split(".")[:3]))
+_version_info_match = _re.match(r"^(\d+)\.(\d+)\.(\d+)", __version__)
+if _version_info_match is None:  # pragma: no cover
+    raise ValueError(f"Invalid version string: {__version__}")
+__version_info__ = tuple(map(int, _version_info_match.groups()))
 
 __all__ = [
     "AbstractGenerator",

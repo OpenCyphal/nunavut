@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pydsdl
 import re
+import nunavut
 
 from nunavut._namespace import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
@@ -19,6 +20,12 @@ include_pattern_map = (
     ["cpp", "VIRUSES_COVID_{major}_{minor}_HPP_INCLUDED"],
     ["c", "VIRUSES_COVID_{major}_{minor}_INCLUDED_"],  # Due to the limitations of C, collisions are likely, hence '_'
 )
+
+
+def test_version_info_matches_release_triplet() -> None:
+    match = re.match(r"^(\d+)\.(\d+)\.(\d+)", nunavut.__version__)
+    assert match is not None
+    assert nunavut.__version_info__ == tuple(int(group) for group in match.groups())
 
 
 @pytest.mark.parametrize("lang_key,include_format", include_pattern_map)
