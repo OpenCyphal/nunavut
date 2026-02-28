@@ -74,7 +74,7 @@ jobs:
       working-directory: .nox
     - name: report-release
       if: ${{ github.event_name != 'pull_request' }}
-      uses: SonarSource/sonarqube-scan-action@v4.2.1
+      uses: SonarSource/sonarqube-scan-action@v6.0.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
@@ -88,7 +88,7 @@ jobs:
           -Dsonar.python.xunit.reportPath=.nox/test-3-11/tmp/xunit-result.xml
     - name: report-pr
       if: ${{ github.event_name == 'pull_request' }}
-      uses: SonarSource/sonarqube-scan-action@v4.2.1
+      uses: SonarSource/sonarqube-scan-action@v6.0.0
       env:
         SONAR_TOKEN: "6526e88c286672a7852fea52056c4b6ea583aaf7"
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
