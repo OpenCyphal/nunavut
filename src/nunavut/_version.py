@@ -10,7 +10,7 @@
 
 import sys
 
-__version__ = "3.0.0b1"  # please update NunavutConfigVersion.cmake if changing the major or minor version.
+__version__ = "3.0.1b1"  # please update NunavutConfigVersion.cmake if changing the major or minor version.
 __license__ = "MIT"
 __author__ = "OpenCyphal"
 __copyright__ = (
