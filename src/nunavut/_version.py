@@ -10,7 +10,7 @@
 
 import sys
 
-__version__ = "3.0.0.dev2"  # please update NunavutConfigVersion.cmake if changing the major or minor version.
+__version__ = "3.0.0b1"  # please update NunavutConfigVersion.cmake if changing the major or minor version.
 __license__ = "MIT"
 __author__ = "OpenCyphal"
 __copyright__ = (
@@ -66,8 +66,8 @@ if __name__ == "__main__":  # pragma: no cover
     parser.add_argument("--major-minor-only", action="store_true", help="Only use major and minor version.")
     parser.add_argument(
         "--tag-triplet-pattern",
-        default=r"^v?(\d+\.\d+(?:\.\d+)?(?:\.[^.\s]+)?)$",
-        help="A regex pattern to extract the version from the git tag.",
+        default=r"^v?(\d+\.\d+(?:\.\d+)?(?:\.[a-zA-Z]\w*|[a-zA-Z]\w*)?)$",
+        help="A regex pattern to extract the version from the git tag (supports PEP 440).",
     )
     parser.add_argument(
         "--fail-on-mismatch", action="store_true", help="Fail if the git tag does not match the embedded version."

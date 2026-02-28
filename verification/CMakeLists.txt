@@ -599,31 +599,31 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|AppleClang" OR CMAKE_CXX_COMPILER_ID MATCH
 
     # Create the merged profdata file path
     set(MERGED_PROFDATA_FILE "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/tests.profdata")
-    
+
     # Create coverage output directories
     set(COVERAGE_BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coverage")
     set(COVERAGE_HTML_DIR "${COVERAGE_BASE_DIR}/html")
     set(COVERAGE_LCOV_DIR "${COVERAGE_BASE_DIR}/lcov")
     set(COVERAGE_TEXT_DIR "${COVERAGE_BASE_DIR}/text")
-    
+
     # Build the list of test executable files for llvm-cov
     # We need to convert target names to actual file paths at build time
     set(TEST_BINARIES_FOR_COV)
     foreach(TEST_TARGET ${LOCAL_TEST_EXECUTABLES})
         list(APPEND TEST_BINARIES_FOR_COV "$<TARGET_FILE:${TEST_TARGET}>")
     endforeach()
-    
+
     # Create a file to store test binary paths (needed because generator expressions
     # don't work well in custom commands with complex arguments)
     file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/test_binaries_$<CONFIG>.txt"
          CONTENT "$<JOIN:${TEST_BINARIES_FOR_COV},\n>")
-    
+
     # Exclusion filter for vendor code, system headers, and test source files
     # We INCLUDE: All generated code in build/.*/generated/
     # We EXCLUDE: submodules/, _deps/, system headers, test suite source files, CMakeFiles
     # Note: Paths in llvm-cov reports are relative, so patterns match anywhere in the path
     set(COVERAGE_IGNORE_REGEX "(submodules/|_deps/|/usr/|/Applications/|/Library/|/suite/test_|CMakeFiles/)")
-    
+
     # Create a script that runs tests before merging profdata
     # This ensures .profraw files exist before attempting to merge
     # We use file(GENERATE) to properly handle $<CONFIG> generator expressions
@@ -649,22 +649,22 @@ if(NOT merge_result EQUAL 0)
 endif()
 "
     )
-    
+
     # Target to run tests and merge profdata
     add_custom_target(run_tests_and_merge
-        COMMAND ${CMAKE_COMMAND} 
+        COMMAND ${CMAKE_COMMAND}
                 -P "${CMAKE_CURRENT_BINARY_DIR}/run_tests_and_merge_$<CONFIG>.cmake"
         COMMENT "Running tests and merging LLVM profile data files"
         VERBATIM
     )
-    
+
     # Make sure test executables are built before running tests
     foreach(TEST_TARGET ${LOCAL_TEST_EXECUTABLES})
         add_dependencies(run_tests_and_merge ${TEST_TARGET})
     endforeach()
-    
+
     # Create a script to generate coverage reports
-    # Using file(GENERATE) to properly handle $<CONFIG> generator expressions  
+    # Using file(GENERATE) to properly handle $<CONFIG> generator expressions
     file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generate_coverage_reports_$<CONFIG>.cmake"
         CONTENT "file(READ \"${CMAKE_CURRENT_BINARY_DIR}/test_binaries_$<CONFIG>.txt\" TEST_BINARIES)
 string(REPLACE \"\\n\" \";\" TEST_BINARIES_LIST \"\${TEST_BINARIES}\")
@@ -684,7 +684,7 @@ foreach(BINARY IN LISTS TEST_BINARIES_LIST)
 endforeach()
 # Generate HTML report
 execute_process(
-    COMMAND \${LLVM_COV} show 
+    COMMAND \${LLVM_COV} show
             -format=html
             -output-dir=\${COVERAGE_HTML_DIR}
             -instr-profile=\${PROFDATA_FILE}
@@ -738,7 +738,7 @@ message(STATUS \"  Text:  \${COVERAGE_TEXT_DIR}/summary.txt\")
 message(STATUS \"  Lcov:  \${COVERAGE_LCOV_DIR}/coverage.lcov\")
 "
     )
-    
+
     # Target to generate all coverage reports
     add_custom_target(generate_coverage_reports
         COMMAND ${CMAKE_COMMAND}
@@ -747,18 +747,18 @@ message(STATUS \"  Lcov:  \${COVERAGE_LCOV_DIR}/coverage.lcov\")
         COMMENT "Generating coverage reports (HTML, text, lcov)"
         VERBATIM
     )
-    
+
     # Master target: cov_all - runs tests and generates all coverage reports
     add_custom_target(cov_all
         DEPENDS generate_coverage_reports
         COMMENT "Complete coverage pipeline: run tests → merge profdata → generate reports"
     )
-    
+
     message(STATUS "Coverage targets configured:")
     message(STATUS "  - cmake --build . --target cov_all              # Complete coverage pipeline")
     message(STATUS "  - cmake --build . --target run_tests_and_merge  # Run tests and merge profdata")
     message(STATUS "  - cmake --build . --target generate_coverage_reports # Generate reports from existing profdata")
     message(STATUS "  Output directory: ${COVERAGE_BASE_DIR}")
     message(STATUS "  Exclusion filter: ${COVERAGE_IGNORE_REGEX}")
-    
+
 endif()

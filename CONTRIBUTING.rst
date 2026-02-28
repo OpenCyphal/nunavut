@@ -23,6 +23,12 @@ Once that is merged into the branch you are releasing from then you just create 
 change with the same version number you set in ``src/nunavut/_version.py``. Once you create this release the CI
 will kickoff and do the rest for you.
 
+Version numbers should follow `PEP 440 <https://peps.python.org/pep-0440/>`_ conventions:
+
+- Release versions: ``3.0.0``
+- Pre-release versions: ``3.0.0a1`` (alpha), ``3.0.0b1`` (beta), ``3.0.0rc1`` (release candidate)
+- Development versions: ``3.0.0.dev1`` (note the dot before ``dev``)
+
 
 ************************************************
 Tools
