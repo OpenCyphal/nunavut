@@ -1,0 +1,277 @@
+{#====================================================================================================================#}
+{%- macro decode_temp(value, payload, offset, bits, index, size, num_bits) %}
+    bits = num_bits
+    size = bits / 8
+    index = offset / 8
+    value = payload(index, size):le_uint()
+    index = index + size
+    offset = offset + bits
+{%- endmacro %}
+{#====================================================================================================================#}
+{%- macro decode_void_type(proto, type, field, payload, offset, prefix, tree, label) %}
+    -- DECODE {{field.name}} is VoidType of {{field.data_type.bit_length}} bits (of junk)
+    offset = offset + {{field.data_type.bit_length}}
+{%- endmacro %}
+{#====================================================================================================================#}
+{%- macro decode_primitive_type(proto, type, field, payload, offset, prefix, tree, label) %}
+    bits = {{ field.data_type.bit_length }}
+{%- if field.data_type is BooleanType %}
+    -- DECODE {{field.name}} is PrimitiveType::BooleanType of {{ field.data_type.bit_length }} bits
+    length = ((bits - 1) / 8) + 1
+    nunavut_support.as_bool({{ type | full_reference_name }}{{ prefix }}.{{ field.name }},
+        payload, consumed / 8, length, bits, subtree)
+{%- elif field.data_type is IntegerType %}
+{%-     if field.data_type is SignedIntegerType %}
+    -- DECODE {{field.name}} is PrimitiveType::SignedIntegerType of {{ field.data_type.bit_length }} bits
+{%-     elif field.data_type is UnsignedIntegerType %}
+    -- DECODE {{field.name}} is PrimitiveType::UnsignedIntegerType of {{ field.data_type.bit_length }} bits
+{%-     else %}
+    -- ERROR {{field.name}} is Unknown IntegerType
+{%-     endif %}
+{%- elif field.data_type is FloatType %}
+    -- DECODE {{field.name}} is PrimitiveType::FloatType of {{ field.data_type.bit_length }} bits
+{%- else %}
+    -- ERROR {{field.name}} is Unknown PrimitiveType
+{%- endif %}
+{%- if field.data_type is not BooleanType %}
+    offset = offset + (8 * nunavut_support.as_{{ field.data_type | to_protofield_type }}(
+            {{ type | full_reference_name }}{{ prefix }}.{{ field.name }},
+            payload, bytes_offset, bytes_field_size, subtree))
+{%- endif %}
+    consumed = consumed + {{field.data_type.bit_length}}
+{%- endmacro %}
+{#====================================================================================================================#}
+{%- macro decode_array_type(proto, type, field, payload, offset, prefix, tree, label) %}
+{%- if field.data_type is FixedLengthArrayType %}
+    -- DECODE {{field.name}} is ArrayType::FixedLengthArrayType
+    count = {{field.data_type.capacity}}
+{%- elif field.data_type is VariableLengthArrayType %}
+    -- DECODE {{field.name}} is ArrayType::VariableLengthArrayType
+    size = 2
+    count = payload(offset, size):le_uint()
+    offset = offset + (size * 8)
+{%- else %}
+    -- ERROR {{field.name}} is Unknown ArrayType
+{%- endif %}
+    -- consumed bits is count * size * 8
+{%- endmacro %}
+{#====================================================================================================================#}
+{%- macro decode_composite_type(proto, type, field, payload, offset, prefix, tree, label) %}
+    -- DECODE {{field.name}} is CompositeType
+{%- if field.data_type is DelimitedType %}
+    -- Specialized as DelimitedType
+{%- endif %}
+{%- if field.data_type is UnionType %}
+    -- Specialized as UnionType
+{%- endif %}
+{%- endmacro %}
+{#====================================================================================================================#}
+{%- macro decode_field(proto, type, field, payload, offset, prefix, tree, label) %}
+{%- if field.data_type is not BooleanType %}
+    if ((offset % 8) ~= 0) then
+        -- account for padding to roll over to the next byte since the next field is not a bit mask
+        offset = offset + (8 - (offset % 8))
+    end
+{%- endif %}
+{%- if field.data_type is VoidType %}
+{{ decode_void_type(proto, type, field, payload, offset, prefix, tree, label) }}
+{%- elif field.data_type is PrimitiveType %}
+{{ decode_primitive_type(proto, type, field, payload, offset, prefix, tree, label) }}
+{%- elif field.data_type is ArrayType %}
+{{ decode_array_type(proto, type, field, payload, offset, prefix, tree, label) }}
+{%- elif field.data_type is CompositeType %}
+{{ decode_composite_type(proto, type, field, payload, offset, prefix, tree, label) }}
+{%- else %}
+    -- ERROR {{field.name}} is Unknown Type {{field.data_type }}
+{%- endif %}
+{%- endmacro %}
+{#====================================================================================================================#}
+{# The Inner part of the decode function #}
+{%- macro function_message(type) -%}
+-- Decodes a {{ type | full_reference_name }}
+-- Returns the number of bytes decoded
+-- @param proto The protocol type
+-- @param payload The TVB of all the data
+-- @param offset The offset in the payload where we need to start parsing from
+-- @param extent The possible maximum size in bytes to decode.
+-- @param pinfo ???
+-- @param payload_tree The tree to attach dissected values to
+-- @param label The text string to attach to the data
+local function decode_{{ type | full_reference_name }}(proto, payload, offset, extent, pinfo, payload_tree, label)
+    local bytes_extent = 0 -- used to track the current of this type
+    local bytes_offset = 0 -- used to track the current byte offset through the decoded packet
+    local bits_offset = 0 -- used to track the bit offset for a specific field (loops over a byte)
+    local bits_index = 0 -- used to track the bit index of the current parse
+    local _delimiter_ = 0 -- this may not be used in all circumstances, check for zero!
+    local _item_count_ = 0 -- this may be used to count the number of items in a variable length array
+    local _bytes_length_ = 0 -- used for the byte length of variable length array
+    local bytes_field_size = 0 -- used to track the extent of a field or it's _delimiter_ size in bytes
+    local capacity = 0 -- used to track the current array's capacity (in terms of items)
+
+    -- payload may contain remaining packet data; clamp to our type's extent
+    bytes_extent = math.min(BYTES_EXTENT, payload:len() - offset)
+    local subtree = payload_tree:add(proto, payload(offset, bytes_extent), "{{ type | string_reference_name }}")
+    subtree:prepend_text(string.format("%s of type ", label))
+
+{%- if type is UnionType or type.inner_type is UnionType %}
+{# START UNION TYPES #}
+    local _tag_ = payload(bytes_offset, 1):le_uint()
+    subtree:add_le({{ type | full_reference_name }}._tag_, payload(bytes_offset, 1), _tag_)
+    bytes_offset = bytes_offset + 1
+{%- set ns = namespace(_tag_=0) %}
+{%- for field in type.fields %}
+{%- if ns._tag_ == 0 %}
+    if _tag_ == {{ns._tag_}} then
+        subtree:append_text(string.format(" [variant: %s]", "{{field.name}}"))
+{%- else %}
+    elseif _tag_ == {{ns._tag_}} then
+        subtree:append_text(string.format(" [variant: %s]", "{{field.name}}"))
+{%- endif %}
+{%- set field_prefix = '' %}
+    {%- include '_decode_field.j2' %}
+    {%- set ns._tag_ = ns._tag_ + 1 %}
+{%- endfor %}
+    end
+{# END UNION TYPES #}
+{%- else %}
+{# START NON UNION TYPES #}
+{%- for field in type.fields %}
+{%- if type.inner_type is DelimitedType %}
+    _delimiter_ = payload(bytes_offset, 4):le_uint()
+    bytes_offset = bytes_offset + 4
+{%- endif %}
+{%- set field_prefix = '' %}
+{% include '_decode_field.j2' %}
+{%- endfor %}
+{# END NON UNION TYPES #}
+{%- endif %}
+    -- Account for any trailing partial byte from boolean fields
+    if bits_offset > 0 then
+        bytes_offset = bytes_offset + 1
+    end
+    return bytes_offset
+end
+{%- endmacro %}
+{#====================================================================================================================#}
+{# Decode function for Service Request #}
+{%- macro function_request(service_type, request_type, extent_name) -%}
+-- Decodes a {{ service_type | full_reference_name }} Request
+-- Returns the number of bytes decoded
+-- @param proto The protocol type
+-- @param payload The TVB of all the data
+-- @param offset The offset in the payload where we need to start parsing from
+-- @param extent The possible number of bytes to decode
+-- @param pinfo ???
+-- @param payload_tree The tree to attach dissected values to
+-- @param label The text string to attach to the data
+local function decode_{{ service_type | full_reference_name }}_Request(proto, payload, offset, extent, pinfo, payload_tree, label)
+    local bytes_offset = 0
+    local _delimiter_ = 0
+    local _bytes_length_ = 0
+    local bytes_field_size = 0
+    local bytes_extent = 0
+
+    if payload:len() <= {{extent_name}} then
+        bytes_extent = payload:len()
+    else
+        error("Payload is too large for {{ service_type | string_reference_name }}.Request")
+        bytes_extent = {{extent_name}}
+    end
+    local subtree = payload_tree:add(proto, payload(offset, bytes_extent), "{{ service_type | string_reference_name }}.Request")
+    subtree:prepend_text(string.format("%s of type ", label))
+
+{%- if request_type is UnionType or request_type.inner_type is UnionType %}
+    local _tag_ = payload(bytes_offset, 1):le_uint()
+    subtree:add_le({{ service_type | full_reference_name }}.Request._tag_, payload(bytes_offset, 1), _tag_)
+    bytes_offset = bytes_offset + 1
+{%- set ns = namespace(_tag_=0) %}
+{%- for field in request_type.fields %}
+{%- if ns._tag_ == 0 %}
+    if _tag_ == {{ns._tag_}} then
+        subtree:append_text(string.format(" [variant: %s]", "{{field.name}}"))
+{%- else %}
+    elseif _tag_ == {{ns._tag_}} then
+        subtree:append_text(string.format(" [variant: %s]", "{{field.name}}"))
+{%- endif %}
+{%- set type = service_type %}
+{%- set field_prefix = '.Request' %}
+    {%- include '_decode_field.j2' %}
+    {%- set ns._tag_ = ns._tag_ + 1 %}
+{%- endfor %}
+    end
+{%- else %}
+{%- for field in request_type.fields %}
+{%-     if request_type.inner_type is DelimitedType %}
+    _delimiter_ = payload(bytes_offset, 4):le_uint()
+    bytes_offset = bytes_offset + 4
+{%-     endif %}
+{%-     set type = service_type %}
+{%-     set field_prefix = '.Request' %}
+{% include '_decode_field.j2' %}
+{%- endfor %}
+{%- endif %}
+    return bytes_offset
+end
+{%- endmacro %}
+{#====================================================================================================================#}
+{# Decode function for Service Response #}
+{%- macro function_response(service_type, response_type, extent_name) -%}
+-- Decodes a {{ service_type | full_reference_name }} Response
+-- Returns the number of bytes decoded
+-- @param proto The protocol type
+-- @param payload The TVB of all the data
+-- @param offset The offset in the payload where we need to start parsing from
+-- @param extent The possible number of bytes to decode
+-- @param pinfo ???
+-- @param payload_tree The tree to attach dissected values to
+-- @param label The text string to attach to the data
+local function decode_{{ service_type | full_reference_name }}_Response(proto, payload, offset, extent, pinfo, payload_tree, label)
+    local bytes_offset = 0
+    local _delimiter_ = 0
+    local _bytes_length_ = 0
+    local bytes_field_size = 0
+    local bytes_extent = 0
+
+    if payload:len() <= {{extent_name}} then
+        bytes_extent = payload:len()
+    else
+        error("Payload is too large for {{ service_type | string_reference_name }}.Response")
+        bytes_extent = {{extent_name}}
+    end
+    local subtree = payload_tree:add(proto, payload(offset, bytes_extent), "{{ service_type | string_reference_name }}.Response")
+    subtree:prepend_text(string.format("%s of type ", label))
+
+{%- if response_type is UnionType or response_type.inner_type is UnionType %}
+    local _tag_ = payload(bytes_offset, 1):le_uint()
+    subtree:add_le({{ service_type | full_reference_name }}.Response._tag_, payload(bytes_offset, 1), _tag_)
+    bytes_offset = bytes_offset + 1
+{%- set ns = namespace(_tag_=0) %}
+{%- for field in response_type.fields %}
+{%- if ns._tag_ == 0 %}
+    if _tag_ == {{ns._tag_}} then
+        subtree:append_text(string.format(" [variant: %s]", "{{field.name}}"))
+{%- else %}
+    elseif _tag_ == {{ns._tag_}} then
+        subtree:append_text(string.format(" [variant: %s]", "{{field.name}}"))
+{%- endif %}
+{%- set type = service_type %}
+{%- set field_prefix = '.Response' %}
+    {%- include '_decode_field.j2' %}
+    {%- set ns._tag_ = ns._tag_ + 1 %}
+{%- endfor %}
+    end
+{%- else %}
+{%- for field in response_type.fields %}
+{%- if response_type.inner_type is DelimitedType %}
+    _delimiter_ = payload(bytes_offset, 4):le_uint()
+    bytes_offset = bytes_offset + 4
+{%- endif %}
+{%- set type = service_type %}
+{%- set field_prefix = '.Response' %}
+{% include '_decode_field.j2' %}
+{%- endfor %}
+{%- endif %}
+    return bytes_offset
+end
+{%- endmacro %}
+{#====================================================================================================================#}

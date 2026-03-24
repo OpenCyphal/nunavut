@@ -1,0 +1,218 @@
+{%- macro show_type(name, type) -%}
+{%- if type is VoidType %}
+-- {{name}} is VoidType
+{%- endif %}
+{%- if type is PrimitiveType %}
+-- {{name}} is PrimitiveType
+-- Boolean:   {{ type is BooleanType and 'yes' or 'no' }}
+-- Integer:   {{ type is IntegerType and 'yes' or 'no' }}
+--  Signed:   {{ type is SignedIntegerType and 'yes' or 'no' }}
+--  Unsigned: {{ type is UnsignedIntegerType and 'yes' or 'no' }}
+-- Float:     {{ type is FloatType and 'yes' or 'no' }}
+--
+-- Bit Size:  {{ type.bit_length }}
+{%- endif %}
+{%- if type is ArrayType %}
+-- {{name}} is ArrayType
+-- FixedLengthArray:    {{ type is FixedLengthArrayType and 'yes' or 'no' }}
+-- VariableLengthArray: {{ type is VariableLengthArrayType and 'yes' or 'no' }}
+{{ show_type('element', type.element_type) }}
+{%- endif %}
+{%- if type is CompositeType %}
+-- Delimited: {{ type is DelimitedType and 'yes' or 'no' }}
+-- - Inner    {{ type.inner_type is DelimitedType and 'yes' or 'no' }}
+-- Union:     {{ type is UnionType and 'yes' or 'no' }}
+-- - Inner    {{ type.inner_type is UnionType and 'yes' or 'no' }}
+{%- endif %}
+{%- endmacro %}
+
+{# Declares the Field of a Structure or Union #}
+{%- macro declare_primitive_field(structure_type, field_name, field_type, field_prefix) -%}
+{{ show_type(field_name, field_type) }}
+{%- if field_type is BooleanType %}
+{{ structure_type | full_reference_name }}.{{ field_name }} = ProtoField.new(
+    '{{field_name}}', -- name in the shown fields
+    '{{ structure_type | string_reference_name }}{{field_prefix}}.{{field_name}}', -- abbr named used by filters
+     {{field_type | to_field_type }}, -- field type
+     nil, base.HEX, 0x1) -- boolean map
+{%- else %}
+{{ structure_type | full_reference_name }}.{{ field_name }} = ProtoField.new(
+    '{{field_name}}', -- name in the shown fields
+    '{{ structure_type | string_reference_name }}{{field_prefix}}.{{field_name}}', -- abbr named used by filters
+     {{field_type | to_field_type }}) -- field type
+{%- endif %}
+{%- endmacro %}
+
+{# Constant Declaration #}
+{%- macro constants(type) %}
+-- === Constants =======================================================================================================
+{%- for c in type.constants %}
+{%- if type.doc %}
+--[[ {{type.doc }} ]]--
+{%- endif %}
+local {{ c.name }} = {{ c.value }}
+{%- endfor %}
+
+{%- if type.has_fixed_port_id %}
+-- {{ type | full_reference_name }} has a fixed port ID
+local PORT_ID = {{ type.fixed_port_id }}
+{%- endif %}
+-- === Constants =======================================================================================================
+{%- endmacro %}
+
+{%- macro extents(type) %}
+-- === Extents =========================================================================================================
+{% if type is ServiceType %}
+-- Request size in bits
+local BIT_REQUEST_EXTENT = {{ type.request_type.extent }}
+-- Request size in bytes
+local REQUEST_EXTENT = BIT_REQUEST_EXTENT / 8
+-- Response size in bits
+local BIT_RESPONSE_EXTENT = {{ type.response_type.extent }}
+-- Response size in bytes
+local RESPONSE_EXTENT = BIT_RESPONSE_EXTENT / 8
+{%- else %}
+-- Size in bits
+local BITS_EXTENT = {{ type.extent }}
+-- Size in bytes
+local BYTES_EXTENT = BITS_EXTENT / 8
+{%- endif %}
+-- === Extents =========================================================================================================
+{%- endmacro %}
+
+{# Field Declarations #}
+{%- macro fields_message(type) %}
+-- === Fields ==========================================================================================================
+-- Initialize field table for the message type
+local {{ type | full_reference_name }} = {}
+-- Initialize each field of the table
+{%- if type is UnionType or type.inner_type is UnionType %}
+-- Union tag field
+{{ type | full_reference_name }}._tag_ = ProtoField.new(
+    '_tag_', -- name in the shown fields
+    '{{ type | string_reference_name }}._tag_', -- abbr named used by filters
+    ftypes.UINT8) -- tag is always uint8
+{%- endif %}
+{%- for field in type.fields %}
+{%- if field.doc %}
+--[[
+{{ field.doc }}
+]]--
+{%- endif %}
+{%- if field is PrimitiveType %}
+{{ declare_primitive_field(type, field.name, field.data_type, '') }}
+{%- elif field is ArrayType %}
+-- array type {{ field.name }}
+-- {{type.full_name}}
+-- {{field.data_type}}
+-- {{field.data_type.element_type}}
+{%- if field is FixedLengthArrayType %}
+{%- if field.data_type.element_type is PrimitiveType %}
+{{ declare_primitive_field(type, field.name, field.data_type.element_type, '') }}
+{%- else %}
+-- CompositeTypes are required above ^
+{%- endif %}
+{%- elif field is VariableLengthArrayType %}
+{%- if field.data_type.element_type is PrimitiveType %}
+{{ declare_primitive_field(type, field.name, field.data_type.element_type, '') }}
+{%- else %}
+-- CompositeTypes are required above ^
+{%- endif %}
+{%- else %}
+--???
+{%- endif %}
+{%- elif field is CompositeType %}
+-- CompositeTypes are required above ^
+{%- else %}
+-- FIXME {{ field.name }} is a {{ field.data_type }} and we don't know about that yet!
+{%- endif %}
+{%- endfor %}
+-- === Fields ==========================================================================================================
+{%- endmacro %}
+
+{# Field Declarations for Request in ServiceTypes #}
+{%- macro fields_request(service_type, request_type) %}
+-- === Fields (Request) ================================================================================================
+-- Initialize the field table for the Request Type
+{{ service_type | full_reference_name }}.Request = {}
+
+{%- if request_type is UnionType or request_type.inner_type is UnionType %}
+-- Union tag field
+{{ service_type | full_reference_name }}.Request._tag_ = ProtoField.new(
+    '_tag_', -- name in the shown fields
+    '{{ service_type | string_reference_name }}.Request._tag_', -- abbr named used by filters
+    ftypes.UINT8) -- tag is always uint8
+{%- endif %}
+{%- for field in request_type.fields %}
+{%- if field.doc %}
+--[[
+{{ field.doc }}
+]]--
+{%- endif %}
+{%- if field is PrimitiveType %}
+{{ declare_primitive_field(service_type, field.name, field.data_type, '.Request') }}
+{%- elif field is ArrayType %}
+{%- if field is FixedLengthArrayType %}
+{%- if field.data_type.element_type is PrimitiveType %}
+{{ declare_primitive_field(service_type, field.name, field.data_type.element_type, '.Request') }}
+{%- else %}
+-- CompositeTypes are required above ^
+{%- endif %}
+{%- elif field is VariableLengthArrayType %}
+{%- if field.data_type.element_type is PrimitiveType %}
+{{ declare_primitive_field(service_type, field.name, field.data_type.element_type, '.Request') }}
+{%- else %}
+-- CompositeTypes are required above ^
+{%- endif %}
+{%- endif %}
+{%- elif field is CompositeType %}
+-- CompositeTypes are required above ^
+{%- else %}
+-- FIXME {{ field.name }} is a {{ field.data_type }} and we don't know about that yet!
+{%- endif %}
+{%- endfor %}
+-- === Fields (Request) ================================================================================================
+{%- endmacro %}
+
+{# Field Declarations for Response in ServiceTypes #}
+{%- macro fields_response(service_type, response_type) %}
+-- === Fields (Response) ===============================================================================================
+-- Initialize the field table for the Response type
+{{ service_type | full_reference_name }}.Response = {}
+{%- if response_type is UnionType or response_type.inner_type is UnionType %}
+-- Union tag field
+{{ service_type | full_reference_name }}.Response._tag_ = ProtoField.new(
+    '_tag_', -- name in the shown fields
+    '{{ service_type | string_reference_name }}.Response._tag_', -- abbr named used by filters
+    ftypes.UINT8) -- tag is always uint8
+{%- endif %}
+{%- for field in response_type.fields %}
+{%- if field.doc %}
+--[[
+{{ field.doc }}
+]]--
+{%- endif %}
+{%- if field is PrimitiveType %}
+{{ declare_primitive_field(service_type, field.name, field.data_type, '.Response') }}
+{%- elif field is ArrayType %}
+{%- if field is FixedLengthArrayType %}
+{%- if field.data_type.element_type is PrimitiveType %}
+{{ declare_primitive_field(service_type, field.name, field.data_type.element_type, '.Response') }}
+{%- else %}
+-- CompositeTypes are required above ^
+{%- endif %}
+{%- elif field is VariableLengthArrayType %}
+{%- if field.data_type.element_type is PrimitiveType %}
+{{ declare_primitive_field(service_type, field.name, field.data_type.element_type, '.Response') }}
+{%- else %}
+-- CompositeTypes are required above ^
+{%- endif %}
+{%- endif %}
+{%- elif field is CompositeType %}
+-- CompositeTypes are required above ^
+{%- else %}
+-- FIXME {{ field.name }} is a {{ field.data_type }} and we don't know about that yet!
+{%- endif %}
+{%- endfor %}
+-- === Fields (Response) ===============================================================================================
+{%- endmacro %}

@@ -1,0 +1,64 @@
+{# Register Types #}
+{%- macro subtypes(type) %}
+{# this is intended twice #}
+        {%- for n in type | requires %}
+        {{ n | full_reference_name }}.register(cyphal_proto)
+        {%- endfor %}
+{%- endmacro %}
+
+{# Register Fields Inner function #}
+{%- macro fields_message(type) %}
+{# this is intended twice #}
+    {%- if type is UnionType or type.inner_type is UnionType %}
+        table.insert(cyphal_proto.fields, {{ type | full_reference_name }}._tag_)
+    {%- endif %}
+    {%- for field in type.fields %}
+        {%- if field is PrimitiveType %}
+        table.insert(cyphal_proto.fields, {{ type | full_reference_name }}.{{field.name}})
+        {%- elif field is ArrayType %}
+        table.insert(cyphal_proto.fields, {{ type | full_reference_name }}.{{field.name}})
+        {%- elif field is CompositeType %}
+        -- composite types are registered as types below
+        {%- else %}
+        -- FIXME {{ field.name }} is a {{ field.data_type }} and we don't know about that yet!
+        {%- endif %}
+    {%- endfor %}
+{%- endmacro %}
+
+{# Register Fields for Request in ServiceTypes #}
+{%- macro fields_request(service_type, request_type) %}
+{# this is intended twice #}
+    {%- if request_type is UnionType or request_type.inner_type is UnionType %}
+        table.insert(cyphal_proto.fields, {{ service_type | full_reference_name }}.Request._tag_)
+    {%- endif %}
+    {%- for field in request_type.fields %}
+        {%- if field is PrimitiveType %}
+        table.insert(cyphal_proto.fields, {{ service_type | full_reference_name }}.Request.{{field.name}})
+        {%- elif field is ArrayType %}
+        table.insert(cyphal_proto.fields, {{ service_type | full_reference_name }}.Request.{{field.name}})
+        {%- elif field is CompositeType %}
+        -- composite types are registered as types below
+        {%- else %}
+        -- FIXME {{ field.name }} is a {{ field.data_type }} and we don't know about that yet!
+        {%- endif %}
+    {%- endfor %}
+{%- endmacro %}
+
+{# Register Fields for Response in ServiceTypes #}
+{%- macro fields_response(service_type, response_type) %}
+{# this is intended twice #}
+    {%- if response_type is UnionType or response_type.inner_type is UnionType %}
+        table.insert(cyphal_proto.fields, {{ service_type | full_reference_name }}.Response._tag_)
+    {%- endif %}
+    {%- for field in response_type.fields %}
+        {%- if field is PrimitiveType %}
+        table.insert(cyphal_proto.fields, {{ service_type | full_reference_name }}.Response.{{field.name}})
+        {%- elif field is ArrayType %}
+        table.insert(cyphal_proto.fields, {{ service_type | full_reference_name }}.Response.{{field.name}})
+        {%- elif field is CompositeType %}
+        -- composite types are registered as types below
+        {%- else %}
+        -- FIXME {{ field.name }} is a {{ field.data_type }} and we don't know about that yet!
+        {%- endif %}
+    {%- endfor %}
+{%- endmacro %}

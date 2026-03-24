@@ -1,27 +1,35 @@
-{#
-type - the current Type
-field - the ProtoField of the Type
-offset - the current offset
-_delimiter_ - if a delimiter is used, this will be set to the extent of the field.
-field_size - used to store either the extent or the delimited size
-payload - The tvb
-pinfo - The packet info
-subtree - The current level of the tree structure
-#}
+{%- if field.data_type is not BooleanType %}
+    -- reset the bit offset, but we need to increment bytes offset if the bit offset is > 1 since that would imply
+    -- we've processed some bit fields. but we're about to process something else.
+    if bits_offset > 0 then
+        bytes_offset = bytes_offset + 1
+        bits_offset = 0
+    end
+{%- endif %}
 {%- if field.data_type is VoidType %}
     -- void type
-    offset = offset + {{ field.data_type | to_serialized_length }}
+    bytes_field_size = 0
+    bytes_offset = bytes_offset + {{ field.data_type | to_serialized_length }}
+    bits_index = bits_index + 0
 {%- elif field.data_type is BooleanType %}
     -- boolean type
-    offset = offset + nunavut_support.as_bool(
-            {{ type | full_reference_name }}.{{ field.name }},
-            payload, offset, subtree) -- , "{{ field.name }}")
+    bytes_field_size = 1
+    nunavut_support.as_bool(
+            {{ type | full_reference_name }}{{ field_prefix }}.{{ field.name }},
+            payload, bytes_offset, bytes_field_size, bits_offset, subtree)
+    bits_offset = (bits_offset + 1) % 8
+    if bits_offset == 0 then -- we've looped the bits, increment the byte offset
+        bytes_offset = bytes_offset + 1
+    end
+    bits_index = bits_index + 1
 {%- elif field.data_type is PrimitiveType %}
     -- primitive type {{ field.data_type }}
+    bytes_field_size = {{ field.data_type | to_serialized_length }}
 {%- if type.constants %}
     -- Field may use enumerated constants
+    if (bytes_offset + {{ field.data_type | to_serialized_length }}) <= payload:len() then
     do
-        local tvb = payload(offset, {{ field.data_type | to_serialized_length }})
+        local tvb = payload(bytes_offset, {{ field.data_type | to_serialized_length }})
         local value = tvb:le_{{ field.data_type | to_wireshark_type }}()
         local enum_name = nil
         -- Look up constant name
@@ -38,76 +46,93 @@ subtree - The current level of the tree structure
 {%- endfor %}
         end
         if enum_name then
-            subtree:add_le({{ type | full_reference_name }}.{{ field.name }}, tvb, value, string.format("{{field.name}}: %s (%s)", tostring(value), enum_name))
+            subtree:add_le({{ type | full_reference_name }}{{ field_prefix }}.{{ field.name }}, tvb, value, string.format("{{field.name}}: %s (%s)", tostring(value), enum_name))
         else
-            subtree:add_le({{ type | full_reference_name }}.{{ field.name }}, tvb, value)
+            subtree:add_le({{ type | full_reference_name }}{{ field_prefix }}.{{ field.name }}, tvb, value)
         end
-        offset = offset + {{ field.data_type | to_serialized_length }}
+        bytes_offset = bytes_offset + {{ field.data_type | to_serialized_length }}
     end
+    end -- bounds check
 {%- else %}
-    offset = offset + nunavut_support.as_{{ field.data_type | to_protofield_type }}(
-            {{ type | full_reference_name }}.{{ field.name }},
-            payload, offset, {{ field.data_type | to_serialized_length }},
-            subtree)
+    -- bytes field size should be set above
+    bytes_offset = bytes_offset + nunavut_support.as_{{ field.data_type | to_protofield_type }}(
+            {{ type | full_reference_name }}{{ field_prefix }}.{{ field.name }},
+            payload, bytes_offset, bytes_field_size, subtree)
 {%- endif %}
+    bits_index = bits_index + (bytes_field_size * 8)
 {%- elif field.data_type is ArrayType %}
     -- array type
 {%-     if field.data_type is FixedLengthArrayType %}
-    -- Fixed Length Array of {{field.data_type.capacity}} elements
+    -- Fixed Length Array of {{field.data_type}}, {{field.data_type.capacity}} elements
+    capacity = {{field.data_type.capacity}}
 {%-         if field.data_type.element_type is BooleanType %}
-    -- bool mask!
-    local mask = payload(offset, ({{field.data_type.capacity}} / 8)):bytes()
+    -- bool mask! capacity is in terms of bits!
+    local mask = payload(bytes_offset, ({{field.data_type.capacity}} / 8)):bytes()
     local set_indexes = {}
-    local functor = function(proto, byte_array, pinfo, tree, byte_offset, bit_index)
-        table.insert(set_indexes, tostring(bit_index))
+    local functor = function(proto, byte_array, pinfo, tree, byte_offset, bits_index)
+        table.insert(set_indexes, tostring(bits_index))
     end
     nunavut_support.as_bool_array(proto, mask, pinfo, subtree, functor, "{{field.name}}")
     local index_str = table.concat(set_indexes, ", ")
-    subtree:add(proto, payload(offset, ({{field.data_type.capacity}} / 8)), string.format("[%s]", index_str))
-    offset = offset + ({{field.data_type.capacity}} / 8)
+    subtree:add(proto, payload(bytes_offset, ({{field.data_type.capacity}} / 8)), string.format("[%s]", index_str))
+    bytes_offset = bytes_offset + (capacity / 8) -- this is packed into bits so / 8
+    bits_index = bits_index + capacity
 {%-         elif field.data_type.element_type is PrimitiveType %}
-    _length_ = {{field.data_type.capacity}}
-    field_size = {{ field.data_type.element_type | to_serialized_length }}
-    for i = 1, _length_ do
+    _bytes_length_ = {{field.data_type.capacity}}
+    bytes_field_size = {{ field.data_type.element_type | to_serialized_length }}
+    for i = 1, _bytes_length_ do
         -- element is primitive type {{ field.data_type.element_type }}
-        tvb = payload(offset, field_size)
+        tvb = payload(bytes_offset, bytes_field_size)
         value = tvb:le_{{ field.data_type.element_type | to_wireshark_type }}()
         subtree:add_le(proto, tvb, value, string.format("{{field.name}}[%u]", i))
-        offset = offset + field_size
+        bytes_offset = bytes_offset + bytes_field_size
+        bits_index = bits_index + (bytes_field_size * 8)
     end
 {%-         else %}
-    _length_ = {{field.data_type.capacity}}
-    for i = 1, _length_ do
-        -- composite type {{ field.data_type.element_type }}
-        local data = payload(offset, {{ field.data_type.element_type | full_reference_name }}.extent)
-        offset = offset + {{ field.data_type.element_type | full_reference_name}}.decode(proto, data, pinfo, subtree, string.format("{{field.name}}[%u]", i))
+    -- Fixed Composite Object Array of type {{ field.data_type.element_type }}
+    _item_count_ = {{field.data_type.capacity}}
+    for i = 1, _item_count_ do
+        bytes_field_size = {{ field.data_type.element_type | full_reference_name}}.decode(proto, payload, offset, {{ field.data_type.element_type | full_reference_name}}.extent, pinfo, subtree, string.format("{{field.name}}[%u]", i))
+        offset = offset + bytes_field_size
+        bytes_offset = bytes_offset + bytes_field_size
+        bits_index = bits_index + (bytes_field_size * 8)
     end
 {%-         endif %}
 {%-     elif field.data_type is VariableLengthArrayType %}
     -- Variable Length Array has a length field of {{ field.data_type.length_field_type | to_serialized_length }} bytes
-    _length_ = payload(offset, {{ field.data_type.length_field_type | to_serialized_length }}):le_uint()
-    offset = offset + {{ field.data_type.length_field_type | to_serialized_length }}
+    _item_count_ = payload(bytes_offset, {{ field.data_type.length_field_type | to_serialized_length }}):le_uint()
+    bytes_offset = bytes_offset + {{ field.data_type.length_field_type | to_serialized_length }}
+    bits_index = bits_index + ({{ field.data_type.length_field_type | to_serialized_length }} * 8)
 {%-         if field.data_type.element_type is BooleanType %}
-    -- bool mask!
-    local mask = payload(offset, (_length_ / 8)):bytes()
+    _bytes_length_ = _item_count_
+    -- bool mask! (the bits are stuffed! so it's 1 "field")
+    bytes_field_size = (_bytes_length_ / 8)
+    local mask = payload(bytes_offset, bytes_field_size):bytes()
     local set_indexes = {}
-    local functor = function(proto, byte_array, pinfo, tree, byte_offset, bit_index)
-        table.insert(set_indexes, tostring(bit_index))
+    local functor = function(proto, byte_array, pinfo, tree, byte_offset, bits_index)
+        table.insert(set_indexes, tostring(bits_index))
     end
     nunavut_support.as_bool_array(proto, mask, pinfo, subtree, functor, "{{field.name}}")
     local index_str = table.concat(set_indexes, ", ")
-    subtree:add(proto, payload(offset, (_length_ / 8)), string.format("[%s]", index_str))
-    offset = offset + (_length_ / 8)
+    subtree:add(proto, payload(bytes_offset, bytes_field_size), string.format("[%s]", index_str))
+    bytes_offset = bytes_offset + bytes_field_size
 {%-         elif field.data_type.element_type is PrimitiveType %}
-    field_size = {{ field.data_type.element_type | to_serialized_length }}
+    -- Primitive Variable Length Array
+    bytes_field_size = {{ field.data_type.element_type | to_serialized_length }}
+    _bytes_length_ = _item_count_ * bytes_field_size
 {%-             if field.data_type.element_type is UnsignedIntegerType and field.data_type.element_type.bit_length == 8 %}
     -- Special case: uint8 array might be an ASCII string
-    if _length_ > 0 then
-        local byte_data = payload(offset, _length_ * field_size):bytes()
+    -- Clamp item count to available payload
+    if (bytes_offset + _bytes_length_) > payload:len() then
+        _item_count_ = math.max(0, math.floor((payload:len() - bytes_offset) / bytes_field_size))
+        _bytes_length_ = _item_count_ * bytes_field_size
+    end
+    if _item_count_ > 0 then
+        local byte_data = payload(bytes_offset, _item_count_ * bytes_field_size):bytes()
         local is_ascii = true
         local has_printable = false
         -- Check if data is ASCII printable or whitespace
-        for i = 0, _length_ - 1 do
+        for i = 0, _item_count_ - 1 do
             local byte_val = byte_data:get_index(i)
             if byte_val >= 32 and byte_val <= 126 then
                 has_printable = true
@@ -119,75 +144,108 @@ subtree - The current level of the tree structure
         end
         if is_ascii and has_printable then
             -- Display as ASCII string (use proto directly, not the typed ProtoField)
-            local str_value = payload(offset, _length_ * field_size):string()
-            subtree:add(proto, payload(offset - {{ field.data_type.length_field_type | to_serialized_length }}, _length_ * field_size + {{ field.data_type.length_field_type | to_serialized_length }}), string.format("{{field.name}}: \"%s\"", str_value))
+            local str_value = payload(bytes_offset, _bytes_length_):string()
+            subtree:add(proto, payload(bytes_offset - {{ field.data_type.length_field_type | to_serialized_length }}, _bytes_length_ + {{ field.data_type.length_field_type | to_serialized_length }}), string.format("{{field.name}}: \"%s\"", str_value))
         else
             -- Display as hex bytes
-            for i = 1, _length_ do
-                tvb = payload(offset + (i - 1) * field_size, field_size)
+            for i = 1, _item_count_ do
+                tvb = payload(bytes_offset + (i - 1) * bytes_field_size, bytes_field_size)
                 value = tvb:le_uint()
                 subtree:add_le(proto, tvb, value, string.format("{{field.name}}[%u]", i))
             end
         end
     end
-    offset = offset + _length_ * field_size
+    bytes_offset = bytes_offset + _bytes_length_
 {%-             else %}
-    for i = 1, _length_ do
-        -- element is primitive type {{ field.data_type.element_type }}
-        tvb = payload(offset, field_size)
+    -- General Case, not a bool type
+    -- Elements are of PrimitiveType {{ field.data_type.element_type }}
+    for i = 1, _item_count_ do
+        tvb = payload(bytes_offset, bytes_field_size)
         value = tvb:le_{{ field.data_type.element_type | to_wireshark_type }}()
         subtree:add_le(proto, tvb, value, string.format("{{field.name}}[%u]", i))
-        offset = offset + field_size
+        bytes_offset = bytes_offset + bytes_field_size
+        bits_index = bits_index + (bytes_field_size * 8)
     end
+    -- we don't need to add _bytes_length_ to bytes_offset as it was incremented each time
 {%-             endif %}
+    -- End of Primitive Type
 {%-         else %}
-    for i = 1, _length_ do
-        -- composite type {{ field.data_type.element_type }}
-        local data = payload(offset, {{ field.data_type.element_type | full_reference_name }}.extent)
-        offset = offset + {{ field.data_type.element_type | full_reference_name}}.decode(proto, data, pinfo, subtree, string.format("{{field.name}}[%u]", i))
+    -- Composite Type Variable Length Array {{ field.data_type }}
+    -- Since a CompositeType may be internally variable in size, we can't know how large this is yet, just how many we have
+    for i = 1, _item_count_ do
+        if bytes_offset >= payload:len() then break end -- bounds check
+        bytes_field_size = {{ field.data_type.element_type | full_reference_name}}.decode(
+                proto, payload(bytes_offset, payload:len() - bytes_offset),
+                0, payload:len() - bytes_offset,
+                pinfo, subtree, string.format("{{field.name}}[%u]", i))
+        bytes_offset = bytes_offset + bytes_field_size
+        bits_index = bits_index + (bytes_field_size * 8)
     end
 {%-         endif %}
 {%-     else %}
-    -- Unknown Array Type?
+    -- FIXME Unknown Array Type {{ field.data_type}} and {{ field.data_type.element_type }}
 {%-     endif %}
 {%- elif field.data_type is CompositeType %}
-    -- composite type
-{%-     if 'uavcan.primitive.String' in (field.data_type.full_name or '') %}
-    -- Special handling for uavcan.primitive.String: display as UTF-8 string
-    _length_ = payload(offset, 2):le_uint()  -- String uses 2-byte length prefix
-    offset = offset + 2
-    if _length_ > 0 then
-        local str_value = payload(offset, _length_):string()
-        subtree:add({{ type | full_reference_name }}.{{ field.name }}, payload(offset - 2, _length_ + 2), str_value)
-    else
-        subtree:add({{ type | full_reference_name }}.{{ field.name }}, payload(offset - 2, 2), "(empty)")
+    -- Composite Type {{ field.data_type }}
+{%-     if 'String' in (field.data_type.short_name or field.data_type.full_name or '') %}
+    -- Special handling for String-like types: display as UTF-8 string
+    -- Matches uavcan.primitive.String, LongString, and any type with "String" in the name
+    bytes_field_size = 2
+    if (bytes_offset + bytes_field_size) <= payload:len() then
+    _bytes_length_ = payload(bytes_offset, bytes_field_size):le_uint()  -- String uses 2-byte length prefix
+    bytes_offset = bytes_offset + bytes_field_size
+    bits_index = bits_index + (bytes_field_size * 8)
+    -- Clamp to available payload
+    if (bytes_offset + _bytes_length_) > payload:len() then
+        _bytes_length_ = math.max(0, payload:len() - bytes_offset)
     end
-    offset = offset + _length_
+    if _bytes_length_ > 0 then
+        local str_value = payload(bytes_offset, _bytes_length_):string()
+        subtree:add(proto, payload(bytes_offset - 2, _bytes_length_ + 2), string.format("{{field.name}}: \"%s\"", str_value))
+    else
+        subtree:add(proto, payload(bytes_offset - 2, 2), string.format("{{field.name}}: (empty)"))
+    end
+    bytes_offset = bytes_offset + _bytes_length_
+    bits_index = bits_index + (_bytes_length_ * 8)
+    end -- bounds check
 {%-     elif 'uavcan.primitive.Unstructured' in (field.data_type.full_name or '') %}
     -- Special handling for uavcan.primitive.Unstructured: display raw bytes without decoding
-    _length_ = payload(offset, 2):le_uint()  -- Unstructured uses 2-byte length prefix
-    offset = offset + 2
-    if _length_ > 0 then
-        subtree:add({{ type | full_reference_name }}.{{ field.name }}, payload(offset - 2, _length_ + 2), string.format("%d bytes", _length_))
+    bytes_field_size = 2
+    _bytes_length_ = payload(bytes_offset, bytes_field_size):le_uint()  -- Unstructured uses 2-byte length prefix
+    bytes_offset = bytes_offset + bytes_field_size
+    bits_index = bits_index + (bytes_field_size * 8)
+    if _bytes_length_ > 0 then
+        subtree:add({{ type | full_reference_name }}{{ field_prefix }}.{{ field.name }}, payload(bytes_offset - 2, _bytes_length_ + 2), string.format("%d bytes", _bytes_length_))
     else
-        subtree:add({{ type | full_reference_name }}.{{ field.name }}, payload(offset - 2, 2), "(empty)")
+        subtree:add({{ type | full_reference_name }}{{ field_prefix }}.{{ field.name }}, payload(bytes_offset - 2, 2), "(empty)")
     end
-    offset = offset + _length_
+    bytes_offset = bytes_offset + _bytes_length_
+    bits_index = bits_index + (_bytes_length_ * 8)
 {%-     elif field.data_type is DelimitedType %}
     -- Delimited type: read length prefix first
-    _delimiter_ = payload(offset, {{ field.data_type.delimiter_header_type | to_serialized_length }}):le_uint()
-    offset = offset + {{ field.data_type.delimiter_header_type | to_serialized_length }}
-    -- Use delimiter length for deserialization
-    offset = offset + {{ field.data_type | full_reference_name }}.decode(
-            proto, payload(offset, _delimiter_),
+    bytes_field_size = {{ field.data_type.delimiter_header_type | to_serialized_length }}
+    _delimiter_ = payload(bytes_offset, bytes_field_size):le_uint()
+    offset = offset + bytes_field_size
+    bytes_offset = bytes_offset + bytes_field_size
+    bits_index = bits_index + (bytes_field_size * 8)
+    bytes_field_size = {{ field.data_type | full_reference_name }}.decode(
+            proto, payload, offset, _delimiter_,
             pinfo, subtree, "{{field.name}}")
+    bytes_offset = bytes_offset + bytes_field_size
+    bits_index = bits_index + (bytes_field_size * 8)
 {%-     else %}
-    -- Non-delimited composite: use full extent
-    field_size = {{ field.data_type | full_reference_name }}.extent
-    offset = offset + {{ field.data_type | full_reference_name }}.decode(
-            proto, payload(offset, field_size),
+    -- Non-delimited composite: pass remaining payload, let sub-type handle bounds
+    bytes_field_size = payload:len() - bytes_offset
+    if bytes_field_size <= 0 then bytes_field_size = 0
+    else
+    local _sub_bytes_ = {{ field.data_type | full_reference_name }}.decode(
+            proto, payload(bytes_offset, bytes_field_size),
+            0, bytes_field_size,
             pinfo, subtree, "{{field.name}}")
+    bytes_offset = bytes_offset + _sub_bytes_
+    bits_index = bits_index + (_sub_bytes_ * 8)
+    end -- bounds check for non-delimited composite
 {%-     endif %}
 {%- else %}
-    -- Unknown type {{field.name}} of type {{field.data_type}}
+    -- FIXME Unknown type {{field.name}} of type {{field.data_type}}
 {%- endif %}

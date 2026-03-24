@@ -14,4 +14,12 @@
 -- Fixed port ID: {{ T.fixed_port_id }}
 -- Full name:     {{ T.full_name }}
 -- Version:       {{ T.version.major }}.{{ T.version.minor }}
-{% include '_type_info.j2' %}
+-- Type Information:
+-- Composite:     {{ T is CompositeType and 'yes' or 'no' }}
+{%- if T is CompositeType %}
+-- - Delimited:     {{ T is DelimitedType and 'yes' or 'no' }}
+-- -- Inner:        {{ T.inner_type is DelimitedType and 'yes' or 'no' }}
+-- - Union:         {{ T is UnionType and 'yes' or 'no' }}
+-- -- Inner:        {{ T.inner_type is UnionType and 'yes' or 'no' }}
+{%- endif %}
+-- Service:       {{ T is ServiceType and 'yes' or 'no' }}

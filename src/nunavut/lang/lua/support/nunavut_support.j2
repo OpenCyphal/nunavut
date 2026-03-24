@@ -6,138 +6,161 @@
 
 -- Nunavut Support Library Function for Decoding Primitives in Lua
 
+-- Bounds check helper: returns true if offset + field_size is within the payload
+local function in_bounds(payload, offset, field_size)
+    return (offset + field_size) <= payload:len()
+end
+
 local function decode_payload_uint8(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_uint()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_uint16(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_uint()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_uint24(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_uint()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_uint32(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_uint()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_uint40(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_uint64()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_uint48(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_uint64()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_uint56(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_uint64()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_uint64(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_uint64()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_int8(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_int()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_int16(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_int()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_int24(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_int()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_int32(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_int()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_int40(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_int64()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_int48(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_int64()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_int56(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_int64()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_int64(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_int64()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_float(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_float()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
 local function decode_payload_double(field, payload, offset, field_size, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
     tvb = payload(offset, field_size)
     value = tvb:le_float()
-    tree:add_le(field, tvb, value)
+    tree:add_le(field, tvb)
     return field_size
 end
 
-local function decode_payload_bool(field, payload, offset, field_size, tree)
-    local offset = 0
-    local field_size = 1
-    local bits = payload(offset, 1):le_uint()
-    local value = bit.band(bits, 0x1)
-    tree:add_le(field, bits, value)
+local function decode_payload_bool(field, payload, offset, field_size, bit_offset, tree)
+    if not in_bounds(payload, offset, field_size) then return field_size end
+    local byte_val = payload(offset, field_size):le_uint()
+    local mask = bit.lshift(1, bit_offset)
+    local value = bit.band(byte_val, mask) ~= 0
+    tree:add_le(field, payload(offset, field_size))
     return field_size
 end
 

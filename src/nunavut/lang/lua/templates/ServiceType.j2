@@ -5,34 +5,21 @@
 -#}
 {%- include '_header.j2' %}
 {%- include '_requires.j2' %}
-{%- import '_macros.j2' as macros with context %}
+{%- import 'register.j2' as register with context %}
+{%- import 'declare.j2' as declare with context %}
+{%- import 'decode.j2' as decode with context %}
 {%- set type = T %}
 {%- set name = T | short_reference_name %}
--- constants
-{{ macros.declare_constants(type.request_type) }}
-{{ macros.declare_constants(type.response_type) }}
 
-{%- if type.has_fixed_port_id %}
--- {{ type | full_reference_name }} has a fixed port ID
-local PORT_ID = {{ type.fixed_port_id }}
-{%- endif %}
--- Request size in bits
-local BIT_REQUEST_EXTENT = {{ type.request_type.extent }}
--- Request size in bytes
-local REQUEST_EXTENT = BIT_REQUEST_EXTENT / 8
--- Response size in bits
-local BIT_RESPONSE_EXTENT = {{ type.response_type.extent }}
--- Response size in bytes
-local RESPONSE_EXTENT = BIT_RESPONSE_EXTENT / 8
+{{ declare.constants(type.request_type) }}
+{{ declare.constants(type.response_type) }}
+
+{{ declare.extents(type) }}
 
 -- Initialize field tables for dot notation
-{{ type | full_reference_name }} = {}
-{{ type | full_reference_name }}.Request = {}
-{{ type | full_reference_name }}.Response = {}
-
--- constituent fields
-{{ macros.declare_fields_request(type, type.request_type) }}
-{{ macros.declare_fields_response(type, type.response_type) }}
+local {{ type | full_reference_name }} = {}
+{{ declare.fields_request(type, type.request_type) }}
+{{ declare.fields_response(type, type.response_type) }}
 
 -- local flag to prevent multiple inclusion
 local {{ type | full_reference_name }}_registered = false
@@ -41,34 +28,31 @@ local {{ type | full_reference_name }}_registered = false
 -- @param cyphal_proto The Proto to add the fields to
 local function register_{{ type | full_reference_name }}(cyphal_proto)
     if not {{ type | full_reference_name }}_registered then
-        {{ macros.register_fields_request(type, type.request_type) }}
-        {{ macros.register_subtypes(type.request_type) }}
-        {{ macros.register_fields_response(type, type.response_type) }}
-        {{ macros.register_subtypes(type.response_type) }}
+        {{ register.fields_request(type, type.request_type) }}
+        {{ register.subtypes(type.request_type) }}
+        {{ register.fields_response(type, type.response_type) }}
+        {{ register.subtypes(type.response_type) }}
         {{ type | full_reference_name }}_registered = true
     end
 end
 
+{{ decode.function_request(type, type.request_type, 'REQUEST_EXTENT') }}
+{{ decode.function_response(type, type.response_type, 'RESPONSE_EXTENT') }}
 
--- Decodes a {{ type | full_reference_name }} Request
+-- Decodes a {{ type | full_reference_name }} as a top level Service.
 -- Returns the number of bytes decoded
-local function decode_{{ type | full_reference_name }}_Request(proto, payload, pinfo, payload_tree, label)
-    {{ macros.decode_function_request(type, type.request_type, 'REQUEST_EXTENT') }}
-end
-
--- Decodes a {{ type | full_reference_name }} Response
--- Returns the number of bytes decoded
-local function decode_{{ type | full_reference_name }}_Response(proto, payload, pinfo, payload_tree, label)
-    {{ macros.decode_function_response(type, type.response_type, 'RESPONSE_EXTENT') }}
-end
-
--- Decodes a {{ type | full_reference_name }}
--- Returns the number of bytes decoded
-local function decode_{{ type | full_reference_name }}(proto, payload, pinfo, payload_tree, label, request_not_response)
+-- @param proto The protocol type
+-- @param payload The TVB of all the data
+-- @param offset The offset in the payload where we need to start parsing from
+-- @param pinfo ???
+-- @param payload_tree The tree to attach dissected values to
+-- @param label The text string to attach to the data
+-- @param request_not_response True if a request, false if a response
+local function decode_{{ type | full_reference_name }}(proto, payload, offset, pinfo, payload_tree, label, request_not_response)
     if request_not_response == 1 then -- Request
-        return decode_{{ type | full_reference_name }}_Request(proto, payload, pinfo, payload_tree, label)
+        return decode_{{ type | full_reference_name }}_Request(proto, payload, offset, REQUEST_EXTENT, pinfo, payload_tree, label)
     else -- Response
-        return decode_{{ type | full_reference_name }}_Response(proto, payload, pinfo, payload_tree, label)
+        return decode_{{ type | full_reference_name }}_Response(proto, payload, offset, RESPONSE_EXTENT, pinfo, payload_tree, label)
     end
 end
 
