@@ -24,6 +24,7 @@ from .._generators import AbstractGenerator
 from .._postprocessors import FilePostProcessor, LinePostProcessor, PostProcessor
 from .._utilities import TEMPLATE_SUFFIX, ResourceSearchPolicy, ResourceType, YesNoDefault
 from .environment import CodeGenEnvironment, CodeGenEnvironmentBuilder
+from .jinja2.tests import TESTS as JINJA2_TESTS
 from .loaders import DEFAULT_TEMPLATE_PATH, DSDLSupportTemplateLoader, DSDLTemplateLoader
 
 logger = logging.getLogger(__name__)
@@ -805,8 +806,12 @@ class DSDLCodeGenerator(CodeGenerator):
         """
         env = super()._create_environment(env_builder, language_context)
 
-        # Add DSDL-specific tests (is_service_request, is_service_response, etc.)
+        # Add DSDL-specific tests (is_service_request, is_service_response, etc.). Jinja 3 added built-in tests
+        # that share names with some of these (boolean, integer, float). Nunavut's DSDL meaning predates the
+        # built-ins and is what templates expect so it replaces them.
         for test_name, test in self._create_all_dsdl_tests().items():
+            if test_name in JINJA2_TESTS and env.tests.get(test_name) is JINJA2_TESTS[test_name]:
+                del env.tests[test_name]
             env.add_test(test_name, test)
 
         # Add DSDL-specific filters (type_to_template, type_to_include_path, etc.)

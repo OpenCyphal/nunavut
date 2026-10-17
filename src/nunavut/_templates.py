@@ -13,19 +13,25 @@ import types
 import typing
 
 import nunavut.lang
+from nunavut.jinja.jinja2 import pass_context
 
-ENVIRONMENT_FILTER_ATTRIBUTE_NAME = "environmentfilter"
+JINJA_PASS_ARG_ATTRIBUTE_NAME = "jinja_pass_arg"
 """
-For now this is set to a value that is internally compatible with the
-embedded version of jinja2 we use in Nunavut. If you use this variable
-instead of its current value you will be insulated from this.
+The attribute the embedded version of jinja2 uses to decide what, if anything, it passes to a
+filter, test, or global function as its first argument (e.g. the template context). Jinja's
+``pass_context`` and ``pass_environment`` decorators set this.
 """
 
-CONTEXT_FILTER_ATTRIBUTE_NAME = "contextfilter"
+ENVIRONMENT_FILTER_ATTRIBUTE_NAME = JINJA_PASS_ARG_ATTRIBUTE_NAME
 """
-For now this is set to a value that is internally compatible with the
-embedded version of jinja2 we use in Nunavut. If you use this variable
-instead of its current value you will be insulated from this.
+Deprecated alias of :data:`JINJA_PASS_ARG_ATTRIBUTE_NAME`. Jinja 3 replaced the separate
+``environmentfilter`` and ``contextfilter`` markers with a single attribute.
+"""
+
+CONTEXT_FILTER_ATTRIBUTE_NAME = JINJA_PASS_ARG_ATTRIBUTE_NAME
+"""
+Deprecated alias of :data:`JINJA_PASS_ARG_ATTRIBUTE_NAME`. Jinja 3 replaced the separate
+``environmentfilter`` and ``contextfilter`` markers with a single attribute.
 """
 
 LANGUAGE_FILTER_ATTRIBUTE_NAME = "nv_languagefilter"
@@ -52,8 +58,7 @@ def template_context_filter(filter_func: typing.Callable) -> typing.Callable[...
     Note that any template that uses such a filter will make the jinja "frame"
     the filter appears within volatile and therefore unable to be optimized.
     """
-    setattr(filter_func, CONTEXT_FILTER_ATTRIBUTE_NAME, True)
-    return filter_func
+    return typing.cast(typing.Callable[..., str], pass_context(filter_func))
 
 
 def template_volatile_filter(filter_func: typing.Callable) -> typing.Callable[..., str]:
@@ -62,8 +67,7 @@ def template_volatile_filter(filter_func: typing.Callable) -> typing.Callable[..
     frame it appears within.
     An opaque object will be passed to the filter as the first argument.
     """
-    setattr(filter_func, CONTEXT_FILTER_ATTRIBUTE_NAME, True)
-    return filter_func
+    return typing.cast(typing.Callable[..., str], pass_context(filter_func))
 
 
 LanguageFilterReturnType = typing.TypeVar("LanguageFilterReturnType")
@@ -241,17 +245,11 @@ class LanguageEnvironment:
                 for language in supported_languages:
                     if language.get_templates_package_name() == callable_language_name:
                         resolved_callable = functools.partial(callable_obj, language)
-                        if hasattr(callable_obj, ENVIRONMENT_FILTER_ATTRIBUTE_NAME):
+                        if hasattr(callable_obj, JINJA_PASS_ARG_ATTRIBUTE_NAME):
                             setattr(
                                 resolved_callable,
-                                ENVIRONMENT_FILTER_ATTRIBUTE_NAME,
-                                getattr(callable_obj, ENVIRONMENT_FILTER_ATTRIBUTE_NAME),
-                            )
-                        if hasattr(callable_obj, CONTEXT_FILTER_ATTRIBUTE_NAME):
-                            setattr(
-                                resolved_callable,
-                                CONTEXT_FILTER_ATTRIBUTE_NAME,
-                                getattr(callable_obj, CONTEXT_FILTER_ATTRIBUTE_NAME),
+                                JINJA_PASS_ARG_ATTRIBUTE_NAME,
+                                getattr(callable_obj, JINJA_PASS_ARG_ATTRIBUTE_NAME),
                             )
                         break
             if resolved_callable is None:

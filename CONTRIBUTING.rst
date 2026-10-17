@@ -232,6 +232,35 @@ Of course, you can just use `Visual Studio Code`_ to build and preview the docs 
 
 
 ************************************************
+Updating Embedded Jinja and MarkupSafe
+************************************************
+
+Nunavut embeds copies of `Jinja <https://github.com/pallets/jinja>`_ and
+`MarkupSafe <https://github.com/pallets/markupsafe>`_ under ``src/nunavut/jinja/`` so that it has no
+dependency on whatever version of Jinja a user has installed. ``subtree.json`` records the upstream
+commit each copy was taken from (``j2`` for Jinja, ``ms`` for MarkupSafe). To update them:
+
+1. Copy ``src/jinja2/`` and ``src/markupsafe/`` from the upstream release tags over
+   ``src/nunavut/jinja/jinja2/`` and ``src/nunavut/jinja/markupsafe/``. Leave out MarkupSafe's
+   ``_speedups.c`` and ``_speedups.pyi``: they are never built for the embedded copy, so MarkupSafe uses
+   its pure-Python ``_native`` module.
+2. Rewrite absolute imports of ``jinja2`` and ``markupsafe`` to ``nunavut.jinja.jinja2`` and
+   ``nunavut.jinja.markupsafe``. ``import markupsafe`` becomes ``from nunavut.jinja import markupsafe``.
+   Don't miss the string in ``compiler.py`` that generated template modules use to import
+   ``jinja2.runtime``.
+3. Re-apply Nunavut's changes to Jinja. Each one is marked with a ``NUNAVUT PATCH`` comment
+   (``grep -rn "NUNAVUT PATCH" src/nunavut/jinja/jinja2``). Together they implement the ``{%* ... %}`` and
+   ``{{* ... }}`` auto-indent syntax (``lexer.py``, ``parser.py``) and the ``lineprefix`` filter
+   (``filters.py``).
+4. Update the commit hashes in ``subtree.json`` and the versions listed in ``README.rst``. Update the
+   license text in ``LICENSE.rst`` if upstream's has changed.
+5. Check for new Jinja built-in filters or tests whose names collide with Nunavut's. Nunavut's DSDL type
+   tests replace the Jinja built-ins ``boolean``, ``integer``, and ``float``
+   (see ``DSDLCodeGenerator._create_environment``).
+6. Run the full test suite. Generated code should not change, so it's worth diffing nnvg output for
+   the public regulated data types, in every target language, from before and after the update.
+
+************************************************
 Coverage and Linting Reports
 ************************************************
 

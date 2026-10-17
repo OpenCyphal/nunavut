@@ -178,8 +178,8 @@ Bundled third-party software
 Nunavut embeds the following third-party software libraries into its source
 (i.e. these are not dependencies and do not need to be installed):
 
-- `Jinja2`_ by Armin Ronacher and contributors, BSD 3-clause license.
-- `markupsafe`_ by Armin Ronacher and contributors, BSD 3-clause license (needed for Jinja).
+- `Jinja2`_ 3.1.6 by Pallets, BSD 3-clause license (with Nunavut's auto-indent extension).
+- `markupsafe`_ 3.0.4 by Pallets, BSD 3-clause license (needed for Jinja).
 
 ************************************************
 Documentation
