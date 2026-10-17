@@ -7,6 +7,7 @@
 """Tests for the namespace module."""
 
 import json
+import pickle
 from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,7 +19,7 @@ from pydsdl import Any as AnyPydsdlType
 from pydsdl import CompositeType, Version
 
 from nunavut import DSDLCodeGenerator, ResourceSearchPolicy, YesNoDefault
-from nunavut._namespace import Generatable, Namespace, build_namespace_tree
+from nunavut._namespace import Generatable, Namespace, NotAsyncResult, _read_files_strategy, build_namespace_tree
 from nunavut.lang import Language, LanguageContext, LanguageContextBuilder
 
 # -- FIXTURES AND HELPER FUNCTIONS ---------------------------------------------------
@@ -257,6 +258,27 @@ def test_read_with_non_index_value(gen_paths: Any) -> None:
     with pytest.raises(ValueError):
         # animalia_root is not an index so this should fail.
         Namespace.read_files(animalia_root, root_namespace_dir, None)
+
+
+def test_read_files_job_args_are_picklable(gen_paths: Any) -> None:
+    """
+    Arguments sent to multiprocessing workers must be picklable. Python 3.14 can no longer pickle itertools objects
+    so this verifies we send a concrete tuple (older Pythons would silently accept an itertools.chain).
+    """
+    sent_args = []
+
+    def pickling_apply(func: Any, args: Any) -> NotAsyncResult:
+        assert isinstance(args, tuple)
+        sent_args.append(pickle.loads(pickle.dumps(args)))
+        return NotAsyncResult(func, args)
+
+    files = [gen_paths.dsdl_dir / Path("scotec") / Path("mcu") / Path("Timer.0.1.dsdl")]
+    root_namespaces = [gen_paths.dsdl_dir / Path("uavcan"), gen_paths.dsdl_dir / Path("scotec")]
+    index = Namespace.Identity(gen_paths.out_dir, LanguageContextBuilder().set_target_language("c").create())
+    _read_files_strategy(index, pickling_apply, files, 0, False, (root_namespaces, None, None, True))
+
+    assert len(sent_args) > 0
+    assert len(list(index.get_all_types())) > 0
 
 
 def test_generatable_constructor():  # type: ignore

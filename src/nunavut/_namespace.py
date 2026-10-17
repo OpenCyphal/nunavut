@@ -48,7 +48,6 @@ The one Namespace type can play three roles:
 """
 
 import collections
-import itertools
 import logging
 import multiprocessing
 import multiprocessing.pool
@@ -145,7 +144,8 @@ def _read_files_strategy(
     already_read: set[Path] = set()
     while fileset:
         next_file = fileset.pop()
-        running_lookups.append(apply_method(pydsdl.read_files, args=itertools.chain([next_file], args)))
+        # args must be picklable for multiprocessing: itertools objects stopped being picklable in Python 3.14.
+        running_lookups.append(apply_method(pydsdl.read_files, args=(next_file, *args)))
         already_read.add(_resolve_file(next_file))
         if not fileset:
             for lookup in running_lookups:
