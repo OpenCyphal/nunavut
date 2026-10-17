@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ \"$CLAUDE_CODE_REMOTE\" = \"true\" ]; then git -C \"$CLAUDE_PROJECT_DIR\" submodule update --init --recursive; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}
