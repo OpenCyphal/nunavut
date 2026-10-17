@@ -10,6 +10,8 @@
         "isFloatType":{% if field.data_type is FloatType %}true{% else %}false{% endif %},
         "isIntegerType":{% if field.data_type is IntegerType %}true{% else %}false{% endif %},
         "isIntegerType_field":{% if field is IntegerType %}true{% else %}false{% endif %},
+        "isInteger":{% if field is integer %}true{% else %}false{% endif %},
+        "isFloat":{% if field is float %}true{% else %}false{% endif %},
         "isPaddingField":{% if field is PaddingField %}true{% else %}false{% endif %},
         "isPadding":{% if field is padding %}true{% else %}false{% endif %},
         "isConstant":{% if field is Constant %}true{% else %}false{% endif %},

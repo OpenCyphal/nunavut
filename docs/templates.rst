@@ -233,7 +233,7 @@ available before you use it. For example:
 Use the built-in test |jinja2_builtin_test_defined|_ to avoid these exceptions:
 
 .. |jinja2_builtin_test_defined| replace:: ``defined``
-.. _jinja2_builtin_test_defined: https://jinja.palletsprojects.com/en/2.11.x/templates/#defined
+.. _jinja2_builtin_test_defined: https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-tests.defined
 
 .. code-block:: python
 
@@ -510,6 +510,15 @@ by type if this seems useful for your project. Simply use the
     {%- for attribute in T.attributes %}
         {%* include attribute.data_type | type_to_template %}
     {%- endfor %}
+
+The ``*`` in ``{%* ... %}`` is a Nunavut extension to Jinja's whitespace control. It takes the spaces and tabs
+immediately before the tag and adds them to the start of every non-empty line the tag renders, so included
+templates come out at the right indentation. ``{{* ... }}`` does the same for an expression::
+
+    struct Foo
+    {
+        {{* render_fields(T) }}
+    };
 
 Namespace Templates
 =================================================
