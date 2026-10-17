@@ -212,7 +212,7 @@ epub_exclude_files = ["search.html"]
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "jinja2": ("http://jinja.pocoo.org/docs/2.10", None),
+    "jinja2": ("https://jinja.palletsprojects.com/en/3.1.x", None),
     "pydsdl": ("https://pydsdl.readthedocs.io/en/stable/", None),
 }
 
