@@ -420,6 +420,8 @@ Python Filters
    :noindex:
 .. autofunction:: nunavut.lang.py.filter_newest_minor_version_aliases
    :noindex:
+.. autofunction:: nunavut.lang.py.filter_max_deserialized_bit_length
+   :noindex:
 
 
 HTML Filters

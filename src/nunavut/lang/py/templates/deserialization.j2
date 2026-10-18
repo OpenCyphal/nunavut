@@ -45,8 +45,15 @@
 {% else %}{% assert False %}{# Delimited type is not expected in this context. #}
 {% endif %}
     _des_.pad_to_alignment({{ self.alignment_requirement }})
-    assert {{ t.bit_length_set.min }} <= (_des_.consumed_bit_length - _base_offset_) <= {{ t.bit_length_set.max }}, \
+    {% set max_bit_length = t|max_deserialized_bit_length %}
+    {% if max_bit_length is none %}
+    {# A nested delimited object may be longer than its extent; it is skipped as a whole (implicit truncation). #}
+    assert {{ t.bit_length_set.min }} <= (_des_.consumed_bit_length - _base_offset_), \
         'Bad deserialization of {{ self }}'
+    {% else %}
+    assert {{ t.bit_length_set.min }} <= (_des_.consumed_bit_length - _base_offset_) <= {{ max_bit_length }}, \
+        'Bad deserialization of {{ self }}'
+    {% endif %}
 {%- endmacro %}
 
 

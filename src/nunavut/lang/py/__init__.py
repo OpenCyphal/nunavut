@@ -380,6 +380,30 @@ def filter_numpy_scalar_type(t: pydsdl.Any) -> str:
     return "_np_.object_"
 
 
+def filter_max_deserialized_bit_length(t: pydsdl.CompositeType) -> int | None:
+    """
+    Returns the maximum number of bits the deserialization of the given composite type can consume, or None if there
+    is no upper bound. For a delimited type, this applies to its inner type (the delimiter header is not included).
+
+    There is no upper bound if the type contains a delimited composite, whether as a field, as an array element,
+    or anywhere inside a nested sealed composite. The deserializer skips as many bytes as the delimiter header
+    specifies, which may be more than the extent of the nested type (the implicit truncation rule for nested objects).
+    Otherwise the bound equals the maximum of the bit length set of the type.
+    """
+
+    def contains_delimited(ty: pydsdl.SerializableType) -> bool:
+        if isinstance(ty, pydsdl.DelimitedType):
+            return True
+        if isinstance(ty, pydsdl.ArrayType):
+            return contains_delimited(ty.element_type)
+        if isinstance(ty, pydsdl.CompositeType):
+            return any(contains_delimited(f.data_type) for f in ty.fields)
+        return False
+
+    inner = t.inner_type
+    return None if contains_delimited(inner) else int(inner.bit_length_set.max)
+
+
 def filter_newest_minor_version_aliases(tys: Iterable[pydsdl.CompositeType]) -> list[tuple[str, pydsdl.CompositeType]]:
     """
     Implementation of https://github.com/OpenCyphal/nunavut/issues/193
