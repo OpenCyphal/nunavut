@@ -362,6 +362,43 @@ three variables you can set in your environment or pass into cmake if using cmak
 
 All other options set when generating code are provided by setting ``NUNAVUT_EXTRA_GENERATOR_ARGS`` in your environment.
 
+Fuzzing
+================================================
+
+Generated deserialization code parses untrusted bytes from the network, so the verification suite includes
+`libFuzzer <https://llvm.org/docs/LibFuzzer.html>`_ targets for it: ``verification/c/fuzz/fuzz_deserialize.c`` and
+``verification/cpp/fuzz/fuzz_deserialize.cpp``. Each is one binary covering a list of representative types; the first
+byte of every input selects the type and the rest is handed to its deserialization function. Each input must not crash
+or trigger undefined behavior under AddressSanitizer and UBSan, must report a consumed size no larger than the input,
+must give the same result when deserialized into a fresh object and into one holding stale data, and, if it
+deserializes, must serialize back into bytes that round-trip without change.
+
+Fuzzing needs LLVM clang with libFuzzer (the toolshed container's clang works; Apple clang does not ship libFuzzer, so on
+macOS install Homebrew ``llvm`` and put it first on your ``PATH``). Turn it on with ``NUNAVUT_VERIFICATION_FUZZ``::
+
+    cmake -DNUNAVUT_VERIFICATION_FUZZ=ON --preset configure-clang-native-c-11
+    cmake --build --preset build-Debug-clang-native-c-11 --target fuzz_deserialize fuzz_deserialize_seeds
+    ctest --test-dir build -C Debug -L fuzz --output-on-failure
+
+The ``fuzz`` ctest label runs three tests: one creates ``build/Debug/fuzz/fuzz_deserialize/``, the next writes a seed
+corpus of valid serialized samples to its ``seeds`` folder (checking each one), and the last runs a short deterministic
+smoke test (``NUNAVUT_VERIFICATION_FUZZ_RUNS`` inputs or ``NUNAVUT_VERIFICATION_FUZZ_MAX_TOTAL_TIME`` seconds, whichever
+comes first). Use the ``cpp-*`` presets (``c++14``, ``c++17`` or ``c++20``) for the C++ target.
+
+To fuzz for longer, run the fuzzer binary directly once the ctest run above has created the seeds. New interesting inputs
+go into the first folder listed and any crash reproducer is written to the current directory::
+
+    cd build/Debug/fuzz/fuzz_deserialize
+    ../../fuzz_deserialize -max_total_time=3600 -jobs=8 -workers=8 corpus seeds
+
+To reproduce or minimize a crash::
+
+    build/Debug/fuzz_deserialize crash-<hash>
+    build/Debug/fuzz_deserialize -minimize_crash=1 -runs=100000 crash-<hash>
+
+When adding a type to a fuzz target, append it to the end of the type list so that existing corpus entries keep
+selecting the same types.
+
 .. _`read the docs`: https://readthedocs.org/
 .. _`nox`: https://nox.thea.codes/en/stable/
 .. _`sonarcloud`: https://sonarcloud.io/dashboard?id=OpenCyphal_nunavut
