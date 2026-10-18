@@ -1,0 +1,7 @@
+# A union whose variants end at different bit offsets, none of them byte-aligned, so the padding at the end of the
+# union cannot be resolved at code generation time. See https://github.com/OpenCyphal/nunavut/issues/396
+@union
+bool flag
+uint7 seven
+uint3 three
+@sealed
