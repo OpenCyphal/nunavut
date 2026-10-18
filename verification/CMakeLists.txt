@@ -280,6 +280,8 @@ set(LOCAL_TEST_TYPES_TEST0_REGULATED
      ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/Primitive.0.1.dsdl
      ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/PrimitiveArrayFixed.0.1.dsdl
      ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/PrimitiveArrayVariable.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/UnalignedUnion.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/UnalignedUnionContainer.0.1.dsdl
      ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/Union.0.1.dsdl
      ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/UnionWithSameTypes.0.1.dsdl
      ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/A.1.0.dsdl

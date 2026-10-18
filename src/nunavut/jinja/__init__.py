@@ -14,7 +14,7 @@ import logging
 import re
 import shutil
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, Iterable, List, Mapping, Optional, TextIO, Tuple, Type, Union
+from typing import Any, Callable, Dict, Generator, Iterable, List, Mapping, Optional, TextIO, Tuple, Type
 
 import pydsdl
 
@@ -50,7 +50,7 @@ class CodeGenerator(AbstractGenerator):
                                            at these paths will take precedence masking any built-in templates
                                            where the names are the same. See :class:`jinja2.ChoiceLoader` for rules
                                            on the lookup hierarchy.
-    :type templates_dir: Optional[Union[Path,List[Path]]]
+    :type templates_dir: Path | List[Path] | None
     :param Optional[Type[DSDLTemplateLoader]] template_loader:
         If None uses an internal default implementation of :class:`DSDLTemplateLoader` otherwise instantiates the given
         class with the arguments specified by the :class:`DSDLTemplateLoader` constructor.
@@ -155,7 +155,7 @@ class CodeGenerator(AbstractGenerator):
         namespace: nunavut.Namespace,
         resource_types: int = ResourceType.ANY.value,
         generate_namespace_types: YesNoDefault = YesNoDefault.DEFAULT,
-        templates_dir: Optional[Union[Path, List[Path]]] = None,
+        templates_dir: Path | List[Path] | None = None,
         template_loader: Optional[Type[DSDLTemplateLoader]] = None,
         followlinks: bool = False,
         trim_blocks: bool = False,
@@ -542,7 +542,7 @@ class DSDLCodeGenerator(CodeGenerator):
             raise TypeError(f"Expected BitLengthSet, got {type(offset).__name__}")
 
     @staticmethod
-    def filter_bit_length_set(values: Optional[Union[Iterable[int], int]]) -> pydsdl.BitLengthSet:
+    def filter_bit_length_set(values: Iterable[int] | int | None) -> pydsdl.BitLengthSet:
         """
         Convert an integer or a list of integers into a :class:`pydsdl.BitLengthSet`.
 
@@ -971,7 +971,7 @@ class SupportGenerator(CodeGenerator):
         namespace: nunavut.Namespace,
         resource_types: int,
         generate_namespace_types: YesNoDefault = YesNoDefault.DEFAULT,
-        templates_dir: Optional[Union[Path, List[Path]]] = None,
+        templates_dir: Path | List[Path] | None = None,
         **kwargs: Any,
     ):
         super().__init__(
@@ -1073,14 +1073,16 @@ class SupportGenerator(CodeGenerator):
         target: Path,
         line_pps: List["LinePostProcessor"],
     ) -> None:
-        with open(str(target), "w", encoding="utf-8") as target_file:
-            with open(str(resource), "r", encoding="utf-8") as resource_file:
-                for resource_line in resource_file:
-                    if len(resource_line) > 1 and resource_line[-2] == "\r":
-                        resource_line_tuple = (resource_line[0:-2], "\r\n")
-                    else:
-                        resource_line_tuple = (resource_line[0:-1], "\n")
-                    for line_pp in line_pps:
-                        resource_line_tuple = line_pp(resource_line_tuple)
-                    target_file.write(resource_line_tuple[0])
-                    target_file.write(resource_line_tuple[1])
+        with (
+            open(str(target), "w", encoding="utf-8") as target_file,
+            open(str(resource), "r", encoding="utf-8") as resource_file,
+        ):
+            for resource_line in resource_file:
+                if len(resource_line) > 1 and resource_line[-2] == "\r":
+                    resource_line_tuple = (resource_line[0:-2], "\r\n")
+                else:
+                    resource_line_tuple = (resource_line[0:-1], "\n")
+                for line_pp in line_pps:
+                    resource_line_tuple = line_pp(resource_line_tuple)
+                target_file.write(resource_line_tuple[0])
+                target_file.write(resource_line_tuple[1])

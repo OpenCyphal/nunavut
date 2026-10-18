@@ -39,7 +39,7 @@
         {% if loop.first %}
             {% assert f.data_type.alignment_requirement <= t.inner_type.alignment_requirement %}
         {% else %}
-    {{ _pad_to_alignment(f.data_type.alignment_requirement) }}
+    {{ _pad_to_alignment(f.data_type.alignment_requirement, loop.previtem[1] + loop.previtem[0].data_type.bit_length_set) }}
         {% endif %}
     // {{ f }}
     {{ _deserialize_any(f.data_type, 'out_obj->' + (f|id), offset)|trim }}
@@ -60,7 +60,10 @@
     }
 {% else %}{% assert False %}
 {% endif %}
-    {{ _pad_to_alignment(t.inner_type.alignment_requirement) }}
+    {% set unpadded_bit_length_set = t.inner_type.aggregate_bit_length_sets(
+        t.inner_type.fields|map(attribute='data_type')|list
+    ) %}
+    {{ _pad_to_alignment(t.inner_type.alignment_requirement, unpadded_bit_length_set) }}
     {{ assert('offset_bits % 8U == 0U') }}
     *inout_buffer_size_bytes = ({{ typename_unsigned_length }}) (nunavutChooseMin(offset_bits, capacity_bits) / 8U);
     {{ assert('capacity_bytes >= *inout_buffer_size_bytes') }}
@@ -68,8 +71,14 @@
 
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
-{% macro _pad_to_alignment(n_bits) %}
-{%- if n_bits > 1 -%}
+{# The offset argument is the set of all possible values of offset_bits at this point; see the serialization
+   template for details. #}
+{% macro _pad_to_alignment(n_bits, offset) %}
+{%- if n_bits > 1 and offset.is_aligned_at(n_bits) -%}
+    {{ assert('offset_bits %% %dU == 0U'|format(n_bits)) }}
+{%- elif n_bits > 1 and offset.fixed_length -%}
+    offset_bits += {{ n_bits - offset.min % n_bits }}U;  // Align on {{ n_bits }} bits.
+{%- elif n_bits > 1 -%}
     {%- assert n_bits in (8, 16, 32, 64) -%}
     offset_bits = (offset_bits + {{ n_bits - 1 }}U) & ~({{ typename_unsigned_bit_length }}) {{ n_bits - 1 }}U;  {# -#}
         // Align on {{ n_bits }} bits.

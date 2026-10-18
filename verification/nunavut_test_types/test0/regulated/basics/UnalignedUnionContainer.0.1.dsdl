@@ -1,0 +1,6 @@
+# Places UnalignedUnion.0.1 after a single bit, which requires a fixed amount of padding before it, and before a
+# single bit which must follow the union's own final padding.
+uint1 head
+UnalignedUnion.0.1 inner
+bool tail
+@sealed

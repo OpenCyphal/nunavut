@@ -4,6 +4,7 @@
 #include "unity.h" // Include first to allow unity assertions to be injected into serialization code.
 #include <regulated/basics/Struct__0_1.h>
 #include <regulated/basics/Union_0_1.h>
+#include <regulated/basics/UnalignedUnionContainer_0_1.h>
 #include <regulated/basics/Primitive_0_1.h>
 #include <regulated/basics/PrimitiveArrayFixed_0_1.h>
 #include <regulated/basics/PrimitiveArrayVariable_0_1.h>
@@ -887,6 +888,98 @@ static void testIssue221_zeroExtensionRule(void)
 }
 
 
+static void assertUnalignedUnionValue(const uint8_t variant, const regulated_basics_UnalignedUnion_0_1* const obj)
+{
+    if (variant == 0)
+    {
+        TEST_ASSERT_TRUE(regulated_basics_UnalignedUnion_0_1_is_flag_(obj));
+        TEST_ASSERT_TRUE(obj->flag);
+    }
+    else if (variant == 1)
+    {
+        TEST_ASSERT_TRUE(regulated_basics_UnalignedUnion_0_1_is_seven_(obj));
+        TEST_ASSERT_EQUAL_HEX8(0x55, obj->seven);
+    }
+    else
+    {
+        TEST_ASSERT_TRUE(regulated_basics_UnalignedUnion_0_1_is_three_(obj));
+        TEST_ASSERT_EQUAL_HEX8(5, obj->three);
+    }
+}
+
+/*
+ * Union variants that end at different, unaligned offsets must each be padded correctly at the end of the union, both
+ * stand-alone and when nested in a structure. See https://github.com/OpenCyphal/nunavut/issues/396
+ */
+static void testUnalignedUnionPadding(void)
+{
+    typedef regulated_basics_UnalignedUnion_0_1          Union;
+    typedef regulated_basics_UnalignedUnionContainer_0_1 Container;
+
+    // Every variant serializes as an 8-bit tag followed by the value, padded to the next byte.
+    const uint8_t expected_union[3][2] = {{0x00, 0x01}, {0x01, 0x55}, {0x02, 0x05}};
+    // head bit + 7 padding bits, then the union, then the tail bit + 7 padding bits.
+    const uint8_t expected_container[3][4] = {{0x01, 0x00, 0x01, 0x01},
+                                              {0x01, 0x01, 0x55, 0x01},
+                                              {0x01, 0x02, 0x05, 0x01}};
+    for (uint8_t variant = 0; variant < 3; variant++)
+    {
+        Union obj;
+        regulated_basics_UnalignedUnion_0_1_initialize_(&obj);
+        if (variant == 0)
+        {
+            regulated_basics_UnalignedUnion_0_1_select_flag_(&obj);
+            obj.flag = true;
+        }
+        else if (variant == 1)
+        {
+            regulated_basics_UnalignedUnion_0_1_select_seven_(&obj);
+            obj.seven = 0x55;
+        }
+        else
+        {
+            regulated_basics_UnalignedUnion_0_1_select_three_(&obj);
+            obj.three = 5;
+        }
+
+        // Fill the buffer with ones so any padding bits that are not written show up as errors.
+        uint8_t buf[regulated_basics_UnalignedUnionContainer_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_ + 1];
+        memset(buf, 0xFF, sizeof(buf));
+        size_t size = sizeof(buf);
+        TEST_ASSERT_EQUAL(NUNAVUT_SUCCESS, regulated_basics_UnalignedUnion_0_1_serialize_(&obj, &buf[0], &size));
+        TEST_ASSERT_EQUAL(2U, size);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_union[variant], buf, 2U);
+
+        Union union_out;
+        TEST_ASSERT_EQUAL(NUNAVUT_SUCCESS, regulated_basics_UnalignedUnion_0_1_deserialize_(&union_out, &buf[0], &size));
+        TEST_ASSERT_EQUAL(2U, size);
+        TEST_ASSERT_EQUAL(variant, union_out._tag_);
+        assertUnalignedUnionValue(variant, &union_out);
+
+        Container container;
+        regulated_basics_UnalignedUnionContainer_0_1_initialize_(&container);
+        container.head  = 1;
+        container.inner = obj;
+        container.tail  = true;
+        memset(buf, 0xFF, sizeof(buf));
+        size = sizeof(buf);
+        TEST_ASSERT_EQUAL(NUNAVUT_SUCCESS,
+                          regulated_basics_UnalignedUnionContainer_0_1_serialize_(&container, &buf[0], &size));
+        TEST_ASSERT_EQUAL(4U, size);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_container[variant], buf, 4U);
+
+        Container container_out;
+        TEST_ASSERT_EQUAL(NUNAVUT_SUCCESS,
+                          regulated_basics_UnalignedUnionContainer_0_1_deserialize_(&container_out, &buf[0], &size));
+        TEST_ASSERT_EQUAL(4U, size);
+        TEST_ASSERT_EQUAL(1, container_out.head);
+        TEST_ASSERT_EQUAL(variant, container_out.inner._tag_);
+        assertUnalignedUnionValue(variant, &container_out.inner);
+        TEST_ASSERT_TRUE(container_out.tail);
+    }
+}
+
+
 void setUp(void)
 {
     const unsigned seed = (unsigned) time(NULL);
@@ -911,6 +1004,7 @@ int main(void)
     RUN_TEST(testPrimitiveArrayVariable);
     RUN_TEST(testIssue221);
     RUN_TEST(testIssue221_zeroExtensionRule);
+    RUN_TEST(testUnalignedUnionPadding);
 
     return UNITY_END();
 }
