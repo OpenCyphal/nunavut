@@ -22,6 +22,9 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _deserialize_impl(t) %}
+{% if not t.inner_type.fields_except_padding %}
+    (void)(obj);  // Only padding fields; nothing to write to the object.
+{% endif %}
     const auto capacity_bits = in_buffer.size();
 {% if t.inner_type is StructureType %}
     {% for f, offset in t.inner_type.iterate_fields_with_offsets() %}
@@ -189,6 +192,7 @@
         {
             return -nunavut::support::Error::SerializationBadArrayLength;
         }
+        {{ reference }}.clear();  // Discard any elements left over from a previous use of this object.
         {{ reference }}.reserve({{ ref_size }});
 
 {# COMPUTE THE ARRAY ELEMENT OFFSETS #}

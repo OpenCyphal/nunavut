@@ -22,6 +22,9 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_impl(t) %}
+{% if not t.inner_type.fields_except_padding %}
+    (void)(obj);  // Only padding fields; nothing to read from the object.
+{% endif %}
 
     const {{ typename_unsigned_length }} capacity_bits = out_buffer.size();
 
