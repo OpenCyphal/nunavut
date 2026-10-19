@@ -5,6 +5,7 @@
 #include <regulated/basics/Struct__0_1.h>
 #include <regulated/basics/Union_0_1.h>
 #include <regulated/basics/UnalignedUnionContainer_0_1.h>
+#include <regulated/basics/VoidPaddingContainer_0_1.h>
 #include <regulated/basics/Primitive_0_1.h>
 #include <regulated/basics/PrimitiveArrayFixed_0_1.h>
 #include <regulated/basics/PrimitiveArrayVariable_0_1.h>
@@ -980,6 +981,167 @@ static void testUnalignedUnionPadding(void)
 }
 
 
+/// Reference bit packer for the tests below: writes the len_bits least significant bits of value at *inout_offset_bits
+/// in DSDL (least significant bit first) order into a buffer that is assumed to be zero-initialized.
+static void packBits(uint8_t* const buf, size_t* const inout_offset_bits, const uint64_t value, const uint8_t len_bits)
+{
+    for (uint8_t i = 0U; i < len_bits; i++)
+    {
+        if (((value >> i) & 1U) != 0U)
+        {
+            buf[*inout_offset_bits / 8U] = (uint8_t) (buf[*inout_offset_bits / 8U] | (1U << (*inout_offset_bits % 8U)));
+        }
+        (*inout_offset_bits)++;
+    }
+}
+
+static void packVoidPadding(uint8_t* const buf, size_t* const inout_offset_bits,
+                            const regulated_basics_VoidPadding_0_1* const obj)
+{
+    packBits(buf, inout_offset_bits, obj->a, 3U);
+    *inout_offset_bits += 2U;  // void2
+    packBits(buf, inout_offset_bits, obj->b, 1U);
+    *inout_offset_bits += 12U;  // void12
+    packBits(buf, inout_offset_bits, obj->c ? 1U : 0U, 1U);
+    *inout_offset_bits += 1U + 8U;  // void1, void8
+    packBits(buf, inout_offset_bits, obj->g, 6U);
+    *inout_offset_bits += 3U;  // void3
+    packBits(buf, inout_offset_bits, obj->d.count, 8U);
+    for (size_t i = 0U; i < obj->d.count; i++)
+    {
+        packBits(buf, inout_offset_bits, obj->d.elements[i], 2U);
+    }
+    *inout_offset_bits += 7U;  // void7
+    packBits(buf, inout_offset_bits, obj->e.count, 8U);
+    for (size_t i = 0U; i < obj->e.count; i++)
+    {
+        packBits(buf, inout_offset_bits, obj->e.elements[i], 5U);
+    }
+    *inout_offset_bits += 64U;  // void64
+    packBits(buf, inout_offset_bits, obj->f ? 1U : 0U, 1U);
+    *inout_offset_bits = (*inout_offset_bits + 7U) & ~(size_t) 7U;
+}
+
+static void assertVoidPaddingEqual(const regulated_basics_VoidPadding_0_1* const expected,
+                                   const regulated_basics_VoidPadding_0_1* const actual)
+{
+    TEST_ASSERT_EQUAL(expected->a, actual->a);
+    TEST_ASSERT_EQUAL(expected->b, actual->b);
+    TEST_ASSERT_EQUAL(expected->c, actual->c);
+    TEST_ASSERT_EQUAL(expected->g, actual->g);
+    TEST_ASSERT_EQUAL(expected->d.count, actual->d.count);
+    if (expected->d.count > 0U)
+    {
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(expected->d.elements, actual->d.elements, expected->d.count);
+    }
+    TEST_ASSERT_EQUAL(expected->e.count, actual->e.count);
+    if (expected->e.count > 0U)
+    {
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(expected->e.elements, actual->e.elements, expected->e.count);
+    }
+    TEST_ASSERT_EQUAL(expected->f, actual->f);
+}
+
+/*
+ * Void fields and padding must be serialized as zeros at every possible bit offset, whether the offset is known at code
+ * generation time or only at runtime, without disturbing neighbouring fields.
+ * See https://github.com/OpenCyphal/nunavut/issues/397
+ */
+static void testVoidAndPaddingZeroed(void)
+{
+    typedef regulated_basics_VoidPaddingContainer_0_1 Outer;
+
+    for (int iteration = 0; iteration < 64; iteration++)
+    {
+        for (size_t d_count = 0U; d_count <= regulated_basics_VoidPadding_0_1_d_ARRAY_CAPACITY_; d_count++)
+        {
+            for (size_t e_count = 0U; e_count <= regulated_basics_VoidPadding_0_1_e_ARRAY_CAPACITY_; e_count++)
+            {
+                for (size_t y_count = 0U; y_count <= regulated_basics_VoidPaddingContainer_0_1_y_ARRAY_CAPACITY_;
+                     y_count++)
+                {
+                    Outer obj;
+                    regulated_basics_VoidPaddingContainer_0_1_initialize_(&obj);
+                    // Use all-ones values on the first iteration to surround every void with set bits.
+                    const bool ones = (iteration == 0);
+                    obj.x = ones ? 1U : (uint8_t) (rand() & 1);
+                    obj.y.count = y_count;
+                    for (size_t i = 0U; i < y_count; i++)
+                    {
+                        obj.y.elements[i] = ones ? 3U : (uint8_t) (rand() & 3);
+                    }
+                    obj.inner.a = ones ? 7U : (uint8_t) (rand() & 7);
+                    obj.inner.b = ones ? 1U : (uint8_t) (rand() & 1);
+                    obj.inner.c = ones || ((rand() & 1) != 0);
+                    obj.inner.g = ones ? 63U : (uint8_t) (rand() & 63);
+                    obj.inner.d.count = d_count;
+                    for (size_t i = 0U; i < d_count; i++)
+                    {
+                        obj.inner.d.elements[i] = ones ? 3U : (uint8_t) (rand() & 3);
+                    }
+                    obj.inner.e.count = e_count;
+                    for (size_t i = 0U; i < e_count; i++)
+                    {
+                        obj.inner.e.elements[i] = ones ? 31U : (uint8_t) (rand() & 31);
+                    }
+                    obj.inner.f = ones || ((rand() & 1) != 0);
+                    obj.z = ones ? 7U : (uint8_t) (rand() & 7);
+                    obj.w = ones ? 127U : (uint8_t) (rand() & 127);
+
+                    // Reference representation.
+                    uint8_t expected[regulated_basics_VoidPaddingContainer_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
+                    size_t expected_bits = 0U;
+                    packBits(expected, &expected_bits, obj.x, 1U);
+                    packBits(expected, &expected_bits, obj.y.count, 8U);
+                    for (size_t i = 0U; i < y_count; i++)
+                    {
+                        packBits(expected, &expected_bits, obj.y.elements[i], 2U);
+                    }
+                    expected_bits = (expected_bits + 7U) & ~(size_t) 7U;
+                    packVoidPadding(expected, &expected_bits, &obj.inner);
+                    packBits(expected, &expected_bits, obj.z, 3U);
+                    packBits(expected, &expected_bits, obj.w, 7U);
+                    expected_bits = (expected_bits + 7U) & ~(size_t) 7U;
+
+                    // Every unwritten bit starts as one so any bit that is not zeroed shows up as a mismatch.
+                    uint8_t buf[sizeof(expected)];
+                    (void) memset(buf, 0xFF, sizeof(buf));
+                    size_t size = sizeof(buf);
+                    TEST_ASSERT_EQUAL(NUNAVUT_SUCCESS, regulated_basics_VoidPaddingContainer_0_1_serialize_(&obj, buf, &size));
+                    TEST_ASSERT_EQUAL(expected_bits / 8U, size);
+                    TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, buf, size);
+
+                    // Also check the nested type on its own, where the trailing padding is resolved at runtime.
+                    uint8_t inner_expected[regulated_basics_VoidPadding_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
+                    size_t  inner_expected_bits = 0U;
+                    packVoidPadding(inner_expected, &inner_expected_bits, &obj.inner);
+                    uint8_t inner_buf[sizeof(inner_expected)];
+                    (void) memset(inner_buf, 0xFF, sizeof(inner_buf));
+                    size_t inner_size = sizeof(inner_buf);
+                    TEST_ASSERT_EQUAL(NUNAVUT_SUCCESS,
+                                      regulated_basics_VoidPadding_0_1_serialize_(&obj.inner, inner_buf, &inner_size));
+                    TEST_ASSERT_EQUAL(inner_expected_bits / 8U, inner_size);
+                    TEST_ASSERT_EQUAL_HEX8_ARRAY(inner_expected, inner_buf, inner_size);
+
+                    // Round trip.
+                    Outer back;
+                    TEST_ASSERT_EQUAL(NUNAVUT_SUCCESS, regulated_basics_VoidPaddingContainer_0_1_deserialize_(&back, buf, &size));
+                    TEST_ASSERT_EQUAL(obj.x, back.x);
+                    TEST_ASSERT_EQUAL(obj.y.count, back.y.count);
+                    if (y_count > 0U)
+                    {
+                        TEST_ASSERT_EQUAL_HEX8_ARRAY(obj.y.elements, back.y.elements, y_count);
+                    }
+                    assertVoidPaddingEqual(&obj.inner, &back.inner);
+                    TEST_ASSERT_EQUAL(obj.z, back.z);
+                    TEST_ASSERT_EQUAL(obj.w, back.w);
+                }
+            }
+        }
+    }
+}
+
+
 void setUp(void)
 {
     const unsigned seed = (unsigned) time(NULL);
@@ -1005,6 +1167,7 @@ int main(void)
     RUN_TEST(testIssue221);
     RUN_TEST(testIssue221_zeroExtensionRule);
     RUN_TEST(testUnalignedUnionPadding);
+    RUN_TEST(testVoidAndPaddingZeroed);
 
     return UNITY_END();
 }

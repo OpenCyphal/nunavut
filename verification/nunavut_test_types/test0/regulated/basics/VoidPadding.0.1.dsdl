@@ -1,0 +1,18 @@
+# Void fields at a variety of bit offsets, used to verify that void fields and padding are zeroed correctly.
+# Some offsets are known at code generation time and some are only known at runtime (they follow variable-length
+# arrays of elements that are not a multiple of 8 bits). See https://github.com/OpenCyphal/nunavut/issues/397
+uint3 a
+void2       # Offset 3: ends inside the same byte.
+uint1 b
+void12      # Offset 6: spans three bytes.
+bool c
+void1       # Offset 19.
+void8       # Offset 20: spans two bytes.
+uint6 g     # Offset 28: straddles a byte boundary, leaving the bits above it in the next byte as they were.
+void3       # Offset 34: must clear those bits itself.
+uint2[<=3] d
+void7       # Offset depends on the length of d: only known at runtime.
+uint5[<=2] e
+void64      # Offset is only known at runtime and spans nine bytes.
+bool f
+@sealed

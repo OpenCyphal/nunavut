@@ -90,46 +90,90 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {# Emits padding to n_bits alignment. The offset argument is the set of all possible values of offset_bits at this
-   point, which allows the check to be resolved at generation time:
+   point, which allows the padding to be resolved at generation time:
      - every possible offset is aligned: no padding is needed;
-     - the offset is fixed and misaligned: the padding is a known constant;
-     - otherwise: the padding must be determined at runtime.
-   This holds even when variable-length array capacities are overridden: an offset set that includes a variable-length
-   array (which always admits lengths 0 and 1) is only aligned for every length if the element size is a multiple of
-   n_bits, and a fixed-length offset set never includes a variable-length array.
+     - no possible offset is aligned: padding is needed unconditionally, and its length is a constant if every
+       possible offset has the same misalignment;
+     - otherwise: whether padding is needed must be determined at runtime.
+   This holds even when variable-length array capacities are overridden because overrides may only reduce capacity
+   (see definitions.j2), so the possible offsets at runtime are a subset of the analyzed set.
+
+   The padding bits are zeroed by masking the partially written byte instead of using a generic bit copy. See
+   _zero_bits for why the bits above offset_bits can be cleared freely.
 #}
 {% macro _pad_to_alignment(n_bits, offset) %}
-{% if n_bits > 1 and offset.is_aligned_at(n_bits) %}
-    {{ assert('offset_bits %% %dU == 0U'|format(n_bits)) }}
-{% elif n_bits > 1 and offset.fixed_length %}
-    {% set ref_err = 'err'|to_template_unique_name %}
-    {% set padding = n_bits - offset.min % n_bits %}
-    {   // Pad to {{ n_bits }} bits.
-        const {{ typename_error_type }} {{ ref_err }} = {# -#}
-            nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ padding }}U);  // Optimize?
-        if ({{ ref_err }} < 0)
-        {
-            return {{ ref_err }};
-        }
-        offset_bits += {{ padding }}U;
-        {{ assert('offset_bits %% %dU == 0U'|format(n_bits)) }}
-    }
-{% elif n_bits > 1 %}
-    if (offset_bits % {{ n_bits }}U != 0U)  // Pad to {{ n_bits }} bits.
+{% if n_bits > 1 %}
+    {# DSDL composites are aligned to bytes and no other type requires more than 1-bit alignment. #}
+    {% assert n_bits == 8 %}
+    {% set residues = (offset % 8)|unique|sort %}
+    {% if residues == [0] %}
+    {# Already aligned; only the assertion below is needed. #}
+    {% elif 0 not in residues and residues|length == 1 %}
+    {%- set padding = 8 - residues[0] %}
+    // Pad to 8 bits: zero the upper {{ padding }} bits of the current byte.
+    buffer[offset_bits / 8U] = ({{ typename_byte }})(buffer[offset_bits / 8U] & {{ "0x%02XU"|format(2 ** residues[0] - 1) }});
+    offset_bits += {{ padding }}U;
+    {% elif 0 not in residues %}
+    // Pad to 8 bits: zero the remaining upper bits of the current byte.
+    buffer[offset_bits / 8U] = ({{ typename_byte }})(buffer[offset_bits / 8U] & ((1U << (offset_bits % 8U)) - 1U));
+    offset_bits = (offset_bits + 7U) & ~({{ typename_unsigned_bit_length }}) 7U;
+    {% else %}
+    if (offset_bits % 8U != 0U)  // Pad to 8 bits: zero the remaining upper bits of the current byte.
     {
-        {% set ref_padding = 'pad'|to_template_unique_name %}
-        {% set ref_err = 'err'|to_template_unique_name %}
-        const uint8_t {{ ref_padding }} = (uint8_t)({{ n_bits }}U - offset_bits % {{ n_bits }}U);
-        {{ assert('%s > 0'|format(ref_padding)) }}
-        const {{ typename_error_type }} {{ ref_err }} = {# -#}
-            nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ ref_padding }});  // Optimize?
-        if ({{ ref_err }} < 0)
-        {
-            return {{ ref_err }};
-        }
-        offset_bits += {{ ref_padding }};
-        {{ assert('offset_bits %% %dU == 0U'|format(n_bits)) }}
+        buffer[offset_bits / 8U] = ({{ typename_byte }})(buffer[offset_bits / 8U] & ((1U << (offset_bits % 8U)) - 1U));
+        offset_bits = (offset_bits + 7U) & ~({{ typename_unsigned_bit_length }}) 7U;
     }
+    {% endif %}
+    {{ assert('offset_bits % 8U == 0U') }}
+{% endif %}
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------------------------------------------------- #}
+{# Zeroes length_bits bits starting at offset_bits without advancing offset_bits. The offset argument is the set of
+   all possible values of offset_bits at this point.
+
+   Serialization proceeds strictly forward, so bits at and above offset_bits have not been written yet and may be
+   cleared freely, including bits past the end of the zeroed range in its last byte; anything written there later
+   overwrites them. Only the bits below offset_bits in the current byte must be preserved. This lets us clear whole
+   bytes and use a constant mask whenever offset_bits % 8 is known at generation time.
+#}
+{% macro _zero_bits(length_bits, offset) %}
+{% set residues = (offset % 8)|unique|sort %}
+{% set head = 'buffer[offset_bits / 8U]' %}
+{% if options.enable_override_variable_array_capacity %}
+    if ((offset_bits + {{ length_bits }}U) > (capacity_bytes * 8U))
+    {
+        return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
+    }
+{% endif %}
+{% if residues == [0] %}
+    {% if length_bits <= 8 %}
+    {{ head }} = 0U;
+    {% else %}
+    (void) memset(&{{ head }}, 0, {{ length_bits|bits2bytes_ceil }}U);
+    {% endif %}
+{% else %}
+    {% if residues|length == 1 %}
+    {{ head }} = ({{ typename_byte }})({{ head }} & {{ "0x%02XU"|format(2 ** residues[0] - 1) }});
+    {% else %}
+    {{ head }} = ({{ typename_byte }})({{ head }} & ((1U << (offset_bits % 8U)) - 1U));
+    {% endif %}
+    {# Whole bytes following the current one that are always (min) or sometimes (max) part of the range. #}
+    {% set tail_min = (residues|first + length_bits)|bits2bytes_ceil - 1 %}
+    {% set tail_max = (residues|last + length_bits)|bits2bytes_ceil - 1 %}
+    {% if tail_min == 1 %}
+    buffer[(offset_bits / 8U) + 1U] = 0U;
+    {% elif tail_min > 1 %}
+    (void) memset(&buffer[(offset_bits / 8U) + 1U], 0, {{ tail_min }}U);
+    {% endif %}
+    {% if tail_max > tail_min %}
+    {% assert tail_max == tail_min + 1 %}
+    if (((offset_bits % 8U) + {{ length_bits }}U) > {{ 8 * (tail_min + 1) }}U)
+    {
+        buffer[(offset_bits / 8U) + {{ tail_max }}U] = 0U;
+    }
+    {% endif %}
 {% endif %}
 {% endmacro %}
 
@@ -160,21 +204,7 @@
 
 {# ----------------------------------------------------------------------------------------------------------------- #}
 {% macro _serialize_void(t, offset) %}
-{% if offset.is_aligned_at_byte() %}
-    {% if t.bit_length <= 8 %}
-    buffer[offset_bits / 8U] = 0U;
-    {% else %}
-    (void) memset(&buffer[offset_bits / 8U], 0, {{ t.bit_length|bits2bytes_ceil }});
-    {% endif %}
-{% else %}
-    {% set ref_err = 'err'|to_template_unique_name %}
-    const {{ typename_error_type }} {{ ref_err }} = {# -#}
-        nunavutSetUxx(&buffer[0], capacity_bytes, offset_bits, 0U, {{ t.bit_length }}U);  // Optimize?
-    if ({{ ref_err }} < 0)
-    {
-        return {{ ref_err }};
-    }
-{% endif %}
+    {{ _zero_bits(t.bit_length, offset)|trim }}
     offset_bits += {{ t.bit_length }}UL;
 {% endmacro %}
 
