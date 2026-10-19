@@ -24,6 +24,7 @@ NUNAVUT_DIR = VERIFICATION_DIR.parent
 
 PUBLIC_REGULATED_DATA_TYPES_DIR = NUNAVUT_DIR / "submodules" / "public_regulated_data_types"
 TEST_TYPES_DIR = VERIFICATION_DIR / "nunavut_test_types"
+FUZZ_DIR = SUITE_DIR / "fuzz-out"  # Not a valid identifier, so setuptools does not mistake it for a package.
 
 
 @nox.session(python=False)
@@ -38,8 +39,7 @@ def clean(session):
         "*.log",
         "*.tmp",
         ".nox",
-        ".hypothesis",
-    ]:
+    ]:  # Not .hypothesis or FUZZ_DIR: they keep failing examples and the fuzz corpus across runs.
         for f in Path.cwd().glob(w):
             session.log(f"Removing: {f}")
             if f.is_dir():
@@ -119,7 +119,7 @@ def fuzz(session):
     """
     Coverage-guided fuzzing of the generated deserialization code with Atheris. Not run by default.
     Positional arguments are passed to libFuzzer, e.g.: nox -s fuzz-3.13 -- -max_total_time=3600 -jobs=8 -workers=8
-    The corpus is kept in .nox/fuzz-*/tmp/fuzz/corpus across runs; crash reproducers are written next to it.
+    The corpus is kept in FUZZ_DIR/corpus across runs; crash reproducers are written to FUZZ_DIR.
     If any positional argument is a file (e.g., a crash reproducer), only the given files are run.
     """
     session.install("-e", str(NUNAVUT_DIR))
@@ -127,8 +127,8 @@ def fuzz(session):
     session.install("-r", "generated_code_requirements.txt")
     session.install("pytest ~= 8.1", "atheris >= 2.3")
     generated_dir, root_namespace_dirs = _generate(session)
-    fuzz_dir = generated_dir / "fuzz"
-    seeds_dir, corpus_dir = fuzz_dir / "seeds", fuzz_dir / "corpus"
+    # Not under the session's tmp dir: Nox deletes the whole session environment when it recreates it.
+    seeds_dir, corpus_dir = FUZZ_DIR / "seeds", FUZZ_DIR / "corpus"
     corpus_dir.mkdir(parents=True, exist_ok=True)
     env = {
         "NUNAVUT_VERIFICATION_DSDL_PATH": os.pathsep.join(map(str, root_namespace_dirs)),
@@ -142,7 +142,7 @@ def fuzz(session):
     # libFuzzer re-executes argv[0] for -jobs, -workers, and -fork.
     session.run(
         harness,
-        f"-artifact_prefix={fuzz_dir}/",
+        f"-artifact_prefix={FUZZ_DIR}/",
         "-max_len=16384",
         *args,
         *inputs,

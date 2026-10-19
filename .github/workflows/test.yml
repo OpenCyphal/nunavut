@@ -263,6 +263,6 @@ jobs:
       with:
         name: fuzz-artifacts-python
         path: |
-          verification/python/.nox/fuzz-3-13/tmp/fuzz/crash-*
-          verification/python/.nox/fuzz-3-13/tmp/fuzz/timeout-*
-          verification/python/.nox/fuzz-3-13/tmp/fuzz/oom-*
+          verification/python/fuzz-out/crash-*
+          verification/python/fuzz-out/timeout-*
+          verification/python/fuzz-out/oom-*

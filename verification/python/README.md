@@ -29,7 +29,8 @@ survive a serialize/deserialize round trip. Two tools check this with the same o
   NUNAVUT_PYTHON_FUZZ_EXAMPLES=5000 nox -s test-3.13 -- -k "test_fuzz and delimited"
   ```
 
-  Failing examples are kept in `.hypothesis/` and replayed first on the next run.
+  Failing examples are kept in `.hypothesis/` and replayed first on the next run. `nox -s clean` leaves this
+  database alone; delete the directory to start over.
 
 - **Atheris** (`tools/fuzz_deserialize.py`), coverage-guided fuzzing with libFuzzer, is for long local runs.
   It is not part of the default `nox` run:
@@ -39,9 +40,10 @@ survive a serialize/deserialize round trip. Two tools check this with the same o
   ```
 
   The session generates the code, writes a seed corpus of valid serialized samples, and passes the arguments after
-  `--` to libFuzzer (the default is a 60-second run). The corpus is kept in `.nox/fuzz-3-13/tmp/fuzz/corpus` across
-  runs and crash reproducers are written to `.nox/fuzz-3-13/tmp/fuzz/`. To rerun a reproducer, pass its path:
-  `nox -s fuzz-3.13 -- .nox/fuzz-3-13/tmp/fuzz/crash-<hash>`.
+  `--` to libFuzzer (the default is a 60-second run). Everything goes into `fuzz-out/`, outside `.nox` because
+  Nox deletes a session's environment whenever it recreates it: the corpus is kept in `fuzz-out/corpus` across runs
+  (and across Python versions), and crash reproducers are written to `fuzz-out/`. `nox -s clean` leaves it alone.
+  To rerun a reproducer, pass its path: `nox -s fuzz-3.13 -- fuzz-out/crash-<hash>`.
   The first two bytes of each input select the type (an index into `suite.fuzzing.fuzzable_models()`), the third
   selects how many fragments the payload is split into, and the rest is the serialized representation.
 
