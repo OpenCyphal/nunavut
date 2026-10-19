@@ -114,6 +114,9 @@ class NotAsyncResult:
 
 ApplyMethodT = TypeVar("ApplyMethodT", bound=Callable[..., AsyncResultProtocol])
 
+# The file suffixes pydsdl reads as DSDL definitions (the second is deprecated but still accepted).
+_DSDL_FILE_SUFFIXES = (".dsdl", ".uavcan")
+
 
 def _read_files_strategy(
     index: "Namespace",
@@ -122,10 +125,17 @@ def _read_files_strategy(
     job_timeout_seconds: float,
     omit_dependencies: bool,
     args: Iterable[Any],
+    complete_dependency_namespaces: bool = False,
 ) -> "Namespace":
     """
     Strategy for reading a set of dsdl files and building a namespace tree. This strategy is compatible with both
     synchronous and asynchronous invocation of the pydsdl.read_files method.
+
+    If ``complete_dependency_namespaces`` is True then, for every dependency, all definitions in the dependency's
+    namespace are read too (and so are their dependencies). Languages that generate a file per namespace (e.g. a
+    Python ``__init__.py``) need this so that the namespace file always lists the whole namespace no matter which
+    target pulled the namespace in. Otherwise generating several targets into one output directory, one after the
+    other, would leave each shared namespace file listing only the types the last target needed.
     """
     if isinstance(dsdl_files, (str, Path)):
         fileset = {Path(dsdl_files)}
@@ -142,6 +152,17 @@ def _read_files_strategy(
 
     running_lookups: list[AsyncResultProtocol] = []
     already_read: set[Path] = set()
+    expanded_namespace_dirs: set[Path] = set()
+
+    def _add_namespace_of(dependency_file: Path) -> None:
+        namespace_dir = _resolve_file(dependency_file).parent
+        if namespace_dir in expanded_namespace_dirs:
+            return
+        expanded_namespace_dirs.add(namespace_dir)
+        for sibling in Path(dependency_file).parent.iterdir():
+            if sibling.suffix in _DSDL_FILE_SUFFIXES and _resolve_file(sibling) not in already_read:
+                fileset.add(sibling)
+
     while fileset:
         next_file = fileset.pop()
         # args must be picklable for multiprocessing: itertools objects stopped being picklable in Python 3.14.
@@ -158,6 +179,8 @@ def _read_files_strategy(
                     for dependent_type in dependent_types:
                         if _resolve_file(dependent_type.source_file_path) not in already_read:
                             fileset.add(dependent_type.source_file_path)
+                        if complete_dependency_namespaces:
+                            _add_namespace_of(dependent_type.source_file_path)
             running_lookups.clear()
 
     return index
@@ -539,6 +562,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         print_output_handler: Callable[[Path, int, str], None] | None = None,
         allow_unregulated_fixed_port_id: bool = False,
         omit_dependencies: bool = False,
+        complete_dependency_namespaces: bool = False,
     ) -> "Namespace":
         """
         For a given set of dsdl_files, read the files and build a namespace tree.
@@ -553,6 +577,9 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         :param Path | str | Iterable[Path | str] lookup_directories: See :meth:`pydsdl.read_files`.
         :param Callable[[Path, int, str], None] print_output_handler: A callback to handle print output.
         :param bool allow_unregulated_fixed_port_id: Allow unregulated fixed port ids.
+        :param bool omit_dependencies: If True then only the given dsdl_files are read, not their dependencies.
+        :param bool complete_dependency_namespaces: If True then every namespace that a dependency is found in is read
+            in full. Use this when generating one file per namespace (see :func:`_read_files_strategy`).
         :return: A new namespace index that contains trees of datatypes.
         """
         if not index.is_index:
@@ -566,11 +593,25 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         )
         if jobs == 1:
             # Don't use multiprocessing when jobs is 1.
-            return _read_files_strategy(index, NotAsyncResult, dsdl_files, job_timeout_seconds, omit_dependencies, args)
+            return _read_files_strategy(
+                index,
+                NotAsyncResult,
+                dsdl_files,
+                job_timeout_seconds,
+                omit_dependencies,
+                args,
+                complete_dependency_namespaces,
+            )
         else:
             with multiprocessing.pool.Pool(processes=None if jobs == 0 else jobs) as pool:
                 return _read_files_strategy(
-                    index, pool.apply_async, dsdl_files, job_timeout_seconds, omit_dependencies, args
+                    index,
+                    pool.apply_async,
+                    dsdl_files,
+                    job_timeout_seconds,
+                    omit_dependencies,
+                    args,
+                    complete_dependency_namespaces,
                 )
 
     @read_files.register
@@ -587,6 +628,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         print_output_handler: Callable[[Path, int, str], None] | None = None,
         allow_unregulated_fixed_port_id: bool = False,
         omit_dependencies: bool = False,
+        complete_dependency_namespaces: bool = False,
     ) -> pydsdl.Any:
         """
         For a given set of dsdl_files, read the files and build a namespace tree.
@@ -602,6 +644,9 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         :param Path | str | Iterable[Path | str] lookup_directories: See :meth:`pydsdl.read_files`.
         :param Callable[[Path, int, str], None] print_output_handler: A callback to handle print output.
         :param bool allow_unregulated_fixed_port_id: Allow unregulated fixed port ids.
+        :param bool omit_dependencies: If True then only the given dsdl_files are read, not their dependencies.
+        :param bool complete_dependency_namespaces: If True then every namespace that a dependency is found in is read
+            in full. Use this when generating one file per namespace (see :func:`_read_files_strategy`).
         :return: A new namespace index that contains trees of datatypes.
         """
         return cls.read_files(
@@ -614,6 +659,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
             print_output_handler,
             allow_unregulated_fixed_port_id,
             omit_dependencies,
+            complete_dependency_namespaces,
         )
 
     @read_files.register
@@ -630,6 +676,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         print_output_handler: Callable[[Path, int, str], None] | None = None,
         allow_unregulated_fixed_port_id: bool = False,
         omit_dependencies: bool = False,
+        complete_dependency_namespaces: bool = False,
     ) -> pydsdl.Any:
         """
         For a given set of dsdl_files, read the files and build a namespace tree.
@@ -645,6 +692,9 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         :param Path | str | Iterable[Path | str] lookup_directories: See :meth:`pydsdl.read_files`.
         :param Callable[[Path, int, str], None] print_output_handler: A callback to handle print output.
         :param bool allow_unregulated_fixed_port_id: Allow unregulated fixed port ids.
+        :param bool omit_dependencies: If True then only the given dsdl_files are read, not their dependencies.
+        :param bool complete_dependency_namespaces: If True then every namespace that a dependency is found in is read
+            in full. Use this when generating one file per namespace (see :func:`_read_files_strategy`).
         :return: A new namespace index that contains trees of datatypes.
         """
         return cls.read_files(
@@ -657,6 +707,7 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
             print_output_handler,
             allow_unregulated_fixed_port_id,
             omit_dependencies,
+            complete_dependency_namespaces,
         )
 
     DefaultOutputStem = "_"
@@ -874,10 +925,11 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
 
     def get_nested_namespaces(self) -> Iterator["Namespace"]:
         """
-        Get an iterator over all the nested namespaces within this namespace.
+        Get an iterator over all the nested namespaces within this namespace, sorted by name.
         This is a shallow iterator that only provides directly nested namespaces.
         """
-        return iter(self._nested_namespaces.values())
+        # Sorted because insertion order depends on the order the DSDL files were read in, which varies between runs.
+        return iter([self._nested_namespaces[name] for name in sorted(self._nested_namespaces)])
 
     def get_nested_namespace(self, namespace_name: str, create_if_missing: bool = False) -> "Namespace":
         """
@@ -905,9 +957,16 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         """
         Get a view of a tuple relating datatypes in this namespace to the path for the
         type's generated output. This is a shallow view including only the types
-        directly within this namespace.
+        directly within this namespace, sorted by name and then by version.
         """
-        return self._data_type_to_outputs.items()
+        # Sorted because insertion order depends on the order the DSDL files were read in, which varies between runs.
+        # Generated namespace files list these types, so an unstable order makes the generated output unstable.
+        return dict(
+            sorted(
+                self._data_type_to_outputs.items(),
+                key=lambda item: (item[0].full_name, item[0].version.major, item[0].version.minor),
+            )
+        ).items()
 
     def get_all_datatypes(self) -> Generator[Tuple[pydsdl.CompositeType, Generatable], None, None]:
         """

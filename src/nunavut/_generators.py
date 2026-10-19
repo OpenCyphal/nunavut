@@ -506,6 +506,13 @@ def generate_all_for_language(
     :raises pydsdl.FrontendError: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
         raise this exception.
     """
+    # A namespace file (e.g. a Python __init__.py) lists every type in its namespace, so when namespace files are
+    # generated each dependency's namespace must be read in full. Otherwise the namespace file would list only the
+    # types this run needed and would clobber a complete one generated into the same outdir by an earlier run.
+    generates_namespace_files = AbstractGenerator.generate_namespace_types_from_trinary(
+        language_context.get_target_language(),
+        generator_args.get("generate_namespace_types", YesNoDefault.DEFAULT),
+    )
     index = Namespace.read_files(
         outdir,
         language_context,
@@ -515,6 +522,7 @@ def generate_all_for_language(
         float(os.environ.get("NUNAVUT_JOB_TIMEOUT_SECONDS", 0)),
         allow_unregulated_fixed_port_id=allow_unregulated_fixed_port_id,
         omit_dependencies=omit_dependencies,
+        complete_dependency_namespaces=generates_namespace_files,
     )
 
     return generate_all_from_namespace(
