@@ -1762,8 +1762,16 @@
                     "name": "build-Release-gcc-arm-none-eabi-c-11"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-arm-none-eabi-c-11"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-arm-none-eabi-c-11"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-gcc-arm-none-eabi-c-11"
                 }
             ]
         },
@@ -1779,8 +1787,16 @@
                     "name": "build-Release-gcc-arm-none-eabi-c-11-arr-override"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-arm-none-eabi-c-11-arr-override"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-arm-none-eabi-c-11-arr-override"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-gcc-arm-none-eabi-c-11-arr-override"
                 }
             ]
         },
@@ -1796,8 +1812,16 @@
                     "name": "build-Release-gcc-arm-none-eabi-c-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-arm-none-eabi-c-17"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-arm-none-eabi-c-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-gcc-arm-none-eabi-c-17"
                 }
             ]
         },
@@ -1813,8 +1837,16 @@
                     "name": "build-Release-gcc-arm-none-eabi-c-23"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-arm-none-eabi-c-23"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-arm-none-eabi-c-23"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-gcc-arm-none-eabi-c-23"
                 }
             ]
         },
@@ -1830,8 +1862,16 @@
                     "name": "build-Release-gcc-arm-none-eabi-cpp-14"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-arm-none-eabi-cpp-14"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-arm-none-eabi-cpp-14"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-gcc-arm-none-eabi-cpp-14"
                 }
             ]
         },
@@ -1847,8 +1887,16 @@
                     "name": "build-Release-gcc-arm-none-eabi-cetl-14-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-arm-none-eabi-cetl-14-17"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-arm-none-eabi-cetl-14-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-gcc-arm-none-eabi-cetl-14-17"
                 }
             ]
         },
@@ -1864,8 +1912,16 @@
                     "name": "build-Release-gcc-arm-none-eabi-cpp-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-arm-none-eabi-cpp-17"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-arm-none-eabi-cpp-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-gcc-arm-none-eabi-cpp-17"
                 }
             ]
         },
@@ -1881,8 +1937,16 @@
                     "name": "build-Release-gcc-arm-none-eabi-cpp-17-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-arm-none-eabi-cpp-17-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-arm-none-eabi-cpp-17-pmr"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-gcc-arm-none-eabi-cpp-17-pmr"
                 }
             ]
         },
@@ -1898,8 +1962,16 @@
                     "name": "build-Release-gcc-arm-none-eabi-cpp-20"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-arm-none-eabi-cpp-20"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-arm-none-eabi-cpp-20"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-gcc-arm-none-eabi-cpp-20"
                 }
             ]
         },
@@ -1915,8 +1987,16 @@
                     "name": "build-Release-gcc-arm-none-eabi-cpp-20-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-arm-none-eabi-cpp-20-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-arm-none-eabi-cpp-20-pmr"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-gcc-arm-none-eabi-cpp-20-pmr"
                 }
             ]
         },
@@ -1932,12 +2012,24 @@
                     "name": "build-Release-gcc-native-c-11"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native-c-11"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native-c-11"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native-c-11"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native-c-11"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native-c-11"
                 }
             ]
         },
@@ -1953,12 +2045,24 @@
                     "name": "build-Release-gcc-native-c-11-arr-override"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native-c-11-arr-override"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native-c-11-arr-override"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native-c-11-arr-override"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native-c-11-arr-override"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native-c-11-arr-override"
                 }
             ]
         },
@@ -1974,12 +2078,24 @@
                     "name": "build-Release-gcc-native-c-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native-c-17"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native-c-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native-c-17"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native-c-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native-c-17"
                 }
             ]
         },
@@ -1995,12 +2111,24 @@
                     "name": "build-Release-gcc-native-c-23"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native-c-23"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native-c-23"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native-c-23"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native-c-23"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native-c-23"
                 }
             ]
         },
@@ -2016,12 +2144,24 @@
                     "name": "build-Release-gcc-native-cpp-14"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native-cpp-14"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native-cpp-14"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native-cpp-14"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native-cpp-14"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native-cpp-14"
                 }
             ]
         },
@@ -2037,12 +2177,24 @@
                     "name": "build-Release-gcc-native-cetl-14-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native-cetl-14-17"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native-cetl-14-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native-cetl-14-17"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native-cetl-14-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native-cetl-14-17"
                 }
             ]
         },
@@ -2058,12 +2210,24 @@
                     "name": "build-Release-gcc-native-cpp-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native-cpp-17"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native-cpp-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native-cpp-17"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native-cpp-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native-cpp-17"
                 }
             ]
         },
@@ -2079,12 +2243,24 @@
                     "name": "build-Release-gcc-native-cpp-17-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native-cpp-17-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native-cpp-17-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native-cpp-17-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native-cpp-17-pmr"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native-cpp-17-pmr"
                 }
             ]
         },
@@ -2100,12 +2276,24 @@
                     "name": "build-Release-gcc-native-cpp-20"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native-cpp-20"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native-cpp-20"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native-cpp-20"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native-cpp-20"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native-cpp-20"
                 }
             ]
         },
@@ -2121,12 +2309,24 @@
                     "name": "build-Release-gcc-native-cpp-20-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native-cpp-20-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native-cpp-20-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native-cpp-20-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native-cpp-20-pmr"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native-cpp-20-pmr"
                 }
             ]
         },
@@ -2142,12 +2342,24 @@
                     "name": "build-Release-gcc-native32-c-11"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native32-c-11"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native32-c-11"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native32-c-11"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native32-c-11"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native32-c-11"
                 }
             ]
         },
@@ -2163,12 +2375,24 @@
                     "name": "build-Release-gcc-native32-c-11-arr-override"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native32-c-11-arr-override"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native32-c-11-arr-override"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native32-c-11-arr-override"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native32-c-11-arr-override"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native32-c-11-arr-override"
                 }
             ]
         },
@@ -2184,12 +2408,24 @@
                     "name": "build-Release-gcc-native32-c-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native32-c-17"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native32-c-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native32-c-17"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native32-c-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native32-c-17"
                 }
             ]
         },
@@ -2205,12 +2441,24 @@
                     "name": "build-Release-gcc-native32-c-23"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native32-c-23"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native32-c-23"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native32-c-23"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native32-c-23"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native32-c-23"
                 }
             ]
         },
@@ -2226,12 +2474,24 @@
                     "name": "build-Release-gcc-native32-cpp-14"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native32-cpp-14"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native32-cpp-14"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native32-cpp-14"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native32-cpp-14"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native32-cpp-14"
                 }
             ]
         },
@@ -2247,12 +2507,24 @@
                     "name": "build-Release-gcc-native32-cetl-14-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native32-cetl-14-17"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native32-cetl-14-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native32-cetl-14-17"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native32-cetl-14-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native32-cetl-14-17"
                 }
             ]
         },
@@ -2268,12 +2540,24 @@
                     "name": "build-Release-gcc-native32-cpp-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native32-cpp-17"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native32-cpp-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native32-cpp-17"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native32-cpp-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native32-cpp-17"
                 }
             ]
         },
@@ -2289,12 +2573,24 @@
                     "name": "build-Release-gcc-native32-cpp-17-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native32-cpp-17-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native32-cpp-17-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native32-cpp-17-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native32-cpp-17-pmr"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native32-cpp-17-pmr"
                 }
             ]
         },
@@ -2310,12 +2606,24 @@
                     "name": "build-Release-gcc-native32-cpp-20"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native32-cpp-20"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native32-cpp-20"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native32-cpp-20"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native32-cpp-20"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native32-cpp-20"
                 }
             ]
         },
@@ -2331,12 +2639,24 @@
                     "name": "build-Release-gcc-native32-cpp-20-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-gcc-native32-cpp-20-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-gcc-native32-cpp-20-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Debug-gcc-native32-cpp-20-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugAsan-gcc-native32-cpp-20-pmr"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugAsan-gcc-native32-cpp-20-pmr"
                 }
             ]
         },
@@ -2352,16 +2672,32 @@
                     "name": "build-Release-clang-native-c-11"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-clang-native-c-11"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-clang-native-c-11"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-clang-native-c-11"
                 },
                 {
                     "type": "build",
                     "name": "build-DebugAsan-clang-native-c-11"
                 },
                 {
+                    "type": "test",
+                    "name": "test-DebugAsan-clang-native-c-11"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugCov-clang-native-c-11"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugCov-clang-native-c-11"
                 }
             ]
         },
@@ -2377,16 +2713,32 @@
                     "name": "build-Release-clang-native-c-11-arr-override"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-clang-native-c-11-arr-override"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-clang-native-c-11-arr-override"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-clang-native-c-11-arr-override"
                 },
                 {
                     "type": "build",
                     "name": "build-DebugAsan-clang-native-c-11-arr-override"
                 },
                 {
+                    "type": "test",
+                    "name": "test-DebugAsan-clang-native-c-11-arr-override"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugCov-clang-native-c-11-arr-override"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugCov-clang-native-c-11-arr-override"
                 }
             ]
         },
@@ -2402,16 +2754,32 @@
                     "name": "build-Release-clang-native-c-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-clang-native-c-17"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-clang-native-c-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-clang-native-c-17"
                 },
                 {
                     "type": "build",
                     "name": "build-DebugAsan-clang-native-c-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-DebugAsan-clang-native-c-17"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugCov-clang-native-c-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugCov-clang-native-c-17"
                 }
             ]
         },
@@ -2427,16 +2795,32 @@
                     "name": "build-Release-clang-native-c-23"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-clang-native-c-23"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-clang-native-c-23"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-clang-native-c-23"
                 },
                 {
                     "type": "build",
                     "name": "build-DebugAsan-clang-native-c-23"
                 },
                 {
+                    "type": "test",
+                    "name": "test-DebugAsan-clang-native-c-23"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugCov-clang-native-c-23"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugCov-clang-native-c-23"
                 }
             ]
         },
@@ -2452,16 +2836,32 @@
                     "name": "build-Release-clang-native-cpp-14"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-clang-native-cpp-14"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-clang-native-cpp-14"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-clang-native-cpp-14"
                 },
                 {
                     "type": "build",
                     "name": "build-DebugAsan-clang-native-cpp-14"
                 },
                 {
+                    "type": "test",
+                    "name": "test-DebugAsan-clang-native-cpp-14"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugCov-clang-native-cpp-14"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugCov-clang-native-cpp-14"
                 }
             ]
         },
@@ -2477,16 +2877,32 @@
                     "name": "build-Release-clang-native-cetl-14-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-clang-native-cetl-14-17"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-clang-native-cetl-14-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-clang-native-cetl-14-17"
                 },
                 {
                     "type": "build",
                     "name": "build-DebugAsan-clang-native-cetl-14-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-DebugAsan-clang-native-cetl-14-17"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugCov-clang-native-cetl-14-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugCov-clang-native-cetl-14-17"
                 }
             ]
         },
@@ -2502,16 +2918,32 @@
                     "name": "build-Release-clang-native-cpp-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-clang-native-cpp-17"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-clang-native-cpp-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-clang-native-cpp-17"
                 },
                 {
                     "type": "build",
                     "name": "build-DebugAsan-clang-native-cpp-17"
                 },
                 {
+                    "type": "test",
+                    "name": "test-DebugAsan-clang-native-cpp-17"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugCov-clang-native-cpp-17"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugCov-clang-native-cpp-17"
                 }
             ]
         },
@@ -2527,16 +2959,32 @@
                     "name": "build-Release-clang-native-cpp-17-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-clang-native-cpp-17-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-clang-native-cpp-17-pmr"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-clang-native-cpp-17-pmr"
                 },
                 {
                     "type": "build",
                     "name": "build-DebugAsan-clang-native-cpp-17-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-DebugAsan-clang-native-cpp-17-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugCov-clang-native-cpp-17-pmr"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugCov-clang-native-cpp-17-pmr"
                 }
             ]
         },
@@ -2552,16 +3000,32 @@
                     "name": "build-Release-clang-native-cpp-20"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-clang-native-cpp-20"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-clang-native-cpp-20"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-clang-native-cpp-20"
                 },
                 {
                     "type": "build",
                     "name": "build-DebugAsan-clang-native-cpp-20"
                 },
                 {
+                    "type": "test",
+                    "name": "test-DebugAsan-clang-native-cpp-20"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugCov-clang-native-cpp-20"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugCov-clang-native-cpp-20"
                 }
             ]
         },
@@ -2577,16 +3041,32 @@
                     "name": "build-Release-clang-native-cpp-20-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-Release-clang-native-cpp-20-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-Debug-clang-native-cpp-20-pmr"
+                },
+                {
+                    "type": "test",
+                    "name": "test-Debug-clang-native-cpp-20-pmr"
                 },
                 {
                     "type": "build",
                     "name": "build-DebugAsan-clang-native-cpp-20-pmr"
                 },
                 {
+                    "type": "test",
+                    "name": "test-DebugAsan-clang-native-cpp-20-pmr"
+                },
+                {
                     "type": "build",
                     "name": "build-DebugCov-clang-native-cpp-20-pmr"
+                },
+                {
+                    "type": "test",
+                    "name": "test-DebugCov-clang-native-cpp-20-pmr"
                 }
             ]
         }
@@ -2664,6 +3144,966 @@
             "output": {
                 "outputOnFailure": true
             }
+        },
+        {
+            "name": "test-Release-gcc-arm-none-eabi-c-11",
+            "configurePreset": "configure-gcc-arm-none-eabi-c-11",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-arm-none-eabi-c-11-arr-override",
+            "configurePreset": "configure-gcc-arm-none-eabi-c-11-arr-override",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-arm-none-eabi-c-17",
+            "configurePreset": "configure-gcc-arm-none-eabi-c-17",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-arm-none-eabi-c-23",
+            "configurePreset": "configure-gcc-arm-none-eabi-c-23",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-arm-none-eabi-cpp-14",
+            "configurePreset": "configure-gcc-arm-none-eabi-cpp-14",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-arm-none-eabi-cetl-14-17",
+            "configurePreset": "configure-gcc-arm-none-eabi-cetl-14-17",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-arm-none-eabi-cpp-17",
+            "configurePreset": "configure-gcc-arm-none-eabi-cpp-17",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-arm-none-eabi-cpp-17-pmr",
+            "configurePreset": "configure-gcc-arm-none-eabi-cpp-17-pmr",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-arm-none-eabi-cpp-20",
+            "configurePreset": "configure-gcc-arm-none-eabi-cpp-20",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-arm-none-eabi-cpp-20-pmr",
+            "configurePreset": "configure-gcc-arm-none-eabi-cpp-20-pmr",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native-c-11",
+            "configurePreset": "configure-gcc-native-c-11",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native-c-11-arr-override",
+            "configurePreset": "configure-gcc-native-c-11-arr-override",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native-c-17",
+            "configurePreset": "configure-gcc-native-c-17",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native-c-23",
+            "configurePreset": "configure-gcc-native-c-23",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native-cpp-14",
+            "configurePreset": "configure-gcc-native-cpp-14",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native-cetl-14-17",
+            "configurePreset": "configure-gcc-native-cetl-14-17",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native-cpp-17",
+            "configurePreset": "configure-gcc-native-cpp-17",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native-cpp-17-pmr",
+            "configurePreset": "configure-gcc-native-cpp-17-pmr",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native-cpp-20",
+            "configurePreset": "configure-gcc-native-cpp-20",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native-cpp-20-pmr",
+            "configurePreset": "configure-gcc-native-cpp-20-pmr",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native32-c-11",
+            "configurePreset": "configure-gcc-native32-c-11",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native32-c-11-arr-override",
+            "configurePreset": "configure-gcc-native32-c-11-arr-override",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native32-c-17",
+            "configurePreset": "configure-gcc-native32-c-17",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native32-c-23",
+            "configurePreset": "configure-gcc-native32-c-23",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native32-cpp-14",
+            "configurePreset": "configure-gcc-native32-cpp-14",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native32-cetl-14-17",
+            "configurePreset": "configure-gcc-native32-cetl-14-17",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native32-cpp-17",
+            "configurePreset": "configure-gcc-native32-cpp-17",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native32-cpp-17-pmr",
+            "configurePreset": "configure-gcc-native32-cpp-17-pmr",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native32-cpp-20",
+            "configurePreset": "configure-gcc-native32-cpp-20",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-gcc-native32-cpp-20-pmr",
+            "configurePreset": "configure-gcc-native32-cpp-20-pmr",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-clang-native-c-11",
+            "configurePreset": "configure-clang-native-c-11",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-clang-native-c-11-arr-override",
+            "configurePreset": "configure-clang-native-c-11-arr-override",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-clang-native-c-17",
+            "configurePreset": "configure-clang-native-c-17",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-clang-native-c-23",
+            "configurePreset": "configure-clang-native-c-23",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-clang-native-cpp-14",
+            "configurePreset": "configure-clang-native-cpp-14",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-clang-native-cetl-14-17",
+            "configurePreset": "configure-clang-native-cetl-14-17",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-clang-native-cpp-17",
+            "configurePreset": "configure-clang-native-cpp-17",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-clang-native-cpp-17-pmr",
+            "configurePreset": "configure-clang-native-cpp-17-pmr",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-clang-native-cpp-20",
+            "configurePreset": "configure-clang-native-cpp-20",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Release-clang-native-cpp-20-pmr",
+            "configurePreset": "configure-clang-native-cpp-20-pmr",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-arm-none-eabi-c-11",
+            "configurePreset": "configure-gcc-arm-none-eabi-c-11",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-arm-none-eabi-c-11-arr-override",
+            "configurePreset": "configure-gcc-arm-none-eabi-c-11-arr-override",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-arm-none-eabi-c-17",
+            "configurePreset": "configure-gcc-arm-none-eabi-c-17",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-arm-none-eabi-c-23",
+            "configurePreset": "configure-gcc-arm-none-eabi-c-23",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-arm-none-eabi-cpp-14",
+            "configurePreset": "configure-gcc-arm-none-eabi-cpp-14",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-arm-none-eabi-cetl-14-17",
+            "configurePreset": "configure-gcc-arm-none-eabi-cetl-14-17",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-arm-none-eabi-cpp-17",
+            "configurePreset": "configure-gcc-arm-none-eabi-cpp-17",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-arm-none-eabi-cpp-17-pmr",
+            "configurePreset": "configure-gcc-arm-none-eabi-cpp-17-pmr",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-arm-none-eabi-cpp-20",
+            "configurePreset": "configure-gcc-arm-none-eabi-cpp-20",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-arm-none-eabi-cpp-20-pmr",
+            "configurePreset": "configure-gcc-arm-none-eabi-cpp-20-pmr",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native-c-11",
+            "configurePreset": "configure-gcc-native-c-11",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native-c-11-arr-override",
+            "configurePreset": "configure-gcc-native-c-11-arr-override",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native-c-17",
+            "configurePreset": "configure-gcc-native-c-17",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native-c-23",
+            "configurePreset": "configure-gcc-native-c-23",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native-cpp-14",
+            "configurePreset": "configure-gcc-native-cpp-14",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native-cetl-14-17",
+            "configurePreset": "configure-gcc-native-cetl-14-17",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native-cpp-17",
+            "configurePreset": "configure-gcc-native-cpp-17",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native-cpp-17-pmr",
+            "configurePreset": "configure-gcc-native-cpp-17-pmr",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native-cpp-20",
+            "configurePreset": "configure-gcc-native-cpp-20",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native-cpp-20-pmr",
+            "configurePreset": "configure-gcc-native-cpp-20-pmr",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native32-c-11",
+            "configurePreset": "configure-gcc-native32-c-11",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native32-c-11-arr-override",
+            "configurePreset": "configure-gcc-native32-c-11-arr-override",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native32-c-17",
+            "configurePreset": "configure-gcc-native32-c-17",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native32-c-23",
+            "configurePreset": "configure-gcc-native32-c-23",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native32-cpp-14",
+            "configurePreset": "configure-gcc-native32-cpp-14",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native32-cetl-14-17",
+            "configurePreset": "configure-gcc-native32-cetl-14-17",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native32-cpp-17",
+            "configurePreset": "configure-gcc-native32-cpp-17",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native32-cpp-17-pmr",
+            "configurePreset": "configure-gcc-native32-cpp-17-pmr",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native32-cpp-20",
+            "configurePreset": "configure-gcc-native32-cpp-20",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-gcc-native32-cpp-20-pmr",
+            "configurePreset": "configure-gcc-native32-cpp-20-pmr",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-clang-native-c-11",
+            "configurePreset": "configure-clang-native-c-11",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-clang-native-c-11-arr-override",
+            "configurePreset": "configure-clang-native-c-11-arr-override",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-clang-native-c-17",
+            "configurePreset": "configure-clang-native-c-17",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-clang-native-c-23",
+            "configurePreset": "configure-clang-native-c-23",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-clang-native-cpp-14",
+            "configurePreset": "configure-clang-native-cpp-14",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-clang-native-cetl-14-17",
+            "configurePreset": "configure-clang-native-cetl-14-17",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-clang-native-cpp-17",
+            "configurePreset": "configure-clang-native-cpp-17",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-clang-native-cpp-17-pmr",
+            "configurePreset": "configure-clang-native-cpp-17-pmr",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-clang-native-cpp-20",
+            "configurePreset": "configure-clang-native-cpp-20",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-Debug-clang-native-cpp-20-pmr",
+            "configurePreset": "configure-clang-native-cpp-20-pmr",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native-c-11",
+            "configurePreset": "configure-gcc-native-c-11",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native-c-11-arr-override",
+            "configurePreset": "configure-gcc-native-c-11-arr-override",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native-c-17",
+            "configurePreset": "configure-gcc-native-c-17",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native-c-23",
+            "configurePreset": "configure-gcc-native-c-23",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native-cpp-14",
+            "configurePreset": "configure-gcc-native-cpp-14",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native-cetl-14-17",
+            "configurePreset": "configure-gcc-native-cetl-14-17",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native-cpp-17",
+            "configurePreset": "configure-gcc-native-cpp-17",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native-cpp-17-pmr",
+            "configurePreset": "configure-gcc-native-cpp-17-pmr",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native-cpp-20",
+            "configurePreset": "configure-gcc-native-cpp-20",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native-cpp-20-pmr",
+            "configurePreset": "configure-gcc-native-cpp-20-pmr",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native32-c-11",
+            "configurePreset": "configure-gcc-native32-c-11",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native32-c-11-arr-override",
+            "configurePreset": "configure-gcc-native32-c-11-arr-override",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native32-c-17",
+            "configurePreset": "configure-gcc-native32-c-17",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native32-c-23",
+            "configurePreset": "configure-gcc-native32-c-23",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native32-cpp-14",
+            "configurePreset": "configure-gcc-native32-cpp-14",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native32-cetl-14-17",
+            "configurePreset": "configure-gcc-native32-cetl-14-17",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native32-cpp-17",
+            "configurePreset": "configure-gcc-native32-cpp-17",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native32-cpp-17-pmr",
+            "configurePreset": "configure-gcc-native32-cpp-17-pmr",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native32-cpp-20",
+            "configurePreset": "configure-gcc-native32-cpp-20",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-gcc-native32-cpp-20-pmr",
+            "configurePreset": "configure-gcc-native32-cpp-20-pmr",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-clang-native-c-11",
+            "configurePreset": "configure-clang-native-c-11",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-clang-native-c-11-arr-override",
+            "configurePreset": "configure-clang-native-c-11-arr-override",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-clang-native-c-17",
+            "configurePreset": "configure-clang-native-c-17",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-clang-native-c-23",
+            "configurePreset": "configure-clang-native-c-23",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-clang-native-cpp-14",
+            "configurePreset": "configure-clang-native-cpp-14",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-clang-native-cetl-14-17",
+            "configurePreset": "configure-clang-native-cetl-14-17",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-clang-native-cpp-17",
+            "configurePreset": "configure-clang-native-cpp-17",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-clang-native-cpp-17-pmr",
+            "configurePreset": "configure-clang-native-cpp-17-pmr",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-clang-native-cpp-20",
+            "configurePreset": "configure-clang-native-cpp-20",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugAsan-clang-native-cpp-20-pmr",
+            "configurePreset": "configure-clang-native-cpp-20-pmr",
+            "configuration": "DebugAsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugCov-clang-native-c-11",
+            "configurePreset": "configure-clang-native-c-11",
+            "configuration": "DebugCov",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugCov-clang-native-c-11-arr-override",
+            "configurePreset": "configure-clang-native-c-11-arr-override",
+            "configuration": "DebugCov",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugCov-clang-native-c-17",
+            "configurePreset": "configure-clang-native-c-17",
+            "configuration": "DebugCov",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugCov-clang-native-c-23",
+            "configurePreset": "configure-clang-native-c-23",
+            "configuration": "DebugCov",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugCov-clang-native-cpp-14",
+            "configurePreset": "configure-clang-native-cpp-14",
+            "configuration": "DebugCov",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugCov-clang-native-cetl-14-17",
+            "configurePreset": "configure-clang-native-cetl-14-17",
+            "configuration": "DebugCov",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugCov-clang-native-cpp-17",
+            "configurePreset": "configure-clang-native-cpp-17",
+            "configuration": "DebugCov",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugCov-clang-native-cpp-17-pmr",
+            "configurePreset": "configure-clang-native-cpp-17-pmr",
+            "configuration": "DebugCov",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugCov-clang-native-cpp-20",
+            "configurePreset": "configure-clang-native-cpp-20",
+            "configuration": "DebugCov",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-DebugCov-clang-native-cpp-20-pmr",
+            "configurePreset": "configure-clang-native-cpp-20-pmr",
+            "configuration": "DebugCov",
+            "output": {
+                "outputOnFailure": true
+            }
         }
     ],
     "vendor": {
@@ -2673,6 +4113,9 @@
                 "$('#preset-group-build parameters toolchain').json($('#preset-group-config parameters toolchain').json()).exp()",
                 "$('#preset-group-build parameters language').json($('#preset-group-config parameters language').json()).exp()",
                 "$('#preset-group-build parameters configuration').json($('#config-common cacheVariables CMAKE_CONFIGURATION_TYPES').text().split(';')).exp()",
+                "$('#preset-group-test parameters toolchain').json($('#preset-group-config parameters toolchain').json()).exp()",
+                "$('#preset-group-test parameters language').json($('#preset-group-config parameters language').json()).exp()",
+                "$('#preset-group-test parameters configuration').json($('#config-common cacheVariables CMAKE_CONFIGURATION_TYPES').text().split(';')).exp()",
                 "$('#preset-group-workflow shape-parameters configuration').json($('#config-common cacheVariables CMAKE_CONFIGURATION_TYPES').text().split(';')).exp()",
                 "$('#preset-group-workflow parameters toolchain').json($('#preset-group-config parameters toolchain').json()).exp()",
                 "$('#preset-group-workflow parameters language').json($('#preset-group-config parameters language').json()).exp()"
@@ -2838,6 +4281,65 @@
                         "language": {}
                     }
                 },
+                "test": {
+                    "name": "preset-group-test",
+                    "parameters": {
+                        "toolchain": [
+                            "gcc-arm-none-eabi",
+                            "gcc-native",
+                            "gcc-native32",
+                            "clang-native"
+                        ],
+                        "language": [
+                            "c-11",
+                            "c-11-arr-override",
+                            "c-17",
+                            "c-23",
+                            "cpp-14",
+                            "cetl-14-17",
+                            "cpp-17",
+                            "cpp-17-pmr",
+                            "cpp-20",
+                            "cpp-20-pmr"
+                        ],
+                        "configuration": [
+                            "Release",
+                            "Debug",
+                            "DebugAsan",
+                            "DebugCov"
+                        ]
+                    },
+                    "exclude": [
+                        {
+                            "toolchain": "gcc-arm-none-eabi",
+                            "configuration": [
+                                "DebugAsan",
+                                "DebugCov"
+                            ]
+                        },
+                        {
+                            "toolchain": [
+                                "gcc-native",
+                                "gcc-arm-none-eabi",
+                                "gcc-native32"
+                            ],
+                            "configuration": [
+                                "DebugCov"
+                            ]
+                        }
+                    ],
+                    "shape": {
+                        "configuration": {
+                            "configurePreset": "{pq}(this).literal('{name}').replace('{prefix}{sep}{parameter}', '{groups[configure][prefix]}')",
+                            "configuration": "{parameter}",
+                            "output": {
+                                "outputOnFailure": true
+                            }
+                        },
+                        "toolchain": {},
+                        "language": {}
+                    }
+                },
                 "workflow": {
                     "name": "preset-group-workflow",
                     "parameters": {
@@ -2901,6 +4403,10 @@
                                 {
                                     "type": "build",
                                     "name": "{pq}(this).literal('{name}').replace('{groups[workflow][prefix]}{sep}', '{groups[build][prefix]}{sep}{parameter}{sep}')"
+                                },
+                                {
+                                    "type": "test",
+                                    "name": "{pq}(this).literal('{name}').replace('{groups[workflow][prefix]}{sep}', '{groups[test][prefix]}{sep}{parameter}{sep}')"
                                 }
                             ]
                         },
