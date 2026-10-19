@@ -87,8 +87,8 @@ To run the full suite of `nox`_ tests locally you'll need docker. Once you have 
 and running do::
 
     git submodule update --init --recursive
-    docker pull ghcr.io/opencyphal/toxic:tx22.4.3
-    docker run --rm -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.3 /bin/sh -c "pip install nox && nox"
+    docker pull ghcr.io/opencyphal/toxic:tx26.4.1
+    docker run --rm -v $PWD:/repo ghcr.io/opencyphal/toxic:tx26.4.1 nox
 
 To run a limited suite using only locally available interpreters directly on your host machine,
 skip the docker invocations and use ``nox``.
@@ -224,7 +224,7 @@ Building The Docs
 We rely on `read the docs`_ to build our documentation from github but we also verify this build
 as part of our nox build. This means you can view a local copy after completing a full, successful
 test run (See `Running The Tests`_) or do
-:code:`docker run --rm -t -v $PWD:/repo ghcr.io/opencyphal/toxic:tx22.4.3 /bin/sh -c "pip install nox && nox -s docs"` to build
+:code:`docker run --rm -t -v $PWD:/repo ghcr.io/opencyphal/toxic:tx26.4.1 nox -s docs` to build
 the docs target. You can open the index.html under ``.nox/docs/tmp/index.html`` or run a local
 web-server::
 

@@ -8,13 +8,11 @@ jobs:
   release:
     if: ${{ github.event_name == 'release' && !github.event.release.prerelease }}
     runs-on: ubuntu-latest
-    container: ghcr.io/opencyphal/toxic:tx22.4.3
+    container: ghcr.io/opencyphal/toxic:tx26.4.1
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
-    - name: setup nox
-      run: pip install nox
     - name: version-check
       # Fails the release if the release-tag doesn't match the Nunavut version at that tag.
       run: |
@@ -30,6 +28,6 @@ jobs:
     - name: package
       run: nox -s package
     - name: upload
+      # The image's system Python is externally managed (PEP 668), so run twine through pipx.
       run: |
-        pip3 install twine
-        twine upload -u __token__ -p ${{ secrets.PYPI_PASSWORD }} .nox/package/tmp/dist/*
+        pipx run twine upload -u __token__ -p ${{ secrets.PYPI_PASSWORD }} .nox/package/tmp/dist/*
