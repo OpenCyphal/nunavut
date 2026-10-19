@@ -13,13 +13,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: ghcr.io/opencyphal/toxic:tx22.4.3
+    container: ghcr.io/opencyphal/toxic:tx26.4.1
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
-    - name: setup nox
-      run: pip install nox
     - name: lint
       run: nox -s lint
     - name: test-nnvg
@@ -104,7 +102,7 @@ jobs:
   compat-test-python3-windows-and-mac:
     strategy:
       matrix:
-        python3-version: ['11', '12', '13']
+        python3-version: ['11', '12', '13', '14', '15']
         python3-platform: ['windows-latest', 'macos-latest']
     runs-on: ${{ matrix.python3-platform }}
     needs: test
@@ -124,16 +122,14 @@ jobs:
   compat-test-python3-ubuntu:
     strategy:
       matrix:
-        python3-version: ['10', '11', '12', '13']
+        python3-version: ['11', '12', '13', '14', '15']
     runs-on: ubuntu-latest
-    container: ghcr.io/opencyphal/toxic:tx22.4.3
+    container: ghcr.io/opencyphal/toxic:tx26.4.1
     needs: test
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
-    - name: setup nox
-      run: pip install nox
     - name: python3.${{ matrix.python3-version }} test
       run: nox -s nnvg-3.${{ matrix.python3-version }} test-3.${{ matrix.python3-version }}
 
@@ -232,7 +228,7 @@ jobs:
   language-verification-python:
     runs-on: ubuntu-latest
     needs: test
-    container: ghcr.io/opencyphal/toxic:tx22.4.3
+    container: ghcr.io/opencyphal/toxic:tx26.4.1
     steps:
     - uses: actions/checkout@v4
       with:
@@ -247,7 +243,7 @@ jobs:
   language-verification-python-fuzz:
     runs-on: ubuntu-latest
     needs: test
-    container: ghcr.io/opencyphal/toxic:tx22.4.3
+    container: ghcr.io/opencyphal/toxic:tx26.4.1
     steps:
     - uses: actions/checkout@v4
       with:

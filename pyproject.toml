@@ -19,7 +19,7 @@ description = "Generate code from DSDL using Jinja2 templates."
 readme = {file = "README.rst", content-type = "text/x-rst"}
 license = "MIT"
 license-files = ["LICENSE.rst"]
-requires-python = ">= 3.10"
+requires-python = ">= 3.11"
 keywords = [
     "uavcan", "dsdl", "can", "can-bus", "ethernet", "udp",
     "codegen", "cyphal", "opencyphal",
@@ -34,10 +34,11 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Embedded Systems",
@@ -143,7 +144,7 @@ warn_unused_ignores = true
 show_error_context = true
 mypy_path = "src"
 exclude = "(jinja2|markupsafe)"
-python_version = "3.10"
+python_version = "3.11"
 
 [[tool.mypy.overrides]]
 module = "pydsdl"

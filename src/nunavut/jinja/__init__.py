@@ -337,10 +337,7 @@ class CodeGenerator(AbstractGenerator):
         Logic that should run from _generate_type iff is_dryrun is False.
         """
 
-        try:
-            self._env.now_utc = datetime.datetime.now(datetime.UTC)  # type: ignore
-        except AttributeError:
-            self._env.now_utc = datetime.datetime.utcnow()
+        self._env.now_utc = datetime.datetime.now(datetime.UTC)
 
         from ..lang._common import UniqueNameGenerator  # pylint: disable=import-outside-toplevel
 

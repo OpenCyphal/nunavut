@@ -6,7 +6,7 @@
 """
 Nox session definitions for nunavut.
 
-The standard version to develop against is 3.11. Minimum supported version is 3.10.
+The standard version to develop against is 3.11. Minimum supported version is 3.11.
 """
 
 import glob
@@ -19,7 +19,7 @@ import nox
 # | CONFIGURATION
 # +---------------------------------------------------------------------------+
 
-PYTHON_VERSIONS = ["3.10", "3.11", "3.12", "3.13"]
+PYTHON_VERSIONS = ["3.11", "3.12", "3.13", "3.14", "3.15"]
 DEFAULT_PYTHON = "3.11"
 
 BASE_DEPS = [

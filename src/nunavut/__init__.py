@@ -34,8 +34,8 @@ from .jinja import CodeGenerator, DSDLCodeGenerator, SupportGenerator
 from .lang import Language, LanguageContext, LanguageContextBuilder, UnsupportedLanguageError
 from .lang._config import LanguageConfig
 
-if _sys.version_info[:2] < (3, 10):  # pragma: no cover
-    print("Python 3.10 or newer is required", file=_sys.stderr)
+if _sys.version_info[:2] < (3, 11):  # pragma: no cover
+    print("Python 3.11 or newer is required", file=_sys.stderr)
     _sys.exit(1)
 
 _version_info_match = _re.match(r"^(\d+)\.(\d+)\.(\d+)", __version__)

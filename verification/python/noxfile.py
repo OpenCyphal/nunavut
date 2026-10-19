@@ -10,7 +10,7 @@ from pathlib import Path
 import nox
 
 
-PYTHONS = ["3.10", "3.11", "3.12", "3.13"]
+PYTHONS = ["3.11", "3.12", "3.13", "3.14", "3.15"]
 FUZZ_PYTHONS = ["3.12", "3.13"]  # Atheris ships wheels for CPython 3.12+ on x86_64 Linux only.
 
 nox.options.error_on_external_run = True
