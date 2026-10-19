@@ -17,6 +17,9 @@
                 "$('#preset-group-build parameters toolchain').json($('#preset-group-config parameters toolchain').json()).exp()",
                 "$('#preset-group-build parameters language').json($('#preset-group-config parameters language').json()).exp()",
                 "$('#preset-group-build parameters configuration').json($('#config-common cacheVariables CMAKE_CONFIGURATION_TYPES').text().split(';')).exp()",
+                "$('#preset-group-test parameters toolchain').json($('#preset-group-config parameters toolchain').json()).exp()",
+                "$('#preset-group-test parameters language').json($('#preset-group-config parameters language').json()).exp()",
+                "$('#preset-group-test parameters configuration').json($('#config-common cacheVariables CMAKE_CONFIGURATION_TYPES').text().split(';')).exp()",
                 "$('#preset-group-workflow shape-parameters configuration').json($('#config-common cacheVariables CMAKE_CONFIGURATION_TYPES').text().split(';')).exp()",
                 "$('#preset-group-workflow parameters toolchain').json($('#preset-group-config parameters toolchain').json()).exp()",
                 "$('#preset-group-workflow parameters language').json($('#preset-group-config parameters language').json()).exp()"
@@ -161,6 +164,35 @@
                         "language": {}
                     }
                 },
+                "test": {
+                    "name": "preset-group-test",
+                    "parameters": {
+                        "toolchain": [],
+                        "language": [],
+                        "configuration": []
+                    },
+                    "exclude": [
+                        {
+                            "toolchain": "gcc-arm-none-eabi",
+                            "configuration": ["DebugAsan", "DebugCov"]
+                        },
+                        {
+                            "toolchain": ["gcc-native", "gcc-arm-none-eabi", "gcc-native32"],
+                            "configuration": ["DebugCov"]
+                        }
+                    ],
+                    "shape": {
+                        "configuration": {
+                            "configurePreset": "{pq}(this).literal('{name}').replace('{prefix}{sep}{parameter}', '{groups[configure][prefix]}')",
+                            "configuration": "{parameter}",
+                            "output": {
+                                "outputOnFailure": true
+                            }
+                        },
+                        "toolchain": {},
+                        "language": {}
+                    }
+                },
                 "workflow": {
                     "name": "preset-group-workflow",
                     "parameters": {
@@ -194,6 +226,10 @@
                                 {
                                     "type": "build",
                                     "name": "{pq}(this).literal('{name}').replace('{groups[workflow][prefix]}{sep}', '{groups[build][prefix]}{sep}{parameter}{sep}')"
+                                },
+                                {
+                                    "type": "test",
+                                    "name": "{pq}(this).literal('{name}').replace('{groups[workflow][prefix]}{sep}', '{groups[test][prefix]}{sep}{parameter}{sep}')"
                                 }
                             ]
                         },
