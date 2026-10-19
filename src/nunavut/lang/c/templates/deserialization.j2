@@ -282,8 +282,10 @@
 {% endif %}
 
         {{ assert('offset_bits % 8U == 0U') }}
+        // Under the implicit zero extension rule the offset may lie past the end of the buffer. Clamp it so the
+        // pointer is never formed beyond one past the end; the nested call then sees zero remaining bytes.
         const {{ typename_error_type }} {{ ref_err }} = {{ t|full_reference_name }}_deserialize_(
-            &{{ reference }}, &buffer[offset_bits / 8U], &{{ ref_size_bytes }});
+            &{{ reference }}, &buffer[nunavutChooseMin(offset_bits / 8U, capacity_bytes)], &{{ ref_size_bytes }});
         if ({{ ref_err }} < 0)
         {
             return {{ ref_err }};

@@ -284,6 +284,8 @@ set(LOCAL_TEST_TYPES_TEST0_REGULATED
      ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/UnalignedUnionContainer.0.1.dsdl
      ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/Union.0.1.dsdl
      ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/UnionWithSameTypes.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/VoidPadding.0.1.dsdl
+     ${LOCAL_NAMESPACE_TEST0_REGULATED}/basics/VoidPaddingContainer.0.1.dsdl
      ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/A.1.0.dsdl
      ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/A.1.1.dsdl
      ${LOCAL_NAMESPACE_TEST0_REGULATED}/delimited/BDelimited.1.0.dsdl

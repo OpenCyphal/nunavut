@@ -1,0 +1,9 @@
+# Pads before a nested composite where the offset is always unaligned but by an amount only known at runtime, and
+# pads by a constant amount at the end. The last field straddles a byte boundary so the bits above it in the final
+# byte are not cleared by the write of the field itself. See https://github.com/OpenCyphal/nunavut/issues/397
+uint1 x
+uint2[<=1] y
+VoidPadding.0.1 inner
+uint3 z
+uint7 w
+@sealed
