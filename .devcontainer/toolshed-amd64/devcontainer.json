@@ -1,6 +1,6 @@
 {
     "name": "C/C++ verification environment (amd64)",
-    "image": "ghcr.io/opencyphal/toolshed:ts24.4.3",
+    "image": "ghcr.io/opencyphal/toolshed:ts26.4.5",
     "workspaceFolder": "/repo",
     "workspaceMount": "source=${localWorkspaceFolder},target=/repo,type=bind,consistency=delegated",
     "mounts": [
