@@ -98,14 +98,16 @@ To run the language verification build you'll need to use a different docker con
     docker pull ghcr.io/opencyphal/toolshed:ts24.4.3
     docker run --rm -it -v $PWD:/workspace ghcr.io/opencyphal/toolshed:ts24.4.3
     cd /workspace/verification
-    cmake --list-presets
+    cmake --workflow --list-presets
 
 Choose one of the workflow presets. For example::
 
     cmake --workflow --preset workflow-clang-native-c-11
 
-Each workflow configures once and then builds and runs the tests (via ctest) for each configuration listed in the
-presets file as ``CMAKE_CONFIGURATION_TYPES``. This is what CI runs. To work on a single configuration instead::
+Each workflow configures once and then builds and runs the tests (via ctest) for each configuration it supports. Not
+every workflow covers every configuration listed in the presets file as ``CMAKE_CONFIGURATION_TYPES``. ``DebugCov`` is
+clang-only, and the ``arm-none-eabi`` workflows build only ``Release`` and ``Debug`` and register no tests. This is
+what CI runs. To work on a single configuration instead::
 
     cmake --preset configure-clang-native-c-11
     cmake --build --preset build-Debug-clang-native-c-11
