@@ -102,7 +102,7 @@ jobs:
   compat-test-python3-windows-and-mac:
     strategy:
       matrix:
-        python3-version: ['11', '12', '13']
+        python3-version: ['11', '12', '13', '14', '15']
         python3-platform: ['windows-latest', 'macos-latest']
     runs-on: ${{ matrix.python3-platform }}
     needs: test
@@ -122,7 +122,7 @@ jobs:
   compat-test-python3-ubuntu:
     strategy:
       matrix:
-        python3-version: ['11', '12', '13']
+        python3-version: ['11', '12', '13', '14', '15']
     runs-on: ubuntu-latest
     container: ghcr.io/opencyphal/toxic:tx26.4.1
     needs: test
