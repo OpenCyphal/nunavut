@@ -588,6 +588,127 @@ else()
 endif()
 endif()
 
+# +-[FUZZING]-----------------------------------------------------------------+
+#
+# libFuzzer targets that feed arbitrary bytes into generated deserialization code. Each target gets ctest tests
+# labelled "fuzz": one creates the working folders, a seed generator writes valid serialized samples into a seed corpus
+# (checking each one), and a short, deterministic libFuzzer run goes over that corpus. See CONTRIBUTING.rst for running
+# the fuzzers for longer.
+#
+option(NUNAVUT_VERIFICATION_FUZZ "Build libFuzzer targets for the generated (de)serialization code (clang only)." OFF)
+set(NUNAVUT_VERIFICATION_FUZZ_RUNS "200000" CACHE STRING "Maximum number of inputs for each fuzz smoke test run by ctest.")
+set(NUNAVUT_VERIFICATION_FUZZ_MAX_TOTAL_TIME "60" CACHE STRING "Maximum seconds for each fuzz smoke test run by ctest.")
+
+if(NUNAVUT_VERIFICATION_FUZZ)
+     if(CMAKE_CROSSCOMPILING)
+          message(FATAL_ERROR "NUNAVUT_VERIFICATION_FUZZ is only supported for native builds.")
+     endif()
+     if(NOT CMAKE_C_COMPILER_ID STREQUAL "Clang" OR NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+          message(FATAL_ERROR "NUNAVUT_VERIFICATION_FUZZ requires LLVM clang (got ${CMAKE_C_COMPILER_ID}). "
+                              "Apple clang does not ship libFuzzer; on macOS use Homebrew llvm.")
+     endif()
+     set(LOCAL_FUZZ_SANITIZER_OPTIONS
+          "-fsanitize=fuzzer,address,undefined"
+          "-fno-sanitize-recover=all"
+          "-fno-omit-frame-pointer"
+     )
+     include(CheckCSourceCompiles)
+     set(CMAKE_REQUIRED_FLAGS "-fsanitize=fuzzer")
+     set(CMAKE_REQUIRED_LINK_OPTIONS "-fsanitize=fuzzer")
+     check_c_source_compiles([[
+          #include <stddef.h>
+          #include <stdint.h>
+          int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size);
+          int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) { (void) data; (void) size; return 0; }
+     ]] LOCAL_HAVE_LIBFUZZER)
+     unset(CMAKE_REQUIRED_FLAGS)
+     unset(CMAKE_REQUIRED_LINK_OPTIONS)
+     if(NOT LOCAL_HAVE_LIBFUZZER)
+          message(FATAL_ERROR "NUNAVUT_VERIFICATION_FUZZ is ON but ${CMAKE_C_COMPILER} cannot link with -fsanitize=fuzzer.")
+     endif()
+endif()
+
+#
+# function: compileFuzzTarget - builds <name> (the libFuzzer binary) and <name>_seeds (a seed corpus generator built
+# from the same source with NUNAVUT_FUZZ_SEED_GENERATOR defined) and registers the ctest tests described above.
+#
+function(compileFuzzTarget)
+     set(options "")
+     set(oneValueArgs TEST_FILE)
+     set(multiValueArgs LINK LANGUAGE_FLAVORS)
+     cmake_parse_arguments(compileFuzzTarget "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+     if(LOCAL_NUNAVUT_VERIFICATION_TARGET_LANG STREQUAL "cpp")
+          set(LOCAL_FUZZ_STANDARD ${LOCAL_VERIFICATION_LANGUAGE_STANDARD_CPP})
+     else()
+          set(LOCAL_FUZZ_STANDARD ${LOCAL_VERIFICATION_LANGUAGE_STANDARD_C})
+     endif()
+     list(FIND compileFuzzTarget_LANGUAGE_FLAVORS "${LOCAL_FUZZ_STANDARD}" FIND_INDEX)
+     if(${FIND_INDEX} EQUAL -1)
+          message(STATUS "Skipping ${compileFuzzTarget_TEST_FILE}")
+          return()
+     endif()
+
+     set(FUZZ_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/${LOCAL_NUNAVUT_VERIFICATION_TARGET_LANG}/fuzz/${compileFuzzTarget_TEST_FILE}")
+     get_filename_component(FUZZ_NAME ${FUZZ_SOURCE} NAME_WE)
+     set(FUZZ_SEED_GENERATOR "${FUZZ_NAME}_seeds")
+     set(FUZZ_WORK_DIR "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/fuzz/${FUZZ_NAME}")
+
+     add_executable(${FUZZ_NAME} ${FUZZ_SOURCE})
+     target_compile_options(${FUZZ_NAME} PRIVATE ${LOCAL_FUZZ_SANITIZER_OPTIONS})
+     target_link_options(${FUZZ_NAME} PRIVATE ${LOCAL_FUZZ_SANITIZER_OPTIONS})
+
+     add_executable(${FUZZ_SEED_GENERATOR} ${FUZZ_SOURCE})
+     target_compile_definitions(${FUZZ_SEED_GENERATOR} PRIVATE NUNAVUT_FUZZ_SEED_GENERATOR)
+     target_compile_options(${FUZZ_SEED_GENERATOR} PRIVATE "-fsanitize=address,undefined" "-fno-sanitize-recover=all")
+     target_link_options(${FUZZ_SEED_GENERATOR} PRIVATE "-fsanitize=address,undefined")
+
+     foreach(FUZZ_TARGET ${FUZZ_NAME} ${FUZZ_SEED_GENERATOR})
+          add_dependencies(${FUZZ_TARGET} ${compileFuzzTarget_LINK})
+          target_link_libraries(${FUZZ_TARGET} PUBLIC ${compileFuzzTarget_LINK})
+          target_compile_options(${FUZZ_TARGET} PRIVATE "-Wno-deprecated-declarations")
+          target_include_directories(${FUZZ_TARGET} PRIVATE "${NUNAVUT_SUBMODULES_DIR}/CETL/include")
+          set_target_properties(${FUZZ_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${NUNAVUT_VERIFICATIONS_BINARY_DIR}")
+     endforeach()
+
+     add_test(NAME ${FUZZ_NAME}_dirs
+              COMMAND ${CMAKE_COMMAND} -E make_directory "${FUZZ_WORK_DIR}/seeds" "${FUZZ_WORK_DIR}/corpus")
+     add_test(NAME ${FUZZ_SEED_GENERATOR}
+              COMMAND $<TARGET_FILE:${FUZZ_SEED_GENERATOR}> "${FUZZ_WORK_DIR}/seeds")
+     add_test(NAME ${FUZZ_NAME}
+              COMMAND $<TARGET_FILE:${FUZZ_NAME}>
+                   -seed=1
+                   -runs=${NUNAVUT_VERIFICATION_FUZZ_RUNS}
+                   -max_total_time=${NUNAVUT_VERIFICATION_FUZZ_MAX_TOTAL_TIME}
+                   -timeout=10
+                   -print_final_stats=1
+                   "-artifact_prefix=${FUZZ_WORK_DIR}/"
+                   "${FUZZ_WORK_DIR}/corpus"
+                   "${FUZZ_WORK_DIR}/seeds"
+              WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+
+     set_tests_properties(${FUZZ_NAME}_dirs PROPERTIES FIXTURES_SETUP ${FUZZ_NAME}_dirs LABELS "fuzz")
+     set_tests_properties(${FUZZ_SEED_GENERATOR} PROPERTIES
+          FIXTURES_REQUIRED ${FUZZ_NAME}_dirs
+          FIXTURES_SETUP ${FUZZ_NAME}_seeds
+          LABELS "fuzz"
+     )
+     set_tests_properties(${FUZZ_NAME} PROPERTIES
+          FIXTURES_REQUIRED ${FUZZ_NAME}_seeds
+          LABELS "fuzz"
+          TIMEOUT 600
+          ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1"
+     )
+endfunction()
+
+if(NUNAVUT_VERIFICATION_FUZZ)
+     if(LOCAL_NUNAVUT_VERIFICATION_TARGET_LANG STREQUAL "c")
+          compileFuzzTarget(TEST_FILE fuzz_deserialize.c   LINK ${LOCAL_TEST_TYPES_C_LIBRARY} LANGUAGE_FLAVORS c11 c17 c23)
+     else()
+          compileFuzzTarget(TEST_FILE fuzz_deserialize.cpp LINK ${LOCAL_TEST_TYPES_CPP_LIBRARY} LANGUAGE_FLAVORS c++14 c++17 c++20)
+     endif()
+endif()
+
 # +-[LLVM SOURCE-BASED CODE COVERAGE]----------------------------------------+
 #
 # Create comprehensive coverage reporting using LLVM source-based coverage.

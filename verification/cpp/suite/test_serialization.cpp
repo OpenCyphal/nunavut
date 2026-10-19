@@ -687,3 +687,27 @@ TEST(Serialization, CCppBackAndForth)
         EXPECT_FLOAT_EQ(c_parsed.inverter_temperature,              cpp_parsed.inverter_temperature);
     }
 }
+
+/// Deserializing into an object that already holds data must replace, not append to, its variable-length arrays.
+/// Found by fuzz_deserialize.cpp.
+TEST(Serialization, DeserializeIntoReusedObject)
+{
+    regulated::basics::Struct__0_1 original{};
+    original.f16_le2.push_back(1.0f);
+    original.f16_le2.push_back(2.0f);
+    original.bytes_lt3.push_back(3U);
+    std::uint8_t buf[regulated::basics::Struct__0_1::_traits_::SerializationBufferSizeBytes]{};
+    const auto size = serialize(original, buf);
+    ASSERT_TRUE(size);
+
+    regulated::basics::Struct__0_1 reused{};
+    for (int i = 0; i < 2; ++i)
+    {
+        const auto result = deserialize(reused, {&buf[0], size.value(), 0U});
+        ASSERT_TRUE(result);
+        ASSERT_EQ(size.value(), result.value());
+        ASSERT_EQ(2U, reused.f16_le2.size());
+        ASSERT_EQ(1U, reused.bytes_lt3.size());
+        ASSERT_EQ(3U, reused.bytes_lt3[0]);
+    }
+}
