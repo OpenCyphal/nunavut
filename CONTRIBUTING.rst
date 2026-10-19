@@ -399,6 +399,32 @@ To reproduce or minimize a crash::
 When adding a type to a fuzz target, append it to the end of the type list so that existing corpus entries keep
 selecting the same types.
 
+Fuzzing the Python backend
+================================================
+
+The Python verification suite (``verification/python``) fuzzes the generated deserialization code against the
+documented contract of ``nunavut_support.deserialize``: an invalid input must give ``None`` and never raise, and an
+object it returns must survive a serialize/deserialize round trip. The same oracle (``suite/fuzzing.py``) drives two
+tools:
+
+- Hypothesis property tests (``suite/test_fuzz.py``) run as part of the normal ``test`` session with a small budget.
+  They mutate valid serialized samples generated from the DSDL model and fragment them at random offsets. Set
+  ``NUNAVUT_PYTHON_FUZZ_EXAMPLES`` for a longer run::
+
+    cd verification/python
+    NUNAVUT_PYTHON_FUZZ_EXAMPLES=5000 nox -s test-3.13 -- -k test_fuzz
+
+- An `Atheris <https://github.com/google/atheris>`_ (libFuzzer for Python) harness, ``tools/fuzz_deserialize.py``,
+  for long coverage-guided runs. It is not part of the default ``nox`` run. Arguments after ``--`` go to libFuzzer::
+
+    cd verification/python
+    nox -s fuzz-3.13 -- -max_total_time=3600 -jobs=8 -workers=8
+
+  Atheris publishes wheels for CPython 3.12 and newer on x86-64 Linux only. On other platforms pip builds it from
+  source, which needs LLVM clang with libFuzzer (set ``CLANG_BIN``; Apple clang does not work). See
+  ``verification/python/README.md`` for the input format, where the corpus and crash reproducers go, and how to
+  rerun a reproducer.
+
 .. _`read the docs`: https://readthedocs.org/
 .. _`nox`: https://nox.thea.codes/en/stable/
 .. _`sonarcloud`: https://sonarcloud.io/dashboard?id=OpenCyphal_nunavut

@@ -264,6 +264,7 @@ class Serializer(abc.ABC):
 
     def add_aligned_signed(self, value: int, bit_length: int) -> None:
         assert bit_length >= 2
+        value = int(value)  # A NumPy scalar would overflow below (NEP 50).
         self.add_aligned_unsigned((2**bit_length + value) if value < 0 else value, bit_length)
 
     #
@@ -303,6 +304,7 @@ class Serializer(abc.ABC):
 
     def add_unaligned_signed(self, value: int, bit_length: int) -> None:
         assert bit_length >= 2
+        value = int(value)  # A NumPy scalar would overflow below (NEP 50).
         self.add_unaligned_unsigned((2**bit_length + value) if value < 0 else value, bit_length)
 
     def add_unaligned_f16(self, x: float) -> None:
@@ -325,7 +327,7 @@ class Serializer(abc.ABC):
     def _unsigned_to_bytes(value: int, bit_length: int) -> NDArray[Byte]:
         assert bit_length >= 1
         assert value >= 0, "This operation is undefined for negative integers"
-        value &= 2**bit_length - 1
+        value = int(value) & (2**bit_length - 1)  # A NumPy scalar (e.g., an array element) would overflow below.
         num_bytes = (bit_length + 7) // 8
         out: NDArray[Byte] = numpy.zeros(num_bytes, dtype=Byte)
         for i in range(num_bytes):  # Oh, why is my life like this?

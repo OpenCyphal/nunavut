@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 import os
+import functools
 from typing import Sequence, Any
 import dataclasses
 import logging
@@ -28,6 +29,15 @@ def compiled() -> list[GeneratedPackageInfo]:
     """
     Obtains the list of DSDL-generated Python packages with metadata.
     This is used to guide the automatic testing process.
+    """
+    return read_generated_packages()
+
+
+@functools.cache
+def read_generated_packages() -> list[GeneratedPackageInfo]:
+    """
+    Same as the :func:`compiled` fixture but usable at collection time (e.g., for parametrization).
+    The result is cached because parsing the DSDL namespaces is slow.
     """
     out: list[GeneratedPackageInfo] = []
     ns_dirs = os.environ["NUNAVUT_VERIFICATION_DSDL_PATH"].split(os.pathsep)
