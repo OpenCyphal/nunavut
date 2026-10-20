@@ -46,7 +46,7 @@ import hashlib
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Tuple, cast
 
 import pydsdl
 
@@ -80,7 +80,7 @@ class NamespaceManifest:
     """The DSDL name of the namespace the file belongs to (empty for the output directory's root namespace file)."""
 
 
-def parse_manifest(data: Union[bytes, str]) -> Optional[NamespaceManifest]:
+def parse_manifest(data: bytes | str) -> Optional[NamespaceManifest]:
     """
     Reads the manifest from the contents of a generated namespace file.
 

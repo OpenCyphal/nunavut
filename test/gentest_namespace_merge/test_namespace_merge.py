@@ -327,7 +327,9 @@ def test_u8_manifest_needs_exactly_one_namespace() -> None:
     assert parse_manifest(text.replace("namespace:mg.ns", "")) is None
     assert parse_manifest(text.replace("namespace:mg.ns", "namespace:mg.ns namespace:mg.other")) is None
     root = parse_manifest(_canonical_manifest([], namespace=""))
-    assert root is not None and root.namespace == "" and root.members == frozenset()
+    assert root is not None
+    assert root.namespace == ""
+    assert root.members == frozenset()
 
 
 def test_u7_digest_matches_the_generated_output(gen_paths: typing.Any) -> None:
@@ -1145,7 +1147,8 @@ def test_a3_nnvg_reports_a_refusal(
     assert _nnvg(run_nnvg_main, gen_paths, out, [_X]).returncode == 0
     _replace_without_manifest(out / _NS_INIT)
     assert _nnvg(run_nnvg_main, gen_paths, out, [_Y]).returncode == 1
-    assert "mg" in caplog.text and "__init__.py" in caplog.text
+    assert "mg" in caplog.text
+    assert "__init__.py" in caplog.text
     assert "--force" in caplog.text
     assert "Traceback" not in caplog.text
 
@@ -1175,7 +1178,9 @@ def test_a6_each_conflict_kind_has_an_accurate_message() -> None:
     }
     for kind, (forced, case, namespace) in expectations.items():
         message = str(NamespaceConflictError([NamespaceConflict(Path("ns", "__init__.py"), kind, "detail")]))
-        assert str(Path("ns", "__init__.py")) in message and kind.value in message and "(detail)" in message
+        assert str(Path("ns", "__init__.py")) in message
+        assert kind.value in message
+        assert "(detail)" in message
         assert (force_advice in message) == forced, kind
         assert (case_advice in message) == case, kind
         assert (namespace_advice in message) == namespace, kind
