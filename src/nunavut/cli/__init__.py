@@ -430,6 +430,26 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     )
 
     extended_group.add_argument(
+        "--force",
+        action="store_true",
+        help=textwrap.dedent("""
+
+        Remove the files generated into the output directory by earlier runs before generating.
+
+        For languages that generate a file per namespace (e.g. a Python package's __init__.py)
+        each namespace file lists the types generated into it. Without --force, generation is
+        refused if it would replace a namespace file that lists types this generation does not
+        include (or one without such a list), since that would make those types unreachable.
+        Generating the same types again, or more types into a namespace, is always allowed.
+
+        With --force, every namespace file under the output directory that has a list of its
+        types is removed, along with the files generated for those types, and then generation
+        proceeds. Other files are not touched.
+
+    """).lstrip(),
+    )
+
+    extended_group.add_argument(
         "--file-mode",
         default=0o444,
         type=lambda value: int(value, 0),

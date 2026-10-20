@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from .._generators import basic_language_context_builder_from_args, generate_all
+from .._namespace_files import NamespaceConflictError
 from .._utilities import ResourceType
 from ..lang import LanguageContext
 from .listers import Lister
@@ -119,4 +120,8 @@ def main(command_line_args: Optional[Any] = None) -> int:
 
     logging.info("Running %s using sys.prefix: %s", Path(__file__).name, sys.prefix)
 
-    return StandardArgparseRunner(args).run()
+    try:
+        return StandardArgparseRunner(args).run()
+    except NamespaceConflictError as e:
+        logging.error("%s", e)
+        return 1

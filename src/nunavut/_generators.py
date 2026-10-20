@@ -16,6 +16,12 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Type, Union
 
 from ._namespace import Generatable, Namespace
+from ._namespace_files import (
+    NamespaceConflictError,
+    describe_namespace_conflicts,
+    find_namespace_conflicts,
+    remove_generated_namespaces,
+)
 from ._utilities import ResourceType, YesNoDefault
 from .lang import LanguageContext, LanguageContextBuilder
 from .lang._language import Language
@@ -306,6 +312,7 @@ def generate_all(
     no_overwrite: bool = False,
     allow_unregulated_fixed_port_id: bool = False,
     omit_dependencies: bool = False,
+    force: bool = False,
     code_generator_type: Optional[Type[AbstractGenerator]] = None,
     support_generator_type: Optional[Type[AbstractGenerator]] = None,
     **kwargs: Any,
@@ -412,6 +419,10 @@ def generate_all(
     :param bool omit_dependencies:
         If True then only the types explicitly provided in `target_files` will be generated. If False then all
         dependant types will also be generated.
+    :param bool force:
+        If True then files generated into `outdir` by an earlier run are removed before generating (see
+        :func:`generate_all_from_namespace_with_generators`). Without it, generation is refused if it would replace a
+        namespace file that lists types this generation does not include.
     :param code_generator_type: The type of code generator to use. If None then the default code generator is used.
     :param support_generator_type: The type of support generator to use. If None then the default support generator is
         used.
@@ -443,6 +454,7 @@ def generate_all(
         no_overwrite,
         allow_unregulated_fixed_port_id,
         omit_dependencies,
+        force,
         code_generator_type,
         support_generator_type,
         **kwargs,
@@ -461,6 +473,7 @@ def generate_all_for_language(
     no_overwrite: bool = False,
     allow_unregulated_fixed_port_id: bool = False,
     omit_dependencies: bool = False,
+    force: bool = False,
     code_generator_type: Optional[Type[AbstractGenerator]] = None,
     support_generator_type: Optional[Type[AbstractGenerator]] = None,
     **generator_args: Any,
@@ -497,6 +510,9 @@ def generate_all_for_language(
         for unregulated datatypes.
     :param omit_dependencies: If True then only the types explicitly provided in `target_files` will be generated. If
         False then all dependant types will also be generated.
+    :param force: If True then files generated into `outdir` by an earlier run are removed before generating (see
+        :func:`generate_all_from_namespace_with_generators`). Without it, generation is refused if it would replace a
+        namespace file that lists types this generation does not include.
     :param code_generator_type: The type of code generator to use. If None then the default code generator is used.
     :param support_generator_type: The type of support generator to use. If None then the default support generator is
         used.
@@ -506,13 +522,6 @@ def generate_all_for_language(
     :raises pydsdl.FrontendError: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
         raise this exception.
     """
-    # A namespace file (e.g. a Python __init__.py) lists every type in its namespace, so when namespace files are
-    # generated each dependency's namespace must be read in full. Otherwise the namespace file would list only the
-    # types this run needed and would clobber a complete one generated into the same outdir by an earlier run.
-    generates_namespace_files = AbstractGenerator.generate_namespace_types_from_trinary(
-        language_context.get_target_language(),
-        generator_args.get("generate_namespace_types", YesNoDefault.DEFAULT),
-    )
     index = Namespace.read_files(
         outdir,
         language_context,
@@ -522,7 +531,6 @@ def generate_all_for_language(
         float(os.environ.get("NUNAVUT_JOB_TIMEOUT_SECONDS", 0)),
         allow_unregulated_fixed_port_id=allow_unregulated_fixed_port_id,
         omit_dependencies=omit_dependencies,
-        complete_dependency_namespaces=generates_namespace_files,
     )
 
     return generate_all_from_namespace(
@@ -531,6 +539,7 @@ def generate_all_for_language(
         embed_auditing_info,
         dry_run,
         no_overwrite,
+        force,
         code_generator_type,
         support_generator_type,
         **generator_args,
@@ -543,6 +552,7 @@ def generate_all_from_namespace(
     embed_auditing_info: bool = False,
     dry_run: bool = False,
     no_overwrite: bool = False,
+    force: bool = False,
     code_generator_type: Optional[Type[AbstractGenerator]] = None,
     support_generator_type: Optional[Type[AbstractGenerator]] = None,
     **generator_args: Any,
@@ -560,6 +570,9 @@ def generate_all_from_namespace(
         logging and errors.
     :param no_overwrite: If True then generated files will not be allowed to overwrite existing files under the `outdir`
         path causing errors.
+    :param force: If True then files generated into `outdir` by an earlier run are removed before generating (see
+        :func:`generate_all_from_namespace_with_generators`). Without it, generation is refused if it would replace a
+        namespace file that lists types this generation does not include.
     :param code_generator_type: The type of code generator to use. If None then the default code generator is used.
     :param support_generator_type: The type of support generator to use. If None then the default support generator is
         used.
@@ -595,7 +608,9 @@ def generate_all_from_namespace(
         index, resource_types, embed_auditing_info=embed_auditing_info, **support_generator_args
     )
 
-    return generate_all_from_namespace_with_generators(index, code_generator, support_generator, dry_run, no_overwrite)
+    return generate_all_from_namespace_with_generators(
+        index, code_generator, support_generator, dry_run, no_overwrite, force
+    )
 
 
 def generate_all_from_namespace_with_generators(
@@ -604,6 +619,7 @@ def generate_all_from_namespace_with_generators(
     support_generator: AbstractGenerator,
     dry_run: bool = False,
     no_overwrite: bool = False,
+    force: bool = False,
 ) -> GenerationResult:
     """
     Given a populated namespace, generate code for the types found within it using the provided generators. This is the
@@ -617,10 +633,27 @@ def generate_all_from_namespace_with_generators(
         logging and errors.
     :param no_overwrite: If True then generated files will not be allowed to overwrite existing files under the `outdir`
         path causing errors.
+    :param force: If True then, before generating, remove the files an earlier run generated into the output
+        directory: every namespace file with a member list and the files of the types it lists. Without it, generation
+        is refused (:class:`NamespaceConflictError`) if it would replace a namespace file that lists types this
+        generation does not include, or a namespace file without a member list. Generating the same types again, or
+        more types into a namespace, is always allowed. Only applies when namespace files are generated.
     :return: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
     :raises pydsdl.FrontendError: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
         raise this exception.
+    :raises NamespaceConflictError: If ``force`` is False and generating would replace a namespace file unsafely.
     """
+
+    # Namespace files list their namespace's types, so check (or clean up) before writing anything: a refused run
+    # leaves the output directory untouched. See https://github.com/OpenCyphal/nunavut/issues/403.
+    generates_types = (code_generator.resource_types & ResourceType.ONLY.value) != ResourceType.ONLY.value
+    if code_generator.generate_namespace_types and generates_types:
+        if force:
+            remove_generated_namespaces(index, dry_run)
+        else:
+            conflicts = find_namespace_conflicts(index)
+            if conflicts:
+                raise NamespaceConflictError(describe_namespace_conflicts(conflicts))
 
     template_files = list(set(support_generator.get_templates()).union(set(code_generator.get_templates())))
     generated_files = list(code_generator.generate_all(dry_run, not no_overwrite))

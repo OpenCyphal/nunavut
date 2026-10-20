@@ -7,6 +7,14 @@
 #
 # Generated at:  {{ now_utc }} UTC
 # Namespace:     {{ T.full_name }}
+#
+# The types generated into this namespace. Nunavut reads this list to refuse generation that would drop types from
+# this file (see nnvg --force). Do not edit it.
+# nunavut-namespace-members-begin
+{%- for t, _ in T.get_nested_types() %}
+#   {{ t.full_name }}.{{ t.version.major }}.{{ t.version.minor }}
+{%- endfor %}
+# nunavut-namespace-members-end
 {% if T.get_nested_types() %}
     {%- for t, _ in T.get_nested_types() %}
 from {{ t|full_reference_name }} import {{ t|short_reference_name }} as {{ t|short_reference_name }}

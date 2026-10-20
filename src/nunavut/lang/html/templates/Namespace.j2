@@ -4,6 +4,15 @@
 <html>
     <head>
         <title>{{ T.full_name }}</title>
+        <!--
+        The types generated into this namespace. Nunavut reads this list to refuse generation that would drop types
+        from this file (see nnvg --force). Do not edit it.
+        nunavut-namespace-members-begin
+        {%- for t, _ in T.get_nested_types() %}
+            {{ t.full_name }}.{{ t.version.major }}.{{ t.version.minor }}
+        {%- endfor %}
+        nunavut-namespace-members-end
+        -->
         <meta name="description" content="Documentation for DSDL namespace {{ T.full_name }}">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
