@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Type, Union
 
 from ._namespace import Generatable, Namespace
+from ._namespace_manifest import merge_namespace_files
 from ._utilities import ResourceType, YesNoDefault
 from .lang import LanguageContext, LanguageContextBuilder
 from .lang._language import Language
@@ -308,6 +309,7 @@ def generate_all(
     omit_dependencies: bool = False,
     code_generator_type: Optional[Type[AbstractGenerator]] = None,
     support_generator_type: Optional[Type[AbstractGenerator]] = None,
+    force: bool = False,
     **kwargs: Any,
 ) -> GenerationResult:
     """
@@ -415,6 +417,11 @@ def generate_all(
     :param code_generator_type: The type of code generator to use. If None then the default code generator is used.
     :param support_generator_type: The type of support generator to use. If None then the default support generator is
         used.
+    :param force: When the target language merges namespace files
+        (see :attr:`nunavut.lang.Language.merge_namespace_files`), write a namespace file that can't be merged with
+        the existing one with only this run's types instead of refusing to generate. Nothing is ever deleted. Types
+        whose files differ only in letter case, and namespaces that would share a namespace file, are refused
+        regardless. See :func:`generate_all_from_namespace_with_generators`.
     :param kwargs: Additional arguments passed into the language context builder and generator constructors. See the
         documentation for :func:`basic_language_context_builder_from_args` and for specific generator types for details
         on supported arguments.
@@ -445,6 +452,7 @@ def generate_all(
         omit_dependencies,
         code_generator_type,
         support_generator_type,
+        force=force,
         **kwargs,
     )
 
@@ -463,6 +471,7 @@ def generate_all_for_language(
     omit_dependencies: bool = False,
     code_generator_type: Optional[Type[AbstractGenerator]] = None,
     support_generator_type: Optional[Type[AbstractGenerator]] = None,
+    force: bool = False,
     **generator_args: Any,
 ) -> GenerationResult:
     """
@@ -500,6 +509,11 @@ def generate_all_for_language(
     :param code_generator_type: The type of code generator to use. If None then the default code generator is used.
     :param support_generator_type: The type of support generator to use. If None then the default support generator is
         used.
+    :param force: When the target language merges namespace files
+        (see :attr:`nunavut.lang.Language.merge_namespace_files`), write a namespace file that can't be merged with
+        the existing one with only this run's types instead of refusing to generate. Nothing is ever deleted. Types
+        whose files differ only in letter case, and namespaces that would share a namespace file, are refused
+        regardless. See :func:`generate_all_from_namespace_with_generators`.
     :param generator_args: Additional arguments to pass into the generator constructors. See the documentation for
         specific generator types for details on supported arguments.
     :return: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
@@ -525,6 +539,7 @@ def generate_all_for_language(
         no_overwrite,
         code_generator_type,
         support_generator_type,
+        force=force,
         **generator_args,
     )
 
@@ -537,6 +552,7 @@ def generate_all_from_namespace(
     no_overwrite: bool = False,
     code_generator_type: Optional[Type[AbstractGenerator]] = None,
     support_generator_type: Optional[Type[AbstractGenerator]] = None,
+    force: bool = False,
     **generator_args: Any,
 ) -> GenerationResult:
     """
@@ -555,6 +571,11 @@ def generate_all_from_namespace(
     :param code_generator_type: The type of code generator to use. If None then the default code generator is used.
     :param support_generator_type: The type of support generator to use. If None then the default support generator is
         used.
+    :param force: When the target language merges namespace files
+        (see :attr:`nunavut.lang.Language.merge_namespace_files`), write a namespace file that can't be merged with
+        the existing one with only this run's types instead of refusing to generate. Nothing is ever deleted. Types
+        whose files differ only in letter case, and namespaces that would share a namespace file, are refused
+        regardless. See :func:`generate_all_from_namespace_with_generators`.
     :param generator_args: Additional arguments to pass into the generator constructors. See the documentation for
         specific generator types for details on supported arguments.
     :return: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
@@ -587,7 +608,9 @@ def generate_all_from_namespace(
         index, resource_types, embed_auditing_info=embed_auditing_info, **support_generator_args
     )
 
-    return generate_all_from_namespace_with_generators(index, code_generator, support_generator, dry_run, no_overwrite)
+    return generate_all_from_namespace_with_generators(
+        index, code_generator, support_generator, dry_run, no_overwrite, force
+    )
 
 
 def generate_all_from_namespace_with_generators(
@@ -596,6 +619,7 @@ def generate_all_from_namespace_with_generators(
     support_generator: AbstractGenerator,
     dry_run: bool = False,
     no_overwrite: bool = False,
+    force: bool = False,
 ) -> GenerationResult:
     """
     Given a populated namespace, generate code for the types found within it using the provided generators. This is the
@@ -609,10 +633,36 @@ def generate_all_from_namespace_with_generators(
         logging and errors.
     :param no_overwrite: If True then generated files will not be allowed to overwrite existing files under the `outdir`
         path causing errors.
+    :param force: See below.
     :return: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
     :raises pydsdl.FrontendError: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
         raise this exception.
+    :raises NamespaceConflictError: If a namespace file can't be merged (see below). Nothing is written.
+
+    **Namespace files.** When the target language merges namespace files
+    (:attr:`nunavut.lang.Language.merge_namespace_files`, e.g. Python) and namespace files are generated, each
+    namespace file already in the output directory is merged with this run's, append-only: the types it lists, per
+    its manifest, are kept and this run's types are added. Generation never deletes files. Before anything is
+    written, every namespace file is checked, and generation is refused if any of them can't be merged:
+
+    * the existing file has no valid manifest (for example, it was written by an older nunavut, or its manifest lists
+      types outside its namespace);
+    * this run would name the recorded types differently than the run that wrote them;
+    * two types' files would differ only in letter case;
+    * two namespaces would share one namespace file: their names differ only in letter case (within this run, or
+      across runs on a case-insensitive filesystem), or they map to the same directory after stropping. The existing
+      file's manifest records which namespace it belongs to.
+
+    With ``force``, namespace files that hit one of the first two conditions are written with only this run's types.
+    The last two are always refused.
     """
+
+    # Merging namespace files is planned, and every conflict found, before anything is written, so a refused run leaves
+    # the output directory untouched. See https://github.com/OpenCyphal/nunavut/issues/403.
+    language = index.get_language_context().get_target_language()
+    generates_types = (code_generator.resource_types & ResourceType.ONLY.value) != ResourceType.ONLY.value
+    if language.merge_namespace_files and code_generator.generate_namespace_types and generates_types:
+        merge_namespace_files(index, force)
 
     template_files = list(set(support_generator.get_templates()).union(set(code_generator.get_templates())))
     generated_files = list(code_generator.generate_all(dry_run, not no_overwrite))

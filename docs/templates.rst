@@ -541,6 +541,33 @@ The :class:`~nunavut.jinja.Generator` will use the same template name resolution
 for pydsdl data types. For namespaces this will resolve first to a template named
 :code:`Namespace.j2` and then, if not found, :code:`Any.j2`.
 
+.. _namespace_templates:
+
+Merging namespace files
+-------------------------------------------------
+
+In a namespace template, ``T`` is a :class:`nunavut.Namespace`. For a language that merges namespace files (see
+:ref:`namespace_merging`), a namespace template must:
+
+* list the namespace's members with :meth:`nunavut.Namespace.get_namespace_members`, not
+  :meth:`nunavut.Namespace.get_nested_types`. It includes types recorded in the namespace file already in the output
+  directory. Members that this run doesn't generate provide ``full_name``, ``short_name``, ``full_namespace`` and
+  ``version``, which is what the reference-name filters use.
+* write a manifest with the ``namespace_manifest_lines`` filter, each line inside a comment, **as the last thing in
+  the file**, so that a file cut short has no complete manifest.
+
+For example, in Python::
+
+    {%- for t in T.get_namespace_members() %}
+    from {{ t | full_reference_name }} import {{ t | short_reference_name }} as {{ t | short_reference_name }}
+    {%- endfor %}
+    {%- for line in T | namespace_manifest_lines %}
+    # {{ line }}
+    {%- endfor %}
+
+A namespace template that doesn't write a manifest still works for a single run into a clean output directory, but
+every later run into the same directory refuses to replace its namespace files.
+
 .. _`Jinja templates documentation`: http://jinja.pocoo.org/docs/2.10/templates/
 .. _`Jinja template inheritance`: http://jinja.pocoo.org/docs/2.10/templates/#template-inheritance
 

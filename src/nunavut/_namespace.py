@@ -710,6 +710,8 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         )
         self._data_type_to_outputs: dict[pydsdl.CompositeType, Generatable] = {}
         self._nested_namespaces: dict[str, Namespace] = {}
+        # Members recorded in an existing namespace file that this run doesn't generate (see _namespace_manifest).
+        self._recorded_members: List[Any] = []
 
         if self._parent is not None and not self.is_index:  # pragma: no cover
             self._parent._nested_namespaces[self._namespace_components[-1]] = self
@@ -908,6 +910,27 @@ class Namespace(pydsdl.Any):  # pylint: disable=too-many-public-methods
         directly within this namespace.
         """
         return self._data_type_to_outputs.items()
+
+    def get_namespace_members(self) -> List[Any]:
+        """
+        The members a namespace file for this namespace lists, sorted by name and version: the types generated into
+        this namespace by this run, plus, when the target language merges namespace files, the members recorded in
+        the namespace file already in the output directory. Recorded members that this run doesn't generate are
+        :class:`nunavut._namespace_manifest.NamespaceMemberRef` objects, which provide ``full_name``,
+        ``short_name``, ``full_namespace`` and ``version`` like a :class:`pydsdl.CompositeType`.
+
+        Namespace templates should list this rather than :meth:`get_nested_types`, and write a manifest of it with the
+        ``namespace_manifest_lines`` filter.
+        """
+        members = [t for t, _ in self._data_type_to_outputs.items()] + list(self._recorded_members)
+        return sorted(members, key=lambda t: (t.full_name, t.version.major, t.version.minor))
+
+    def set_recorded_members(self, recorded_members: List[Any]) -> None:
+        """
+        Sets the members recorded in this namespace's existing namespace file that this run doesn't generate. Used
+        when merging namespace files; see :func:`nunavut._namespace_manifest.merge_namespace_files`.
+        """
+        self._recorded_members = list(recorded_members)
 
     def get_all_datatypes(self) -> Generator[Tuple[pydsdl.CompositeType, Generatable], None, None]:
         """

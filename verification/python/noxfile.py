@@ -153,9 +153,10 @@ def fuzz(session):
 
 def _generate(session):
     """
-    Generates the Python packages from all root namespaces into the session's tmp dir in a single nnvg invocation.
-    Invoking nnvg once per namespace does not work because generating a namespace that depends on another one
-    rewrites the dependency's package __init__.py with only the types that were needed.
+    Generates the Python packages from all root namespaces into a clean directory under the session's tmp dir, in a
+    single nnvg invocation.
+    Generating them in several invocations into one directory also works (namespace files are merged, see
+    suite/test_namespace_merge.py); one invocation is simply faster.
     Returns the output directory and the list of root namespace directories.
     """
     # The tmp dir will contain the DSDL-generated packages. We do not want to contaminate the source tree.
@@ -166,7 +167,13 @@ def _generate(session):
         TEST_TYPES_DIR / "test0" / "regulated",
         TEST_TYPES_DIR / "test0" / "if",
     ]
-    generated_dir = Path(session.create_tmp()).resolve()
+    # Generate into a clean directory every time: the session's tmp dir is kept between runs, and output left there by
+    # another nunavut version could be refused (see docs/namespace_merging.rst).
+    generated_dir = Path(session.create_tmp()).resolve() / "generated"
+    if generated_dir.exists():
+        for path in generated_dir.rglob("*"):
+            path.chmod(path.stat().st_mode | 0o200)  # Generated files are read-only.
+        shutil.rmtree(generated_dir)
     session.run(
         "nnvg",
         *[str(Path(nsd).resolve()) for nsd in root_namespace_dirs],

@@ -1,0 +1,11 @@
+{#-
+ # A custom namespace template that uses nunavut's namespace-merging helpers: it renders the imports and the
+ # manifest from the same merged member list, and writes the manifest last.
+-#}
+# Custom namespace template (uses the manifest helper).
+{%- for t in T.get_namespace_members() %}
+from {{ t | full_reference_name }} import {{ t | short_reference_name }} as {{ t | short_reference_name }}
+{%- endfor %}
+{%- for line in T | namespace_manifest_lines %}
+# {{ line }}
+{%- endfor %}

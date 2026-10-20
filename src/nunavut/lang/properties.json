@@ -574,6 +574,7 @@
       "extension": ".py",
       "stable_support": true,
       "has_standard_namespace_files": true,
+      "merge_namespace_files": true,
       "namespace_is_composite_type": true,
       "namespace_file_stem": "__init__",
       "token_encoding_rules_by_identifier_type": {

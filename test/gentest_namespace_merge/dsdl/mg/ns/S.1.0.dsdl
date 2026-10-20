@@ -1,0 +1,6 @@
+# A service type.
+uint8 request
+@sealed
+---
+uint8 response
+@sealed
