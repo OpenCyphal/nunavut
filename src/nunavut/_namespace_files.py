@@ -28,6 +28,7 @@ from typing import FrozenSet, List, Optional, Set, Tuple, cast
 import pydsdl
 
 from ._namespace import Namespace
+from .lang import Language
 from .lang._common import IncludeGenerator
 
 NAMESPACE_MEMBERS_BEGIN = "nunavut-namespace-members-begin"  #: Starts the member list in a namespace file.
@@ -151,8 +152,10 @@ def remove_generated_namespaces(index: Namespace, dry_run: bool) -> List[Path]:
     this generation would overwrite it. Other files are not touched. Directories left empty are removed.
 
     Namespace files are found by their member list, not by name, so output from a run that used a different
-    namespace file stem or file extension is removed too. A member's file is expected to have the same extension as
-    the namespace file that lists it.
+    namespace file stem or file extension is removed too. A member's file has the same extension as the namespace
+    file that lists it, which may be compound (e.g. ``.gen.py``), so each member's file is looked for under the
+    namespace file's last suffix, all of its suffixes, and this run's extension. Only files with exactly those names
+    are removed.
 
     :param index: The index namespace of the types about to be generated.
     :param dry_run: If True then only log what would be removed.
@@ -160,6 +163,7 @@ def remove_generated_namespaces(index: Namespace, dry_run: bool) -> List[Path]:
     """
     language = index.get_language_context().get_target_language()
     output_root = index.output_folder
+    current_extension = language.get_config_value(Language.WKCV_DEFINITION_FILE_EXTENSION)
 
     to_remove: Set[Path] = set()
     for candidate in output_root.rglob("*"):
@@ -169,9 +173,12 @@ def remove_generated_namespaces(index: Namespace, dry_run: bool) -> List[Path]:
         if members is None:
             continue
         to_remove.add(candidate)
+        # The stem may contain dots and the extension may be compound, so the extension can't be split off for sure.
+        extensions = {candidate.suffix, "".join(candidate.suffixes), current_extension}
         for member in members:
             member_ref = cast(pydsdl.CompositeType, _MemberRef(member))
-            to_remove.add(output_root / IncludeGenerator.make_path(member_ref, language, candidate.suffix))
+            for extension in extensions:
+                to_remove.add(output_root / IncludeGenerator.make_path(member_ref, language, extension))
     for _, namespace_file in index.get_all_namespaces():
         if namespace_file.exists() and namespace_file not in to_remove:
             # No member list, but this generation overwrites it anyway.

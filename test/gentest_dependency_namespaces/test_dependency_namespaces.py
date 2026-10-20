@@ -153,6 +153,25 @@ def test_py_force_removes_output_generated_with_another_namespace_stem(gen_paths
     assert read_namespace_members(gen_paths.out_dir / "my" / "othertype" / "_ns_.py") == {_BAZ}
 
 
+def test_py_force_removes_output_generated_with_a_compound_extension(gen_paths: typing.Any) -> None:
+    """
+    Member files generated with a compound extension (e.g. .gen.py) are found from their namespace file's full
+    extension, so forcing a run with the default extension removes them.
+    """
+    _generate(gen_paths, "py", ["foo"], gen_paths.out_dir, output_extension=".gen.py")
+    old_files = [
+        gen_paths.out_dir / "my" / "thistype" / "Foo_1_0.gen.py",
+        gen_paths.out_dir / "my" / "othertype" / "Bar_1_0.gen.py",
+        gen_paths.out_dir / "my" / "othertype" / "__init__.gen.py",
+    ]
+    assert all(f.exists() for f in old_files)
+
+    _generate(gen_paths, "py", ["baz"], gen_paths.out_dir, force=True)
+
+    assert not any(f.exists() for f in old_files)
+    assert _type_files(gen_paths.out_dir, ".py") == {"my/othertype/Baz_1_0"}
+
+
 def test_force_does_not_shift_positional_parameters() -> None:
     """
     force was added after the existing parameters, so positional callers of the generate_all functions are unaffected.
