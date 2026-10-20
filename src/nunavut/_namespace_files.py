@@ -28,7 +28,6 @@ from typing import FrozenSet, List, Optional, Set, Tuple, cast
 import pydsdl
 
 from ._namespace import Namespace
-from .lang import Language
 from .lang._common import IncludeGenerator
 
 NAMESPACE_MEMBERS_BEGIN = "nunavut-namespace-members-begin"  #: Starts the member list in a namespace file.
@@ -151,27 +150,32 @@ def remove_generated_namespaces(index: Namespace, dry_run: bool) -> List[Path]:
     list, and the files generated for each of its members. A namespace file without a member list is removed only if
     this generation would overwrite it. Other files are not touched. Directories left empty are removed.
 
+    Namespace files are found by their member list, not by name, so output from a run that used a different
+    namespace file stem or file extension is removed too. A member's file is expected to have the same extension as
+    the namespace file that lists it.
+
     :param index: The index namespace of the types about to be generated.
     :param dry_run: If True then only log what would be removed.
     :return: The files removed (or that would be removed).
     """
     language = index.get_language_context().get_target_language()
     output_root = index.output_folder
-    namespace_file_name = index.output_path.name
-    extension = language.get_config_value(Language.WKCV_DEFINITION_FILE_EXTENSION)
-    overwritten = {path for _, path in index.get_all_namespaces()}
 
     to_remove: Set[Path] = set()
-    for namespace_file in output_root.rglob(namespace_file_name):
-        members = read_namespace_members(namespace_file)
-        if members is None:
-            if namespace_file in overwritten:
-                to_remove.add(namespace_file)
+    for candidate in output_root.rglob("*"):
+        if not candidate.is_file() or not _starts_with_member_list(candidate):
             continue
-        to_remove.add(namespace_file)
+        members = read_namespace_members(candidate)
+        if members is None:
+            continue
+        to_remove.add(candidate)
         for member in members:
             member_ref = cast(pydsdl.CompositeType, _MemberRef(member))
-            to_remove.add(output_root / IncludeGenerator.make_path(member_ref, language, extension))
+            to_remove.add(output_root / IncludeGenerator.make_path(member_ref, language, candidate.suffix))
+    for _, namespace_file in index.get_all_namespaces():
+        if namespace_file.exists() and namespace_file not in to_remove:
+            # No member list, but this generation overwrites it anyway.
+            to_remove.add(namespace_file)
 
     removed = sorted(path for path in to_remove if path.exists())
     for path in removed:
@@ -200,6 +204,19 @@ class _MemberRef:
         self.full_namespace = ".".join(namespace)
         self.short_name = short_name
         self.version = pydsdl.Version(major=int(major), minor=int(minor))
+
+
+# Generated namespace files put the start of their member list near the top, so only this much of each file under the
+# output directory is read when looking for them.
+_MEMBER_LIST_SEARCH_BYTES = 16 * 1024
+
+
+def _starts_with_member_list(path: Path) -> bool:
+    try:
+        with path.open("rb") as f:
+            return NAMESPACE_MEMBERS_BEGIN.encode("ascii") in f.read(_MEMBER_LIST_SEARCH_BYTES)
+    except OSError:
+        return False
 
 
 def _unlink_generated_file(path: Path) -> None:

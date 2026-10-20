@@ -312,9 +312,9 @@ def generate_all(
     no_overwrite: bool = False,
     allow_unregulated_fixed_port_id: bool = False,
     omit_dependencies: bool = False,
-    force: bool = False,
     code_generator_type: Optional[Type[AbstractGenerator]] = None,
     support_generator_type: Optional[Type[AbstractGenerator]] = None,
+    force: bool = False,
     **kwargs: Any,
 ) -> GenerationResult:
     """
@@ -419,13 +419,13 @@ def generate_all(
     :param bool omit_dependencies:
         If True then only the types explicitly provided in `target_files` will be generated. If False then all
         dependant types will also be generated.
+    :param code_generator_type: The type of code generator to use. If None then the default code generator is used.
+    :param support_generator_type: The type of support generator to use. If None then the default support generator is
+        used.
     :param bool force:
         If True then files generated into `outdir` by an earlier run are removed before generating (see
         :func:`generate_all_from_namespace_with_generators`). Without it, generation is refused if it would replace a
         namespace file that lists types this generation does not include.
-    :param code_generator_type: The type of code generator to use. If None then the default code generator is used.
-    :param support_generator_type: The type of support generator to use. If None then the default support generator is
-        used.
     :param kwargs: Additional arguments passed into the language context builder and generator constructors. See the
         documentation for :func:`basic_language_context_builder_from_args` and for specific generator types for details
         on supported arguments.
@@ -454,9 +454,9 @@ def generate_all(
         no_overwrite,
         allow_unregulated_fixed_port_id,
         omit_dependencies,
-        force,
         code_generator_type,
         support_generator_type,
+        force=force,
         **kwargs,
     )
 
@@ -473,9 +473,9 @@ def generate_all_for_language(
     no_overwrite: bool = False,
     allow_unregulated_fixed_port_id: bool = False,
     omit_dependencies: bool = False,
-    force: bool = False,
     code_generator_type: Optional[Type[AbstractGenerator]] = None,
     support_generator_type: Optional[Type[AbstractGenerator]] = None,
+    force: bool = False,
     **generator_args: Any,
 ) -> GenerationResult:
     """
@@ -510,12 +510,12 @@ def generate_all_for_language(
         for unregulated datatypes.
     :param omit_dependencies: If True then only the types explicitly provided in `target_files` will be generated. If
         False then all dependant types will also be generated.
-    :param force: If True then files generated into `outdir` by an earlier run are removed before generating (see
-        :func:`generate_all_from_namespace_with_generators`). Without it, generation is refused if it would replace a
-        namespace file that lists types this generation does not include.
     :param code_generator_type: The type of code generator to use. If None then the default code generator is used.
     :param support_generator_type: The type of support generator to use. If None then the default support generator is
         used.
+    :param force: If True then files generated into `outdir` by an earlier run are removed before generating (see
+        :func:`generate_all_from_namespace_with_generators`). Without it, generation is refused if it would replace a
+        namespace file that lists types this generation does not include.
     :param generator_args: Additional arguments to pass into the generator constructors. See the documentation for
         specific generator types for details on supported arguments.
     :return: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
@@ -539,9 +539,9 @@ def generate_all_for_language(
         embed_auditing_info,
         dry_run,
         no_overwrite,
-        force,
         code_generator_type,
         support_generator_type,
+        force=force,
         **generator_args,
     )
 
@@ -552,9 +552,9 @@ def generate_all_from_namespace(
     embed_auditing_info: bool = False,
     dry_run: bool = False,
     no_overwrite: bool = False,
-    force: bool = False,
     code_generator_type: Optional[Type[AbstractGenerator]] = None,
     support_generator_type: Optional[Type[AbstractGenerator]] = None,
+    force: bool = False,
     **generator_args: Any,
 ) -> GenerationResult:
     """
@@ -570,12 +570,12 @@ def generate_all_from_namespace(
         logging and errors.
     :param no_overwrite: If True then generated files will not be allowed to overwrite existing files under the `outdir`
         path causing errors.
-    :param force: If True then files generated into `outdir` by an earlier run are removed before generating (see
-        :func:`generate_all_from_namespace_with_generators`). Without it, generation is refused if it would replace a
-        namespace file that lists types this generation does not include.
     :param code_generator_type: The type of code generator to use. If None then the default code generator is used.
     :param support_generator_type: The type of support generator to use. If None then the default support generator is
         used.
+    :param force: If True then files generated into `outdir` by an earlier run are removed before generating (see
+        :func:`generate_all_from_namespace_with_generators`). Without it, generation is refused if it would replace a
+        namespace file that lists types this generation does not include.
     :param generator_args: Additional arguments to pass into the generator constructors. See the documentation for
         specific generator types for details on supported arguments.
     :return: A dataclass containing explicit inputs, discovered inputs, and determined outputs.

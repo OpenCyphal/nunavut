@@ -11,13 +11,20 @@ The fixture is one root namespace ``my``: ``my.thistype.Foo.1.0`` depends on ``m
 ``my.othertype.Baz.1.0`` is another type in Bar's namespace that nothing depends on.
 """
 
+import inspect
 import re
 import typing
 from pathlib import Path
 
 import pytest
 
-from nunavut import NamespaceConflictError, generate_all
+from nunavut import (
+    NamespaceConflictError,
+    generate_all,
+    generate_all_for_language,
+    generate_all_from_namespace,
+    generate_all_from_namespace_with_generators,
+)
 from nunavut._namespace_files import read_namespace_members
 
 _BAR = "my.othertype.Bar.1.0"
@@ -131,6 +138,31 @@ def test_py_force_replaces_the_previous_output(gen_paths: typing.Any) -> None:
     assert read_namespace_members(_othertype_init(gen_paths.out_dir)) == {_BAZ}
     assert not (gen_paths.out_dir / "my" / "thistype").exists()
     assert unrelated.exists()
+
+
+def test_py_force_removes_output_generated_with_another_namespace_stem(gen_paths: typing.Any) -> None:
+    """
+    Previously generated namespace files are found by their member list, not by name, so forcing a run that uses a
+    different namespace file stem still removes the earlier output.
+    """
+    _generate(gen_paths, "py", ["foo"], gen_paths.out_dir)
+    _generate(gen_paths, "py", ["baz"], gen_paths.out_dir, force=True, namespace_output_stem="_ns_")
+
+    assert _type_files(gen_paths.out_dir, ".py") == {"my/othertype/Baz_1_0"}
+    assert not _othertype_init(gen_paths.out_dir).exists()
+    assert read_namespace_members(gen_paths.out_dir / "my" / "othertype" / "_ns_.py") == {_BAZ}
+
+
+def test_force_does_not_shift_positional_parameters() -> None:
+    """
+    force was added after the existing parameters, so positional callers of the generate_all functions are unaffected.
+    """
+    for function in (generate_all, generate_all_for_language, generate_all_from_namespace):
+        names = [p.name for p in inspect.signature(function).parameters.values()]
+        assert names[-3:] == ["support_generator_type", "force", names[-1]]
+        assert names[-4] == "code_generator_type"
+    names = list(inspect.signature(generate_all_from_namespace_with_generators).parameters)
+    assert names[-2:] == ["no_overwrite", "force"]
 
 
 def test_py_force_dry_run_removes_nothing(gen_paths: typing.Any) -> None:

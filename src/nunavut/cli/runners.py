@@ -123,5 +123,6 @@ def main(command_line_args: Optional[Any] = None) -> int:
     try:
         return StandardArgparseRunner(args).run()
     except NamespaceConflictError as e:
-        logging.error("%s", e)
+        # A refusal is an expected outcome the message fully explains, so no traceback (logging.exception) is wanted.
+        logging.error("%s", e)  # NOSONAR
         return 1
