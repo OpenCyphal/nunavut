@@ -23,7 +23,7 @@ import logging
 import re
 import stat
 from pathlib import Path
-from typing import FrozenSet, List, Optional, Set, Tuple, cast
+from typing import FrozenSet, Iterator, List, Optional, Set, Tuple, cast
 
 import pydsdl
 
@@ -166,32 +166,18 @@ def remove_generated_namespaces(index: Namespace, dry_run: bool) -> List[Path]:
     current_extension = language.get_config_value(Language.WKCV_DEFINITION_FILE_EXTENSION)
 
     to_remove: Set[Path] = set()
-    for candidate in output_root.rglob("*"):
-        if not candidate.is_file() or not _starts_with_member_list(candidate):
-            continue
-        members = read_namespace_members(candidate)
-        if members is None:
-            continue
-        to_remove.add(candidate)
-        # The stem may contain dots and the extension may be compound, so the extension can't be split off for sure.
-        extensions = {candidate.suffix, "".join(candidate.suffixes), current_extension}
-        for member in members:
-            member_ref = cast(pydsdl.CompositeType, _MemberRef(member))
-            for extension in extensions:
-                to_remove.add(output_root / IncludeGenerator.make_path(member_ref, language, extension))
-    for _, namespace_file in index.get_all_namespaces():
-        if namespace_file.exists() and namespace_file not in to_remove:
-            # No member list, but this generation overwrites it anyway.
-            to_remove.add(namespace_file)
+    for namespace_file, members in _find_namespace_files(output_root):
+        to_remove.add(namespace_file)
+        to_remove.update(_member_files(namespace_file, members, output_root, language, current_extension))
+    # Namespace files without a member list are removed only because this generation overwrites them anyway.
+    to_remove.update(path for _, path in index.get_all_namespaces())
 
     removed = sorted(path for path in to_remove if path.exists())
     for path in removed:
-        if dry_run:
-            _logger.info("Would remove previously generated file: %s", path)
-        else:
-            _logger.info("Removing previously generated file: %s", path)
-            _unlink_generated_file(path)
+        _logger.info("%s previously generated file: %s", "Would remove" if dry_run else "Removing", path)
     if not dry_run:
+        for path in removed:
+            _unlink_generated_file(path)
         _remove_empty_directories({path.parent for path in removed}, output_root)
     return removed
 
@@ -211,6 +197,32 @@ class _MemberRef:
         self.full_namespace = ".".join(namespace)
         self.short_name = short_name
         self.version = pydsdl.Version(major=int(major), minor=int(minor))
+
+
+def _find_namespace_files(output_root: Path) -> Iterator[Tuple[Path, FrozenSet[str]]]:
+    """
+    Yields each file under output_root that has a member list, with its members.
+    """
+    for candidate in output_root.rglob("*"):
+        if candidate.is_file() and _starts_with_member_list(candidate):
+            members = read_namespace_members(candidate)
+            if members is not None:
+                yield candidate, members
+
+
+def _member_files(
+    namespace_file: Path, members: FrozenSet[str], output_root: Path, language: Language, current_extension: str
+) -> Iterator[Path]:
+    """
+    Yields the paths the members of a namespace file may have been generated at. A member's file has the namespace
+    file's extension, but the stem may contain dots and the extension may be compound (e.g. ``.gen.py``), so the
+    extension can't be split off for sure: try the last suffix, all suffixes, and this run's extension.
+    """
+    extensions = {namespace_file.suffix, "".join(namespace_file.suffixes), current_extension}
+    for member in members:
+        member_ref = cast(pydsdl.CompositeType, _MemberRef(member))
+        for extension in extensions:
+            yield output_root / IncludeGenerator.make_path(member_ref, language, extension)
 
 
 # Generated namespace files put the start of their member list near the top, so only this much of each file under the
