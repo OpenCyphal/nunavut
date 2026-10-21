@@ -541,13 +541,11 @@ The :class:`~nunavut.jinja.Generator` will use the same template name resolution
 for pydsdl data types. For namespaces this will resolve first to a template named
 :code:`Namespace.j2` and then, if not found, :code:`Any.j2`.
 
-.. _namespace_templates:
-
 Merging namespace files
 -------------------------------------------------
 
-In a namespace template, ``T`` is a :class:`nunavut.Namespace`. For a language that merges namespace files (see
-:ref:`namespace_merging`), a namespace template must:
+In a namespace template, ``T`` is a :class:`nunavut.Namespace`. For a language that merges namespace files (Python),
+a namespace template must:
 
 * list the namespace's members with :meth:`nunavut.Namespace.get_namespace_members`, not
   :meth:`nunavut.Namespace.get_nested_types`. It includes types recorded in the namespace file already in the output

@@ -446,8 +446,7 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
         anything, and it can't override types whose files differ only in letter case or
         namespaces that would share a namespace file.
 
-        When in doubt, generate into a clean output directory. See
-        https://nunavut.readthedocs.io/en/latest/docs/namespace_merging.html
+        When in doubt, generate into a clean output directory.
 
     """).lstrip(),
     )

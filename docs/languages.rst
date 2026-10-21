@@ -113,10 +113,6 @@ please refer to ``verification/python`` in the source tree.
 At the moment there are no code generation options for Python;
 that is, the generated code is always the same irrespective of the options given.
 
-Python packages have namespace files (each package's ``__init__.py``), and Python merges them when generating into an
-output directory that already holds generated code. See :ref:`namespace_merging` for what that does and the
-limited guarantees Nunavut provides.
-
 The ``nunavut_support.py`` module includes several members that are useful for working with generated code.
 The documentation for each member is provided in the docstrings of the module itself;
 please be sure to read it.

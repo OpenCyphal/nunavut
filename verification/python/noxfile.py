@@ -168,7 +168,7 @@ def _generate(session):
         TEST_TYPES_DIR / "test0" / "if",
     ]
     # Generate into a clean directory every time: the session's tmp dir is kept between runs, and output left there by
-    # another nunavut version could be refused (see docs/namespace_merging.rst).
+    # another nunavut version might not merge with this version's.
     generated_dir = Path(session.create_tmp()).resolve() / "generated"
     if generated_dir.exists():
         for path in generated_dir.rglob("*"):
