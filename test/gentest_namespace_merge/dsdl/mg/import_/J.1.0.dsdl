@@ -1,0 +1,3 @@
+# A namespace literally named import_, which mg.import also strops to.
+uint8 j
+@sealed

@@ -1,0 +1,3 @@
+# A second type in the keyword namespace.
+uint8 l
+@sealed

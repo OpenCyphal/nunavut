@@ -21,6 +21,7 @@ import pydsdl
 import nunavut.lang
 
 from .._generators import AbstractGenerator
+from .._namespace_manifest import namespace_manifest_lines
 from .._postprocessors import FilePostProcessor, LinePostProcessor, PostProcessor
 from .._utilities import TEMPLATE_SUFFIX, ResourceSearchPolicy, ResourceType, YesNoDefault
 from .environment import CodeGenEnvironment, CodeGenEnvironmentBuilder
@@ -419,6 +420,26 @@ class DSDLCodeGenerator(CodeGenerator):
         from yaml import dump as yaml_dump  # pylint: disable=import-outside-toplevel
 
         return str(yaml_dump(value, Dumper=YamlDumper))
+
+    @staticmethod
+    def filter_namespace_manifest_lines(value: Any) -> List[str]:
+        """
+        The lines of a namespace file's manifest, for namespace templates of languages that merge namespace files
+        (see :meth:`nunavut.Namespace.get_namespace_members`). Write each line inside a comment, for example in a
+        Python namespace template::
+
+            {%- for line in T | namespace_manifest_lines %}
+            # {{ line }}
+            {%- endfor %}
+
+        The manifest records the namespace, its members, and a digest of how they're named. When nnvg generates into
+        the same output directory again, it merges the namespace file using the manifest, so a namespace template
+        that doesn't write one makes later runs into that directory refuse to replace the file.
+
+        :param value: The namespace (``T`` in a namespace template).
+        :return: The manifest's lines, without comment characters.
+        """
+        return namespace_manifest_lines(value)
 
     def filter_type_to_template(self, value: Any) -> str:
         """

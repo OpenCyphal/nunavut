@@ -28,6 +28,7 @@ from ._generators import (
     generate_all_from_namespace_with_generators,
 )
 from ._namespace import Namespace
+from ._namespace_manifest import NamespaceConflict, NamespaceConflictError, NamespaceConflictKind
 from ._utilities import TEMPLATE_SUFFIX, DefaultValue, ResourceSearchPolicy, ResourceType, YesNoDefault
 from ._version import __author__, __copyright__, __email__, __license__, __version__
 from .jinja import CodeGenerator, DSDLCodeGenerator, SupportGenerator
@@ -58,6 +59,9 @@ __all__ = [
     "LanguageContext",
     "LanguageContextBuilder",
     "Namespace",
+    "NamespaceConflict",
+    "NamespaceConflictError",
+    "NamespaceConflictKind",
     "ResourceType",
     "ResourceSearchPolicy",
     "SupportGenerator",

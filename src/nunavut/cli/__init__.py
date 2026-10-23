@@ -430,6 +430,28 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     )
 
     extended_group.add_argument(
+        "--force",
+        action="store_true",
+        help=textwrap.dedent("""
+
+        For target languages that merge namespace files (e.g. Python's __init__.py), write a
+        namespace file that can't be merged with the one already in the output directory
+        with only this run's types, instead of refusing to generate.
+
+        Generating into an output directory that already holds generated output is
+        append-only: each namespace file keeps the types it lists and this run's types are
+        added. Generation is refused, before anything is written, when an existing
+        namespace file has no manifest of its types or when this run would name those types
+        differently. --force writes such files with only this run's types. It never deletes
+        anything, and it can't override types whose files differ only in letter case or
+        namespaces that would share a namespace file.
+
+        When in doubt, generate into a clean output directory.
+
+    """).lstrip(),
+    )
+
+    extended_group.add_argument(
         "--file-mode",
         default=0o444,
         type=lambda value: int(value, 0),

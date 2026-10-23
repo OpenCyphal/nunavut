@@ -7,15 +7,22 @@
 #
 # Generated at:  {{ now_utc }} UTC
 # Namespace:     {{ T.full_name }}
-{% if T.get_nested_types() %}
-    {%- for t, _ in T.get_nested_types() %}
+{%- set members = T.get_namespace_members() %}
+{% if members %}
+    {%- for t in members %}
 from {{ t|full_reference_name }} import {{ t|short_reference_name }} as {{ t|short_reference_name }}
     {%- endfor %}
 
 # Convenience aliases of the newest minor versions known at the time of code generation.
-    {%- for alias, t in T.get_nested_types()|map("first")|newest_minor_version_aliases %}
+    {%- for alias, t in members|newest_minor_version_aliases %}
 {{ alias }} = {{ t|short_reference_name }}
     {%- endfor %}
 {%- else %}
 # There are no data types in this namespace. There may be data types in nested namespaces.
 {%- endif %}
+
+# The manifest records this package's namespace and types. Nunavut reads it when generating into this directory
+# again, to add to this file instead of replacing it. It's written last, so a file cut short has no complete manifest.
+{%- for line in T | namespace_manifest_lines %}
+# {{ line }}
+{%- endfor %}

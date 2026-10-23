@@ -85,6 +85,7 @@ class Language(metaclass=abc.ABCMeta):
     WKCV_SUPPORT_NAMESPACE = "support_namespace"
     WKCV_ENABLE_STROPPING = "enable_stropping"
     WKCV_HAS_STANDARD_NAMESPACE_FILES = "has_standard_namespace_files"
+    WKCV_MERGE_NAMESPACE_FILES = "merge_namespace_files"
     WKCV_STABLE_SUPPORT = "stable_support"
     WKCV_NAMED_TYPES = "named_types"
     WKCV_NAMED_VALUES = "named_values"
@@ -280,6 +281,15 @@ class Language(metaclass=abc.ABCMeta):
         its core standard (e.g. python's __init__).
         """
         return self._config.get_config_value_as_bool(self._section, self.WKCV_HAS_STANDARD_NAMESPACE_FILES)
+
+    @property
+    def merge_namespace_files(self) -> bool:
+        """
+        Whether generated namespace files are merged with the ones already in the output directory (append-only)
+        instead of replaced. The language's namespace template must write a manifest with the
+        ``namespace_manifest_lines`` filter.
+        """
+        return self._config.get_config_value_as_bool(self._section, self.WKCV_MERGE_NAMESPACE_FILES, False)
 
     @property
     def stable_support(self) -> bool:

@@ -98,7 +98,9 @@ def test(session: nox.Session) -> None:
         "-m",
         "pytest",
         *session.posargs,
-        f"--basetemp={tmpdir}",
+        # Not tmpdir itself: nox exports it as TMPDIR, and pytest empties --basetemp when a test first uses
+        # tmp_path, which would delete the sockets multiprocessing keeps there (forkserver, Python 3.14+).
+        f"--basetemp={Path(tmpdir) / 'pytest'}",
         "-p",
         "no:cacheprovider",
         f"--junit-xml={tmpdir}/xunit-result.xml",
@@ -148,7 +150,9 @@ def doctest(session: nox.Session) -> None:
         "-m",
         "pytest",
         *session.posargs,
-        f"--basetemp={tmpdir}",
+        # Not tmpdir itself: nox exports it as TMPDIR, and pytest empties --basetemp when a test first uses
+        # tmp_path, which would delete the sockets multiprocessing keeps there (forkserver, Python 3.14+).
+        f"--basetemp={Path(tmpdir) / 'pytest'}",
         "-p",
         "no:cacheprovider",
         "--ignore-glob=*.bak",
@@ -169,7 +173,9 @@ def rstdoctest(session: nox.Session) -> None:
     session.run(
         "pytest",
         *session.posargs,
-        f"--basetemp={tmpdir}",
+        # Not tmpdir itself: nox exports it as TMPDIR, and pytest empties --basetemp when a test first uses
+        # tmp_path, which would delete the sockets multiprocessing keeps there (forkserver, Python 3.14+).
+        f"--basetemp={Path(tmpdir) / 'pytest'}",
         "-p",
         "no:cacheprovider",
         f"--rootdir={_project_root()}",

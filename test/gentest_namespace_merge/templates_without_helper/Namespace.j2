@@ -1,0 +1,8 @@
+{#-
+ # A custom namespace template written without nunavut's namespace-merging helpers: it lists only this run's types
+ # and writes no manifest.
+-#}
+# Custom namespace template (no manifest helper).
+{%- for t, _ in T.get_nested_types() %}
+from {{ t | full_reference_name }} import {{ t | short_reference_name }} as {{ t | short_reference_name }}
+{%- endfor %}

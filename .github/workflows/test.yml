@@ -26,6 +26,9 @@ jobs:
       run: nox -s doctest-3.11 rstdoctest-3.11
     - name: test-pytest
       run: nox -s test-3.11
+      env:
+        # Only this job runs the slow tests (see conftest.py).
+        NUNAVUT_RUN_SLOW_TESTS: "1"
     - name: test-report
       run: nox -s report
     - name: package

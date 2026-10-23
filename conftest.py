@@ -439,7 +439,7 @@ def mock_environment(request: pytest.FixtureRequest) -> typing.Any:  # pylint: d
 # +-------------------------------------------------------------------------------------------------------------------+
 
 
-def pytest_configure(config: typing.Any) -> None:  # pylint: disable=unused-argument
+def pytest_configure(config: typing.Any) -> None:
     """
     See https://docs.pytest.org/en/6.2.x/reference.html#initialization-hooks
     """
@@ -449,6 +449,24 @@ def pytest_configure(config: typing.Any) -> None:  # pylint: disable=unused-argu
     # A lot of DEBUG noise in the other loggers so we'll tune this down to INFO and higher.
     logging.getLogger("pydsdl._namespace").setLevel(logging.INFO)
     logging.getLogger("pydsdl._data_type_builder").setLevel(logging.INFO)
+    config.addinivalue_line(
+        "markers", f"slow: a long-running test, skipped unless the {_RUN_SLOW_TESTS_ENV} environment variable is set"
+    )
+
+
+_RUN_SLOW_TESTS_ENV = "NUNAVUT_RUN_SLOW_TESTS"
+
+
+def pytest_collection_modifyitems(config: typing.Any, items: typing.List[pytest.Item]) -> None:
+    """
+    Skips tests marked ``slow`` unless the NUNAVUT_RUN_SLOW_TESTS environment variable is set (CI sets it in one job).
+    """
+    if os.environ.get(_RUN_SLOW_TESTS_ENV):
+        return
+    skip_slow = pytest.mark.skip(reason=f"slow test; set {_RUN_SLOW_TESTS_ENV}=1 to run it")
+    for item in items:
+        if item.get_closest_marker("slow") is not None:
+            item.add_marker(skip_slow)
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
