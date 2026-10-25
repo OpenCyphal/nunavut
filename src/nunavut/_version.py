@@ -10,7 +10,7 @@
 
 import sys
 
-__version__ = "3.0.1b1"  # please update NunavutConfigVersion.cmake if changing the major or minor version.
+__version__ = "3.1.0"  # please update NunavutConfigVersion.cmake if changing the major or minor version.
 __license__ = "MIT"
 __author__ = "OpenCyphal"
 __copyright__ = (
@@ -18,7 +18,7 @@ __copyright__ = (
     "Development Team <opencyphal.org>."
 )
 __email__ = "maintainers@opencyphal.org"
-__pydsdl_version__ = ">= 1.24.3"
+__pydsdl_version__ = ">= 1.25.0"
 
 
 def _parse_version_string(tag: str, pattern: str, major_minor_only: bool) -> list:  # pragma: no cover

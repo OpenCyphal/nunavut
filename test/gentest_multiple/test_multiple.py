@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 import pytest
-from pydsdl import FrontendError, read_namespace
+from pydsdl import Error, read_namespace
 
 from nunavut._namespace import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
@@ -19,7 +19,7 @@ def test_two_root_error(gen_paths):  # type: ignore
     """ Verifies that we are trying to use a type outside of the root.
     """
     root_namespace = str(gen_paths.dsdl_dir / Path("scotec"))
-    with pytest.raises(FrontendError):
+    with pytest.raises(Error):
         read_namespace(root_namespace, [], allow_unregulated_fixed_port_id=True)
 
 

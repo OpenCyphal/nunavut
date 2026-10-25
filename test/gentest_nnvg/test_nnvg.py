@@ -95,7 +95,7 @@ def test_realgen_using_nnvg_failure(gen_paths: Any, run_nnvg_main: Callable, job
         (Path("uavcan", "node", "430.GetInfo.1.0.dsdl")).as_posix(),
     ]
 
-    with pytest.raises(pydsdl.FrontendError):
+    with pytest.raises(pydsdl.Error):
         run_nnvg_main(gen_paths, nnvg_args0)
 
 
@@ -117,7 +117,7 @@ def test_DSDL_INCLUDE_PATH(gen_paths: Any, run_nnvg_main: Callable) -> None:
         (gen_paths.dsdl_dir / Path("uavcan")).relative_to(Path.cwd()).as_posix(),
     ]
 
-    with pytest.raises(pydsdl.FrontendError):
+    with pytest.raises(pydsdl.Error):
         assert 0 == run_nnvg_main(gen_paths, nnvg_args0).returncode
 
     scotec_path = (gen_paths.dsdl_dir / Path("scotec")).relative_to(Path.cwd()).as_posix()
@@ -146,7 +146,7 @@ def test_CYPHAL_PATH(gen_paths: Any, run_nnvg_main: Callable) -> None:
         (gen_paths.dsdl_dir / Path("uavcan", "test", "TestType.0.8.dsdl")).as_posix(),
     ]
 
-    with pytest.raises(pydsdl.FrontendError):
+    with pytest.raises(pydsdl.Error):
         run_nnvg_main(gen_paths, nnvg_args0)
 
     env = {"CYPHAL_PATH": f"{gen_paths.dsdl_dir}"}
@@ -907,7 +907,7 @@ def test_language_allow_unregulated_fixed_port_id(gen_paths: Any, run_nnvg_main:
         (gen_paths.dsdl_dir / Path("fixedid", "100.Timer.1.0.dsdl")).as_posix(),
     ]
 
-    with pytest.raises(pydsdl.FrontendError):
+    with pytest.raises(pydsdl.Error):
         assert 0 == run_nnvg_main(gen_paths, nnvg_args).returncode
 
     nnvg_args.append("--allow-unregulated-fixed-port-id")
