@@ -72,7 +72,7 @@ cetl++14-17.json
       "nunavut.lang.cpp": {
         "options": {
           "variable_array_type_include": "\"cetl/variable_length_array.hpp\"",
-          "variable_array_type_template": "cetl::VariableLengthArray<{TYPE}, {REBIND_ALLOCATOR}>",
+          "variable_array_type_template": "cetl::variable_length_array<{TYPE}, {REBIND_ALLOCATOR}>",
           "variable_array_type_constructor_args": "{MAX_SIZE}",
           "allocator_include": "\"cetl/pf17/sys/memory_resource.hpp\"",
           "allocator_type": "cetl::pf17::pmr::polymorphic_allocator",
