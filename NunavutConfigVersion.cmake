@@ -9,7 +9,7 @@
 # The variable CVF_VERSION must be set before calling configure_file().
 
 
-set(PACKAGE_VERSION "3.0")
+set(PACKAGE_VERSION "3.1")
 # We have a chicken-and-egg problem here. We need Python and Nunavut to read the nunavut version number but we need
 # the nunavut version number to find the Python and Nunavut packages. So we have to hard-code the version number here.
 # It's up to the maintainers to keep this in-sync with __version__ in the Nunavut package.

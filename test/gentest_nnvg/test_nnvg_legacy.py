@@ -34,7 +34,7 @@ def test_DSDL_INCLUDE_PATH(gen_paths: typing.Any, run_nnvg_main: typing.Callable
         (gen_paths.dsdl_dir / Path("uavcan")).as_posix(),
     ]
 
-    with pytest.raises(pydsdl.FrontendError):
+    with pytest.raises(pydsdl.Error):
         run_nnvg_main(gen_paths, nnvg_args0, raise_argument_error=True)
 
     scotec_path = (gen_paths.dsdl_dir / Path("scotec")).as_posix()

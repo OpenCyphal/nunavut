@@ -427,7 +427,7 @@ def generate_all(
         on supported arguments.
 
     :returns GenerationResult: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
-    :raises pydsdl.FrontendError: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
+    :raises pydsdl.Error: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
         raise this exception.
     """
 
@@ -517,7 +517,7 @@ def generate_all_for_language(
     :param generator_args: Additional arguments to pass into the generator constructors. See the documentation for
         specific generator types for details on supported arguments.
     :return: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
-    :raises pydsdl.FrontendError: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
+    :raises pydsdl.Error: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
         raise this exception.
     """
     index = Namespace.read_files(
@@ -579,7 +579,7 @@ def generate_all_from_namespace(
     :param generator_args: Additional arguments to pass into the generator constructors. See the documentation for
         specific generator types for details on supported arguments.
     :return: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
-    :raises pydsdl.FrontendError: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
+    :raises pydsdl.Error: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
         raise this exception.
     """
 
@@ -635,7 +635,7 @@ def generate_all_from_namespace_with_generators(
         path causing errors.
     :param force: See below.
     :return: A dataclass containing explicit inputs, discovered inputs, and determined outputs.
-    :raises pydsdl.FrontendError: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
+    :raises pydsdl.Error: Exceptions thrown from the pydsdl frontend. For example, parsing malformed DSDL will
         raise this exception.
     :raises NamespaceConflictError: If a namespace file can't be merged (see below). Nothing is written.
 
