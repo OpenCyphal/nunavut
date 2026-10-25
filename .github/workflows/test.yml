@@ -69,7 +69,7 @@ jobs:
         path: .nox/test-3-11/tmp/
     - name: set-environment
       run: |
-        echo NUNAVUT_MAJOR_MINOR_VERSION=$(./src/nunavut/_version.py --major-minor-only) >> $GITHUB_ENV
+        echo NUNAVUT_MAJOR_MINOR_VERSION=$(python3 ./src/nunavut/_version.py --major-minor-only) >> $GITHUB_ENV
     - name: verify nox artifacts
       run: ls -R
       working-directory: .nox
@@ -82,7 +82,7 @@ jobs:
       with:
         args: >
           -Dsonar.token=${{ env.SONAR_TOKEN }}
-          -Dsonar.buildString=${{ env.GITHUB_RUN_ID }}
+          -Dsonar.buildString=${{ github.run_id }}
           -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }}
           -Dsonar.python.version=python3.11
           -Dsonar.python.coverage.reportPaths=.nox/report/tmp/coverage.xml
@@ -96,7 +96,7 @@ jobs:
       with:
         args: >
           -Dsonar.token=${{ env.SONAR_TOKEN }}
-          -Dsonar.buildString=${{ env.GITHUB_RUN_ID }}
+          -Dsonar.buildString=${{ github.run_id }}
           -Dsonar.projectVersion=${{ env.NUNAVUT_MAJOR_MINOR_VERSION }}
           -Dsonar.python.version=python3.11
           -Dsonar.python.coverage.reportPaths=.nox/report/tmp/coverage.xml
