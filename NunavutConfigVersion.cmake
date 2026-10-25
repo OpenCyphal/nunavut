@@ -12,19 +12,20 @@
 set(PACKAGE_VERSION "3.1")
 # We have a chicken-and-egg problem here. We need Python and Nunavut to read the nunavut version number but we need
 # the nunavut version number to find the Python and Nunavut packages. So we have to hard-code the version number here.
-# It's up to the maintainers to keep this in-sync with __version__ in the Nunavut package.
+# This is the only version literal in the CMake package; test/gentest_versions/test_versions.py checks that it matches
+# __version__ in the Nunavut package.
 
 if(PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION)
   set(PACKAGE_VERSION_COMPATIBLE FALSE)
 else()
 
-  if("3.0" MATCHES "^([0-9]+)\\.")
+  if("${PACKAGE_VERSION}" MATCHES "^([0-9]+)\\.")
     set(CVF_VERSION_MAJOR "${CMAKE_MATCH_1}")
     if(NOT CVF_VERSION_MAJOR VERSION_EQUAL 0)
       string(REGEX REPLACE "^0+" "" CVF_VERSION_MAJOR "${CVF_VERSION_MAJOR}")
     endif()
   else()
-    set(CVF_VERSION_MAJOR "3.0")
+    set(CVF_VERSION_MAJOR "${PACKAGE_VERSION}")
   endif()
 
   if(PACKAGE_FIND_VERSION_RANGE)
