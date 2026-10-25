@@ -6,8 +6,6 @@
 
 cmake_minimum_required(VERSION 3.27.0 FATAL_ERROR)
 
-set(NUNAVUT_VERSION "3.0")
-
 # ###### Created using @PACKAGE_INIT@ by configure_package_config_file() #######
 get_filename_component(PACKAGE_PREFIX_DIR "${CMAKE_CURRENT_LIST_DIR}/" ABSOLUTE)
 
