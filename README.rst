@@ -218,7 +218,7 @@ Nunavut is part of the OpenCyphal project:
     :alt: OpenCyphal forum
 .. _badge_forum: https://forum.opencyphal.org
 
-.. |badge_docs| image:: https://app.readthedocs.org/projects/nunavut/badge/?version=latest
+.. |badge_docs| image:: https://img.shields.io/readthedocs/nunavut/latest.svg
     :alt: Documentation Status
 .. _badge_docs: https://nunavut.readthedocs.io/en/latest/?badge=latest
 
