@@ -1,33 +1,66 @@
 name: Release to Pypi
 
+# Publishes the package that test.yml built and tested for the tagged commit instead of testing and building it again.
+# Run it manually (workflow_dispatch) for a dry run: every check and the download run, but nothing is uploaded.
+
 on:
   release:
     types: [ published ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to dry-run (everything except the PyPI upload)"
+        required: true
+
+permissions:
+  actions: read
+  contents: read
 
 jobs:
   release:
-    if: ${{ github.event_name == 'release' && !github.event.release.prerelease }}
+    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.release.prerelease }}
     runs-on: ubuntu-latest
-    container: ghcr.io/opencyphal/toxic:tx26.4.1
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
-        submodules: true
+        ref: refs/tags/${{ env.RELEASE_TAG }}
     - name: version-check
       # Fails the release if the release-tag doesn't match the Nunavut version at that tag.
       run: |
-        python3 ./src/nunavut/_version.py -v --fail-on-mismatch --tag=${{ github.ref }}
-    - name: lint
-      run: nox -s lint
-    - name: test-nnvg
-      run: nox -s nnvg-3.11
-    - name: test-doctest
-      run: nox -s doctest-3.11 rstdoctest-3.11
-    - name: test-pytest
-      run: nox -s test-3.11
-    - name: package
-      run: nox -s package
-    - name: upload
-      # The image's system Python is externally managed (PEP 668), so run twine through pipx.
+        python3 ./src/nunavut/_version.py -v --fail-on-mismatch --tag="refs/tags/${RELEASE_TAG}"
+    - name: find-ci-run
+      id: ci-run
+      # Fails the release unless a push run of test.yml succeeded for the tagged commit and its package is still kept.
       run: |
-        pipx run twine upload -u __token__ -p ${{ secrets.PYPI_PASSWORD }} .nox/package/tmp/dist/*
+        sha="$(git rev-parse HEAD)"
+        run_id="$(gh run list --repo "${GITHUB_REPOSITORY}" --workflow test.yml --commit "${sha}" --event push \
+          --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+        if [ -z "${run_id}" ]; then
+          echo "::error::No successful push run of test.yml for ${sha} (${RELEASE_TAG}). The tag must be on a commit that CI tested on main or a *.preview branch. If that run is still going, re-run this job once it succeeds."
+          gh run list --repo "${GITHUB_REPOSITORY}" --workflow test.yml --commit "${sha}"
+          exit 1
+        fi
+        artifact_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts" \
+          --jq '[.artifacts[] | select(.name == "pypi-package" and (.expired | not))][0].id // empty')"
+        if [ -z "${artifact_id}" ]; then
+          echo "::error::Run ${run_id} for ${sha} has no unexpired pypi-package artifact. Artifacts are kept for 90 days, but runs can only be re-run for 30, so release from a newer commit that CI has tested."
+          exit 1
+        fi
+        echo "Publishing pypi-package from test.yml run ${run_id} for ${sha}."
+        echo "run_id=${run_id}" >> "${GITHUB_OUTPUT}"
+    - name: download-package
+      uses: actions/download-artifact@v8
+      with:
+        name: pypi-package
+        path: dist
+        run-id: ${{ steps.ci-run.outputs.run_id }}
+        github-token: ${{ github.token }}
+    - name: list-package
+      run: ls -l dist
+    - name: upload
+      if: ${{ github.event_name == 'release' }}
+      run: |
+        pipx run twine upload -u __token__ -p ${{ secrets.PYPI_PASSWORD }} dist/*
