@@ -14,6 +14,7 @@ configures and builds the project in this folder with ``Nunavut_DIR=$(python -m 
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import venv
@@ -55,9 +56,15 @@ def main() -> None:
     cmake_dir = _run([python, "-m", "nunavut", "--cmake-dir"], capture_output=True).stdout.strip()
     nunavut_dir = f"-DNunavut_DIR={cmake_dir}"
 
+    # Nunavut runs in the project folder (WORKING_DIRECTORY), so put a decoy nunavut module there in a copy of the
+    # project: it must not shadow the installed package.
+    project_dir = work_dir / "project"
+    shutil.copytree(PROJECT_DIR, project_dir, ignore=shutil.ignore_patterns("__pycache__"))
+    (project_dir / "nunavut.py").write_text('raise SystemExit("imported the decoy nunavut module")\n', "utf-8")
+
     # Generate and build with the Python that Nunavut is installed in.
     build_dir = work_dir / "build"
-    _run(["cmake", "-S", PROJECT_DIR, "-B", build_dir, nunavut_dir, f"-DPython3_EXECUTABLE={python}"])
+    _run(["cmake", "-S", project_dir, "-B", build_dir, nunavut_dir, f"-DPython3_EXECUTABLE={python}"])
     _run(["cmake", "--build", build_dir])
     _run([build_dir / "smoke"])
 
@@ -72,13 +79,13 @@ def main() -> None:
 
     # An installed Nunavut adds no lookup folder of its own (the public regulated types aren't in the wheel).
     lookup_dirs = [configure_args[i + 1] for i, arg in enumerate(configure_args) if arg == "--lookup-dir"]
-    if lookup_dirs != [str(PROJECT_DIR / "dsdl" / "smoke")]:
+    if lookup_dirs != [str(project_dir / "dsdl" / "smoke")]:
         _fail(f"expected only the project's lookup folder, got {lookup_dirs}")
 
     # A Python that doesn't have this Nunavut installed is refused.
     bare_python = _new_venv_python(work_dir / "venv-bare", with_pip=False)
     refused = _run(
-        ["cmake", "-S", PROJECT_DIR, "-B", work_dir / "build-bare", nunavut_dir, f"-DPython3_EXECUTABLE={bare_python}"],
+        ["cmake", "-S", project_dir, "-B", work_dir / "build-bare", nunavut_dir, f"-DPython3_EXECUTABLE={bare_python}"],
         check=False,
         capture_output=True,
     )

@@ -318,13 +318,14 @@ macro(_nunavut_config_args options singleValueArgs multiValueArgs usageLines)
         set(NUNV_LOCAL_CONFIGURE_PYTHON ${Python3_EXECUTABLE})
         # Quoted so a list element keeps NUNAVUT_PATH_LIST_SEP's escaped semicolon (Windows) as one argument.
         set(NUNV_LOCAL_BUILD_PYTHON export "PYTHONPATH=${NUNV_LOCAL_PYTHON_PATH}" && ${Python3_EXECUTABLE})
+    # An installed Nunavut runs with -P, like the check that found it, so a nunavut module in WORKING_DIRECTORY can't
+    # shadow the installed package. It imports its own pydsdl unless the caller names another one.
     elseif(NUNV_ARG_PYDSDL_PATH)
-        # An installed Nunavut imports its own pydsdl unless the caller names another one.
-        set(NUNV_LOCAL_CONFIGURE_PYTHON ${CMAKE_COMMAND} -E env "PYTHONPATH=${NUNV_ARG_PYDSDL_PATH}" ${Python3_EXECUTABLE})
+        set(NUNV_LOCAL_CONFIGURE_PYTHON ${CMAKE_COMMAND} -E env "PYTHONPATH=${NUNV_ARG_PYDSDL_PATH}" ${Python3_EXECUTABLE} -P)
         set(NUNV_LOCAL_BUILD_PYTHON ${NUNV_LOCAL_CONFIGURE_PYTHON})
     else()
-        set(NUNV_LOCAL_CONFIGURE_PYTHON ${Python3_EXECUTABLE})
-        set(NUNV_LOCAL_BUILD_PYTHON ${Python3_EXECUTABLE})
+        set(NUNV_LOCAL_CONFIGURE_PYTHON ${Python3_EXECUTABLE} -P)
+        set(NUNV_LOCAL_BUILD_PYTHON ${Python3_EXECUTABLE} -P)
     endif()
 
     # Setup additional debug options if requested.
