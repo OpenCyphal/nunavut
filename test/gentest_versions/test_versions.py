@@ -79,7 +79,8 @@ def test_cmake_package_python_version_matches_requires_python(gen_paths) -> None
             calls.append((cmake_file, arguments.split()))
     assert calls, "Found no find_package(Python3 ...) in the CMake package files"
     for cmake_file, arguments in calls:
-        assert arguments and re.fullmatch(r"\d+(\.\d+)*", arguments[0]), f"{cmake_file}: no version in {arguments}"
+        assert arguments, f"{cmake_file}: find_package(Python3) has no arguments"
+        assert re.fullmatch(r"\d+(\.\d+)*", arguments[0]), f"{cmake_file}: no version in {arguments}"
         assert arguments[0] == expected, f"{cmake_file}: Python3 {arguments[0]}, requires-python {expected}"
 
 
