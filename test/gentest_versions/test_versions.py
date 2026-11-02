@@ -31,18 +31,26 @@ def test_version_info_matches_release_triplet() -> None:
 def test_cmake_package_version_matches_version(gen_paths) -> None:  # type: ignore
     """
     The CMake package files can't ask Python for the version before find_package() resolves, so the major.minor
-    version is hard-coded. Require exactly one quoted version literal across both files (the PACKAGE_VERSION in
-    NunavutConfigVersion.cmake) and require it to match __version__.
+    version is hard-coded. Require exactly one quoted version literal across the package files and the root files that
+    include them (the PACKAGE_VERSION in src/nunavut/cmake/NunavutConfigVersion.cmake) and require it to match
+    __version__.
     """
     expected = ".".join(str(part) for part in nunavut.__version_info__[0:2])
+    package_version_file = Path("src", "nunavut", "cmake", "NunavutConfigVersion.cmake")
+    cmake_files = (
+        package_version_file,
+        Path("src", "nunavut", "cmake", "NunavutConfig.cmake"),
+        Path("NunavutConfigVersion.cmake"),
+        Path("NunavutConfig.cmake"),
+    )
     literals = []
-    for cmake_file in ("NunavutConfigVersion.cmake", "NunavutConfig.cmake"):
+    for cmake_file in cmake_files:
         for line_number, line in enumerate((gen_paths.root_dir / cmake_file).read_text("utf-8").splitlines(), 1):
             for literal in re.findall(r'"(\d+(?:\.\d+)+)"', line):
                 literals.append((cmake_file, line_number, line.strip(), literal))
     assert len(literals) == 1, f"Expected one version literal in the CMake package files, found: {literals}"
     cmake_file, _, line, literal = literals[0]
-    assert cmake_file == "NunavutConfigVersion.cmake"
+    assert cmake_file == package_version_file
     assert line.startswith("set(PACKAGE_VERSION ")
     assert literal == expected
 

@@ -76,7 +76,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "*" = ["*.j2", "**/*.css", "**/*.js", "*.ini", "*.json", "*.hpp", "*.h"]
-nunavut = ["py.typed"]
+nunavut = ["py.typed", "cmake/*.cmake"]
 
 # +---------------------------------------------------------------------------+
 # | TOOL CONFIGURATION

@@ -11,6 +11,8 @@ The standard version to develop against is 3.11. Minimum supported version is 3.
 
 import glob
 import os
+import shutil
+import zipfile
 from pathlib import Path
 
 import nox
@@ -254,6 +256,7 @@ def package(session: nox.Session) -> None:
     session.install("-e", ".")
     tmpdir = session.create_tmp()
     dist_dir = str(Path(tmpdir) / "dist")
+    shutil.rmtree(dist_dir, ignore_errors=True)  # Leaves only this build's files for the checks below.
     session.run("python", "version_check_pydsdl.py", "-vv")
     session.run(
         "python",
@@ -267,6 +270,16 @@ def package(session: nox.Session) -> None:
     )
     dist_files = glob.glob(f"{dist_dir}/*")
     session.run("twine", "check", *dist_files)
+    # The wheel must ship the CMake package (#422).
+    wheels = glob.glob(f"{dist_dir}/*.whl")
+    if len(wheels) != 1:
+        session.error(f"Expected one wheel in {dist_dir}, found {wheels}")
+    with zipfile.ZipFile(wheels[0]) as wheel_zip:
+        missing = {"nunavut/cmake/NunavutConfig.cmake", "nunavut/cmake/NunavutConfigVersion.cmake"} - set(
+            wheel_zip.namelist()
+        )
+    if missing:
+        session.error(f"{wheels[0]} is missing {sorted(missing)}")
 
 
 @nox.session(python=DEFAULT_PYTHON)
