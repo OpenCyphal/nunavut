@@ -28,7 +28,7 @@ macro(check_required_components _NAME)
 endmacro()
 
 # ###################################################################################
-find_package(Python3 3.9 REQUIRED)
+find_package(Python3 3.11 REQUIRED)
 
 # The NunavutConfig.cmake at the root of a source checkout sets _NUNAVUT_SOURCE_CHECKOUT_ROOT before it includes this
 # file. Otherwise this file was found in an installed Nunavut package (see nnvg --cmake-dir).
