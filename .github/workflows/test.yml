@@ -142,6 +142,21 @@ jobs:
     - name: python3.${{ matrix.python3-version }} test
       run: nox -s nnvg-3.${{ matrix.python3-version }} test-3.${{ matrix.python3-version }}
 
+  cmake-package-installed:
+    runs-on: ubuntu-latest
+    needs: test
+    container: ghcr.io/opencyphal/toolshed:ts26.4.5
+    steps:
+    - uses: actions/checkout@v7
+    - name: download-package
+      uses: actions/download-artifact@v8
+      with:
+        name: pypi-package
+        path: dist
+    - name: check
+      # Uses the CMake package from the wheel the test job built, in a CMake project.
+      run: python3 test/cmake_installed/check_installed_package.py dist/*.whl "${RUNNER_TEMP}/cmake-installed"
+
   language-verification-c-cpp:
     runs-on: ubuntu-latest
     needs: test

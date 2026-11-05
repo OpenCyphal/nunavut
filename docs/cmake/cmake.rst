@@ -49,4 +49,14 @@ Use either `CMake's FetchContent <https://cmake.org/cmake/help/latest/module/Fet
 (see :ref:`fetch_content`) or `find_package(nunavut) <https://cmake.org/cmake/help/latest/command/find_package.html>`__,
 to load the Nunavut cmake functions and variables documented here into your project.
 
-.. cmake-module:: ../../NunavutConfig.cmake
+The Nunavut package installed with ``pip`` also includes this CMake package. Point ``Nunavut_DIR`` at it and run CMake
+with the Python that Nunavut is installed in (an active virtual environment is found automatically):
+
+.. code-block:: bash
+
+    cmake -DNunavut_DIR=$(nnvg --cmake-dir) -DPython3_EXECUTABLE=$(python -c "import sys; print(sys.executable)") ...
+
+An installed Nunavut doesn't include the public regulated data types, so list them in ``DSDL_NAMESPACES`` if your
+types use them.
+
+.. cmake-module:: ../../src/nunavut/cmake/NunavutConfig.cmake

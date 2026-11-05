@@ -37,6 +37,29 @@ class _LazyVersionAction(argparse._VersionAction):
         parser.exit()
 
 
+class _CMakeDirAction(argparse.Action):
+    """
+    Prints the folder that holds Nunavut's CMake package and exits, like ``--version``.
+    """
+
+    def __init__(self, option_strings: Any, dest: str = argparse.SUPPRESS, help: Optional[str] = None) -> None:
+        # pylint: disable=redefined-builtin
+        super().__init__(option_strings=option_strings, dest=dest, default=argparse.SUPPRESS, nargs=0, help=help)
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: Optional[str] = None,
+    ) -> None:
+        # pylint: disable=import-outside-toplevel
+        from nunavut import cmake_dir
+
+        parser._print_message(f"{cmake_dir()}\n", sys.stdout)  # pylint: disable=protected-access
+        parser.exit()
+
+
 def keyvalue(arg: str) -> Tuple[str, Any]:
     """
     Parse a key=value string into a tuple.
@@ -519,6 +542,17 @@ def _make_parser(parser_type: Type[ParserT]) -> ParserT:
     run_mode_group.add_argument("--verbose", "-v", action="count", help="verbosity level (-v, -vv)")
 
     run_mode_group.add_argument("--version", action=_LazyVersionAction)
+
+    run_mode_group.add_argument(
+        "--cmake-dir",
+        action=_CMakeDirAction,
+        help=textwrap.dedent("""
+        Print the folder that holds Nunavut's CMake package (NunavutConfig.cmake) and exit. For example:
+
+            cmake -DNunavut_DIR=$(nnvg --cmake-dir) ...
+
+    """).lstrip(),
+    )
 
     run_mode_group.add_argument("--dry-run", "-d", action="store_true", help="If True then no files will be generated.")
 

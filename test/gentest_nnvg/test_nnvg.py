@@ -17,6 +17,7 @@ from typing import Any, Callable
 import pydsdl
 import pytest
 
+import nunavut
 import nunavut._version
 from nunavut.lang import LanguageContextBuilder, UnsupportedLanguageError
 from nunavut.lang._language import LanguageClassLoader
@@ -987,3 +988,22 @@ def test_option_override(gen_paths: Any, run_nnvg_main: Callable) -> None:
     assert "foo" in c_config["options"]
     assert c_config["options"]["foo"] == "bar"
     print(json.dumps(config, indent=2))
+
+
+def test_cmake_dir() -> None:
+    """
+    nunavut.cmake_dir() is the folder that holds the CMake package (#422).
+    """
+    cmake_dir = Path(nunavut.cmake_dir())
+    assert cmake_dir.is_dir()
+    assert (cmake_dir / "NunavutConfig.cmake").is_file()
+    assert (cmake_dir / "NunavutConfigVersion.cmake").is_file()
+
+
+def test_cmake_dir_option(gen_paths: Any, run_nnvg_main: Callable) -> None:
+    """
+    nnvg --cmake-dir prints nunavut.cmake_dir() and exits without needing any inputs (#422).
+    """
+    result = run_nnvg_main(gen_paths, ["--cmake-dir"])
+    assert 0 == result.returncode
+    assert nunavut.cmake_dir() == result.stdout.decode("utf-8").strip()

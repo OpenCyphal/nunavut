@@ -5,6 +5,7 @@
 #
 
 import pytest
+import tomllib
 from pathlib import Path
 
 import pydsdl
@@ -15,6 +16,15 @@ from nunavut._namespace import build_namespace_tree
 from nunavut.jinja import DSDLCodeGenerator
 from nunavut.lang import LanguageContextBuilder
 
+
+# The CMake package files and the root files that include them, relative to the repository root.
+CMAKE_PACKAGE_VERSION_FILE = Path("src", "nunavut", "cmake", "NunavutConfigVersion.cmake")
+CMAKE_PACKAGE_FILES = (
+    CMAKE_PACKAGE_VERSION_FILE,
+    Path("src", "nunavut", "cmake", "NunavutConfig.cmake"),
+    Path("NunavutConfigVersion.cmake"),
+    Path("NunavutConfig.cmake"),
+)
 
 include_pattern_map = (
     ["cpp", "VIRUSES_COVID_{major}_{minor}_HPP_INCLUDED"],
@@ -30,21 +40,48 @@ def test_version_info_matches_release_triplet() -> None:
 
 def test_cmake_package_version_matches_version(gen_paths) -> None:  # type: ignore
     """
-    The CMake package files can't ask Python for the version before find_package() resolves, so the major.minor
-    version is hard-coded. Require exactly one quoted version literal across both files (the PACKAGE_VERSION in
-    NunavutConfigVersion.cmake) and require it to match __version__.
+    The CMake package files can't ask Python for the version before find_package() resolves, so the full release
+    version is hard-coded. Require exactly one quoted version literal across the package files and the root files that
+    include them (the PACKAGE_VERSION in src/nunavut/cmake/NunavutConfigVersion.cmake) and require it to match
+    __version__.
     """
-    expected = ".".join(str(part) for part in nunavut.__version_info__[0:2])
+    expected = nunavut.__version__
     literals = []
-    for cmake_file in ("NunavutConfigVersion.cmake", "NunavutConfig.cmake"):
+    for cmake_file in CMAKE_PACKAGE_FILES:
         for line_number, line in enumerate((gen_paths.root_dir / cmake_file).read_text("utf-8").splitlines(), 1):
             for literal in re.findall(r'"(\d+(?:\.\d+)+)"', line):
                 literals.append((cmake_file, line_number, line.strip(), literal))
     assert len(literals) == 1, f"Expected one version literal in the CMake package files, found: {literals}"
     cmake_file, _, line, literal = literals[0]
-    assert cmake_file == "NunavutConfigVersion.cmake"
+    assert cmake_file == CMAKE_PACKAGE_VERSION_FILE
     assert line.startswith("set(PACKAGE_VERSION ")
     assert literal == expected
+
+
+def test_cmake_package_python_version_matches_requires_python(gen_paths) -> None:  # type: ignore
+    """
+    Every find_package(Python3 ...) in the CMake package must ask for exactly the minimum Python in requires-python, so
+    CMake neither accepts a Python that Nunavut can't run on nor rejects one that it supports.
+    """
+    requires_python = tomllib.loads((gen_paths.root_dir / "pyproject.toml").read_text("utf-8"))["project"][
+        "requires-python"
+    ]
+    minimum = re.search(r">=\s*(\d+\.\d+)", requires_python)
+    assert minimum is not None, f"No >= bound in requires-python: {requires_python}"
+    expected = minimum.group(1)
+
+    calls = []
+    for cmake_file in CMAKE_PACKAGE_FILES:
+        text = (gen_paths.root_dir / cmake_file).read_text("utf-8")
+        text = re.sub(r"#\[(=*)\[.*?\]\1\]", "", text, flags=re.DOTALL)  # bracket comments
+        text = re.sub(r"#[^\n]*", "", text)  # line comments
+        for arguments in re.findall(r"find_package\(\s*Python3\b([^)]*)\)", text):
+            calls.append((cmake_file, arguments.split()))
+    assert calls, "Found no find_package(Python3 ...) in the CMake package files"
+    for cmake_file, arguments in calls:
+        assert arguments, f"{cmake_file}: find_package(Python3) has no arguments"
+        assert re.fullmatch(r"\d+(\.\d+)*", arguments[0]), f"{cmake_file}: no version in {arguments}"
+        assert arguments[0] == expected, f"{cmake_file}: Python3 {arguments[0]}, requires-python {expected}"
 
 
 @pytest.mark.parametrize("lang_key,include_format", include_pattern_map)
