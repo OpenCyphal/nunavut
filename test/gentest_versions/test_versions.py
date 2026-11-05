@@ -40,12 +40,12 @@ def test_version_info_matches_release_triplet() -> None:
 
 def test_cmake_package_version_matches_version(gen_paths) -> None:  # type: ignore
     """
-    The CMake package files can't ask Python for the version before find_package() resolves, so the major.minor
+    The CMake package files can't ask Python for the version before find_package() resolves, so the full release
     version is hard-coded. Require exactly one quoted version literal across the package files and the root files that
     include them (the PACKAGE_VERSION in src/nunavut/cmake/NunavutConfigVersion.cmake) and require it to match
     __version__.
     """
-    expected = ".".join(str(part) for part in nunavut.__version_info__[0:2])
+    expected = nunavut.__version__
     literals = []
     for cmake_file in CMAKE_PACKAGE_FILES:
         for line_number, line in enumerate((gen_paths.root_dir / cmake_file).read_text("utf-8").splitlines(), 1):

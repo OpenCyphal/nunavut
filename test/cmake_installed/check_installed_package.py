@@ -55,6 +55,11 @@ def main() -> None:
     _run([python, "-m", "pip", "install", "--quiet", args.wheel.resolve()])
     cmake_dir = _run([python, "-m", "nunavut", "--cmake-dir"], capture_output=True).stdout.strip()
     nunavut_dir = f"-DNunavut_DIR={cmake_dir}"
+    version = _run(
+        [python, "-P", "-c", "import nunavut; print(nunavut.__version__)"],
+        capture_output=True,
+    ).stdout.strip()
+    major_minor, patch = version.rsplit(".", 1)
 
     # Nunavut runs in the project folder (WORKING_DIRECTORY), so put a decoy nunavut module there in a copy of the
     # project: it must not shadow the installed package.
@@ -64,7 +69,19 @@ def main() -> None:
 
     # Generate and build with the Python that Nunavut is installed in.
     build_dir = work_dir / "build"
-    _run(["cmake", "-S", project_dir, "-B", build_dir, nunavut_dir, f"-DPython3_EXECUTABLE={python}"])
+    _run(
+        [
+            "cmake",
+            "-S",
+            project_dir,
+            "-B",
+            build_dir,
+            nunavut_dir,
+            f"-DPython3_EXECUTABLE={python}",
+            f"-DEXPECTED_NUNAVUT_VERSION={version}",
+            f"-DEXPECTED_NUNAVUT_MAJOR_MINOR={major_minor}",
+        ]
+    )
     _run(["cmake", "--build", build_dir])
     _run([build_dir / "smoke"])
 
@@ -81,6 +98,27 @@ def main() -> None:
     lookup_dirs = [configure_args[i + 1] for i, arg in enumerate(configure_args) if arg == "--lookup-dir"]
     if lookup_dirs != [str(project_dir / "dsdl" / "smoke")]:
         _fail(f"expected only the project's lookup folder, got {lookup_dirs}")
+
+    # An exact request for another patch must fail during package selection.
+    wrong_patch = f"{major_minor}.{int(patch) + 1}"
+    refused = _run(
+        [
+            "cmake",
+            "-S",
+            project_dir,
+            "-B",
+            work_dir / "build-wrong-patch",
+            nunavut_dir,
+            f"-DPython3_EXECUTABLE={python}",
+            f"-DEXPECTED_NUNAVUT_VERSION={wrong_patch}",
+        ],
+        check=False,
+        capture_output=True,
+    )
+    if refused.returncode == 0 or f'exactly matches requested version "{wrong_patch}"' not in " ".join(
+        refused.stderr.split()
+    ):
+        _fail(f"expected configure to refuse exact version {wrong_patch}:\n{refused.stdout}\n{refused.stderr}")
 
     # A Python that doesn't have this Nunavut installed is refused.
     bare_python = _new_venv_python(work_dir / "venv-bare", with_pip=False)

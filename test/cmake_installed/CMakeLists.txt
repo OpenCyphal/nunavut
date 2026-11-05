@@ -10,7 +10,17 @@ cmake_minimum_required(VERSION 3.27.0 FATAL_ERROR)
 
 project("Nunavut installed package check" LANGUAGES C)
 
-find_package(Nunavut 3.0 REQUIRED)
+if(DEFINED EXPECTED_NUNAVUT_VERSION)
+    find_package(Nunavut ${EXPECTED_NUNAVUT_VERSION} EXACT REQUIRED)
+    if(NOT NUNAVUT_VERSION STREQUAL EXPECTED_NUNAVUT_VERSION)
+        message(FATAL_ERROR "NUNAVUT_VERSION=${NUNAVUT_VERSION}, expected ${EXPECTED_NUNAVUT_VERSION}")
+    endif()
+    if(NOT NUNAVUT_VERSION_MAJOR_MINOR STREQUAL EXPECTED_NUNAVUT_MAJOR_MINOR)
+        message(FATAL_ERROR "NUNAVUT_VERSION_MAJOR_MINOR=${NUNAVUT_VERSION_MAJOR_MINOR}, expected ${EXPECTED_NUNAVUT_MAJOR_MINOR}")
+    endif()
+else()
+    find_package(Nunavut 3.0 REQUIRED)
+endif()
 
 add_cyphal_library(
     NAME smoke

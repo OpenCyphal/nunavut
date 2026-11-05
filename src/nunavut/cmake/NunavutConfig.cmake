@@ -61,15 +61,10 @@ check_required_components(Nunavut Python3)
 
 execute_process(
     COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_LIST_DIR}/../_version.py"
-    OUTPUT_VARIABLE NUNAVUT_VERSION_MAJOR_MINOR
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-execute_process(
-    COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_LIST_DIR}/../_version.py"
     OUTPUT_VARIABLE NUNAVUT_VERSION
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+string(REGEX MATCH "^[0-9]+\\.[0-9]+" NUNAVUT_VERSION_MAJOR_MINOR "${NUNAVUT_VERSION}")
 
 message(STATUS "Nunavut version: ${NUNAVUT_VERSION}")
 
