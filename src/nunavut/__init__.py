@@ -16,6 +16,7 @@ invoking the ``nunavut.generate_all`` method.
 
 """
 
+import pathlib as _pathlib
 import sys as _sys
 import re as _re
 
@@ -44,6 +45,19 @@ if _version_info_match is None:  # pragma: no cover
     raise ValueError(f"Invalid version string: {__version__}")
 __version_info__ = tuple(map(int, _version_info_match.groups()))
 
+
+def cmake_dir() -> str:
+    """
+    The folder that holds Nunavut's CMake package (``NunavutConfig.cmake``). Give it to CMake as ``Nunavut_DIR``:
+
+    .. code-block:: bash
+
+        cmake -DNunavut_DIR=$(nnvg --cmake-dir) ...
+
+    """
+    return str(_pathlib.Path(__file__).parent / "cmake")
+
+
 __all__ = [
     "AbstractGenerator",
     "CodeGenerator",
@@ -54,6 +68,7 @@ __all__ = [
     "generate_all_from_namespace",
     "generate_all_from_namespace_with_generators",
     "basic_language_context_builder_from_args",
+    "cmake_dir",
     "Language",
     "LanguageConfig",
     "LanguageContext",
