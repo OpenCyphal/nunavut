@@ -9,7 +9,7 @@
 # The variable CVF_VERSION must be set before calling configure_file().
 
 
-set(PACKAGE_VERSION "3.1.0")
+set(PACKAGE_VERSION "3.1.1")
 # We have a chicken-and-egg problem here. We need Python and Nunavut to read the nunavut version number but we need
 # the nunavut version number to find the Python and Nunavut packages. So we have to hard-code the version number here.
 # This is the only version literal in the CMake package; test/gentest_versions/test_versions.py checks that it matches
